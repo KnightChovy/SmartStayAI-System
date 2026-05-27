@@ -1,0 +1,57 @@
+import { Link, useLocation } from "react-router"
+
+export default function Navbar() {
+  const location = useLocation()
+
+  return (
+    <nav className="bg-surface/80 backdrop-blur-xl sticky top-0 z-50 w-full border-b border-outline-variant/30">
+      <div className="max-w-7xl mx-auto px-margin-mobile md:px-8 py-4 flex justify-between items-center">
+        <Link to="/" className="font-be-vietnam font-bold tracking-tight text-on-surface text-2xl">
+          Smart Stay AI
+        </Link>
+        <div className="flex items-center gap-6">
+          <div className="hidden md:flex items-center gap-6 text-sm font-semibold text-on-surface-variant">
+            <Link 
+              to="/" 
+              className={`hover:text-primary transition-colors ${location.pathname === "/" ? "text-secondary font-bold" : ""}`}
+            >
+              Home
+            </Link>
+            <Link 
+              to="/deals" 
+              className={`hover:text-primary transition-colors ${location.pathname === "/deals" ? "text-secondary font-bold" : ""}`}
+            >
+              Deals
+            </Link>
+            <Link 
+              to="/destinations" 
+              className={`hover:text-primary transition-colors ${location.pathname === "/destinations" ? "text-secondary font-bold" : ""}`}
+            >
+              Destinations
+            </Link>
+            <Link 
+              to="/accommodation-types" 
+              className={`hover:text-primary transition-colors ${location.pathname === "/accommodation-types" ? "text-secondary font-bold" : ""}`}
+            >
+              Stays
+            </Link>
+            <button className="hover:text-primary transition-colors flex items-center gap-1">
+              USD <span className="material-symbols-outlined text-sm">expand_more</span>
+            </button>
+            <button className="hover:text-primary transition-colors flex items-center gap-1">
+              EN <span className="material-symbols-outlined text-sm">language</span>
+            </button>
+          </div>
+          <div className="flex items-center gap-3">
+            <button className="px-5 py-2 text-sm font-semibold text-on-surface hover:bg-surface-container-low rounded-xl transition-all">
+              Log in
+            </button>
+            <button className="px-5 py-2 text-sm font-semibold bg-on-surface text-white rounded-xl hover:bg-primary transition-all">
+              Register
+            </button>
+          </div>
+        </div>
+      </div>
+    </nav>
+  )
+}
