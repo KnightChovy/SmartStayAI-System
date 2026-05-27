@@ -43,12 +43,12 @@ export default function Navbar() {
             </button>
           </div>
           <div className="flex items-center gap-3">
-            <button className="px-5 py-2 text-sm font-semibold text-on-surface hover:bg-surface-container-low rounded-xl transition-all">
+            <Link to="/login" className="px-5 py-2 text-sm font-semibold text-on-surface hover:bg-surface-container-low rounded-xl transition-all text-center">
               Log in
-            </button>
-            <button className="px-5 py-2 text-sm font-semibold bg-on-surface text-white rounded-xl hover:bg-primary transition-all">
+            </Link>
+            <Link to="/register" className="px-5 py-2 text-sm font-semibold bg-on-surface text-white rounded-xl hover:bg-primary transition-all text-center">
               Register
-            </button>
+            </Link>
           </div>
         </div>
       </div>
