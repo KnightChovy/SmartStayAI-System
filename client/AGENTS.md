@@ -47,9 +47,10 @@ src/
 ├── App.tsx                     # Router root + providers
 │
 ├── routes/
-│   ├── index.tsx               # React Router v6 route tree
 │   ├── ProtectedRoute.tsx      # Auth guard theo role
-│   └── routes.ts               # Định nghĩa path constants
+│   ├── adminRoutes.ts
+│   ├── ...
+│   └── userRoutes.ts               # Định nghĩa path constants
 │
 ├── pages/                      # Mỗi portal = 1 thư mục
 │   ├── guest/
@@ -140,7 +141,6 @@ src/
 │   └── ai/                      # Chatbot + content gen hooks
 │
 ├── services/                   # Tầng gọi API (HTTP), không chứa logic UI
-│   ├── api.ts                  # Axios instance + interceptors
 │   ├── auth.service.ts
 │   ├── room.service.ts
 │   ├── booking.service.ts
@@ -168,6 +168,7 @@ src/
 │   └── formatCurrency.ts       # VND + USD
 |
 ├── lib/
+│   ├── api.ts                  # Axios instance + interceptors
 │   ├── cn.ts                  # Class name merging helper (clsx + tailwind-merge)
 │   └── logger.ts              # Wrapper cho console.log, có thể mở rộng thành logging service (Sentry, LogRocket) sau này
 │
@@ -211,7 +212,7 @@ npm install
 ### Cấu hình môi trường
 
 ```bash
-cp .env.example .env.local
+cp .env.example .env
 # Điền VITE_API_BASE_URL và các key cần thiết
 ```
 
@@ -619,4 +620,5 @@ const apiUrl = import.meta.env.VITE_API_BASE_URL;
 
 ---
 
+mỗi lần prompt code phải cập nhật tiến độ vào file PROGRESS.md
 *Cập nhật file này khi có thay đổi cấu trúc dự án, quy ước mới, hoặc dependency quan trọng được thêm vào.*
