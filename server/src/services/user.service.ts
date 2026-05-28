@@ -34,13 +34,32 @@ export const createUser = async (userBody: any) => {
 
   const hashedPassword = await bcrypt.hash(userBody.password, 8);
 
+  const profileData: any = {};
+  if (userBody.dateOfBirth !== undefined) profileData.dateOfBirth = userBody.dateOfBirth ? new Date(userBody.dateOfBirth) : null;
+  if (userBody.nationality !== undefined) profileData.nationality = userBody.nationality;
+  if (userBody.idCardNumber !== undefined) profileData.idCardNumber = userBody.idCardNumber;
+  if (userBody.passportNumber !== undefined) profileData.passportNumber = userBody.passportNumber;
+  if (userBody.preferredLanguage !== undefined) profileData.preferredLanguage = userBody.preferredLanguage;
+  if (userBody.preferredCurrency !== undefined) profileData.preferredCurrency = userBody.preferredCurrency;
+  if (userBody.marketingOptIn !== undefined) profileData.marketingOptIn = userBody.marketingOptIn;
+
+  const hasProfileData = Object.keys(profileData).length > 0;
+
   return prisma.user.create({
     data: {
       fullName: userBody.name,
       email: userBody.email,
       passwordHash: hashedPassword,
+      phone: userBody.phone || null,
+      avatarUrl: userBody.avatarUrl || null,
       role: userBody.role || 'customer',
       status: 'active',
+      profile: hasProfileData ? {
+        create: profileData,
+      } : undefined,
+    },
+    include: {
+      profile: true,
     },
   });
 };

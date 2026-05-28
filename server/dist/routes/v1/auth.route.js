@@ -9,6 +9,7 @@ const validations_1 = require("../../validations");
 const controllers_1 = require("../../controllers");
 const auth_1 = __importDefault(require("../../middlewares/auth"));
 const router = express_1.default.Router();
+router.post('/send-otp', (0, validate_1.default)(validations_1.authValidation.sendOtp), controllers_1.authController.sendOtp);
 router.post('/register', (0, validate_1.default)(validations_1.authValidation.register), controllers_1.authController.register);
 router.post('/login', (0, validate_1.default)(validations_1.authValidation.login), controllers_1.authController.login);
 router.post('/logout', (0, validate_1.default)(validations_1.authValidation.logout), controllers_1.authController.logout);
@@ -23,6 +24,48 @@ exports.default = router;
  * tags:
  *   name: Auth
  *   description: Authentication
+ */
+/**
+ * @swagger
+ * /auth/send-otp:
+ *   post:
+ *     summary: Send OTP verification code
+ *     description: Generates a 6-digit verification code and emails it to the user.
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *             example:
+ *               email: khiembadinh987@gmail.com
+ *     responses:
+ *       "200":
+ *         description: OTP Sent successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 message:
+ *                   type: string
+ *                   example: Verification OTP sent successfully to khiembadinh987@gmail.com
+ *       "400":
+ *         description: Email already taken or invalid format
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 /**
  * @swagger

@@ -6,6 +6,22 @@ export const register = {
     email: Joi.string().required().email(),
     password: Joi.string().required().custom(password),
     name: Joi.string().required(),
+    verificationCode: Joi.string().required().length(6),
+    phone: Joi.string().allow('', null),
+    avatarUrl: Joi.string().uri().allow('', null),
+    dateOfBirth: Joi.string().isoDate().allow('', null),
+    nationality: Joi.string().allow('', null),
+    idCardNumber: Joi.string().allow('', null),
+    passportNumber: Joi.string().allow('', null),
+    preferredLanguage: Joi.string().valid('vi', 'en').default('vi'),
+    preferredCurrency: Joi.string().valid('VND', 'USD').default('VND'),
+    marketingOptIn: Joi.boolean().default(false),
+  }),
+};
+
+export const sendOtp = {
+  body: Joi.object().keys({
+    email: Joi.string().required().email(),
   }),
 };
 

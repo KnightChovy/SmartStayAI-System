@@ -6,6 +6,7 @@ import auth from '../../middlewares/auth';
 
 const router = express.Router();
 
+router.post('/send-otp', validate(authValidation.sendOtp), authController.sendOtp);
 router.post('/register', validate(authValidation.register), authController.register);
 router.post('/login', validate(authValidation.login), authController.login);
 router.post('/logout', validate(authValidation.logout), authController.logout);
@@ -22,6 +23,49 @@ export default router;
  * tags:
  *   name: Auth
  *   description: Authentication
+ */
+
+/**
+ * @swagger
+ * /auth/send-otp:
+ *   post:
+ *     summary: Send OTP verification code
+ *     description: Generates a 6-digit verification code and emails it to the user.
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *             example:
+ *               email: khiembadinh987@gmail.com
+ *     responses:
+ *       "200":
+ *         description: OTP Sent successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 message:
+ *                   type: string
+ *                   example: Verification OTP sent successfully to khiembadinh987@gmail.com
+ *       "400":
+ *         description: Email already taken or invalid format
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 
 /**
