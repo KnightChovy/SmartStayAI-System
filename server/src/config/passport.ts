@@ -1,4 +1,5 @@
 import { Strategy as JwtStrategy, ExtractJwt, VerifiedCallback } from 'passport-jwt';
+import type { JwtPayload } from 'jsonwebtoken';
 import config from './config';
 import { tokenTypes } from './tokens';
 import prisma from './prisma';
@@ -8,15 +9,15 @@ const jwtOptions = {
   jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
 };
 
-const jwtVerify = async (payload: any, done: VerifiedCallback) => {
+const jwtVerify = async (payload: JwtPayload, done: VerifiedCallback): Promise<void> => {
   try {
     if (payload.type !== tokenTypes.ACCESS) {
       throw new Error('Invalid token type');
     }
-    const user = await prisma.user.findUnique({
-      where: { id: payload.sub },
+    const user = await prisma.user.findFirst({
+      where: { id: payload.sub as string, deletedAt: null },
     });
-    if (!user) {
+    if (!user || user.status !== 'active') {
       return done(null, false);
     }
     done(null, user);

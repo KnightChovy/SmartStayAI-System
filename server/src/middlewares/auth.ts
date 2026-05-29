@@ -1,12 +1,13 @@
 import passport from 'passport';
 import httpStatus from 'http-status';
+import { Request, Response, NextFunction } from 'express';
+import type { User } from '@prisma/client';
 import ApiError from '../utils/ApiError';
 import { roleRights } from '../config/roles';
-import { Request, Response, NextFunction } from 'express';
 
-const verifyCallback = 
-  (req: Request, resolve: (value?: unknown) => void, reject: (reason?: any) => void, requiredRights: string[]) => 
-  async (err: any, user: any, info: any) => {
+const verifyCallback =
+  (req: Request, resolve: () => void, reject: (reason?: unknown) => void, requiredRights: string[]) =>
+  (err: Error | null, user: User | false, info?: unknown): void => {
     if (err || info || !user) {
       return reject(new ApiError(httpStatus.UNAUTHORIZED, 'Please authenticate'));
     }
@@ -23,12 +24,14 @@ const verifyCallback =
     resolve();
   };
 
-const auth = (...requiredRights: string[]) => async (req: Request, res: Response, next: NextFunction) => {
-  return new Promise((resolve, reject) => {
-    passport.authenticate('jwt', { session: false }, verifyCallback(req, resolve, reject, requiredRights))(req, res, next);
-  })
-    .then(() => next())
-    .catch((err) => next(err));
-};
+const auth =
+  (...requiredRights: string[]) =>
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    return new Promise<void>((resolve, reject) => {
+      passport.authenticate('jwt', { session: false }, verifyCallback(req, resolve, reject, requiredRights))(req, res, next);
+    })
+      .then(() => next())
+      .catch((err) => next(err));
+  };
 
 export default auth;

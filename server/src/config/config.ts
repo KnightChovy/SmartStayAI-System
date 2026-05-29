@@ -8,9 +8,10 @@ const envVarsSchema = Joi.object()
   .keys({
     NODE_ENV: Joi.string().valid('production', 'development', 'test').required(),
     PORT: Joi.number().default(3000),
-    MONGODB_URL: Joi.string().required().description('Mongo DB url'),
+    MONGODB_URL: Joi.string().description('Mongo DB url (optional, kept for legacy error typing)'),
     DATABASE_URL: Joi.string().required().description('PostgreSQL database URL'),
     JWT_SECRET: Joi.string().required().description('JWT secret key'),
+    BCRYPT_ROUNDS: Joi.number().default(12).description('bcrypt salt rounds for password hashing'),
     JWT_ACCESS_EXPIRATION_MINUTES: Joi.number().default(30).description('minutes after which access tokens expire'),
     JWT_REFRESH_EXPIRATION_DAYS: Joi.number().default(30).description('days after which refresh tokens expire'),
     JWT_RESET_PASSWORD_EXPIRATION_MINUTES: Joi.number()
@@ -37,7 +38,7 @@ const config = {
   env: envVars.NODE_ENV,
   port: envVars.PORT,
   mongoose: {
-    url: envVars.MONGODB_URL + (envVars.NODE_ENV === 'test' ? '-test' : ''),
+    url: envVars.MONGODB_URL ? envVars.MONGODB_URL + (envVars.NODE_ENV === 'test' ? '-test' : '') : undefined,
     options: {
       useCreateIndex: true,
       useNewUrlParser: true,
@@ -53,6 +54,9 @@ const config = {
     refreshExpirationDays: envVars.JWT_REFRESH_EXPIRATION_DAYS,
     resetPasswordExpirationMinutes: envVars.JWT_RESET_PASSWORD_EXPIRATION_MINUTES,
     verifyEmailExpirationMinutes: envVars.JWT_VERIFY_EMAIL_EXPIRATION_MINUTES,
+  },
+  bcrypt: {
+    rounds: envVars.BCRYPT_ROUNDS,
   },
   email: {
     smtp: {

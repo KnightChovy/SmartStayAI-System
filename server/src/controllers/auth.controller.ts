@@ -1,7 +1,9 @@
 import httpStatus from 'http-status';
-import catchAsync from '../utils/catchAsync';
-import { authService, tokenService, emailService } from '../services';
 import { Request, Response } from 'express';
+import type { User } from '@prisma/client';
+import catchAsync from '../utils/catchAsync';
+import sanitizeUser from '../utils/sanitizeUser';
+import { authService, tokenService, emailService } from '../services';
 
 export class AuthController {
   register = catchAsync(async (req: Request, res: Response): Promise<void> => {
@@ -23,7 +25,7 @@ export class AuthController {
     const { email, password } = req.body;
     const user = await authService.loginUserWithEmailAndPassword(email, password);
     const tokens = await tokenService.generateAuthTokens(user);
-    res.send({ user, tokens });
+    res.send({ user: sanitizeUser(user), tokens });
   });
 
   logout = catchAsync(async (req: Request, res: Response): Promise<void> => {
@@ -37,8 +39,7 @@ export class AuthController {
   });
 
   forgotPassword = catchAsync(async (req: Request, res: Response): Promise<void> => {
-    const resetPasswordToken = await tokenService.generateResetPasswordToken(req.body.email);
-    await emailService.sendResetPasswordEmail(req.body.email, resetPasswordToken);
+    await authService.forgotPassword(req.body.email);
     res.status(httpStatus.NO_CONTENT).send();
   });
 
@@ -48,8 +49,9 @@ export class AuthController {
   });
 
   sendVerificationEmail = catchAsync(async (req: Request, res: Response): Promise<void> => {
-    const verifyEmailToken = await tokenService.generateVerifyEmailToken(req.user);
-    await emailService.sendVerificationEmail((req.user as any).email, verifyEmailToken);
+    const user = req.user as User;
+    const verifyEmailToken = await tokenService.generateVerifyEmailToken(user);
+    await emailService.sendVerificationEmail(user.email, verifyEmailToken);
     res.status(httpStatus.NO_CONTENT).send();
   });
 
