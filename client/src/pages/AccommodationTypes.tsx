@@ -1,5 +1,5 @@
 import { useState } from "react"
-import AccommodationTypes from "../components/Home/AccommodationTypes"
+import AccommodationTypes from "../components/home/AccommodationTypes"
 
 export default function AccommodationTypesPage() {
   const [selectedCategory, setSelectedCategory] = useState("All")

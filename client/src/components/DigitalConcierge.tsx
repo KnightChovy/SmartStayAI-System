@@ -74,10 +74,10 @@ export default function DigitalConcierge() {
   }
 
   return (
-    <div className="fixed bottom-8 right-8 z-[100] group font-be-vietnam">
+    <div className="fixed bottom-8 right-8 z-100 group font-be-vietnam">
       {/* Chat Window */}
       <div 
-        className={`absolute bottom-20 right-0 w-[350px] max-h-[500px] h-[500px] bg-surface/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-outline-variant/30 overflow-hidden flex flex-col transition-all duration-300 origin-bottom-right ${
+        className={`absolute bottom-20 right-0 w-87.5 max-h-125 h-125 bg-surface/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-outline-variant/30 overflow-hidden flex flex-col transition-all duration-300 origin-bottom-right ${
           isOpen ? "scale-100 opacity-100 pointer-events-auto" : "scale-95 opacity-0 pointer-events-none"
         }`}
       >
@@ -101,7 +101,7 @@ export default function DigitalConcierge() {
         </div>
 
         {/* Messages List */}
-        <div className="flex-grow p-4 space-y-4 overflow-y-auto hide-scrollbar bg-surface-container-low/50">
+        <div className="grow p-4 space-y-4 overflow-y-auto hide-scrollbar bg-surface-container-low/50">
           {messages.map((msg, index) => {
             const isAI = msg.sender === "ai"
             return (
@@ -164,7 +164,7 @@ export default function DigitalConcierge() {
         onClick={() => setIsOpen(!isOpen)}
         className="w-16 h-16 bg-on-surface rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(143,211,211,0.4)] hover:shadow-[0_0_30px_rgba(143,211,211,0.6)] transition-all duration-300 relative overflow-hidden cursor-pointer"
       >
-        <div className="absolute inset-0 bg-gradient-to-tr from-ai-glow/20 to-transparent opacity-0 hover:opacity-100 transition-opacity"></div>
+        <div className="absolute inset-0 bg-linear-to-tr from-ai-glow/20 to-transparent opacity-0 hover:opacity-100 transition-opacity"></div>
         <span className="material-symbols-outlined text-white text-3xl z-10 transition-transform duration-300 group-hover:rotate-12">
           {isOpen ? "close" : "chat"}
         </span>
