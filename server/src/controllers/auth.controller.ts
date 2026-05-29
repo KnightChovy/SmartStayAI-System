@@ -78,11 +78,11 @@ export const sendOtp = catchAsync(async (req: Request, res: Response) => {
   });
 
   // Send email (handling offline local SMTP gracefully and logging to terminal)
-  console.log(`\n🔑 [OTP Verification] The code for ${email} is: ${otpCode}\n`);
+  console.log(`\n[OTP Verification] The code for ${email} is: ${otpCode}\n`);
   try {
     await emailService.sendOtpEmail(email, otpCode);
   } catch (error) {
-    console.error(`❌ [Email Service Failure] Detailed error:`, error);
+    console.error(`[Email Service Failure] Detailed error:`, error);
     console.log(`[Email Service Bypass] SMTP email server is offline. Use console logged OTP code.`);
   }
 
