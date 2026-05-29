@@ -1,0 +1,261 @@
+import React, { useState, useEffect, useRef } from "react";
+import { Link, useLocation, useNavigate } from "react-router";
+
+export default function VerifyIdentity() {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Dynamic email retrieval from route transition state
+  const targetEmail = location.state?.email || "your email address";
+
+  const [otp, setOtp] = useState<string[]>(new Array(6).fill(""));
+  const [timeLeft, setTimeLeft] = useState(59);
+  const [canResend, setCanResend] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
+
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  // Focus the first input field on component load
+  useEffect(() => {
+    inputRefs.current[0]?.focus();
+  }, []);
+
+  // Countdown timer effect
+  useEffect(() => {
+    if (timeLeft <= 0) {
+      setCanResend(true);
+      return;
+    }
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => prev - 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [timeLeft]);
+
+  // Handle digit inputs and auto-tab forward
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+    const val = e.target.value.replace(/[^0-9]/g, "");
+    if (!val) {
+      const newOtp = [...otp];
+      newOtp[index] = "";
+      setOtp(newOtp);
+      return;
+    }
+
+    const newOtp = [...otp];
+    newOtp[index] = val.substring(val.length - 1);
+    setOtp(newOtp);
+
+    // Shift focus to the next field if a digit is entered
+    if (index < 5 && newOtp[index] !== "") {
+      inputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  // Backspace key navigation (jumping backwards)
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
+    if (e.key === "Backspace") {
+      const newOtp = [...otp];
+      if (otp[index] === "") {
+        if (index > 0) {
+          newOtp[index - 1] = "";
+          setOtp(newOtp);
+          inputRefs.current[index - 1]?.focus();
+        }
+      } else {
+        newOtp[index] = "";
+        setOtp(newOtp);
+      }
+    }
+  };
+
+  // Handling 6-digit numeric pasting events
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pasteData = e.clipboardData.getData("text").replace(/[^0-9]/g, "").slice(0, 6);
+    if (pasteData.length === 6) {
+      const newOtp = pasteData.split("");
+      setOtp(newOtp);
+      inputRefs.current[5]?.focus();
+    }
+  };
+
+  // Simulated OTP verify API trigger
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const enteredOtp = otp.join("");
+    if (enteredOtp.length < 6) {
+      alert("Please enter the complete 6-digit verification code.");
+      return;
+    }
+
+    setIsVerifying(true);
+    setTimeout(() => {
+      setIsVerifying(false);
+      setIsVerified(true);
+      setTimeout(() => {
+        alert("Verification successful!");
+        navigate("/login");
+      }, 1200);
+    }, 1500);
+  };
+
+  const handleResend = () => {
+    if (!canResend) return;
+    alert(`A new 6-digit verification code has been sent to ${targetEmail}.`);
+    setTimeLeft(59);
+    setCanResend(false);
+  };
+
+  return (
+    <div className="relative min-h-screen text-on-background overflow-hidden h-screen w-screen bg-background antialiased flex items-center justify-center p-margin-mobile">
+      {/* Custom Styles */}
+      <style>{`
+        .glass-effect {
+          background: rgba(245, 242, 238, 0.7);
+          backdrop-filter: blur(24px);
+          -webkit-backdrop-filter: blur(24px);
+        }
+        .ambient-shadow {
+          box-shadow: 0 4px 20px rgba(28, 27, 27, 0.04);
+        }
+        .material-symbols-outlined {
+          font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+          -webkit-appearance: none;
+          margin: 0;
+        }
+        input[type=number] {
+          -moz-appearance: textfield;
+        }
+        .premium-gold-border {
+          border: 1px solid transparent;
+          background-image: linear-gradient(#f5f2ee, #f5f2ee), linear-gradient(135deg, #e2c194, #ffe088, #e2c194);
+          background-origin: border-box;
+          background-clip: padding-box, border-box;
+        }
+      `}</style>
+
+      {/* Background Layer */}
+      <div className="fixed inset-0 z-0">
+        <img
+          className="w-full h-full object-cover"
+          alt="A wide-angle, high-end architectural shot of a luxury hotel lobby featuring expansive glass windows, warm ambient lighting reflecting off polished travertine floors, and a sophisticated minimalist aesthetic. The atmosphere is serene and exclusive, dominated by soft creams, sand tones, and deep charcoal accents, perfectly capturing the essence of quiet luxury."
+          src="https://lh3.googleusercontent.com/aida-public/AB6AXuBWHVcdPkEfHNnWXegEYctR_LX52NprqY7rZRx9cQwmJwsOWZ74vxXqOQPRxd2qPEbGBO7vJX3C0O8t7W9e5Uk0pTVSVwNyRRBEN1gUBb0VgaH6M89c6ofV8icqzXrFrusnPp0MfaUnv8pqO83edUaqKE2mH7Iy3LKTeNOaC1Njfw7VrUKk96nLtPFeaUCNmjMiHdWXriVTe1wbzAZoIfTlTwvzP9tcEPmq6x8U_62ZoAnd6rr1j5h6pXqmExIIeDHPcnNKDj31Frn9"
+        />
+        <div className="absolute inset-0 bg-on-background/20 backdrop-blur-[2px]"></div>
+      </div>
+
+      {/* Verification Container */}
+      <main className="relative z-10 w-full max-w-[480px]">
+        {/* Brand Logo Center */}
+        <div className="text-center mb-stack-lg">
+          <Link to="/" className="inline-block hover:opacity-90 transition-opacity">
+            <h1 className="font-display-lg text-3xl font-extrabold tracking-widest uppercase text-transparent bg-clip-text bg-gradient-to-r from-secondary via-secondary-fixed-dim to-secondary text-glow">
+              Smart Stay AI
+            </h1>
+          </Link>
+        </div>
+
+        <div className="glass-effect ambient-shadow w-full rounded-[32px] p-stack-lg flex flex-col items-center">
+          
+          {/* Header Content */}
+          <div className="text-center mb-stack-lg">
+            <h2 className="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-2 font-semibold">
+              Verify Your Identity
+            </h2>
+            <p className="font-body-md text-body-md text-on-surface-variant max-w-[320px] mx-auto">
+              We've sent a 6-digit code to <span className="font-semibold text-on-surface">{targetEmail}</span>. Please enter it below to continue.
+            </p>
+          </div>
+
+          {/* OTP Input Area */}
+          <form className="w-full mb-stack-lg" onSubmit={handleSubmit}>
+            <div className="grid grid-cols-6 gap-2 md:gap-3 w-full max-w-[380px] mx-auto mb-stack-lg">
+              {otp.map((digit, index) => (
+                <input
+                  key={index}
+                  ref={(el) => { inputRefs.current[index] = el; }}
+                  autoComplete="one-time-code"
+                  className="w-full aspect-square text-center font-display-lg text-display-lg rounded-xl border-none bg-surface-container shadow-inner focus:ring-2 focus:ring-primary focus:bg-white transition-all duration-200 outline-none p-0 flex items-center justify-center"
+                  maxLength={1}
+                  type="text"
+                  pattern="[0-9]*"
+                  inputMode="numeric"
+                  value={digit}
+                  onChange={(e) => handleChange(e, index)}
+                  onKeyDown={(e) => handleKeyDown(e, index)}
+                  onPaste={handlePaste}
+                  required
+                />
+              ))}
+            </div>
+
+            {/* Primary Action Button */}
+            <button
+              className={`w-full py-4 text-surface font-label-lg text-label-lg rounded-full ambient-shadow hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer outline-none ${isVerified ? 'bg-green-800' : 'bg-on-background'
+                }`}
+              type="submit"
+              disabled={isVerifying || isVerified}
+            >
+              {isVerifying ? (
+                <>
+                  <span className="material-symbols-outlined animate-spin">progress_activity</span>
+                  Verifying...
+                </>
+              ) : isVerified ? (
+                <>
+                  <span className="material-symbols-outlined">check_circle</span>
+                  Verified
+                </>
+              ) : (
+                <>
+                  Verify Code
+                  <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+                </>
+              )}
+            </button>
+          </form>
+
+          {/* Secondary Actions */}
+          <div className="flex flex-col items-center gap-4 w-full">
+            <p className="font-label-md text-label-md text-on-surface-variant text-center">
+              Didn't receive the code?{" "}
+              {canResend ? (
+                <button
+                  onClick={handleResend}
+                  className="text-on-background font-bold hover:underline cursor-pointer outline-none"
+                  type="button"
+                >
+                  Resend Code
+                </button>
+              ) : (
+                <span className="text-on-background font-bold">
+                  Resend (in <span id="timer">00:{timeLeft < 10 ? `0${timeLeft}` : timeLeft}</span>)
+                </span>
+              )}
+            </p>
+            <div className="w-full h-[1px] bg-outline-variant/30 my-2"></div>
+            <Link className="flex items-center gap-2 font-label-lg text-label-lg text-secondary hover:text-on-background transition-colors" to="/login">
+              <span className="material-symbols-outlined text-[20px]">keyboard_backspace</span>
+              Back to Login
+            </Link>
+          </div>
+        </div>
+      </main>
+
+      {/* AI Badge Overlay */}
+      <div className="absolute bottom-10 right-10 hidden md:flex items-center gap-3 glass-effect premium-gold-border py-3 px-5 rounded-full ambient-shadow">
+        <div className="w-2 h-2 rounded-full bg-tertiary-fixed-dim animate-pulse"></div>
+        <span className="font-label-sm text-label-sm text-on-surface uppercase tracking-widest">Secure Verification Active</span>
+      </div>
+
+      {/* Subtle Premium Glow background effects */}
+      <div className="fixed bottom-0 right-0 w-[50vw] h-[512px] bg-secondary/5 blur-[120px] rounded-full pointer-events-none z-0"></div>
+      <div className="fixed top-0 left-0 w-[30vw] h-[307px] bg-primary/5 blur-[100px] rounded-full pointer-events-none z-0"></div>
+    </div>
+  );
+}

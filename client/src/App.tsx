@@ -4,6 +4,10 @@ import Home from "./pages/Home"
 import Destinations from "./pages/Destinations"
 import Deals from "./pages/Deals"
 import AccommodationTypesPage from "./pages/AccommodationTypes"
+import Register from "./pages/Register"
+import Login from "./pages/Login"
+import ForgotPassword from "./pages/ForgotPassword"
+import VerifyIdentity from "./pages/VerifyIdentity"
 
 function App() {
   return (
@@ -15,6 +19,10 @@ function App() {
           <Route path="deals" element={<Deals />} />
           <Route path="accommodation-types" element={<AccommodationTypesPage />} />
         </Route>
+        <Route path="register" element={<Register />} />
+        <Route path="login" element={<Login />} />
+        <Route path="forgot-password" element={<ForgotPassword />} />
+        <Route path="verify-identity" element={<VerifyIdentity />} />
       </Routes>
     </BrowserRouter>
   )
