@@ -88,7 +88,7 @@ export class TokenService {
   };
 
   /**
-   * Verify token and return token doc (or throw an error if it is not valid)
+   * Verify a reset-password / verify-email token (refresh tokens are handled in auth.service).
    * @param {string} token
    * @param {string} type
    * @returns {Promise<TokenDoc>}
@@ -97,27 +97,6 @@ export class TokenService {
     const payload = jwt.verify(token, config.jwt.secret) as jwt.JwtPayload;
     const userId = payload.sub as string;
     const tokenHash = hashToken(token);
-
-    if (type === tokenTypes.REFRESH) {
-      const session = await prisma.userSession.findFirst({
-        where: {
-          refreshTokenHash: tokenHash,
-          userId,
-          expiresAt: { gt: new Date() },
-          revokedAt: null,
-        },
-      });
-      if (!session) {
-        throw new Error('Token not found');
-      }
-      return {
-        id: session.id,
-        token: session.refreshTokenHash,
-        userId: session.userId,
-        expires: session.expiresAt,
-        type,
-      };
-    }
 
     if (type === tokenTypes.RESET_PASSWORD || type === tokenTypes.VERIFY_EMAIL) {
       const user = await prisma.user.findUnique({ where: { id: userId } });

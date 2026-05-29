@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
 import httpStatus from 'http-status';
 import bcrypt from 'bcryptjs';
 import type { User } from '@prisma/client';
@@ -18,6 +19,7 @@ export interface RegisterUserDto extends CreateUserDto {
 }
 
 const OTP_EXPIRATION_MS = 10 * 60 * 1000;
+const MAX_OTP_ATTEMPTS = 5;
 
 export class AuthService {
   /**
@@ -56,8 +58,10 @@ export class AuthService {
     if (!session) {
       throw new ApiError(httpStatus.NOT_FOUND, 'Not found');
     }
-    await prisma.userSession.delete({
+    // Revoke (soft) instead of deleting so a replayed token is still recognisable as reuse.
+    await prisma.userSession.update({
       where: { id: session.id },
+      data: { revokedAt: new Date() },
     });
   };
 
@@ -67,19 +71,44 @@ export class AuthService {
    * @returns {Promise<AuthTokens>}
    */
   refreshAuth = async (refreshToken: string): Promise<AuthTokens> => {
+    // An invalid or expired JWT signature is simply unauthorized.
+    let userId: string;
     try {
-      const refreshTokenDoc = await tokenService.verifyToken(refreshToken, tokenTypes.REFRESH);
-      const user = await userService.getUserById(refreshTokenDoc.userId);
-      if (!user) {
-        throw new Error();
-      }
-      await prisma.userSession.delete({
-        where: { id: refreshTokenDoc.id },
-      });
-      return tokenService.generateAuthTokens(user);
+      const payload = jwt.verify(refreshToken, config.jwt.secret) as jwt.JwtPayload;
+      userId = payload.sub as string;
     } catch (error) {
       throw new ApiError(httpStatus.UNAUTHORIZED, 'Please authenticate');
     }
+
+    const session = await prisma.userSession.findFirst({
+      where: { refreshTokenHash: hashToken(refreshToken), userId },
+    });
+
+    // Reuse detection: a token whose session was already rotated/revoked is being
+    // replayed -> treat as theft and revoke every active session of this user.
+    if (session?.revokedAt) {
+      await prisma.userSession.updateMany({
+        where: { userId, revokedAt: null },
+        data: { revokedAt: new Date() },
+      });
+      throw new ApiError(httpStatus.UNAUTHORIZED, 'Please authenticate');
+    }
+
+    if (!session || session.expiresAt <= new Date()) {
+      throw new ApiError(httpStatus.UNAUTHORIZED, 'Please authenticate');
+    }
+
+    const user = await userService.getUserById(userId);
+    if (!user) {
+      throw new ApiError(httpStatus.UNAUTHORIZED, 'Please authenticate');
+    }
+
+    // Rotate: revoke the used session and issue a fresh token pair.
+    await prisma.userSession.update({
+      where: { id: session.id },
+      data: { revokedAt: new Date() },
+    });
+    return tokenService.generateAuthTokens(user);
   };
 
   /**
@@ -158,25 +187,37 @@ export class AuthService {
    * @returns {Promise<{ user: Omit<User, 'passwordHash'>; tokens: AuthTokens }>}
    */
   registerUser = async (userBody: RegisterUserDto, verificationCode: string) => {
-    // 1. Verify OTP code (stored hashed)
-    const tokenRecord = await prisma.verificationToken.findFirst({
+    // 1. Find the (non-expired) OTP record for this email
+    const otpRecord = await prisma.verificationToken.findFirst({
       where: {
         email: userBody.email,
-        code: hashToken(verificationCode),
         expiresAt: { gt: new Date() },
       },
     });
 
-    if (!tokenRecord) {
+    if (!otpRecord) {
       throw new ApiError(httpStatus.BAD_REQUEST, 'Invalid or expired verification code');
     }
 
-    // 2. Delete verification token record
+    // 2. Wrong code: count the attempt and lock the OTP after too many tries
+    if (otpRecord.code !== hashToken(verificationCode)) {
+      if (otpRecord.attempts + 1 >= MAX_OTP_ATTEMPTS) {
+        await prisma.verificationToken.delete({ where: { id: otpRecord.id } });
+        throw new ApiError(httpStatus.BAD_REQUEST, 'Too many invalid attempts. Please request a new code.');
+      }
+      await prisma.verificationToken.update({
+        where: { id: otpRecord.id },
+        data: { attempts: { increment: 1 } },
+      });
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Invalid or expired verification code');
+    }
+
+    // 3. Correct code: consume the OTP record
     await prisma.verificationToken.deleteMany({
       where: { email: userBody.email },
     });
 
-    // 3. Create user (forwarding all fields)
+    // 4. Create user (forwarding all fields)
     const user = await userService.createUser({
       name: userBody.name,
       email: userBody.email,
@@ -192,13 +233,13 @@ export class AuthService {
       marketingOptIn: userBody.marketingOptIn,
     });
 
-    // 4. Mark email as verified
+    // 5. Mark email as verified
     const verifiedUser = await prisma.user.update({
       where: { id: user.id },
       data: { emailVerifiedAt: new Date() },
     });
 
-    // 5. Generate tokens
+    // 6. Generate tokens
     const tokens = await tokenService.generateAuthTokens(verifiedUser);
     return { user: sanitizeUser(verifiedUser), tokens };
   };

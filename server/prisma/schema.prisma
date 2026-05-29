@@ -354,7 +354,8 @@ model PushToken {
 model VerificationToken {
   id        String   @id @default(uuid()) @db.Uuid
   email     String   @unique
-  code      String   // Mã OTP 6 chữ số
+  code      String   // Mã OTP 6 chữ số (lưu dạng đã hash)
+  attempts  Int      @default(0) // Số lần nhập sai OTP, dùng để khoá brute-force
   expiresAt DateTime @map("expires_at")
   createdAt DateTime @default(now()) @map("created_at")
 
