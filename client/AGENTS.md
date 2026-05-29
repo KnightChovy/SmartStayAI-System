@@ -23,15 +23,16 @@
 
 SmartStay AI frontend là ứng dụng **single-page application (SPA)** phục vụ **5 role-based portal** trên cùng một codebase Vite + React + TypeScript:
 
-| Portal | Route prefix | Người dùng |
-|---|---|---|
-| Guest | `/` | Khách đặt phòng |
-| Staff | `/staff` | Lễ tân, chăm sóc khách hàng |
-| Marketing | `/marketing` | Marketing Manager |
-| Manager | `/manager` | Hotel Manager |
-| Admin | `/admin` | System Admin |
+| Portal    | Route prefix | Người dùng                  |
+| --------- | ------------ | --------------------------- |
+| Guest     | `/`          | Khách đặt phòng             |
+| Staff     | `/staff`     | Lễ tân, chăm sóc khách hàng |
+| Marketing | `/marketing` | Marketing Manager           |
+| Manager   | `/manager`   | Hotel Manager               |
+| Admin     | `/admin`     | System Admin                |
 
 **Các tính năng AI nổi bật hiển thị trên frontend:**
+
 - AI Booking Chatbot (streaming chat UI)
 - AI Content Draft Editor (Marketing portal)
 - Sentiment badge trên reviews
@@ -246,6 +247,7 @@ npm run build
 ```
 
 `vite.config.ts` cấu hình:
+
 - Code splitting theo route (dynamic `import()`)
 - Chunk riêng cho vendor lớn (`react`, `react-dom`, `recharts`, v.v.)
 - Asset fingerprinting
@@ -286,19 +288,19 @@ const price = (room as Room).pricePerNight;
 
 ### 5.2 Đặt tên
 
-| Loại | Convention | Ví dụ |
-|---|---|---|
-| Folder | `kebab-case` | `room-price`, `handle-booking` |
-| Biến / hàm | `camelCase` | `roomPrice`, `handleBooking` |
-| Component | `PascalCase` | `RoomCard`, `BookingForm` |
-| File component | `PascalCase.tsx` | `RoomCard.tsx` |
-| File non-component | `camelCase.ts` | `booking.service.ts`, `useRooms.ts` |
-| Constant | `UPPER_SNAKE_CASE` | `MAX_GUESTS`, `DEFAULT_PAGE_SIZE` |
-| Env variable | `VITE_UPPER_SNAKE` | `VITE_API_BASE_URL` |
-| Interface / Type | `PascalCase` | `BookingDto`, `ApiResponse` |
-| Enum + giá trị | `PascalCase` + `UPPER_SNAKE` | `BookingStatus.IN_PROGRESS` |
-| Zustand store hook | `use[Name]Store` | `useAuthStore` |
-| React Query key | từ `queryKeys.ts` | `queryKeys.rooms.detail(id)` |
+| Loại               | Convention                   | Ví dụ                               |
+| ------------------ | ---------------------------- | ----------------------------------- |
+| Folder             | `kebab-case`                 | `room-price`, `handle-booking`      |
+| Biến / hàm         | `camelCase`                  | `roomPrice`, `handleBooking`        |
+| Component          | `PascalCase`                 | `RoomCard`, `BookingForm`           |
+| File component     | `PascalCase.tsx`             | `RoomCard.tsx`                      |
+| File non-component | `camelCase.ts`               | `booking.service.ts`, `useRooms.ts` |
+| Constant           | `UPPER_SNAKE_CASE`           | `MAX_GUESTS`, `DEFAULT_PAGE_SIZE`   |
+| Env variable       | `VITE_UPPER_SNAKE`           | `VITE_API_BASE_URL`                 |
+| Interface / Type   | `PascalCase`                 | `BookingDto`, `ApiResponse`         |
+| Enum + giá trị     | `PascalCase` + `UPPER_SNAKE` | `BookingStatus.IN_PROGRESS`         |
+| Zustand store hook | `use[Name]Store`             | `useAuthStore`                      |
+| React Query key    | từ `queryKeys.ts`            | `queryKeys.rooms.detail(id)`        |
 
 ### 5.3 Component
 
@@ -342,12 +344,12 @@ export function useGetRooms(filters: RoomFilters) {
 
 ### 5.5 State management — quy tắc chọn
 
-| Loại state | Công cụ |
-|---|---|
-| Dữ liệu từ API (server state) | **TanStack Query** |
-| Auth session, chat history, UI global | **Zustand** |
-| Form state | `useState` hoặc React Hook Form |
-| UI local (toggle, modal) | `useState` |
+| Loại state                            | Công cụ                         |
+| ------------------------------------- | ------------------------------- |
+| Dữ liệu từ API (server state)         | **TanStack Query**              |
+| Auth session, chat history, UI global | **Zustand**                     |
+| Form state                            | `useState` hoặc React Hook Form |
+| UI local (toggle, modal)              | `useState`                      |
 
 > **Không** lưu dữ liệu API vào Zustand — đây là việc của TanStack Query.
 
@@ -542,9 +544,9 @@ interface MyStore {
   reset: () => void;
 }
 
-export const useMyStore = create<MyStore>((set) => ({
+export const useMyStore = create<MyStore>(set => ({
   value: '',
-  setValue: (value) => set({ value }),
+  setValue: value => set({ value }),
   reset: () => set({ value: '' }),
 }));
 ```
@@ -599,25 +601,25 @@ const apiUrl = import.meta.env.VITE_API_BASE_URL;
 
 ## Dependencies chính
 
-| Package | Mục đích |
-|---|---|
-| `react` + `react-dom` | UI framework |
-| `react-router` v7 | Client-side routing |
-| `@tanstack/react-query` | Server state & data fetching |
-| `@tanstack/react-table` | Data table (Staff, Admin portals) |
-| `zustand` | Global client state |
-| `axios` | HTTP client |
-| `tailwindcss` + `@tailwindcss/vite` | Utility-first CSS + Vite integration |
-| `clsx` + `tailwind-merge` | Class merging (`cn()` helper) |
-| `class-variance-authority` | Variant-based styling for UI components |
-| `tw-animate-css` | Animation utilities for Tailwind | 
-| `zod` | Schema validation |
-| `date-fns` | Date utilities |
-| `lucide-react` | Icon library |
-| `recharts` | Charts (analytics dashboards) |
-| `radix-ui` | UI primitives |
-| `shadcn` | shadcn/ui CLI + component registry |
-| `@fontsource-variable/geist` | Variable font for typography |
+| Package                             | Mục đích                                |
+| ----------------------------------- | --------------------------------------- |
+| `react` + `react-dom`               | UI framework                            |
+| `react-router` v7                   | Client-side routing                     |
+| `@tanstack/react-query`             | Server state & data fetching            |
+| `@tanstack/react-table`             | Data table (Staff, Admin portals)       |
+| `zustand`                           | Global client state                     |
+| `axios`                             | HTTP client                             |
+| `tailwindcss` + `@tailwindcss/vite` | Utility-first CSS + Vite integration    |
+| `clsx` + `tailwind-merge`           | Class merging (`cn()` helper)           |
+| `class-variance-authority`          | Variant-based styling for UI components |
+| `tw-animate-css`                    | Animation utilities for Tailwind        |
+| `zod`                               | Schema validation                       |
+| `date-fns`                          | Date utilities                          |
+| `lucide-react`                      | Icon library                            |
+| `recharts`                          | Charts (analytics dashboards)           |
+| `radix-ui`                          | UI primitives                           |
+| `shadcn`                            | shadcn/ui CLI + component registry      |
+| `@fontsource-variable/geist`        | Variable font for typography            |
 
 ---
 
@@ -625,5 +627,4 @@ const apiUrl = import.meta.env.VITE_API_BASE_URL;
 
 Mỗi lần prompt code phải cập nhật tiến độ vào file PROGRESS.md (important!).
 
-
-*Cập nhật file này khi có thay đổi cấu trúc dự án, quy ước mới, hoặc dependency quan trọng được thêm vào.*
+_Cập nhật file này khi có thay đổi cấu trúc dự án, quy ước mới, hoặc dependency quan trọng được thêm vào._
