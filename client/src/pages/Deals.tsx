@@ -1,6 +1,6 @@
-import Promotions from "../components/Home/Promotions"
-import WeekendDeals from "../components/Home/WeekendDeals"
-import LoyaltyBanner from "../components/Home/LoyaltyBanner"
+import Promotions from '../components/Home/Promotions';
+import WeekendDeals from '../components/Home/WeekendDeals';
+import LoyaltyBanner from '../components/Home/LoyaltyBanner';
 
 export default function Deals() {
   return (
@@ -13,7 +13,8 @@ export default function Deals() {
           Exclusive Membership Sanctuary Rates
         </h1>
         <p className="font-be-vietnam text-base text-on-surface-variant max-w-xl mx-auto">
-          Unlock premium rates curated specially for our gold members and early discoverers.
+          Unlock premium rates curated specially for our gold members and early
+          discoverers.
         </p>
       </div>
 
@@ -21,5 +22,5 @@ export default function Deals() {
       <WeekendDeals />
       <LoyaltyBanner />
     </div>
-  )
+  );
 }

@@ -1,6 +1,6 @@
-import DiscoverVietnam from "../components/Home/DiscoverVietnam"
-import TrendingDestinations from "../components/Home/TrendingDestinations"
-import PopularVietnameseTourists from "../components/Home/PopularVietnameseTourists"
+import DiscoverVietnam from '../components/Home/DiscoverVietnam';
+import TrendingDestinations from '../components/Home/TrendingDestinations';
+import PopularVietnameseTourists from '../components/Home/PopularVietnameseTourists';
 
 export default function Destinations() {
   return (
@@ -13,7 +13,8 @@ export default function Destinations() {
           Sanctuaries Around the Globe
         </h1>
         <p className="font-be-vietnam text-base text-on-surface-variant max-w-xl mx-auto">
-          Intelligent discovery matches you with destinations that resonate with your inner state of calm.
+          Intelligent discovery matches you with destinations that resonate with
+          your inner state of calm.
         </p>
       </div>
 
@@ -21,5 +22,5 @@ export default function Destinations() {
       <TrendingDestinations />
       <PopularVietnameseTourists />
     </div>
-  )
+  );
 }

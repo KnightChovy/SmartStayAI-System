@@ -1,11 +1,11 @@
-import React, { useState } from "react";
-import { Link, useNavigate } from "react-router";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
 
 export default function ForgotPassword() {
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState('');
   const [emailFocused, setEmailFocused] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
@@ -13,13 +13,13 @@ export default function ForgotPassword() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) {
-      alert("Please enter your email address.");
+      alert('Please enter your email address.');
       return;
     }
     setIsLoading(true);
     setTimeout(() => {
       setIsLoading(false);
-      navigate("/verify-identity", { state: { email } });
+      navigate('/verify-identity', { state: { email } });
     }, 1500);
   };
 
@@ -42,7 +42,10 @@ export default function ForgotPassword() {
       <main className="relative z-10 w-full max-w-md">
         {/* Brand Logo Center */}
         <div className="text-center mb-stack-lg">
-          <Link to="/" className="inline-block hover:opacity-90 transition-opacity">
+          <Link
+            to="/"
+            className="inline-block hover:opacity-90 transition-opacity"
+          >
             <h1 className="font-display-lg text-3xl font-extrabold tracking-widest uppercase text-transparent bg-clip-text bg-gradient-to-r from-secondary via-secondary-fixed-dim to-secondary text-glow">
               Smart Stay AI
             </h1>
@@ -53,8 +56,9 @@ export default function ForgotPassword() {
         <div
           className="glass-card w-full p-stack-lg rounded-[16px] shadow-[0_20px_40px_rgba(0,0,0,0.08)] duration-700"
           style={{
-            transform: emailFocused ? "scale(1.01)" : "scale(1)",
-            transition: "transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)"
+            transform: emailFocused ? 'scale(1.01)' : 'scale(1)',
+            transition:
+              'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
           }}
         >
           {/* Header Content */}
@@ -63,14 +67,18 @@ export default function ForgotPassword() {
               Reset Your Password
             </h2>
             <p className="font-body-md text-body-md text-on-surface-variant max-w-[280px] mx-auto">
-              Enter your email address and we'll send you a link to reset your password.
+              Enter your email address and we'll send you a link to reset your
+              password.
             </p>
           </div>
 
           {/* Reset Form */}
           <form className="space-y-stack-md" onSubmit={handleSubmit}>
             <div>
-              <Label className="block font-label-lg text-label-lg text-on-surface-variant mb-2" htmlFor="email">
+              <Label
+                className="block font-label-lg text-label-lg text-on-surface-variant mb-2"
+                htmlFor="email"
+              >
                 Email Address
               </Label>
               <Input
@@ -79,7 +87,7 @@ export default function ForgotPassword() {
                 placeholder="name@example.com"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={e => setEmail(e.target.value)}
                 onFocus={() => setEmailFocused(true)}
                 onBlur={() => setEmailFocused(false)}
                 required
@@ -92,9 +100,11 @@ export default function ForgotPassword() {
               type="submit"
               disabled={isLoading}
             >
-              {isLoading ? "Sending OTP..." : "Send OTP"}
+              {isLoading ? 'Sending OTP...' : 'Send OTP'}
               {!isLoading && (
-                <span className="material-symbols-outlined text-[18px] group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                <span className="material-symbols-outlined text-[18px] group-hover:translate-x-1 transition-transform">
+                  arrow_forward
+                </span>
               )}
             </Button>
           </form>
@@ -105,7 +115,9 @@ export default function ForgotPassword() {
               className="inline-flex items-center gap-2 font-label-lg text-label-lg text-secondary hover:text-on-secondary-container transition-colors duration-200"
               to="/login"
             >
-              <span className="material-symbols-outlined text-[18px]">arrow_back</span>
+              <span className="material-symbols-outlined text-[18px]">
+                arrow_back
+              </span>
               Back to Login
             </Link>
           </div>

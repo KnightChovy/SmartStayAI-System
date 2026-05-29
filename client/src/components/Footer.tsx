@@ -1,4 +1,4 @@
-import { Link } from "react-router"
+import { Link } from 'react-router';
 
 export default function Footer() {
   return (
@@ -11,7 +11,8 @@ export default function Footer() {
               Smart Stay AI
             </span>
             <p className="text-sm text-on-surface-variant leading-relaxed">
-              Revolutionizing luxury travel through intelligent discovery and seamless experiences.
+              Revolutionizing luxury travel through intelligent discovery and
+              seamless experiences.
             </p>
           </div>
           {/* Cities Column */}
@@ -21,22 +22,34 @@ export default function Footer() {
             </h5>
             <ul className="space-y-4">
               <li>
-                <Link to="/destinations" className="text-sm text-on-surface-variant hover:text-primary transition-colors">
+                <Link
+                  to="/destinations"
+                  className="text-sm text-on-surface-variant hover:text-primary transition-colors"
+                >
                   Paris
                 </Link>
               </li>
               <li>
-                <Link to="/destinations" className="text-sm text-on-surface-variant hover:text-primary transition-colors">
+                <Link
+                  to="/destinations"
+                  className="text-sm text-on-surface-variant hover:text-primary transition-colors"
+                >
                   New York
                 </Link>
               </li>
               <li>
-                <Link to="/destinations" className="text-sm text-on-surface-variant hover:text-primary transition-colors">
+                <Link
+                  to="/destinations"
+                  className="text-sm text-on-surface-variant hover:text-primary transition-colors"
+                >
                   London
                 </Link>
               </li>
               <li>
-                <Link to="/destinations" className="text-sm text-on-surface-variant hover:text-primary transition-colors">
+                <Link
+                  to="/destinations"
+                  className="text-sm text-on-surface-variant hover:text-primary transition-colors"
+                >
                   Tokyo
                 </Link>
               </li>
@@ -49,22 +62,34 @@ export default function Footer() {
             </h5>
             <ul className="space-y-4">
               <li>
-                <a className="text-sm text-on-surface-variant hover:text-primary transition-colors" href="#">
+                <a
+                  className="text-sm text-on-surface-variant hover:text-primary transition-colors"
+                  href="#"
+                >
                   Help Center
                 </a>
               </li>
               <li>
-                <a className="text-sm text-on-surface-variant hover:text-primary transition-colors" href="#">
+                <a
+                  className="text-sm text-on-surface-variant hover:text-primary transition-colors"
+                  href="#"
+                >
                   Safety Information
                 </a>
               </li>
               <li>
-                <a className="text-sm text-on-surface-variant hover:text-primary transition-colors" href="#">
+                <a
+                  className="text-sm text-on-surface-variant hover:text-primary transition-colors"
+                  href="#"
+                >
                   Cancellation Options
                 </a>
               </li>
               <li>
-                <a className="text-sm text-on-surface-variant hover:text-primary transition-colors" href="#">
+                <a
+                  className="text-sm text-on-surface-variant hover:text-primary transition-colors"
+                  href="#"
+                >
                   Report Concern
                 </a>
               </li>
@@ -77,22 +102,34 @@ export default function Footer() {
             </h5>
             <ul className="space-y-4">
               <li>
-                <a className="text-sm text-on-surface-variant hover:text-primary transition-colors" href="#">
+                <a
+                  className="text-sm text-on-surface-variant hover:text-primary transition-colors"
+                  href="#"
+                >
                   About Us
                 </a>
               </li>
               <li>
-                <a className="text-sm text-on-surface-variant hover:text-primary transition-colors" href="#">
+                <a
+                  className="text-sm text-on-surface-variant hover:text-primary transition-colors"
+                  href="#"
+                >
                   Careers
                 </a>
               </li>
               <li>
-                <a className="text-sm text-on-surface-variant hover:text-primary transition-colors" href="#">
+                <a
+                  className="text-sm text-on-surface-variant hover:text-primary transition-colors"
+                  href="#"
+                >
                   Press
                 </a>
               </li>
               <li>
-                <a className="text-sm text-on-surface-variant hover:text-primary transition-colors" href="#">
+                <a
+                  className="text-sm text-on-surface-variant hover:text-primary transition-colors"
+                  href="#"
+                >
                   Blog
                 </a>
               </li>
@@ -105,15 +142,21 @@ export default function Footer() {
             © 2024 Smart Stay AI. All rights reserved.
           </p>
           <div className="flex gap-8">
-            <a className="text-xs text-on-surface-variant hover:text-primary transition-colors" href="#">
+            <a
+              className="text-xs text-on-surface-variant hover:text-primary transition-colors"
+              href="#"
+            >
               Privacy Policy
             </a>
-            <a className="text-xs text-on-surface-variant hover:text-primary transition-colors" href="#">
+            <a
+              className="text-xs text-on-surface-variant hover:text-primary transition-colors"
+              href="#"
+            >
               Terms of Service
             </a>
           </div>
         </div>
       </div>
     </footer>
-  )
+  );
 }

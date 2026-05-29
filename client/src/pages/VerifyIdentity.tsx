@@ -1,16 +1,16 @@
-import React, { useState, useEffect, useRef } from "react";
-import { Link, useLocation, useNavigate } from "react-router";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
+import React, { useState, useEffect, useRef } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
 
 export default function VerifyIdentity() {
   const location = useLocation();
   const navigate = useNavigate();
 
   // Dynamic email retrieval from route transition state
-  const targetEmail = location.state?.email || "your email address";
+  const targetEmail = location.state?.email || 'your email address';
 
-  const [otp, setOtp] = useState<string[]>(new Array(6).fill(""));
+  const [otp, setOtp] = useState<string[]>(new Array(6).fill(''));
   const [timeLeft, setTimeLeft] = useState(59);
   const [canResend, setCanResend] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
@@ -30,17 +30,20 @@ export default function VerifyIdentity() {
       return;
     }
     const timer = setInterval(() => {
-      setTimeLeft((prev) => prev - 1);
+      setTimeLeft(prev => prev - 1);
     }, 1000);
     return () => clearInterval(timer);
   }, [timeLeft]);
 
   // Handle digit inputs and auto-tab forward
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
-    const val = e.target.value.replace(/[^0-9]/g, "");
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    index: number
+  ) => {
+    const val = e.target.value.replace(/[^0-9]/g, '');
     if (!val) {
       const newOtp = [...otp];
-      newOtp[index] = "";
+      newOtp[index] = '';
       setOtp(newOtp);
       return;
     }
@@ -50,23 +53,26 @@ export default function VerifyIdentity() {
     setOtp(newOtp);
 
     // Shift focus to the next field if a digit is entered
-    if (index < 5 && newOtp[index] !== "") {
+    if (index < 5 && newOtp[index] !== '') {
       inputRefs.current[index + 1]?.focus();
     }
   };
 
   // Backspace key navigation (jumping backwards)
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
-    if (e.key === "Backspace") {
+  const handleKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+    index: number
+  ) => {
+    if (e.key === 'Backspace') {
       const newOtp = [...otp];
-      if (otp[index] === "") {
+      if (otp[index] === '') {
         if (index > 0) {
-          newOtp[index - 1] = "";
+          newOtp[index - 1] = '';
           setOtp(newOtp);
           inputRefs.current[index - 1]?.focus();
         }
       } else {
-        newOtp[index] = "";
+        newOtp[index] = '';
         setOtp(newOtp);
       }
     }
@@ -75,9 +81,12 @@ export default function VerifyIdentity() {
   // Handling 6-digit numeric pasting events
   const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
     e.preventDefault();
-    const pasteData = e.clipboardData.getData("text").replace(/[^0-9]/g, "").slice(0, 6);
+    const pasteData = e.clipboardData
+      .getData('text')
+      .replace(/[^0-9]/g, '')
+      .slice(0, 6);
     if (pasteData.length === 6) {
-      const newOtp = pasteData.split("");
+      const newOtp = pasteData.split('');
       setOtp(newOtp);
       inputRefs.current[5]?.focus();
     }
@@ -86,9 +95,9 @@ export default function VerifyIdentity() {
   // Simulated OTP verify API trigger
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const enteredOtp = otp.join("");
+    const enteredOtp = otp.join('');
     if (enteredOtp.length < 6) {
-      alert("Please enter the complete 6-digit verification code.");
+      alert('Please enter the complete 6-digit verification code.');
       return;
     }
 
@@ -97,8 +106,8 @@ export default function VerifyIdentity() {
       setIsVerifying(false);
       setIsVerified(true);
       setTimeout(() => {
-        alert("Verification successful!");
-        navigate("/login");
+        alert('Verification successful!');
+        navigate('/login');
       }, 1200);
     }, 1500);
   };
@@ -145,7 +154,10 @@ export default function VerifyIdentity() {
       <main className="relative z-10 w-full max-w-[480px]">
         {/* Brand Logo Center */}
         <div className="text-center mb-stack-lg">
-          <Link to="/" className="inline-block hover:opacity-90 transition-opacity">
+          <Link
+            to="/"
+            className="inline-block hover:opacity-90 transition-opacity"
+          >
             <h1 className="font-display-lg text-3xl font-extrabold tracking-widest uppercase text-transparent bg-clip-text bg-gradient-to-r from-secondary via-secondary-fixed-dim to-secondary text-glow">
               Smart Stay AI
             </h1>
@@ -153,14 +165,17 @@ export default function VerifyIdentity() {
         </div>
 
         <div className="glass-effect ambient-shadow w-full rounded-[32px] p-stack-lg flex flex-col items-center">
-          
           {/* Header Content */}
           <div className="text-center mb-stack-lg">
             <h2 className="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-2 font-semibold">
               Verify Your Identity
             </h2>
             <p className="font-body-md text-body-md text-on-surface-variant max-w-[320px] mx-auto">
-              We've sent a 6-digit code to <span className="font-semibold text-on-surface">{targetEmail}</span>. Please enter it below to continue.
+              We've sent a 6-digit code to{' '}
+              <span className="font-semibold text-on-surface">
+                {targetEmail}
+              </span>
+              . Please enter it below to continue.
             </p>
           </div>
 
@@ -170,7 +185,9 @@ export default function VerifyIdentity() {
               {otp.map((digit, index) => (
                 <Input
                   key={index}
-                  ref={(el) => { inputRefs.current[index] = el; }}
+                  ref={el => {
+                    inputRefs.current[index] = el;
+                  }}
                   autoComplete="one-time-code"
                   className="w-full aspect-square text-center font-display-lg text-display-lg rounded-xl border-none bg-surface-container shadow-inner focus:ring-2 focus:ring-primary focus:bg-white transition-all duration-200 outline-none p-0 flex items-center justify-center h-auto"
                   maxLength={1}
@@ -178,8 +195,8 @@ export default function VerifyIdentity() {
                   pattern="[0-9]*"
                   inputMode="numeric"
                   value={digit}
-                  onChange={(e) => handleChange(e, index)}
-                  onKeyDown={(e) => handleKeyDown(e, index)}
+                  onChange={e => handleChange(e, index)}
+                  onKeyDown={e => handleKeyDown(e, index)}
                   onPaste={handlePaste}
                   required
                 />
@@ -188,25 +205,34 @@ export default function VerifyIdentity() {
 
             {/* Primary Action Button */}
             <Button
-              className={`w-full py-4 text-surface font-label-lg text-label-lg rounded-full ambient-shadow hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer outline-none border-none h-auto ${isVerified ? 'bg-green-800 hover:bg-green-800' : 'bg-on-background hover:bg-on-background/90'
-                }`}
+              className={`w-full py-4 text-surface font-label-lg text-label-lg rounded-full ambient-shadow hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer outline-none border-none h-auto ${
+                isVerified
+                  ? 'bg-green-800 hover:bg-green-800'
+                  : 'bg-on-background hover:bg-on-background/90'
+              }`}
               type="submit"
               disabled={isVerifying || isVerified}
             >
               {isVerifying ? (
                 <>
-                  <span className="material-symbols-outlined animate-spin">progress_activity</span>
+                  <span className="material-symbols-outlined animate-spin">
+                    progress_activity
+                  </span>
                   Verifying...
                 </>
               ) : isVerified ? (
                 <>
-                  <span className="material-symbols-outlined">check_circle</span>
+                  <span className="material-symbols-outlined">
+                    check_circle
+                  </span>
                   Verified
                 </>
               ) : (
                 <>
                   Verify Code
-                  <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+                  <span className="material-symbols-outlined text-[18px]">
+                    arrow_forward
+                  </span>
                 </>
               )}
             </Button>
@@ -215,7 +241,7 @@ export default function VerifyIdentity() {
           {/* Secondary Actions */}
           <div className="flex flex-col items-center gap-4 w-full">
             <p className="font-label-md text-label-md text-on-surface-variant text-center">
-              Didn't receive the code?{" "}
+              Didn't receive the code?{' '}
               {canResend ? (
                 <Button
                   onClick={handleResend}
@@ -226,13 +252,22 @@ export default function VerifyIdentity() {
                 </Button>
               ) : (
                 <span className="text-on-background font-bold">
-                  Resend (in <span id="timer">00:{timeLeft < 10 ? `0${timeLeft}` : timeLeft}</span>)
+                  Resend (in{' '}
+                  <span id="timer">
+                    00:{timeLeft < 10 ? `0${timeLeft}` : timeLeft}
+                  </span>
+                  )
                 </span>
               )}
             </p>
             <div className="w-full h-[1px] bg-outline-variant/30 my-2"></div>
-            <Link className="flex items-center gap-2 font-label-lg text-label-lg text-secondary hover:text-on-background transition-colors" to="/login">
-              <span className="material-symbols-outlined text-[20px]">keyboard_backspace</span>
+            <Link
+              className="flex items-center gap-2 font-label-lg text-label-lg text-secondary hover:text-on-background transition-colors"
+              to="/login"
+            >
+              <span className="material-symbols-outlined text-[20px]">
+                keyboard_backspace
+              </span>
               Back to Login
             </Link>
           </div>
@@ -242,7 +277,9 @@ export default function VerifyIdentity() {
       {/* AI Badge Overlay */}
       <div className="absolute bottom-10 right-10 hidden md:flex items-center gap-3 glass-effect premium-gold-border py-3 px-5 rounded-full ambient-shadow">
         <div className="w-2 h-2 rounded-full bg-tertiary-fixed-dim animate-pulse"></div>
-        <span className="font-label-sm text-label-sm text-on-surface uppercase tracking-widest">Secure Verification Active</span>
+        <span className="font-label-sm text-label-sm text-on-surface uppercase tracking-widest">
+          Secure Verification Active
+        </span>
       </div>
 
       {/* Subtle Premium Glow background effects */}
