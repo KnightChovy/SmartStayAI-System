@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
 
 export default function VerifyIdentity() {
   const location = useLocation();
@@ -139,16 +141,6 @@ export default function VerifyIdentity() {
         }
       `}</style>
 
-      {/* Background Layer */}
-      <div className="fixed inset-0 z-0">
-        <img
-          className="w-full h-full object-cover"
-          alt="A wide-angle, high-end architectural shot of a luxury hotel lobby featuring expansive glass windows, warm ambient lighting reflecting off polished travertine floors, and a sophisticated minimalist aesthetic. The atmosphere is serene and exclusive, dominated by soft creams, sand tones, and deep charcoal accents, perfectly capturing the essence of quiet luxury."
-          src="https://lh3.googleusercontent.com/aida-public/AB6AXuBWHVcdPkEfHNnWXegEYctR_LX52NprqY7rZRx9cQwmJwsOWZ74vxXqOQPRxd2qPEbGBO7vJX3C0O8t7W9e5Uk0pTVSVwNyRRBEN1gUBb0VgaH6M89c6ofV8icqzXrFrusnPp0MfaUnv8pqO83edUaqKE2mH7Iy3LKTeNOaC1Njfw7VrUKk96nLtPFeaUCNmjMiHdWXriVTe1wbzAZoIfTlTwvzP9tcEPmq6x8U_62ZoAnd6rr1j5h6pXqmExIIeDHPcnNKDj31Frn9"
-        />
-        <div className="absolute inset-0 bg-on-background/20 backdrop-blur-[2px]"></div>
-      </div>
-
       {/* Verification Container */}
       <main className="relative z-10 w-full max-w-[480px]">
         {/* Brand Logo Center */}
@@ -176,11 +168,11 @@ export default function VerifyIdentity() {
           <form className="w-full mb-stack-lg" onSubmit={handleSubmit}>
             <div className="grid grid-cols-6 gap-2 md:gap-3 w-full max-w-[380px] mx-auto mb-stack-lg">
               {otp.map((digit, index) => (
-                <input
+                <Input
                   key={index}
                   ref={(el) => { inputRefs.current[index] = el; }}
                   autoComplete="one-time-code"
-                  className="w-full aspect-square text-center font-display-lg text-display-lg rounded-xl border-none bg-surface-container shadow-inner focus:ring-2 focus:ring-primary focus:bg-white transition-all duration-200 outline-none p-0 flex items-center justify-center"
+                  className="w-full aspect-square text-center font-display-lg text-display-lg rounded-xl border-none bg-surface-container shadow-inner focus:ring-2 focus:ring-primary focus:bg-white transition-all duration-200 outline-none p-0 flex items-center justify-center h-auto"
                   maxLength={1}
                   type="text"
                   pattern="[0-9]*"
@@ -195,8 +187,8 @@ export default function VerifyIdentity() {
             </div>
 
             {/* Primary Action Button */}
-            <button
-              className={`w-full py-4 text-surface font-label-lg text-label-lg rounded-full ambient-shadow hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer outline-none ${isVerified ? 'bg-green-800' : 'bg-on-background'
+            <Button
+              className={`w-full py-4 text-surface font-label-lg text-label-lg rounded-full ambient-shadow hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer outline-none border-none h-auto ${isVerified ? 'bg-green-800 hover:bg-green-800' : 'bg-on-background hover:bg-on-background/90'
                 }`}
               type="submit"
               disabled={isVerifying || isVerified}
@@ -217,7 +209,7 @@ export default function VerifyIdentity() {
                   <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
                 </>
               )}
-            </button>
+            </Button>
           </form>
 
           {/* Secondary Actions */}
@@ -225,13 +217,13 @@ export default function VerifyIdentity() {
             <p className="font-label-md text-label-md text-on-surface-variant text-center">
               Didn't receive the code?{" "}
               {canResend ? (
-                <button
+                <Button
                   onClick={handleResend}
-                  className="text-on-background font-bold hover:underline cursor-pointer outline-none"
+                  className="text-on-background font-bold hover:underline cursor-pointer outline-none bg-transparent hover:bg-transparent border-none p-0 size-auto inline-flex"
                   type="button"
                 >
                   Resend Code
-                </button>
+                </Button>
               ) : (
                 <span className="text-on-background font-bold">
                   Resend (in <span id="timer">00:{timeLeft < 10 ? `0${timeLeft}` : timeLeft}</span>)

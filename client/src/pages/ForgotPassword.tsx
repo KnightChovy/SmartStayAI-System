@@ -1,5 +1,8 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
@@ -30,20 +33,10 @@ export default function ForgotPassword() {
           -webkit-backdrop-filter: blur(20px);
           border: 1px solid rgba(255, 255, 255, 0.3);
         }
-        .full-bleed-bg {
-          background-image: url(https://lh3.googleusercontent.com/aida-public/AB6AXuDIRgh1LIpOu2hllk0ZtsPimWMcKCvqEwhPyx87ZKThDSnebcc4C5q5yk02ZvRhN7qTy_BADJaKvqIskz3yzxyvsWA1NJofm4rBViCEv_iWDJmi_Q_ynqRUvOyXdYjn-VmQsrthhEpmJug22A0PLmdABSBZfxhw7JUlCkcFq9WvskoJwB-YXB92M-EDJT3EqRIsM1eD7GtCYsCfWEUtMFocSPNbjR2ECBAJeO7l8Lf-jZAw0PtHMMwyx_26N2u5U8eBrh_nNZJpxZek);
-          background-size: cover;
-          background-position: center;
-        }
         .material-symbols-outlined {
           font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
       `}</style>
-
-      {/* Full-bleed background layer */}
-      <div className="fixed inset-0 full-bleed-bg z-0">
-        <div className="absolute inset-0 bg-black/10 backdrop-contrast-75"></div>
-      </div>
 
       {/* Centered Content Canvas */}
       <main className="relative z-10 w-full max-w-md">
@@ -77,11 +70,11 @@ export default function ForgotPassword() {
           {/* Reset Form */}
           <form className="space-y-stack-md" onSubmit={handleSubmit}>
             <div>
-              <label className="block font-label-lg text-label-lg text-on-surface-variant mb-2" htmlFor="email">
+              <Label className="block font-label-lg text-label-lg text-on-surface-variant mb-2" htmlFor="email">
                 Email Address
-              </label>
-              <input
-                className="w-full bg-primary-container border-none focus:ring-2 focus:ring-secondary/20 rounded-[16px] px-4 py-3 text-body-md text-on-surface placeholder:text-outline-variant transition-all duration-300 outline-none"
+              </Label>
+              <Input
+                className="w-full bg-primary-container border-none focus:ring-2 focus:ring-secondary/20 rounded-[16px] px-4 py-3 text-body-md text-on-surface placeholder:text-outline-variant transition-all duration-300 outline-none h-auto"
                 id="email"
                 placeholder="name@example.com"
                 type="email"
@@ -94,8 +87,8 @@ export default function ForgotPassword() {
             </div>
 
             {/* Primary CTA */}
-            <button
-              className="w-full bg-primary text-on-primary font-label-lg text-label-lg py-4 rounded-[16px] hover:bg-on-surface-variant active:scale-[0.98] transition-all duration-200 shadow-sm flex items-center justify-center gap-2 group cursor-pointer outline-none"
+            <Button
+              className="w-full bg-primary text-on-primary font-label-lg text-label-lg py-4 rounded-[16px] hover:bg-on-surface-variant active:scale-[0.98] transition-all duration-200 shadow-sm flex items-center justify-center gap-2 group cursor-pointer outline-none border-none hover:bg-primary/95 h-auto"
               type="submit"
               disabled={isLoading}
             >
@@ -103,7 +96,7 @@ export default function ForgotPassword() {
               {!isLoading && (
                 <span className="material-symbols-outlined text-[18px] group-hover:translate-x-1 transition-transform">arrow_forward</span>
               )}
-            </button>
+            </Button>
           </form>
 
           {/* Secondary Actions */}

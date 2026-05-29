@@ -1,5 +1,8 @@
 import React, { useState } from "react";
 import { Link } from "react-router";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -28,7 +31,7 @@ export default function Login() {
   };
 
   return (
-    <div className="relative min-h-screen text-on-surface select-none overflow-hidden flex items-center justify-center p-gutter-mobile">
+    <div className="relative min-h-screen text-on-surface select-none overflow-hidden flex items-center justify-center p-gutter-mobile bg-background">
       {/* Inline styles for custom classes */}
       <style>{`
         .glass-card {
@@ -37,22 +40,10 @@ export default function Login() {
           -webkit-backdrop-filter: blur(20px);
           box-shadow: 0 4px 20px rgba(28, 27, 27, 0.04);
         }
-        .architectural-bg {
-          background-size: cover;
-          background-position: center;
-        }
         .material-symbols-outlined {
           font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
       `}</style>
-
-      {/* Blurred Architectural Background */}
-      <div 
-        className="fixed inset-0 z-0 architectural-bg scale-110 blur-md grayscale-[0.2]" 
-        style={{ 
-          backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuANzytQRSV-tqPJgbOsKDKfPIJglNCzV882wQkQ7pJah6o1LI5uyv_1LTlaMBQkHmQa4iYfqXOAQ9Tby1YHCHqXs-bAoeUrZr4T7V5FjJ29i1jXoCBVcoMsrDiv_WucLVlXIz684TsYQe6-fZBJ-9xCXxYwiEOy6DfroDVTX2rflV6d_cwdoSOwQjn6VYEpGNbKwvR9tKkWVtmcTeUHAvgonWtTOJv1eiXx071orskG5x_w7V0EGMg8GHeFKR_oKRTHfODyRM4sJ5ok')" 
-        }}
-      ></div>
 
       {/* Login Container */}
       <main className="relative z-10 w-full max-w-[480px]">
@@ -86,10 +77,10 @@ export default function Login() {
                 transition: "transform 0.3s ease"
               }}
             >
-              <label className="font-label-sm text-label-sm text-on-surface-variant block mb-stack-sm uppercase" htmlFor="email">
+              <Label className="font-label-sm text-label-sm text-on-surface-variant block mb-stack-sm uppercase" htmlFor="email">
                 Email Address
-              </label>
-              <input 
+              </Label>
+              <Input 
                 className="w-full bg-surface-container-low border-none rounded-xl h-14 px-4 font-body-md text-body-md text-on-surface focus:ring-2 focus:ring-primary/20 transition-all outline-none" 
                 id="email" 
                 placeholder="name@example.com" 
@@ -110,9 +101,9 @@ export default function Login() {
               }}
             >
               <div className="flex justify-between items-center mb-stack-sm">
-                <label className="font-label-sm text-label-sm text-on-surface-variant uppercase" htmlFor="password">
+                <Label className="font-label-sm text-label-sm text-on-surface-variant uppercase" htmlFor="password">
                   Password
-                </label>
+                </Label>
                 <Link 
                   className="font-label-sm text-label-sm text-secondary hover:text-on-secondary-container transition-colors" 
                   to="/forgot-password"
@@ -121,7 +112,7 @@ export default function Login() {
                 </Link>
               </div>
               <div className="relative">
-                <input 
+                <Input 
                   className="w-full bg-surface-container-low border-none rounded-xl h-14 pl-4 pr-12 font-body-md text-body-md text-on-surface focus:ring-2 focus:ring-primary/20 transition-all outline-none" 
                   id="password" 
                   placeholder="••••••••" 
@@ -132,25 +123,25 @@ export default function Login() {
                   onBlur={() => setPasswordFocused(false)}
                   required
                 />
-                <button 
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant/60 hover:text-on-surface transition-colors cursor-pointer outline-none" 
+                <Button 
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant/60 hover:text-on-surface transition-colors cursor-pointer outline-none bg-transparent hover:bg-transparent border-none p-0 size-auto" 
                   type="button"
                   onClick={togglePasswordVisibility}
                 >
                   <span className="material-symbols-outlined text-[20px]">
                     {showPassword ? "visibility_off" : "visibility"}
                   </span>
-                </button>
+                </Button>
               </div>
             </div>
 
-            <button 
-              className="w-full bg-on-primary-fixed text-surface-container-lowest font-label-lg text-label-lg py-4 rounded-full shadow-lg hover:opacity-90 active:scale-[0.98] transition-all mt-stack-md uppercase tracking-widest cursor-pointer outline-none" 
+            <Button 
+              className="w-full bg-primary text-on-primary font-label-lg text-label-lg py-4 rounded-full shadow-lg hover:bg-primary/90 active:scale-[0.98] transition-all mt-stack-md uppercase tracking-widest cursor-pointer outline-none border-none h-auto" 
               type="submit"
               disabled={isLoading}
             >
               {isLoading ? "Logging in..." : "Login"}
-            </button>
+            </Button>
           </form>
 
           {/* Divider */}
@@ -161,7 +152,7 @@ export default function Login() {
           </div>
 
           {/* Social Login */}
-          <button 
+          <Button 
             className="w-full h-14 bg-surface-container-lowest border border-outline-variant/50 text-on-surface font-label-lg text-label-lg rounded-full shadow-sm hover:bg-surface-container-low active:scale-95 transition-all flex items-center justify-center gap-3 cursor-pointer outline-none"
             type="button"
             onClick={() => alert("Connecting with Google...")}
@@ -173,7 +164,7 @@ export default function Login() {
               <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"></path>
             </svg>
             Login with Google
-          </button>
+          </Button>
 
           {/* Footer Link */}
           <div className="text-center mt-stack-lg space-y-4">

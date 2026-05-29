@@ -1,29 +1,18 @@
 import React, { useState } from "react";
 import { Link } from "react-router";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
 
 export default function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [verificationCode, setVerificationCode] = useState("");
-  const [otpSent, setOtpSent] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-
-  const handleSendOTP = (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (!email) {
-      alert("Please enter your email address first.");
-      return;
-    }
-    setOtpSent(true);
-    setTimeout(() => {
-      setOtpSent(false);
-    }, 3000);
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password || !confirmPassword || !verificationCode) {
+    if (!email || !password || !confirmPassword) {
       alert("Please fill in all fields.");
       return;
     }
@@ -39,12 +28,11 @@ export default function Register() {
       setEmail("");
       setPassword("");
       setConfirmPassword("");
-      setVerificationCode("");
     }, 1500);
   };
 
   return (
-    <div className="relative min-h-screen text-on-surface select-none overflow-hidden">
+    <div className="relative min-h-screen text-on-surface select-none overflow-hidden bg-background">
       {/* Inline styles for custom elements */}
       <style>{`
         .glass-panel {
@@ -56,16 +44,6 @@ export default function Register() {
           font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
       `}</style>
-
-      {/* Background Layer */}
-      <div className="fixed inset-0 z-0">
-        <img 
-          className="w-full h-full object-cover" 
-          alt="A cinematic, wide-angle view of a high-end luxury hotel atrium featuring minimalist architectural lines and warm, ambient cove lighting. The space is filled with a sophisticated palette of warm canvas, deep charcoal, and soft gold accents. Pristine marble floors reflect the soft, ethereal light coming from large floor-to-ceiling windows. The mood is exceptionally serene, private, and exclusive, embodying a quiet luxury aesthetic." 
-          src="https://lh3.googleusercontent.com/aida-public/AB6AXuAE8osO4PUklKy3HtzGCoCGPLlEyuj6I-JTQAHQoG3X8dJU1tuVOeQW8ESzCERsAAl3Zq13SFjcC7AOS3oa5Ljn_zvvpU5xS75ra5AJ42qp9tfHtGHVsrU58o7W9WgnJb5bXoiB9qwhq8G9rAWil_06DGEjXKMyeurhsjNUPYPHtn7ZW0RQMNTN0InRK_sLcvgI1ndbc5E1dn4aCWh8P6shB3E5EODQXOQ8gBrQSC7_VjDmSC2y8mMKf2cUKJ6cBwzCm5JR3pe_egxj" 
-        />
-        <div className="absolute inset-0 bg-on-background/10 backdrop-blur-[2px]"></div>
-      </div>
 
       {/* Main Content */}
       <main className="relative z-10 min-h-screen flex items-center justify-center px-margin-mobile py-stack-lg">
@@ -89,9 +67,9 @@ export default function Register() {
             <form className="space-y-stack-md" onSubmit={handleSubmit}>
               {/* Email */}
               <div className="space-y-2">
-                <label className="font-label-lg text-label-lg text-on-surface-variant uppercase">Email Address</label>
+                <Label className="font-label-lg text-label-lg text-on-surface-variant uppercase">Email Address</Label>
                 <div className="relative">
-                  <input 
+                  <Input 
                     className="w-full h-14 px-4 bg-surface-container-low/50 border-none rounded-xl font-body-md text-body-md focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-outline outline-none" 
                     placeholder="name@example.com" 
                     type="email"
@@ -104,9 +82,9 @@ export default function Register() {
 
               {/* Password */}
               <div className="space-y-2">
-                <label className="font-label-lg text-label-lg text-on-surface-variant uppercase">Password</label>
+                <Label className="font-label-lg text-label-lg text-on-surface-variant uppercase">Password</Label>
                 <div className="relative">
-                  <input 
+                  <Input 
                     className="w-full h-14 px-4 bg-surface-container-low/50 border-none rounded-xl font-body-md text-body-md focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-outline outline-none" 
                     placeholder="••••••••" 
                     type="password"
@@ -119,9 +97,9 @@ export default function Register() {
 
               {/* Confirm Password */}
               <div className="space-y-2">
-                <label className="font-label-lg text-label-lg text-on-surface-variant uppercase">Confirm Password</label>
+                <Label className="font-label-lg text-label-lg text-on-surface-variant uppercase">Confirm Password</Label>
                 <div className="relative">
-                  <input 
+                  <Input 
                     className="w-full h-14 px-4 bg-surface-container-low/50 border-none rounded-xl font-body-md text-body-md focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-outline outline-none" 
                     placeholder="••••••••" 
                     type="password"
@@ -132,32 +110,10 @@ export default function Register() {
                 </div>
               </div>
 
-              {/* Verification Row */}
-              <div className="space-y-2">
-                <label className="font-label-lg text-label-lg text-on-surface-variant uppercase">Verification Code</label>
-                <div className="flex gap-2">
-                  <input 
-                    className="flex-1 h-14 px-4 bg-surface-container-low/50 border-none rounded-xl font-body-md text-body-md focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-outline outline-none" 
-                    placeholder="123456" 
-                    type="text"
-                    value={verificationCode}
-                    onChange={(e) => setVerificationCode(e.target.value)}
-                    required
-                  />
-                  <button 
-                    onClick={handleSendOTP}
-                    className={`h-14 px-6 border border-primary/30 rounded-xl font-label-lg text-label-lg text-primary hover:bg-primary/5 active:scale-95 transition-all whitespace-nowrap outline-none cursor-pointer ${otpSent ? 'bg-primary/10' : ''}`}
-                    type="button"
-                  >
-                    {otpSent ? 'Sent' : 'Send OTP'}
-                  </button>
-                </div>
-              </div>
-
               {/* Primary Action */}
               <div className="pt-4">
-                <button 
-                  className="w-full h-14 bg-on-background text-surface font-label-lg text-label-lg rounded-full shadow-lg hover:opacity-90 active:scale-95 transition-all flex items-center justify-center gap-2 group cursor-pointer outline-none" 
+                <Button 
+                  className="w-full h-14 bg-primary text-on-primary font-label-lg text-label-lg rounded-full shadow-lg hover:bg-primary/90 active:scale-95 transition-all flex items-center justify-center gap-2 group cursor-pointer outline-none border-none" 
                   type="submit"
                   disabled={isLoading}
                 >
@@ -165,7 +121,7 @@ export default function Register() {
                   {!isLoading && (
                     <span className="material-symbols-outlined text-[20px] group-hover:translate-x-1 transition-transform">arrow_forward</span>
                   )}
-                </button>
+                </Button>
               </div>
 
               {/* Divider */}
@@ -177,7 +133,7 @@ export default function Register() {
 
               {/* Google Register Button */}
               <div className="mt-4">
-                <button 
+                <Button 
                   className="w-full h-14 bg-surface-container-lowest border border-outline-variant/50 text-on-surface font-label-lg text-label-lg rounded-full shadow-sm hover:bg-surface-container-low active:scale-95 transition-all flex items-center justify-center gap-3 cursor-pointer outline-none" 
                   type="button"
                   onClick={() => alert("Connecting with Google...")}
@@ -189,7 +145,7 @@ export default function Register() {
                     <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"></path>
                   </svg>
                   Register with Google
-                </button>
+                </Button>
               </div>
             </form>
 
