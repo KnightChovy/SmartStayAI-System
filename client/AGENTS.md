@@ -620,5 +620,9 @@ const apiUrl = import.meta.env.VITE_API_BASE_URL;
 
 ---
 
-mỗi lần prompt code phải cập nhật tiến độ vào file PROGRESS.md
+## Tiến độ phát triển
+
+Mỗi lần prompt code phải cập nhật tiến độ vào file PROGRESS.md (important!).
+
+
 *Cập nhật file này khi có thay đổi cấu trúc dự án, quy ước mới, hoặc dependency quan trọng được thêm vào.*
