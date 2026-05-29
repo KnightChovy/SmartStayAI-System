@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Button } from '../ui/button';
 
 export default function WeekendDeals() {
   const [favorites, setFavorites] = useState<string[]>([]);
@@ -56,12 +57,13 @@ export default function WeekendDeals() {
             Limited time offers for the upcoming weekend
           </p>
         </div>
-        <button
+        <Button
+          variant="link"
           onClick={() => alert('Redirecting to all weekend specials...')}
-          className="text-sm font-semibold text-primary font-bold hover:underline cursor-pointer"
+          className="text-sm font-semibold text-primary font-bold hover:underline cursor-pointer h-auto p-0"
         >
           View all deals
-        </button>
+        </Button>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {deals.map(deal => {
@@ -78,9 +80,9 @@ export default function WeekendDeals() {
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   src={deal.img}
                 />
-                <button
+                <Button
                   onClick={e => toggleFavorite(deal.id, e)}
-                  className={`absolute top-4 right-4 p-2 rounded-full backdrop-blur-md transition-all shadow-md cursor-pointer ${isFav ? 'bg-red-500/80 text-white' : 'bg-white/20 text-white hover:bg-white/40'}`}
+                  className={`absolute top-4 right-4 p-2 rounded-full backdrop-blur-md transition-all shadow-md cursor-pointer border-none h-auto min-w-0 ${isFav ? 'bg-red-500/80 hover:bg-red-500/90 text-white' : 'bg-white/20 text-white hover:bg-white/40'}`}
                 >
                   <span
                     className="material-symbols-outlined text-xl flex items-center justify-center"
@@ -88,7 +90,7 @@ export default function WeekendDeals() {
                   >
                     favorite
                   </span>
-                </button>
+                </Button>
                 <div className="absolute top-4 left-4 bg-ai-glow text-[10px] font-bold px-2 py-1 rounded-md text-on-surface uppercase tracking-wider">
                   {deal.discount}
                 </div>

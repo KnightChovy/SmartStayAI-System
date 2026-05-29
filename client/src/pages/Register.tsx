@@ -1,33 +1,45 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 
+const registerSchema = z.object({
+  email: z.string().min(1, 'Email address is required').email('Please enter a valid email address'),
+  password: z.string().min(6, 'Password must be at least 6 characters long'),
+  confirmPassword: z.string().min(1, 'Please confirm your password'),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: 'Passwords do not match',
+  path: ['confirmPassword'],
+});
+
+type RegisterInput = z.infer<typeof registerSchema>;
+
 export default function Register() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || !password || !confirmPassword) {
-      alert('Please fill in all fields.');
-      return;
-    }
-    if (password !== confirmPassword) {
-      alert('Passwords do not match. Please verify your passwords.');
-      return;
-    }
+  const {
+    register,
+    handleSubmit: handleFormSubmit,
+    formState: { errors },
+  } = useForm<RegisterInput>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+      confirmPassword: '',
+    },
+  });
+
+  const onSubmit = (data: RegisterInput) => {
     setIsLoading(true);
     setTimeout(() => {
       setIsLoading(false);
-      alert(`Successfully registered account for ${email}!`);
+      alert(`Successfully registered account for ${data.email}!`);
       // Reset form
-      setEmail('');
-      setPassword('');
-      setConfirmPassword('');
     }, 1500);
   };
 
@@ -47,7 +59,7 @@ export default function Register() {
 
       {/* Main Content */}
       <main className="relative z-10 min-h-screen flex items-center justify-center px-margin-mobile py-stack-lg">
-        <div className="w-full max-w-md">
+        <div className="w-full max-w-[480px]">
           {/* Brand Logo Center */}
           <div className="text-center mb-stack-lg">
             <Link
@@ -71,7 +83,7 @@ export default function Register() {
               </p>
             </header>
 
-            <form className="space-y-stack-md" onSubmit={handleSubmit}>
+            <form className="space-y-stack-md" onSubmit={handleFormSubmit(onSubmit)}>
               {/* Email */}
               <div className="space-y-2">
                 <Label className="font-label-lg text-label-lg text-on-surface-variant uppercase">
@@ -79,14 +91,17 @@ export default function Register() {
                 </Label>
                 <div className="relative">
                   <Input
+                    {...register('email')}
                     className="w-full h-14 px-4 bg-surface-container-low/50 border-none rounded-xl font-body-md text-body-md focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-outline outline-none"
                     placeholder="name@example.com"
                     type="email"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    required
                   />
                 </div>
+                {errors.email && (
+                  <p className="text-error text-xs font-semibold mt-1.5 ml-1">
+                    {errors.email.message}
+                  </p>
+                )}
               </div>
 
               {/* Password */}
@@ -96,14 +111,17 @@ export default function Register() {
                 </Label>
                 <div className="relative">
                   <Input
+                    {...register('password')}
                     className="w-full h-14 px-4 bg-surface-container-low/50 border-none rounded-xl font-body-md text-body-md focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-outline outline-none"
                     placeholder="••••••••"
                     type="password"
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    required
                   />
                 </div>
+                {errors.password && (
+                  <p className="text-error text-xs font-semibold mt-1.5 ml-1">
+                    {errors.password.message}
+                  </p>
+                )}
               </div>
 
               {/* Confirm Password */}
@@ -113,14 +131,17 @@ export default function Register() {
                 </Label>
                 <div className="relative">
                   <Input
+                    {...register('confirmPassword')}
                     className="w-full h-14 px-4 bg-surface-container-low/50 border-none rounded-xl font-body-md text-body-md focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-outline outline-none"
                     placeholder="••••••••"
                     type="password"
-                    value={confirmPassword}
-                    onChange={e => setConfirmPassword(e.target.value)}
-                    required
                   />
                 </div>
+                {errors.confirmPassword && (
+                  <p className="text-error text-xs font-semibold mt-1.5 ml-1">
+                    {errors.confirmPassword.message}
+                  </p>
+                )}
               </div>
 
               {/* Primary Action */}

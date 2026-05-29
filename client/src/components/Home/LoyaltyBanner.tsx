@@ -1,3 +1,5 @@
+import { Button } from '../ui/button';
+
 export default function LoyaltyBanner() {
   return (
     <section className="max-w-7xl mx-auto px-margin-mobile md:px-8 mb-section-gap w-full">
@@ -45,18 +47,18 @@ export default function LoyaltyBanner() {
           </div>
         </div>
         <div className="relative z-10 flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
-          <button
+          <Button
             onClick={() => alert('Joining SmartStay Rewards...')}
-            className="px-10 py-5 bg-primary text-white font-semibold rounded-2xl hover:bg-on-primary-container transition-all shadow-lg text-center cursor-pointer font-be-vietnam text-sm"
+            className="px-10 py-5 bg-primary text-white font-semibold rounded-2xl hover:bg-on-primary-container transition-all shadow-lg text-center cursor-pointer font-be-vietnam text-sm border-none h-auto"
           >
             Join Rewards
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => alert('Loading rewards information...')}
-            className="px-10 py-5 bg-white/10 backdrop-blur-md border border-outline text-white font-semibold rounded-2xl hover:bg-white/20 transition-all text-center cursor-pointer font-be-vietnam text-sm"
+            className="px-10 py-5 bg-white/10 backdrop-blur-md border border-outline text-white font-semibold rounded-2xl hover:bg-white/20 transition-all text-center cursor-pointer font-be-vietnam text-sm h-auto"
           >
             Learn More
-          </button>
+          </Button>
         </div>
       </div>
     </section>

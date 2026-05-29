@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Button } from '../ui/button';
 
 export default function Hero() {
   const [destination, setDestination] = useState('');
@@ -76,12 +77,12 @@ export default function Hero() {
               {guests}
             </span>
           </div>
-          <button
+          <Button
             type="submit"
-            className="w-full md:w-16 h-14 bg-on-surface text-white rounded-2xl md:rounded-full flex items-center justify-center hover:bg-primary transition-all shadow-lg cursor-pointer"
+            className="w-full md:w-16 h-14 bg-on-surface text-white rounded-2xl md:rounded-full flex items-center justify-center hover:bg-primary transition-all shadow-lg cursor-pointer border-none"
           >
             <span className="material-symbols-outlined">search</span>
-          </button>
+          </Button>
         </form>
       </div>
     </section>

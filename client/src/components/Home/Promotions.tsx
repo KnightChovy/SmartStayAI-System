@@ -1,3 +1,5 @@
+import { Button } from '../ui/button';
+
 export default function Promotions() {
   return (
     <section className="max-w-7xl mx-auto px-margin-mobile md:px-8 mb-section-gap w-full">
@@ -19,9 +21,9 @@ export default function Promotions() {
             <p className="text-white/80 text-sm mb-6 font-be-vietnam">
               Book 30 days in advance for 20% off.
             </p>
-            <button className="bg-white text-on-surface px-6 py-2 rounded-xl text-xs font-bold w-fit hover:bg-surface-variant transition-colors">
+            <Button className="bg-white text-on-surface px-6 py-2 rounded-xl text-xs font-bold w-fit hover:bg-surface-variant transition-colors border-none h-auto">
               Claim Offer
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -42,9 +44,9 @@ export default function Promotions() {
             <p className="text-white/80 text-sm mb-6 font-be-vietnam">
               Unlock hidden prices for our Gold members.
             </p>
-            <button className="bg-white text-on-surface px-6 py-2 rounded-xl text-xs font-bold w-fit hover:bg-surface-variant transition-colors">
+            <Button className="bg-white text-on-surface px-6 py-2 rounded-xl text-xs font-bold w-fit hover:bg-surface-variant transition-colors border-none h-auto">
               Sign In to See
-            </button>
+            </Button>
           </div>
         </div>
       </div>

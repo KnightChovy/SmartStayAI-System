@@ -1,3 +1,5 @@
+import { Button } from '../ui/button';
+
 export default function DiscoverVietnam() {
   const destinations = [
     {
@@ -33,15 +35,16 @@ export default function DiscoverVietnam() {
             Curated "Quiet Luxury" escapes in the heart of the East.
           </p>
         </div>
-        <button
+        <Button
+          variant="link"
           onClick={() => alert('Loading all Vietnam sanctuaries...')}
-          className="text-sm font-semibold text-primary font-bold hover:underline flex items-center gap-2 cursor-pointer"
+          className="text-sm font-semibold text-primary font-bold hover:underline flex items-center gap-2 cursor-pointer h-auto p-0"
         >
           View all destinations
           <span className="material-symbols-outlined text-sm font-bold">
             arrow_forward
           </span>
-        </button>
+        </Button>
       </div>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
         {destinations.map(dest => (

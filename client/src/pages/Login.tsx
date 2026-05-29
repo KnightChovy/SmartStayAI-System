@@ -1,31 +1,46 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 
+const loginSchema = z.object({
+  email: z.string().min(1, 'Email address is required').email('Please enter a valid email address'),
+  password: z.string().min(6, 'Password must be at least 6 characters long'),
+});
+
+type LoginInput = z.infer<typeof loginSchema>;
+
 export default function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  const {
+    register,
+    handleSubmit: handleFormSubmit,
+    formState: { errors },
+  } = useForm<LoginInput>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  });
+
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || !password) {
-      alert('Please fill in all fields.');
-      return;
-    }
+  const onSubmit = (data: LoginInput) => {
     setIsLoading(true);
     setTimeout(() => {
       setIsLoading(false);
-      alert(`Welcome back, ${email}!`);
+      alert(`Welcome back, ${data.email}!`);
       // Reset form or redirect
     }, 1500);
   };
@@ -71,7 +86,7 @@ export default function Login() {
           </div>
 
           {/* Form */}
-          <form className="space-y-stack-md" onSubmit={handleSubmit}>
+          <form className="space-y-stack-md" onSubmit={handleFormSubmit(onSubmit)}>
             {/* Email Container */}
             <div
               style={{
@@ -88,16 +103,19 @@ export default function Login() {
                 Email Address
               </Label>
               <Input
+                {...register('email')}
                 className="w-full bg-surface-container-low border-none rounded-xl h-14 px-4 font-body-md text-body-md text-on-surface focus:ring-2 focus:ring-primary/20 transition-all outline-none"
                 id="email"
                 placeholder="name@example.com"
                 type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
                 onFocus={() => setEmailFocused(true)}
                 onBlur={() => setEmailFocused(false)}
-                required
               />
+              {errors.email && (
+                <p className="text-error text-xs font-semibold mt-1.5 ml-1">
+                  {errors.email.message}
+                </p>
+              )}
             </div>
 
             {/* Password Container */}
@@ -125,15 +143,13 @@ export default function Login() {
               </div>
               <div className="relative">
                 <Input
+                  {...register('password')}
                   className="w-full bg-surface-container-low border-none rounded-xl h-14 pl-4 pr-12 font-body-md text-body-md text-on-surface focus:ring-2 focus:ring-primary/20 transition-all outline-none"
                   id="password"
                   placeholder="••••••••"
                   type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
                   onFocus={() => setPasswordFocused(true)}
                   onBlur={() => setPasswordFocused(false)}
-                  required
                 />
                 <Button
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant/60 hover:text-on-surface transition-colors cursor-pointer outline-none bg-transparent hover:bg-transparent border-none p-0 size-auto"
@@ -145,6 +161,11 @@ export default function Login() {
                   </span>
                 </Button>
               </div>
+              {errors.password && (
+                <p className="text-error text-xs font-semibold mt-1.5 ml-1">
+                  {errors.password.message}
+                </p>
+              )}
             </div>
 
             <Button
