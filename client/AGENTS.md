@@ -288,6 +288,7 @@ const price = (room as Room).pricePerNight;
 
 | Loại | Convention | Ví dụ |
 |---|---|---|
+| Folder | `kebab-case` | `room-price`, `handle-booking` |
 | Biến / hàm | `camelCase` | `roomPrice`, `handleBooking` |
 | Component | `PascalCase` | `RoomCard`, `BookingForm` |
 | File component | `PascalCase.tsx` | `RoomCard.tsx` |
