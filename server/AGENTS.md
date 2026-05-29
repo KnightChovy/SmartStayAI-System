@@ -137,6 +137,7 @@ npm start
 
 ## 5. Quy ước code
 
+- **Clean, đơn giản, dễ hiểu (ưu tiên hàng đầu — đây là đồ án tốt nghiệp):** Code để giảng viên/hội đồng và sinh viên khác đọc hiểu, nên **tính dễ hiểu quan trọng hơn sự "thông minh" hay tối ưu cực đại** (chỉ sau tính đúng & bảo mật). Hàm ngắn, một nhiệm vụ; tên tự giải thích; không thêm abstraction/design pattern/tối ưu khi chưa cần (YAGNI); ưu tiên giải pháp thư viện chuẩn quen thuộc; comment giải thích "tại sao" cho đoạn không hiển nhiên (nhất là phần bảo mật), không comment điều hiển nhiên. Nếu một đoạn phải giải thích dài mới hiểu → tách nhỏ hoặc viết lại.
 - **Tên tệp tin:** Sử dụng chữ thường phân cách bằng dấu chấm (kebab-case + extension) tương ứng với vai trò của tệp:
   - Ví dụ: `auth.controller.ts`, `user.service.ts`, `auth.validation.ts`, `user.route.ts`.
 - **TypeScript strict:** Không bao giờ sử dụng `any`. Khai báo kiểu dữ liệu rõ ràng cho tất cả tham số đầu vào và kiểu trả về của hàm.
