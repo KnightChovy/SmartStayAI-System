@@ -1,7 +1,21 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+
+const verifySchema = z.object({
+  digit0: z.string().length(1, { message: '' }),
+  digit1: z.string().length(1, { message: '' }),
+  digit2: z.string().length(1, { message: '' }),
+  digit3: z.string().length(1, { message: '' }),
+  digit4: z.string().length(1, { message: '' }),
+  digit5: z.string().length(1, { message: '' }),
+});
+
+type VerifyFormValues = z.infer<typeof verifySchema>;
 
 export default function VerifyIdentity() {
   const location = useLocation();
@@ -10,13 +24,26 @@ export default function VerifyIdentity() {
   // Dynamic email retrieval from route transition state
   const targetEmail = location.state?.email || 'your email address';
 
-  const [otp, setOtp] = useState<string[]>(new Array(6).fill(''));
   const [timeLeft, setTimeLeft] = useState(59);
   const [canResend, setCanResend] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  const { register, handleSubmit, setValue, watch } = useForm<VerifyFormValues>({
+    resolver: zodResolver(verifySchema),
+    defaultValues: {
+      digit0: '',
+      digit1: '',
+      digit2: '',
+      digit3: '',
+      digit4: '',
+      digit5: '',
+    },
+  });
+
+  const otpValues = watch(['digit0', 'digit1', 'digit2', 'digit3', 'digit4', 'digit5']);
 
   // Focus the first input field on component load
   useEffect(() => {
@@ -41,19 +68,18 @@ export default function VerifyIdentity() {
     index: number
   ) => {
     const val = e.target.value.replace(/[^0-9]/g, '');
+    const fieldName = `digit${index}` as keyof VerifyFormValues;
+
     if (!val) {
-      const newOtp = [...otp];
-      newOtp[index] = '';
-      setOtp(newOtp);
+      setValue(fieldName, '');
       return;
     }
 
-    const newOtp = [...otp];
-    newOtp[index] = val.substring(val.length - 1);
-    setOtp(newOtp);
+    const singleDigit = val.substring(val.length - 1);
+    setValue(fieldName, singleDigit);
 
     // Shift focus to the next field if a digit is entered
-    if (index < 5 && newOtp[index] !== '') {
+    if (index < 5 && singleDigit !== '') {
       inputRefs.current[index + 1]?.focus();
     }
   };
@@ -64,16 +90,17 @@ export default function VerifyIdentity() {
     index: number
   ) => {
     if (e.key === 'Backspace') {
-      const newOtp = [...otp];
-      if (otp[index] === '') {
+      const fieldName = `digit${index}` as keyof VerifyFormValues;
+      const currentVal = otpValues[index];
+
+      if (currentVal === '') {
         if (index > 0) {
-          newOtp[index - 1] = '';
-          setOtp(newOtp);
+          const prevFieldName = `digit${index - 1}` as keyof VerifyFormValues;
+          setValue(prevFieldName, '');
           inputRefs.current[index - 1]?.focus();
         }
       } else {
-        newOtp[index] = '';
-        setOtp(newOtp);
+        setValue(fieldName, '');
       }
     }
   };
@@ -86,16 +113,25 @@ export default function VerifyIdentity() {
       .replace(/[^0-9]/g, '')
       .slice(0, 6);
     if (pasteData.length === 6) {
-      const newOtp = pasteData.split('');
-      setOtp(newOtp);
+      const digits = pasteData.split('');
+      digits.forEach((digit, i) => {
+        setValue(`digit${i}` as keyof VerifyFormValues, digit);
+      });
       inputRefs.current[5]?.focus();
     }
   };
 
   // Simulated OTP verify API trigger
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const enteredOtp = otp.join('');
+  const onSubmit = (values: VerifyFormValues) => {
+    const enteredOtp = [
+      values.digit0,
+      values.digit1,
+      values.digit2,
+      values.digit3,
+      values.digit4,
+      values.digit5,
+    ].join('');
+
     if (enteredOtp.length < 6) {
       alert('Please enter the complete 6-digit verification code.');
       return;
@@ -180,27 +216,31 @@ export default function VerifyIdentity() {
           </div>
 
           {/* OTP Input Area */}
-          <form className="w-full mb-stack-lg" onSubmit={handleSubmit}>
+          <form className="w-full mb-stack-lg" onSubmit={handleSubmit(onSubmit)}>
             <div className="grid grid-cols-6 gap-2 md:gap-3 w-full max-w-[380px] mx-auto mb-stack-lg">
-              {otp.map((digit, index) => (
-                <Input
-                  key={index}
-                  ref={el => {
-                    inputRefs.current[index] = el;
-                  }}
-                  autoComplete="one-time-code"
-                  className="w-full aspect-square text-center font-display-lg text-display-lg rounded-xl border-none bg-surface-container shadow-inner focus:ring-2 focus:ring-primary focus:bg-white transition-all duration-200 outline-none p-0 flex items-center justify-center h-auto"
-                  maxLength={1}
-                  type="text"
-                  pattern="[0-9]*"
-                  inputMode="numeric"
-                  value={digit}
-                  onChange={e => handleChange(e, index)}
-                  onKeyDown={e => handleKeyDown(e, index)}
-                  onPaste={handlePaste}
-                  required
-                />
-              ))}
+              {[0, 1, 2, 3, 4, 5].map((index) => {
+                const { ref, ...rest } = register(`digit${index}` as keyof VerifyFormValues);
+                return (
+                  <Input
+                    key={index}
+                    {...rest}
+                    ref={el => {
+                      ref(el);
+                      inputRefs.current[index] = el;
+                    }}
+                    autoComplete="one-time-code"
+                    className="w-full aspect-square text-center font-display-lg text-display-lg rounded-xl border-none bg-surface-container shadow-inner focus:ring-2 focus:ring-primary focus:bg-white transition-all duration-200 outline-none p-0 flex items-center justify-center h-auto"
+                    maxLength={1}
+                    type="text"
+                    pattern="[0-9]*"
+                    inputMode="numeric"
+                    value={otpValues[index]}
+                    onChange={e => handleChange(e, index)}
+                    onKeyDown={e => handleKeyDown(e, index)}
+                    onPaste={handlePaste}
+                  />
+                );
+              })}
             </div>
 
             {/* Primary Action Button */}

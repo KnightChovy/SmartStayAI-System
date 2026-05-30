@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router';
 import { Button } from '../ui/button';
 
 export default function WeekendDeals() {
+  const navigate = useNavigate();
   const [favorites, setFavorites] = useState<string[]>([]);
 
   const deals = [
@@ -71,7 +73,7 @@ export default function WeekendDeals() {
           return (
             <div
               key={deal.id}
-              onClick={() => alert(`Booking details for ${deal.name}...`)}
+              onClick={() => navigate('/room/executive-penthouse')}
               className="bg-surface-container-lowest rounded-3xl overflow-hidden premium-shadow group cursor-pointer border border-outline-variant/10 hover:scale-[1.01] transition-transform duration-300"
             >
               <div className="relative h-64 overflow-hidden">

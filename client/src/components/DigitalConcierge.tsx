@@ -1,10 +1,20 @@
 import { useState, useRef, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { Input } from './ui/input';
 
 interface Message {
   sender: 'user' | 'ai';
   text: string;
   time: string;
 }
+
+const chatSchema = z.object({
+  message: z.string(),
+});
+
+type ChatFormValues = z.infer<typeof chatSchema>;
 
 export default function DigitalConcierge() {
   const [isOpen, setIsOpen] = useState(false);
@@ -18,8 +28,14 @@ export default function DigitalConcierge() {
       }),
     },
   ]);
-  const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+
+  const { register, handleSubmit, reset } = useForm<ChatFormValues>({
+    resolver: zodResolver(chatSchema),
+    defaultValues: {
+      message: '',
+    },
+  });
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -33,13 +49,13 @@ export default function DigitalConcierge() {
     }
   }, [messages, isOpen, isTyping]);
 
-  const handleSend = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inputValue.trim()) return;
+  const onSubmit = (values: ChatFormValues) => {
+    const textVal = values.message.trim();
+    if (!textVal) return;
 
     const userMessage: Message = {
       sender: 'user',
-      text: inputValue.trim(),
+      text: textVal,
       time: new Date().toLocaleTimeString([], {
         hour: '2-digit',
         minute: '2-digit',
@@ -47,8 +63,8 @@ export default function DigitalConcierge() {
     };
 
     setMessages(prev => [...prev, userMessage]);
-    const typedText = inputValue.trim().toLowerCase();
-    setInputValue('');
+    const typedText = textVal.toLowerCase();
+    reset();
 
     // Simulate AI response
     setIsTyping(true);
@@ -191,16 +207,15 @@ export default function DigitalConcierge() {
 
         {/* Input Area */}
         <form
-          onSubmit={handleSend}
+          onSubmit={handleSubmit(onSubmit)}
           className="p-4 border-t border-outline-variant/20 bg-white"
         >
           <div className="relative flex items-center">
-            <input
-              className="w-full bg-surface-container-high border-none rounded-xl py-3 pl-4 pr-12 text-sm focus:ring-1 focus:ring-ai-glow placeholder:text-outline/50 outline-none"
+            <Input
+              {...register('message')}
+              className="w-full bg-surface-container-high border-none rounded-xl py-3 pl-4 pr-12 text-sm focus:ring-1 focus:ring-ai-glow placeholder:text-outline/50 outline-none h-auto shadow-none focus-visible:ring-1"
               placeholder="Ask anything (e.g. Bali, Paris, Deals)..."
               type="text"
-              value={inputValue}
-              onChange={e => setInputValue(e.target.value)}
             />
             <button
               type="submit"

@@ -1,15 +1,33 @@
-import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+
+const heroSearchSchema = z.object({
+  destination: z.string(),
+  dates: z.string(),
+  guests: z.string(),
+});
+
+type HeroSearchFormValues = z.infer<typeof heroSearchSchema>;
 
 export default function Hero() {
-  const [destination, setDestination] = useState('');
-  const [dates, setDates] = useState('Add dates');
-  const [guests, setGuests] = useState('Add guests');
+  const { register, handleSubmit, setValue, watch } = useForm<HeroSearchFormValues>({
+    resolver: zodResolver(heroSearchSchema),
+    defaultValues: {
+      destination: '',
+      dates: 'Add dates',
+      guests: 'Add guests',
+    },
+  });
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
+  const dates = watch('dates');
+  const guests = watch('guests');
+
+  const onSubmit = (values: HeroSearchFormValues) => {
     alert(
-      `Searching for: ${destination || 'Anywhere'} | Dates: ${dates} | Guests: ${guests}`
+      `Searching for: ${values.destination || 'Anywhere'} | Dates: ${values.dates} | Guests: ${values.guests}`
     );
   };
 
@@ -26,19 +44,18 @@ export default function Hero() {
       {/* Search Bar Area */}
       <div className="max-w-5xl mx-auto relative z-10">
         <form
-          onSubmit={handleSearch}
+          onSubmit={handleSubmit(onSubmit)}
           className="bg-white p-2 rounded-3xl md:rounded-full shadow-2xl flex flex-col md:flex-row items-center gap-2 border border-outline-variant/20"
         >
           <div className="w-full md:flex-[1.5] px-6 py-3 flex flex-col group">
             <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">
               Destination
             </label>
-            <input
-              className="w-full bg-transparent border-none p-0 focus:ring-0 text-sm placeholder:text-outline/50 font-medium outline-none mt-1"
+            <Input
+              {...register('destination')}
+              className="w-full bg-transparent border-none p-0 focus:ring-0 focus-visible:ring-0 text-sm placeholder:text-outline/50 font-medium outline-none mt-1 shadow-none h-auto"
               placeholder="Where are you going?"
               type="text"
-              value={destination}
-              onChange={e => setDestination(e.target.value)}
             />
           </div>
           <div className="hidden md:block w-px h-8 bg-outline-variant/30"></div>
@@ -49,7 +66,7 @@ export default function Hero() {
                 'Enter dates (e.g., Jun 12 - Jun 15):',
                 dates === 'Add dates' ? '' : dates
               );
-              if (dateInput) setDates(dateInput);
+              if (dateInput) setValue('dates', dateInput);
             }}
           >
             <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">
@@ -67,7 +84,7 @@ export default function Hero() {
                 'Enter number of guests (e.g., 2 guests, 1 room):',
                 guests === 'Add guests' ? '' : guests
               );
-              if (guestInput) setGuests(guestInput);
+              if (guestInput) setValue('guests', guestInput);
             }}
           >
             <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">
