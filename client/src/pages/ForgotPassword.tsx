@@ -1,25 +1,39 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+
+const forgotPasswordSchema = z.object({
+  email: z.string().min(1, { message: 'Please enter your email address.' }).email({ message: 'Please enter a valid email address.' }),
+});
+
+type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
 
 export default function ForgotPassword() {
-  const [email, setEmail] = useState('');
   const [emailFocused, setEmailFocused] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email) {
-      alert('Please enter your email address.');
-      return;
-    }
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<ForgotPasswordFormValues>({
+    resolver: zodResolver(forgotPasswordSchema),
+    defaultValues: {
+      email: '',
+    },
+  });
+
+  const onSubmit = (values: ForgotPasswordFormValues) => {
     setIsLoading(true);
     setTimeout(() => {
       setIsLoading(false);
-      navigate('/verify-identity', { state: { email } });
+      navigate('/verify-identity', { state: { email: values.email } });
     }, 1500);
   };
 
@@ -73,7 +87,7 @@ export default function ForgotPassword() {
           </div>
 
           {/* Reset Form */}
-          <form className="space-y-stack-md" onSubmit={handleSubmit}>
+          <form className="space-y-stack-md" onSubmit={handleSubmit(onSubmit)}>
             <div>
               <Label
                 className="block font-label-lg text-label-lg text-on-surface-variant mb-2"
@@ -82,16 +96,17 @@ export default function ForgotPassword() {
                 Email Address
               </Label>
               <Input
+                {...register('email')}
                 className="w-full bg-primary-container border-none focus:ring-2 focus:ring-secondary/20 rounded-[16px] px-4 py-3 text-body-md text-on-surface placeholder:text-outline-variant transition-all duration-300 outline-none h-auto"
                 id="email"
                 placeholder="name@example.com"
                 type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
                 onFocus={() => setEmailFocused(true)}
                 onBlur={() => setEmailFocused(false)}
-                required
               />
+              {errors.email && (
+                <p className="text-[10px] text-error font-semibold mt-1.5 px-1">{errors.email.message}</p>
+              )}
             </div>
 
             {/* Primary CTA */}

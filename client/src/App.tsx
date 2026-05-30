@@ -9,6 +9,7 @@ import Login from './pages/Login';
 import ForgotPassword from './pages/ForgotPassword';
 import VerifyIdentity from './pages/VerifyIdentity';
 import RoomDetail from './pages/RoomDetail';
+import BookingInformation from './pages/BookingInformation';
 
 function App() {
   return (
@@ -25,6 +26,10 @@ function App() {
           <Route
             path="room/executive-penthouse"
             element={<RoomDetail />}
+          />
+          <Route
+            path="booking-information"
+            element={<BookingInformation />}
           />
         </Route>
         <Route path="register" element={<Register />} />

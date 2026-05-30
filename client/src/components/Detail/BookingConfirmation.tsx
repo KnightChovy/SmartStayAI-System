@@ -1,7 +1,9 @@
+import { useNavigate } from 'react-router';
 import { Button } from '../ui/button';
 
 interface Room {
   name: string;
+  price: number;
 }
 
 interface BookingConfirmationProps {
@@ -25,6 +27,8 @@ export function BookingConfirmation({
   setShowConfirmation,
   formatDisplayDate,
 }: BookingConfirmationProps) {
+  const navigate = useNavigate();
+
   return (
     <div className="fixed inset-0 z-[100] bg-black/60 flex items-center justify-center p-4 backdrop-blur-md animate-fade-in">
       <div className="bg-white dark:bg-card p-6 md:p-8 rounded-3xl max-w-md w-full shadow-2xl border border-outline-variant/30 space-y-6 text-center animate-scale-in">
@@ -77,7 +81,14 @@ export function BookingConfirmation({
             className="flex-1 bg-primary text-white py-3 rounded-full font-bold uppercase text-[10px] tracking-widest hover:bg-on-surface transition-all active:scale-[0.98] cursor-pointer shadow-md h-11 border-none"
             onClick={() => {
               setShowConfirmation(false);
-              alert(`Congratulations! Your reservation for the ${selectedRoom.name} from ${formatDisplayDate(checkIn)} to ${formatDisplayDate(checkOut)} has been simulated successfully!`);
+              navigate('/booking-information', {
+                state: {
+                  checkIn,
+                  checkOut,
+                  guests,
+                  selectedRoom,
+                },
+              });
             }}
           >
             Confirm Booking
