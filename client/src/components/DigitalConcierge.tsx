@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { Input } from './ui/input';
 
 interface Message {
   sender: 'user' | 'ai';
@@ -210,9 +211,9 @@ export default function DigitalConcierge() {
           className="p-4 border-t border-outline-variant/20 bg-white"
         >
           <div className="relative flex items-center">
-            <input
+            <Input
               {...register('message')}
-              className="w-full bg-surface-container-high border-none rounded-xl py-3 pl-4 pr-12 text-sm focus:ring-1 focus:ring-ai-glow placeholder:text-outline/50 outline-none"
+              className="w-full bg-surface-container-high border-none rounded-xl py-3 pl-4 pr-12 text-sm focus:ring-1 focus:ring-ai-glow placeholder:text-outline/50 outline-none h-auto shadow-none focus-visible:ring-1"
               placeholder="Ask anything (e.g. Bali, Paris, Deals)..."
               type="text"
             />

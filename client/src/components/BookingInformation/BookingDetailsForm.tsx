@@ -2,6 +2,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '../ui/button';
+import { Input } from '../ui/input';
 import { useNavigate } from 'react-router';
 
 const bookingSchema = z.object({
@@ -77,9 +78,9 @@ export function BookingDetailsForm({ onSubmit }: BookingDetailsFormProps) {
             {/* First Name */}
             <div className="space-y-1.5">
               <label className="text-[10px] text-outline font-bold uppercase tracking-wider px-1">First Name</label>
-              <input
+              <Input
                 {...register('firstName')}
-                className="w-full bg-surface-container-low dark:bg-surface-dim/40 rounded-xl px-4 py-3 text-sm font-semibold focus:ring-2 focus:ring-primary/20 focus:border-primary border border-outline-variant/25 transition-all outline-none"
+                className="w-full bg-surface-container-low dark:bg-surface-dim/40 rounded-xl px-4 py-3 text-sm font-semibold focus:ring-2 focus:ring-primary/20 focus:border-primary border border-outline-variant/25 transition-all outline-none h-auto"
                 placeholder="e.g. Alexander"
                 type="text"
               />
@@ -91,9 +92,9 @@ export function BookingDetailsForm({ onSubmit }: BookingDetailsFormProps) {
             {/* Last Name */}
             <div className="space-y-1.5">
               <label className="text-[10px] text-outline font-bold uppercase tracking-wider px-1">Last Name</label>
-              <input
+              <Input
                 {...register('lastName')}
-                className="w-full bg-surface-container-low dark:bg-surface-dim/40 rounded-xl px-4 py-3 text-sm font-semibold focus:ring-2 focus:ring-primary/20 focus:border-primary border border-outline-variant/25 transition-all outline-none"
+                className="w-full bg-surface-container-low dark:bg-surface-dim/40 rounded-xl px-4 py-3 text-sm font-semibold focus:ring-2 focus:ring-primary/20 focus:border-primary border border-outline-variant/25 transition-all outline-none h-auto"
                 placeholder="e.g. Sterling"
                 type="text"
               />
@@ -105,9 +106,9 @@ export function BookingDetailsForm({ onSubmit }: BookingDetailsFormProps) {
             {/* Email Address */}
             <div className="md:col-span-2 space-y-1.5">
               <label className="text-[10px] text-outline font-bold uppercase tracking-wider px-1">Email Address</label>
-              <input
+              <Input
                 {...register('email')}
-                className="w-full bg-surface-container-low dark:bg-surface-dim/40 rounded-xl px-4 py-3 text-sm font-semibold focus:ring-2 focus:ring-primary/20 focus:border-primary border border-outline-variant/25 transition-all outline-none"
+                className="w-full bg-surface-container-low dark:bg-surface-dim/40 rounded-xl px-4 py-3 text-sm font-semibold focus:ring-2 focus:ring-primary/20 focus:border-primary border border-outline-variant/25 transition-all outline-none h-auto"
                 placeholder="alexander.sterling@luxe.com"
                 type="email"
               />
@@ -138,9 +139,9 @@ export function BookingDetailsForm({ onSubmit }: BookingDetailsFormProps) {
             {/* Phone Number */}
             <div className="space-y-1.5">
               <label className="text-[10px] text-outline font-bold uppercase tracking-wider px-1">Phone Number</label>
-              <input
+              <Input
                 {...register('phone')}
-                className="w-full bg-surface-container-low dark:bg-surface-dim/40 rounded-xl px-4 py-3 text-sm font-semibold focus:ring-2 focus:ring-primary/20 focus:border-primary border border-outline-variant/25 transition-all outline-none"
+                className="w-full bg-surface-container-low dark:bg-surface-dim/40 rounded-xl px-4 py-3 text-sm font-semibold focus:ring-2 focus:ring-primary/20 focus:border-primary border border-outline-variant/25 transition-all outline-none h-auto"
                 placeholder="+1 (555) 000-0000"
                 type="tel"
               />

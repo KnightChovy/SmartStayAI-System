@@ -2,6 +2,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '../ui/button';
+import { Input } from '../ui/input';
 
 const heroSearchSchema = z.object({
   destination: z.string(),
@@ -50,9 +51,9 @@ export default function Hero() {
             <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">
               Destination
             </label>
-            <input
+            <Input
               {...register('destination')}
-              className="w-full bg-transparent border-none p-0 focus:ring-0 text-sm placeholder:text-outline/50 font-medium outline-none mt-1"
+              className="w-full bg-transparent border-none p-0 focus:ring-0 focus-visible:ring-0 text-sm placeholder:text-outline/50 font-medium outline-none mt-1 shadow-none h-auto"
               placeholder="Where are you going?"
               type="text"
             />
