@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router';
 import AccommodationTypes from '../components/Home/AccommodationTypes';
 
 export default function AccommodationTypesPage() {
+  const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState('All');
 
   const listings = [
@@ -96,7 +98,7 @@ export default function AccommodationTypesPage() {
           {filteredListings.map((listing, i) => (
             <div
               key={i}
-              onClick={() => alert(`Exploring ${listing.name}...`)}
+              onClick={() => navigate('/room/executive-penthouse')}
               className="bg-white rounded-3xl overflow-hidden premium-shadow group cursor-pointer border border-outline-variant/10 hover:scale-[1.01] transition-transform duration-300"
             >
               <div className="relative h-60 overflow-hidden">

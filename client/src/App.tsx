@@ -8,6 +8,7 @@ import Register from './pages/Register';
 import Login from './pages/Login';
 import ForgotPassword from './pages/ForgotPassword';
 import VerifyIdentity from './pages/VerifyIdentity';
+import RoomDetail from './pages/RoomDetail';
 
 function App() {
   return (
@@ -20,6 +21,10 @@ function App() {
           <Route
             path="accommodation-types"
             element={<AccommodationTypesPage />}
+          />
+          <Route
+            path="room/executive-penthouse"
+            element={<RoomDetail />}
           />
         </Route>
         <Route path="register" element={<Register />} />

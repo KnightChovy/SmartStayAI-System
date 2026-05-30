@@ -28,6 +28,10 @@ This file tracks the accomplished tasks, resolved user requests, and visual/func
 - [x] **Build & Casing Import Fixes**:
   - Resolved lowercase/uppercase import casing mismatch warnings (`components/home` vs `components/Home`) to enable 100% clean production bundler compilation.
   - Successfully compiled the production build with `npm run build` (236 modules successfully bundled).
+- [x] **Executive Penthouse Suite Details Page Integration**:
+  - Built a modern, gorgeous luxury room details page component `RoomDetail.tsx` matching the editorial quiet luxury style.
+  - Implemented fully interactive React features: lightbox slideshow modal, smooth description expand/collapse, dynamically computed totals, room-type toggles, and premium modal booking notifications.
+  - Interconnected homepage components (`WeekendDeals`, `AccommodationTypesPage`) to route users seamlessly to the suite detail page.
 
 ---
 
@@ -45,9 +49,12 @@ This file tracks the accomplished tasks, resolved user requests, and visual/func
 | **[Home/LoyaltyBanner.tsx](file:///Users/manh/Documents/WDP/WDP_Project/SmartStayAI-System/client/src/components/Home/LoyaltyBanner.tsx)** | `[MODIFY]` Home Component | Migrated standard buttons to Shadcn Button. |
 | **[Home/Promotions.tsx](file:///Users/manh/Documents/WDP/WDP_Project/SmartStayAI-System/client/src/components/Home/Promotions.tsx)** | `[MODIFY]` Home Component | Migrated card triggers to Shadcn Button. |
 | **[Home/DiscoverVietnam.tsx](file:///Users/manh/Documents/WDP/WDP_Project/SmartStayAI-System/client/src/components/Home/DiscoverVietnam.tsx)** | `[MODIFY]` Home Component | Migrated link text trigger to Shadcn Button variant link. |
-| **[Home/WeekendDeals.tsx](file:///Users/manh/Documents/WDP/WDP_Project/SmartStayAI-System/client/src/components/Home/WeekendDeals.tsx)** | `[MODIFY]` Home Component | Migrated text link and circle favorite overlay buttons to Shadcn Buttons. |
+| **[Home/WeekendDeals.tsx](file:///Users/manh/Documents/WDP/WDP_Project/SmartStayAI-System/client/src/components/Home/WeekendDeals.tsx)** | `[MODIFY]` Home Component | Migrated text link and circle favorite overlay buttons to Shadcn Buttons. Interlinked cards to route to `/room/executive-penthouse`. |
 | **[Home/AccommodationTypes.tsx](file:///Users/manh/Documents/WDP/WDP_Project/SmartStayAI-System/client/src/components/Home/AccommodationTypes.tsx)** | `[MODIFY]` Home Component | Migrated type category card buttons to ghost Shadcn Buttons. |
+| **[AccommodationTypes.tsx](file:///Users/manh/Documents/WDP/WDP_Project/SmartStayAI-System/client/src/pages/AccommodationTypes.tsx)** | `[MODIFY]` Stays Page | Interlinked accommodation cards to route to `/room/executive-penthouse`. |
+| **[RoomDetail.tsx](file:///Users/manh/Documents/WDP/WDP_Project/SmartStayAI-System/client/src/pages/RoomDetail.tsx)** | `[NEW]` Room Detail Page | Created a high-fidelity, interactive details page for the Executive Penthouse Suite. Includes slider gallery lightbox, description expander, interactive search and booking rate calculator, accordion FAQs, and reservation validation modals. |
+| **[App.tsx](file:///Users/manh/Documents/WDP/WDP_Project/SmartStayAI-System/client/src/App.tsx)** | `[MODIFY]` Main Router | Registered the `/room/executive-penthouse` route. |
 
 ---
 
-*Last Updated: 2026-05-29*
+*Last Updated: 2026-05-30*
