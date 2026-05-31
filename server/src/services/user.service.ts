@@ -1,42 +1,10 @@
 import httpStatus from 'http-status';
 import bcrypt from 'bcryptjs';
-import type { Prisma, User, UserRole } from '@prisma/client';
+import type { Prisma, User } from '@prisma/client';
 import prisma from '../config/prisma';
 import config from '../config/config';
 import ApiError from '../utils/ApiError';
-
-export interface CreateUserDto {
-  name: string;
-  email: string;
-  password: string;
-  phone?: string | null;
-  avatarUrl?: string | null;
-  role?: UserRole;
-  dateOfBirth?: string | null;
-  nationality?: string | null;
-  idCardNumber?: string | null;
-  passportNumber?: string | null;
-  preferredLanguage?: 'vi' | 'en';
-  preferredCurrency?: 'VND' | 'USD';
-  marketingOptIn?: boolean;
-}
-
-export interface UpdateUserDto {
-  name?: string;
-  email?: string;
-  password?: string;
-}
-
-export interface UserFilter {
-  name?: string;
-  role?: UserRole;
-}
-
-export interface UserQueryOptions {
-  limit?: number;
-  page?: number;
-  sortBy?: string;
-}
+import type { CreateUserDto, UpdateUserDto, UserFilter, UserQueryOptions } from '../dto/user.dto';
 
 export class UserService {
   /**
