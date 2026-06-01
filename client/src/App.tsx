@@ -8,6 +8,8 @@ import Register from './pages/Register';
 import Login from './pages/Login';
 import ForgotPassword from './pages/ForgotPassword';
 import VerifyIdentity from './pages/VerifyIdentity';
+import ResetPassword from './pages/ResetPassword';
+import VerifyEmail from './pages/VerifyEmail';
 import RoomDetail from './pages/RoomDetail';
 import BookingInformation from './pages/BookingInformation';
 
@@ -36,6 +38,8 @@ function App() {
         <Route path="login" element={<Login />} />
         <Route path="forgot-password" element={<ForgotPassword />} />
         <Route path="verify-identity" element={<VerifyIdentity />} />
+        <Route path="reset-password" element={<ResetPassword />} />
+        <Route path="verify-email" element={<VerifyEmail />} />
       </Routes>
     </BrowserRouter>
   );

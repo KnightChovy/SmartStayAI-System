@@ -5,6 +5,7 @@ import { Input } from '../components/ui/input';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { useAuth } from '../hooks/useAuth';
 
 const verifySchema = z.object({
   digit0: z.string().length(1, { message: '' }),
@@ -20,14 +21,14 @@ type VerifyFormValues = z.infer<typeof verifySchema>;
 export default function VerifyIdentity() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { register: registerApi, isRegistering, registerError, sendOtp, isSendingOtp } = useAuth();
 
-  // Dynamic email retrieval from route transition state
-  const targetEmail = location.state?.email || 'your email address';
+  const { email, name, password } = location.state || {};
+
+  const targetEmail = email || 'your email address';
 
   const [timeLeft, setTimeLeft] = useState(59);
   const [canResend, setCanResend] = useState(false);
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [isVerified, setIsVerified] = useState(false);
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -45,12 +46,10 @@ export default function VerifyIdentity() {
 
   const otpValues = watch(['digit0', 'digit1', 'digit2', 'digit3', 'digit4', 'digit5']);
 
-  // Focus the first input field on component load
   useEffect(() => {
     inputRefs.current[0]?.focus();
   }, []);
 
-  // Countdown timer effect
   useEffect(() => {
     if (timeLeft <= 0) {
       setCanResend(true);
@@ -62,7 +61,6 @@ export default function VerifyIdentity() {
     return () => clearInterval(timer);
   }, [timeLeft]);
 
-  // Handle digit inputs and auto-tab forward
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement>,
     index: number
@@ -78,13 +76,11 @@ export default function VerifyIdentity() {
     const singleDigit = val.substring(val.length - 1);
     setValue(fieldName, singleDigit);
 
-    // Shift focus to the next field if a digit is entered
     if (index < 5 && singleDigit !== '') {
       inputRefs.current[index + 1]?.focus();
     }
   };
 
-  // Backspace key navigation (jumping backwards)
   const handleKeyDown = (
     e: React.KeyboardEvent<HTMLInputElement>,
     index: number
@@ -105,7 +101,6 @@ export default function VerifyIdentity() {
     }
   };
 
-  // Handling 6-digit numeric pasting events
   const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
     e.preventDefault();
     const pasteData = e.clipboardData
@@ -121,8 +116,7 @@ export default function VerifyIdentity() {
     }
   };
 
-  // Simulated OTP verify API trigger
-  const onSubmit = (values: VerifyFormValues) => {
+  const onSubmit = async (values: VerifyFormValues) => {
     const enteredOtp = [
       values.digit0,
       values.digit1,
@@ -137,27 +131,38 @@ export default function VerifyIdentity() {
       return;
     }
 
-    setIsVerifying(true);
-    setTimeout(() => {
-      setIsVerifying(false);
-      setIsVerified(true);
-      setTimeout(() => {
-        alert('Verification successful!');
-        navigate('/login');
-      }, 1200);
-    }, 1500);
+    if (!email || !name || !password) {
+      alert('Missing registration context. Please register again.');
+      navigate('/register');
+      return;
+    }
+
+    try {
+      await registerApi({
+        email,
+        name,
+        password,
+        verificationCode: enteredOtp,
+      });
+      navigate('/');
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  const handleResend = () => {
-    if (!canResend) return;
-    alert(`A new 6-digit verification code has been sent to ${targetEmail}.`);
-    setTimeLeft(59);
-    setCanResend(false);
+  const handleResend = async () => {
+    if (!canResend || !email) return;
+    try {
+      await sendOtp(email);
+      setTimeLeft(59);
+      setCanResend(false);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   return (
     <div className="relative min-h-screen text-on-background overflow-hidden h-screen w-screen bg-background antialiased flex items-center justify-center p-margin-mobile">
-      {/* Custom Styles */}
       <style>{`
         .glass-effect {
           background: rgba(245, 242, 238, 0.7);
@@ -186,14 +191,9 @@ export default function VerifyIdentity() {
         }
       `}</style>
 
-      {/* Verification Container */}
       <main className="relative z-10 w-full max-w-[480px]">
-        {/* Brand Logo Center */}
         <div className="text-center mb-stack-lg">
-          <Link
-            to="/"
-            className="inline-block hover:opacity-90 transition-opacity"
-          >
+          <Link to="/" className="inline-block hover:opacity-90 transition-opacity">
             <h1 className="font-display-lg text-3xl font-extrabold tracking-widest uppercase text-transparent bg-clip-text bg-gradient-to-r from-secondary via-secondary-fixed-dim to-secondary text-glow">
               Smart Stay AI
             </h1>
@@ -201,22 +201,24 @@ export default function VerifyIdentity() {
         </div>
 
         <div className="glass-effect ambient-shadow w-full rounded-[32px] p-stack-lg flex flex-col items-center">
-          {/* Header Content */}
           <div className="text-center mb-stack-lg">
             <h2 className="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-2 font-semibold">
               Verify Your Identity
             </h2>
             <p className="font-body-md text-body-md text-on-surface-variant max-w-[320px] mx-auto">
               We've sent a 6-digit code to{' '}
-              <span className="font-semibold text-on-surface">
-                {targetEmail}
-              </span>
+              <span className="font-semibold text-on-surface">{targetEmail}</span>
               . Please enter it below to continue.
             </p>
           </div>
 
-          {/* OTP Input Area */}
           <form className="w-full mb-stack-lg" onSubmit={handleSubmit(onSubmit)}>
+            {registerError && (
+              <div className="bg-error/10 border border-error/20 text-error p-3 rounded-xl text-sm font-semibold mb-4 text-center">
+                {(registerError as any)?.response?.data?.message || 'Verification failed. Please check the code.'}
+              </div>
+            )}
+
             <div className="grid grid-cols-6 gap-2 md:gap-3 w-full max-w-[380px] mx-auto mb-stack-lg">
               {[0, 1, 2, 3, 4, 5].map((index) => {
                 const { ref, ...rest } = register(`digit${index}` as keyof VerifyFormValues);
@@ -243,60 +245,40 @@ export default function VerifyIdentity() {
               })}
             </div>
 
-            {/* Primary Action Button */}
             <Button
-              className={`w-full py-4 text-surface font-label-lg text-label-lg rounded-full ambient-shadow hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer outline-none border-none h-auto ${
-                isVerified
-                  ? 'bg-green-800 hover:bg-green-800'
-                  : 'bg-on-background hover:bg-on-background/90'
-              }`}
+              className="w-full py-4 text-white font-label-lg text-label-lg rounded-full ambient-shadow hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer outline-none border-none h-auto bg-on-background hover:bg-on-background/90"
               type="submit"
-              disabled={isVerifying || isVerified}
+              disabled={isRegistering}
             >
-              {isVerifying ? (
+              {isRegistering ? (
                 <>
-                  <span className="material-symbols-outlined animate-spin">
-                    progress_activity
-                  </span>
+                  <span className="material-symbols-outlined animate-spin">progress_activity</span>
                   Verifying...
-                </>
-              ) : isVerified ? (
-                <>
-                  <span className="material-symbols-outlined">
-                    check_circle
-                  </span>
-                  Verified
                 </>
               ) : (
                 <>
                   Verify Code
-                  <span className="material-symbols-outlined text-[18px]">
-                    arrow_forward
-                  </span>
+                  <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
                 </>
               )}
             </Button>
           </form>
 
-          {/* Secondary Actions */}
           <div className="flex flex-col items-center gap-4 w-full">
             <p className="font-label-md text-label-md text-on-surface-variant text-center">
               Didn't receive the code?{' '}
               {canResend ? (
                 <Button
                   onClick={handleResend}
+                  disabled={isSendingOtp}
                   className="text-on-background font-bold hover:underline cursor-pointer outline-none bg-transparent hover:bg-transparent border-none p-0 size-auto inline-flex"
                   type="button"
                 >
-                  Resend Code
+                  {isSendingOtp ? 'Sending...' : 'Resend Code'}
                 </Button>
               ) : (
                 <span className="text-on-background font-bold">
-                  Resend (in{' '}
-                  <span id="timer">
-                    00:{timeLeft < 10 ? `0${timeLeft}` : timeLeft}
-                  </span>
-                  )
+                  Resend (in <span id="timer">00:{timeLeft < 10 ? `0${timeLeft}` : timeLeft}</span>)
                 </span>
               )}
             </p>
@@ -305,16 +287,13 @@ export default function VerifyIdentity() {
               className="flex items-center gap-2 font-label-lg text-label-lg text-secondary hover:text-on-background transition-colors"
               to="/login"
             >
-              <span className="material-symbols-outlined text-[20px]">
-                keyboard_backspace
-              </span>
+              <span className="material-symbols-outlined text-[20px]">keyboard_backspace</span>
               Back to Login
             </Link>
           </div>
         </div>
       </main>
 
-      {/* AI Badge Overlay */}
       <div className="absolute bottom-10 right-10 hidden md:flex items-center gap-3 glass-effect premium-gold-border py-3 px-5 rounded-full ambient-shadow">
         <div className="w-2 h-2 rounded-full bg-tertiary-fixed-dim animate-pulse"></div>
         <span className="font-label-sm text-label-sm text-on-surface uppercase tracking-widest">
@@ -322,7 +301,6 @@ export default function VerifyIdentity() {
         </span>
       </div>
 
-      {/* Subtle Premium Glow background effects */}
       <div className="fixed bottom-0 right-0 w-[50vw] h-[512px] bg-secondary/5 blur-[120px] rounded-full pointer-events-none z-0"></div>
       <div className="fixed top-0 left-0 w-[30vw] h-[307px] bg-primary/5 blur-[100px] rounded-full pointer-events-none z-0"></div>
     </div>
