@@ -15,8 +15,8 @@ const navItems = [
   { label: 'Users', to: '/admin/users', icon: Users },
   { label: 'Analytics', to: '/admin/analytics', icon: BarChart3 },
   { label: 'Reports', to: '/admin/bookings', icon: CalendarDays },
-  { label: 'Settings', to: '/admin/settings', icon: Settings },
   { label: 'Properties', to: '/admin/properties', icon: Building2 },
+  { label: 'Settings', to: '/admin/settings', icon: Settings },
 ];
 
 export function AdminSidebar() {

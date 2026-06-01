@@ -12,7 +12,7 @@ export function AdminDashboardActivityLog() {
           View All
         </button>
       </div>
-      <table className="min-w-[640px] w-full">
+      <table className="max-w-160 w-full">
         <thead className="bg-surface-container-low text-left text-[11px] uppercase tracking-wide">
           <tr>
             <th className="p-3">User</th>

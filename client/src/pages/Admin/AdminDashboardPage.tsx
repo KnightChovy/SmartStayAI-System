@@ -30,7 +30,7 @@ export function AdminDashboardPage() {
           <AdminDashboardGrowthChart />
           <div className="rounded-sm border bg-white p-4">
             <h2 className="text-base font-semibold">Device Distribution</h2>
-            <div className="mx-auto mt-4 size-36 rounded-full border-[14px] border-blue-500 border-b-black border-l-slate-200" />
+            <div className="mx-auto mt-4 size-36 rounded-full border-14 border-blue-500 border-b-black border-l-slate-200" />
             <ul className="mt-4 space-y-1.5 text-xs">
               <li className="flex items-center justify-between">
                 <span>Mobile</span>
