@@ -1,6 +1,6 @@
-import DiscoverVietnam from '../components/Home/DiscoverVietnam';
-import TrendingDestinations from '../components/Home/TrendingDestinations';
-import PopularVietnameseTourists from '../components/Home/PopularVietnameseTourists';
+import DiscoverVietnam from '../../components/home/DiscoverVietnam';
+import TrendingDestinations from '../../components/home/TrendingDestinations';
+import PopularVietnameseTourists from '../../components/home/PopularVietnameseTourists';
 
 export default function Destinations() {
   return (

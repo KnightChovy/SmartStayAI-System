@@ -27,14 +27,14 @@ export default function TrendingDestinations() {
           <div
             key={dest.name}
             onClick={() => alert(`Exploring ${dest.name} sanctuary...`)}
-            className="relative h-[450px] rounded-3xl overflow-hidden group cursor-pointer shadow-xl"
+            className="relative h-112.5 rounded-3xl overflow-hidden group cursor-pointer shadow-xl"
           >
             <img
               alt={dest.name}
               className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
               src={dest.img}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+            <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent"></div>
             <div className="absolute bottom-10 left-10 text-white">
               <h3 className="text-3xl font-bold mb-1 font-be-vietnam">
                 {dest.name}

@@ -1,17 +1,14 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
-import { Label } from '../components/ui/label';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-
-const forgotPasswordSchema = z.object({
-  email: z.string().min(1, { message: 'Please enter your email address.' }).email({ message: 'Please enter a valid email address.' }),
-});
-
-type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
+import {
+  forgotPasswordSchema,
+  type ForgotPasswordFormValues,
+} from '../../validations/auth.validation';
 
 export default function ForgotPassword() {
   const [emailFocused, setEmailFocused] = useState(false);
@@ -60,7 +57,7 @@ export default function ForgotPassword() {
             to="/"
             className="inline-block hover:opacity-90 transition-opacity"
           >
-            <h1 className="font-display-lg text-3xl font-extrabold tracking-widest uppercase text-transparent bg-clip-text bg-gradient-to-r from-secondary via-secondary-fixed-dim to-secondary text-glow">
+            <h1 className="font-display-lg text-3xl font-extrabold tracking-widest uppercase text-transparent bg-clip-text bg-linear-to-r from-secondary via-secondary-fixed-dim to-secondary text-glow">
               Smart Stay AI
             </h1>
           </Link>
@@ -80,7 +77,7 @@ export default function ForgotPassword() {
             <h2 className="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-on-surface mb-stack-sm font-semibold">
               Reset Your Password
             </h2>
-            <p className="font-body-md text-body-md text-on-surface-variant max-w-[280px] mx-auto">
+            <p className="font-body-md text-body-md text-on-surface-variant max-w-70 mx-auto">
               Enter your email address and we'll send you a link to reset your
               password.
             </p>
@@ -105,13 +102,15 @@ export default function ForgotPassword() {
                 onBlur={() => setEmailFocused(false)}
               />
               {errors.email && (
-                <p className="text-[10px] text-error font-semibold mt-1.5 px-1">{errors.email.message}</p>
+                <p className="text-[10px] text-error font-semibold mt-1.5 px-1">
+                  {errors.email.message}
+                </p>
               )}
             </div>
 
             {/* Primary CTA */}
             <Button
-              className="w-full bg-primary text-on-primary font-label-lg text-label-lg py-4 rounded-[16px] hover:bg-on-surface-variant active:scale-[0.98] transition-all duration-200 shadow-sm flex items-center justify-center gap-2 group cursor-pointer outline-none border-none hover:bg-primary/95 h-auto"
+              className="w-full bg-primary text-on-primary font-label-lg text-label-lg py-4 rounded-[16px] hover:bg-primary/95 active:scale-[0.98] transition-all duration-200 shadow-sm flex items-center justify-center gap-2 group cursor-pointer outline-none border-none h-auto"
               type="submit"
               disabled={isLoading}
             >
@@ -140,8 +139,8 @@ export default function ForgotPassword() {
       </main>
 
       {/* Subtle Premium Glow */}
-      <div className="fixed bottom-0 right-0 w-[50vw] h-[512px] bg-secondary/5 blur-[120px] rounded-full pointer-events-none z-0"></div>
-      <div className="fixed top-0 left-0 w-[30vw] h-[307px] bg-primary/5 blur-[100px] rounded-full pointer-events-none z-0"></div>
+      <div className="fixed bottom-0 right-0 w-[50vw] h-128 bg-secondary/5 blur-[120px] rounded-full pointer-events-none z-0"></div>
+      <div className="fixed top-0 left-0 w-[30vw] h-76.75 bg-primary/5 blur-[100px] rounded-full pointer-events-none z-0"></div>
     </div>
   );
 }

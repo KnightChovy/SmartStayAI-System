@@ -1,21 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
-import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-
-const verifySchema = z.object({
-  digit0: z.string().length(1, { message: '' }),
-  digit1: z.string().length(1, { message: '' }),
-  digit2: z.string().length(1, { message: '' }),
-  digit3: z.string().length(1, { message: '' }),
-  digit4: z.string().length(1, { message: '' }),
-  digit5: z.string().length(1, { message: '' }),
-});
-
-type VerifyFormValues = z.infer<typeof verifySchema>;
+import {
+  verifySchema,
+  type VerifyFormValues,
+} from '../../validations/auth.validation';
 
 export default function VerifyIdentity() {
   const location = useLocation();
@@ -31,19 +23,28 @@ export default function VerifyIdentity() {
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  const { register, handleSubmit, setValue, watch } = useForm<VerifyFormValues>({
-    resolver: zodResolver(verifySchema),
-    defaultValues: {
-      digit0: '',
-      digit1: '',
-      digit2: '',
-      digit3: '',
-      digit4: '',
-      digit5: '',
-    },
-  });
+  const { register, handleSubmit, setValue, watch } = useForm<VerifyFormValues>(
+    {
+      resolver: zodResolver(verifySchema),
+      defaultValues: {
+        digit0: '',
+        digit1: '',
+        digit2: '',
+        digit3: '',
+        digit4: '',
+        digit5: '',
+      },
+    }
+  );
 
-  const otpValues = watch(['digit0', 'digit1', 'digit2', 'digit3', 'digit4', 'digit5']);
+  const otpValues = watch([
+    'digit0',
+    'digit1',
+    'digit2',
+    'digit3',
+    'digit4',
+    'digit5',
+  ]);
 
   // Focus the first input field on component load
   useEffect(() => {
@@ -187,20 +188,20 @@ export default function VerifyIdentity() {
       `}</style>
 
       {/* Verification Container */}
-      <main className="relative z-10 w-full max-w-[480px]">
+      <main className="relative z-10 w-full max-w-120">
         {/* Brand Logo Center */}
         <div className="text-center mb-stack-lg">
           <Link
             to="/"
             className="inline-block hover:opacity-90 transition-opacity"
           >
-            <h1 className="font-display-lg text-3xl font-extrabold tracking-widest uppercase text-transparent bg-clip-text bg-gradient-to-r from-secondary via-secondary-fixed-dim to-secondary text-glow">
+            <h1 className="font-display-lg text-3xl font-extrabold tracking-widest uppercase text-transparent bg-clip-text bg-linear-to-r from-secondary via-secondary-fixed-dim to-secondary text-glow">
               Smart Stay AI
             </h1>
           </Link>
         </div>
 
-        <div className="glass-effect ambient-shadow w-full rounded-[32px] p-stack-lg flex flex-col items-center">
+        <div className="glass-effect ambient-shadow w-full rounded-xxl p-stack-lg flex flex-col items-center">
           {/* Header Content */}
           <div className="text-center mb-stack-lg">
             <h2 className="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-2 font-semibold">
@@ -216,10 +217,15 @@ export default function VerifyIdentity() {
           </div>
 
           {/* OTP Input Area */}
-          <form className="w-full mb-stack-lg" onSubmit={handleSubmit(onSubmit)}>
-            <div className="grid grid-cols-6 gap-2 md:gap-3 w-full max-w-[380px] mx-auto mb-stack-lg">
-              {[0, 1, 2, 3, 4, 5].map((index) => {
-                const { ref, ...rest } = register(`digit${index}` as keyof VerifyFormValues);
+          <form
+            className="w-full mb-stack-lg"
+            onSubmit={handleSubmit(onSubmit)}
+          >
+            <div className="grid grid-cols-6 gap-2 md:gap-3 w-full max-w-95 mx-auto mb-stack-lg">
+              {[0, 1, 2, 3, 4, 5].map(index => {
+                const { ref, ...rest } = register(
+                  `digit${index}` as keyof VerifyFormValues
+                );
                 return (
                   <Input
                     key={index}
@@ -300,7 +306,7 @@ export default function VerifyIdentity() {
                 </span>
               )}
             </p>
-            <div className="w-full h-[1px] bg-outline-variant/30 my-2"></div>
+            <div className="w-full h-px bg-outline-variant/30 my-2"></div>
             <Link
               className="flex items-center gap-2 font-label-lg text-label-lg text-secondary hover:text-on-background transition-colors"
               to="/login"
@@ -323,8 +329,7 @@ export default function VerifyIdentity() {
       </div>
 
       {/* Subtle Premium Glow background effects */}
-      <div className="fixed bottom-0 right-0 w-[50vw] h-[512px] bg-secondary/5 blur-[120px] rounded-full pointer-events-none z-0"></div>
-      <div className="fixed top-0 left-0 w-[30vw] h-[307px] bg-primary/5 blur-[100px] rounded-full pointer-events-none z-0"></div>
+      <div className="fixed bottom-0 right-0 w-[50vw] h-128 bg-secondary/5 blur-[120px] rounded-full pointer-events-none z-0"></div>
     </div>
   );
 }

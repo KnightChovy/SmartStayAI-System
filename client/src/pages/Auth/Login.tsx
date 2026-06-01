@@ -2,17 +2,13 @@ import { useState } from 'react';
 import { Link } from 'react-router';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
-import { Label } from '../components/ui/label';
-
-const loginSchema = z.object({
-  email: z.string().min(1, 'Email address is required').email('Please enter a valid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters long'),
-});
-
-type LoginInput = z.infer<typeof loginSchema>;
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
+import {
+  loginSchema,
+  type LoginInput,
+} from '../../validations/auth.validation';
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
@@ -61,14 +57,14 @@ export default function Login() {
       `}</style>
 
       {/* Login Container */}
-      <main className="relative z-10 w-full max-w-[480px]">
+      <main className="relative z-10 w-full max-w-120">
         {/* Brand Logo Center */}
         <div className="text-center mb-stack-lg">
           <Link
             to="/"
             className="inline-block hover:opacity-90 transition-opacity"
           >
-            <h1 className="font-display-lg text-3xl font-extrabold tracking-widest uppercase text-transparent bg-clip-text bg-gradient-to-r from-secondary via-secondary-fixed-dim to-secondary text-glow">
+            <h1 className="font-display-lg text-3xl font-extrabold tracking-widest uppercase text-transparent bg-clip-text bg-linear-to-r from-secondary via-secondary-fixed-dim to-secondary text-glow">
               Smart Stay AI
             </h1>
           </Link>
@@ -86,7 +82,10 @@ export default function Login() {
           </div>
 
           {/* Form */}
-          <form className="space-y-stack-md" onSubmit={handleFormSubmit(onSubmit)}>
+          <form
+            className="space-y-stack-md"
+            onSubmit={handleFormSubmit(onSubmit)}
+          >
             {/* Email Container */}
             <div
               style={{
@@ -179,11 +178,11 @@ export default function Login() {
 
           {/* Divider */}
           <div className="relative flex items-center py-stack-lg">
-            <div className="flex-grow border-t border-outline-variant/30"></div>
-            <span className="flex-shrink mx-4 font-label-sm text-label-sm text-outline uppercase tracking-widest">
+            <div className="grow border-t border-outline-variant/30"></div>
+            <span className="shrink mx-4 font-label-sm text-label-sm text-outline uppercase tracking-widest">
               OR
             </span>
-            <div className="flex-grow border-t border-outline-variant/30"></div>
+            <div className="grow border-t border-outline-variant/30"></div>
           </div>
 
           {/* Social Login */}

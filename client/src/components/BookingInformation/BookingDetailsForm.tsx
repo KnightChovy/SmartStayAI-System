@@ -1,21 +1,12 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { useNavigate } from 'react-router';
-
-const bookingSchema = z.object({
-  firstName: z.string().min(2, { message: 'First name must be at least 2 characters.' }),
-  lastName: z.string().min(2, { message: 'Last name must be at least 2 characters.' }),
-  email: z.string().email({ message: 'Please enter a valid email address.' }),
-  country: z.string().min(1, { message: 'Please select your country.' }),
-  phone: z.string().min(6, { message: 'Please enter a valid phone number.' }),
-  specialRequests: z.string().optional(),
-  arrivalTime: z.string().optional(),
-});
-
-type BookingFormValues = z.infer<typeof bookingSchema>;
+import {
+  bookingSchema,
+  type BookingFormValues,
+} from '../../validations/booking.validation';
 
 interface BookingDetailsFormProps {
   onSubmit: (values: BookingFormValues) => void;
@@ -73,11 +64,15 @@ export function BookingDetailsForm({ onSubmit }: BookingDetailsFormProps) {
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {/* Customer Details Form */}
         <div className="bg-white dark:bg-card rounded-2xl border border-outline-variant/20 shadow-sm p-6 md:p-8 space-y-6">
-          <h2 className="font-bold text-xl text-on-surface">Enter your details</h2>
+          <h2 className="font-bold text-xl text-on-surface">
+            Enter your details
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {/* First Name */}
             <div className="space-y-1.5">
-              <label className="text-[10px] text-outline font-bold uppercase tracking-wider px-1">First Name</label>
+              <label className="text-[10px] text-outline font-bold uppercase tracking-wider px-1">
+                First Name
+              </label>
               <Input
                 {...register('firstName')}
                 className="w-full bg-surface-container-low dark:bg-surface-dim/40 rounded-xl px-4 py-3 text-sm font-semibold focus:ring-2 focus:ring-primary/20 focus:border-primary border border-outline-variant/25 transition-all outline-none h-auto"
@@ -85,13 +80,17 @@ export function BookingDetailsForm({ onSubmit }: BookingDetailsFormProps) {
                 type="text"
               />
               {errors.firstName && (
-                <p className="text-[10px] text-error font-semibold px-1">{errors.firstName.message}</p>
+                <p className="text-[10px] text-error font-semibold px-1">
+                  {errors.firstName.message}
+                </p>
               )}
             </div>
 
             {/* Last Name */}
             <div className="space-y-1.5">
-              <label className="text-[10px] text-outline font-bold uppercase tracking-wider px-1">Last Name</label>
+              <label className="text-[10px] text-outline font-bold uppercase tracking-wider px-1">
+                Last Name
+              </label>
               <Input
                 {...register('lastName')}
                 className="w-full bg-surface-container-low dark:bg-surface-dim/40 rounded-xl px-4 py-3 text-sm font-semibold focus:ring-2 focus:ring-primary/20 focus:border-primary border border-outline-variant/25 transition-all outline-none h-auto"
@@ -99,28 +98,38 @@ export function BookingDetailsForm({ onSubmit }: BookingDetailsFormProps) {
                 type="text"
               />
               {errors.lastName && (
-                <p className="text-[10px] text-error font-semibold px-1">{errors.lastName.message}</p>
+                <p className="text-[10px] text-error font-semibold px-1">
+                  {errors.lastName.message}
+                </p>
               )}
             </div>
 
             {/* Email Address */}
             <div className="md:col-span-2 space-y-1.5">
-              <label className="text-[10px] text-outline font-bold uppercase tracking-wider px-1">Email Address</label>
+              <label className="text-[10px] text-outline font-bold uppercase tracking-wider px-1">
+                Email Address
+              </label>
               <Input
                 {...register('email')}
                 className="w-full bg-surface-container-low dark:bg-surface-dim/40 rounded-xl px-4 py-3 text-sm font-semibold focus:ring-2 focus:ring-primary/20 focus:border-primary border border-outline-variant/25 transition-all outline-none h-auto"
                 placeholder="alexander.sterling@luxe.com"
                 type="email"
               />
-              <p className="text-[9px] text-outline font-semibold px-1 italic">Confirmation email will be sent here</p>
+              <p className="text-[9px] text-outline font-semibold px-1 italic">
+                Confirmation email will be sent here
+              </p>
               {errors.email && (
-                <p className="text-[10px] text-error font-semibold px-1">{errors.email.message}</p>
+                <p className="text-[10px] text-error font-semibold px-1">
+                  {errors.email.message}
+                </p>
               )}
             </div>
 
             {/* Country/Region */}
             <div className="space-y-1.5">
-              <label className="text-[10px] text-outline font-bold uppercase tracking-wider px-1">Country/Region</label>
+              <label className="text-[10px] text-outline font-bold uppercase tracking-wider px-1">
+                Country/Region
+              </label>
               <select
                 {...register('country')}
                 className="w-full bg-surface-container-low dark:bg-surface-dim/40 rounded-xl px-4 py-3 text-sm font-semibold focus:ring-2 focus:ring-primary/20 focus:border-primary border border-outline-variant/25 transition-all outline-none appearance-none"
@@ -132,13 +141,17 @@ export function BookingDetailsForm({ onSubmit }: BookingDetailsFormProps) {
                 <option value="Vietnam">Vietnam</option>
               </select>
               {errors.country && (
-                <p className="text-[10px] text-error font-semibold px-1">{errors.country.message}</p>
+                <p className="text-[10px] text-error font-semibold px-1">
+                  {errors.country.message}
+                </p>
               )}
             </div>
 
             {/* Phone Number */}
             <div className="space-y-1.5">
-              <label className="text-[10px] text-outline font-bold uppercase tracking-wider px-1">Phone Number</label>
+              <label className="text-[10px] text-outline font-bold uppercase tracking-wider px-1">
+                Phone Number
+              </label>
               <Input
                 {...register('phone')}
                 className="w-full bg-surface-container-low dark:bg-surface-dim/40 rounded-xl px-4 py-3 text-sm font-semibold focus:ring-2 focus:ring-primary/20 focus:border-primary border border-outline-variant/25 transition-all outline-none h-auto"
@@ -146,7 +159,9 @@ export function BookingDetailsForm({ onSubmit }: BookingDetailsFormProps) {
                 type="tel"
               />
               {errors.phone && (
-                <p className="text-[10px] text-error font-semibold px-1">{errors.phone.message}</p>
+                <p className="text-[10px] text-error font-semibold px-1">
+                  {errors.phone.message}
+                </p>
               )}
             </div>
           </div>
@@ -154,9 +169,13 @@ export function BookingDetailsForm({ onSubmit }: BookingDetailsFormProps) {
 
         {/* Special Requests Card */}
         <div className="bg-white dark:bg-card rounded-2xl border border-outline-variant/20 shadow-sm p-6 md:p-8 space-y-4">
-          <h2 className="font-bold text-xl text-on-surface">Special requests</h2>
+          <h2 className="font-bold text-xl text-on-surface">
+            Special requests
+          </h2>
           <p className="text-xs font-semibold text-on-surface-variant leading-relaxed">
-            Special requests cannot be guaranteed – but the property will do its best to meet your needs. You can always make a special request after your booking is complete!
+            Special requests cannot be guaranteed – but the property will do its
+            best to meet your needs. You can always make a special request after
+            your booking is complete!
           </p>
           <textarea
             {...register('specialRequests')}
@@ -167,13 +186,21 @@ export function BookingDetailsForm({ onSubmit }: BookingDetailsFormProps) {
 
         {/* Arrival Time Card */}
         <div className="bg-white dark:bg-card rounded-2xl border border-outline-variant/20 shadow-sm p-6 md:p-8 space-y-4">
-          <h2 className="font-bold text-xl text-on-surface">Your arrival time</h2>
+          <h2 className="font-bold text-xl text-on-surface">
+            Your arrival time
+          </h2>
           <div className="flex items-center gap-3 bg-surface-container-low/50 px-4 py-3 rounded-2xl border border-outline-variant/10 max-w-sm">
-            <span className="material-symbols-outlined text-secondary text-xl">schedule</span>
-            <p className="text-xs font-bold text-on-surface-variant">Check-in from 15:00 to 00:00</p>
+            <span className="material-symbols-outlined text-secondary text-xl">
+              schedule
+            </span>
+            <p className="text-xs font-bold text-on-surface-variant">
+              Check-in from 15:00 to 00:00
+            </p>
           </div>
           <div className="space-y-1.5 pt-2">
-            <label className="text-[10px] text-outline font-bold uppercase tracking-wider px-1">Add your estimated arrival time</label>
+            <label className="text-[10px] text-outline font-bold uppercase tracking-wider px-1">
+              Add your estimated arrival time
+            </label>
             <select
               {...register('arrivalTime')}
               className="w-full bg-surface-container-low dark:bg-surface-dim/40 border border-outline-variant/25 rounded-xl px-4 py-3 text-sm font-semibold focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all max-w-sm appearance-none"
@@ -194,7 +221,9 @@ export function BookingDetailsForm({ onSubmit }: BookingDetailsFormProps) {
             className="bg-primary text-white hover:bg-on-surface px-10 py-6 rounded-full font-bold text-xs uppercase tracking-widest shadow-md hover:shadow-lg active:scale-95 transition-all flex items-center gap-3 cursor-pointer border-none h-12"
           >
             Next: Final Details
-            <span className="material-symbols-outlined font-bold text-sm">arrow_forward</span>
+            <span className="material-symbols-outlined font-bold text-sm">
+              arrow_forward
+            </span>
           </Button>
         </div>
       </form>
