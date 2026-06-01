@@ -25,7 +25,7 @@ server/
 
 ## 2. Kiến trúc & Thư viện sử dụng
 - **Framework chính**: Node.js & Express.js
-- **Database**: MongoDB (qua thư viện chuẩn Mongoose)
+- **Database**: MongoDB (qua thư viện chuẩn Mongoose), PostgreSQL
 - **Xác thực (Auth)**: JsonWebToken (JWT) + Passport.js (Chiến lược bảo mật JWT) + bcryptjs (Băm mật khẩu)
 - **Validation**: Joi (Bảo vệ dữ liệu đầu vào chặt chẽ ở cấp độ Routing)
 - **Tài liệu API**: Swagger (`swagger-ui-express` / `swagger-jsdoc`)

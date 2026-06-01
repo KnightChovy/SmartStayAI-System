@@ -1,0 +1,10 @@
+# Claude Code prompt playbooks — công cụ nội bộ hỗ trợ dùng AI, KHÔNG đưa lên repo.
+*PLAYBOOK.md
+
+# CLAUDE.md — hướng dẫn AI nội bộ, không để lộ trên remote.
+# Neo đường dẫn cụ thể: chỉ bỏ root + server, vẫn giữ client/CLAUDE.md.
+/CLAUDE.md
+/server/CLAUDE.md
+
+# Claude Code local settings/secrets (cấu hình theo máy, không commit)
+.claude/settings.local.json
