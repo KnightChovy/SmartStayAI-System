@@ -42,32 +42,67 @@ This file tracks the accomplished tasks, resolved user requests, and visual/func
   - Refactored `VerifyIdentity.tsx` to register 6 numeric digit boxes in Zod and hook them up to the keyboard focus handlers.
   - Refactored `Hero.tsx` search parameters (destination, dates, guests) to utilize react-hook-form registers and form watchers.
   - Refactored `DigitalConcierge.tsx` chat input to use react-hook-form handlers and automatic resets.
+- [x] **Admin Dashboard Shell**:
+  - Built a clean admin dashboard page with sidebar, top bar, KPI cards, chart placeholders, and quick actions.
+  - Registered the `/admin` route to render the new dashboard view.
+- [x] **Admin Layout Extraction**:
+  - Split admin sidebar, navbar, and layout wrapper into reusable components for admin pages.
+- [x] **Alias Setup**:
+  - Added `@/` path alias to Vite and TypeScript configs for cleaner imports.
 
 ---
 
 ## Detailed File Modification Map
 
-| Component / File | Refactoring Action | Key Features |
-| :--- | :--- | :--- |
-| **[ui/input.tsx](file:///Users/manh/Documents/WDP/WDP_Project/SmartStayAI-System/client/src/components/ui/input.tsx)** | `[NEW]` Shadcn Component | Reusable standard text input primitive. |
-| **[ui/label.tsx](file:///Users/manh/Documents/WDP/WDP_Project/SmartStayAI-System/client/src/components/ui/label.tsx)** | `[NEW]` Shadcn Component | Reusable premium typography form labels. |
-| **[Register.tsx](file:///Users/manh/Documents/WDP/WDP_Project/SmartStayAI-System/client/src/pages/Register.tsx)** | `[MODIFY]` Simplified Auth Screen | Adopted Shadcn components, deleted Verification/Send Code states and elements, integrated Zod schema validation & React Hook Form, and removed background images. |
-| **[Login.tsx](file:///Users/manh/Documents/WDP/WDP_Project/SmartStayAI-System/client/src/pages/Login.tsx)** | `[MODIFY]` Auth Screen | Integrated Zod schema validation & React Hook Form, removed background images, and adopted Shadcn components. |
-| **[ForgotPassword.tsx](file:///Users/manh/Documents/WDP/WDP_Project/SmartStayAI-System/client/src/pages/ForgotPassword.tsx)** | `[MODIFY]` Auth Screen | Removed background images, adopted Shadcn components. |
-| **[VerifyIdentity.tsx](file:///Users/manh/Documents/WDP/WDP_Project/SmartStayAI-System/client/src/pages/VerifyIdentity.tsx)** | `[MODIFY]` Auth Screen | Removed background images, adopted Shadcn components for numeric OTP codes and resend triggers. |
-| **[Home/Hero.tsx](file:///Users/manh/Documents/WDP/WDP_Project/SmartStayAI-System/client/src/components/Home/Hero.tsx)** | `[MODIFY]` Home Component | Migrated search trigger to Shadcn Button. |
-| **[Home/LoyaltyBanner.tsx](file:///Users/manh/Documents/WDP/WDP_Project/SmartStayAI-System/client/src/components/Home/LoyaltyBanner.tsx)** | `[MODIFY]` Home Component | Migrated standard buttons to Shadcn Button. |
-| **[Home/Promotions.tsx](file:///Users/manh/Documents/WDP/WDP_Project/SmartStayAI-System/client/src/components/Home/Promotions.tsx)** | `[MODIFY]` Home Component | Migrated card triggers to Shadcn Button. |
-| **[Home/DiscoverVietnam.tsx](file:///Users/manh/Documents/WDP/WDP_Project/SmartStayAI-System/client/src/components/Home/DiscoverVietnam.tsx)** | `[MODIFY]` Home Component | Migrated link text trigger to Shadcn Button variant link. |
-| **[Home/WeekendDeals.tsx](file:///Users/manh/Documents/WDP/WDP_Project/SmartStayAI-System/client/src/components/Home/WeekendDeals.tsx)** | `[MODIFY]` Home Component | Migrated text link and circle favorite overlay buttons to Shadcn Buttons. Interlinked cards to route to `/room/executive-penthouse`. |
-| **[Home/AccommodationTypes.tsx](file:///Users/manh/Documents/WDP/WDP_Project/SmartStayAI-System/client/src/components/Home/AccommodationTypes.tsx)** | `[MODIFY]` Home Component | Migrated type category card buttons to ghost Shadcn Buttons. |
-| **[AccommodationTypes.tsx](file:///Users/manh/Documents/WDP/WDP_Project/SmartStayAI-System/client/src/pages/AccommodationTypes.tsx)** | `[MODIFY]` Stays Page | Interlinked accommodation cards to route to `/room/executive-penthouse`. |
-| **[RoomDetail.tsx](file:///Users/manh/Documents/WDP/WDP_Project/SmartStayAI-System/client/src/pages/RoomDetail.tsx)** | `[MODIFY]` Room Detail Page | Refactored details layout into component folder delegating to `components/Detail` sub-components. |
-| **[BookingConfirmation.tsx](file:///Users/manh/Documents/WDP/WDP_Project/SmartStayAI-System/client/src/components/Detail/BookingConfirmation.tsx)** | `[MODIFY]` Details Component | Updated 'Confirm Booking' action to transition users to `/booking-information` route. |
-| **[BookingInformation.tsx](file:///Users/manh/Documents/WDP/WDP_Project/SmartStayAI-System/client/src/pages/BookingInformation.tsx)** | `[NEW]` Booking Form Page | Created the central BookingInformation customer form orchestrating dynamic pricing variables. |
-| **[components/BookingInformation/*](file:///Users/manh/Documents/WDP/WDP_Project/SmartStayAI-System/client/src/components/BookingInformation)** | `[NEW]` Components folder | Extracted stepper progress indicator, user input form (Hook Form + Zod), highlights perks, and calendar snapshot sidebars. |
-| **[App.tsx](file:///Users/manh/Documents/WDP/WDP_Project/SmartStayAI-System/client/src/App.tsx)** | `[MODIFY]` Main Router | Registered the `/booking-information` route. |
+| Component / File                                                                                                                                     | Refactoring Action                | Key Features                                                                                                                                                      |
+| :--------------------------------------------------------------------------------------------------------------------------------------------------- | :-------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **[ui/input.tsx](file:///Users/manh/Documents/WDP/WDP_Project/SmartStayAI-System/client/src/components/ui/input.tsx)**                               | `[NEW]` Shadcn Component          | Reusable standard text input primitive.                                                                                                                           |
+| **[ui/label.tsx](file:///Users/manh/Documents/WDP/WDP_Project/SmartStayAI-System/client/src/components/ui/label.tsx)**                               | `[NEW]` Shadcn Component          | Reusable premium typography form labels.                                                                                                                          |
+| **[Register.tsx](file:///Users/manh/Documents/WDP/WDP_Project/SmartStayAI-System/client/src/pages/Register.tsx)**                                    | `[MODIFY]` Simplified Auth Screen | Adopted Shadcn components, deleted Verification/Send Code states and elements, integrated Zod schema validation & React Hook Form, and removed background images. |
+| **[Login.tsx](file:///Users/manh/Documents/WDP/WDP_Project/SmartStayAI-System/client/src/pages/Login.tsx)**                                          | `[MODIFY]` Auth Screen            | Integrated Zod schema validation & React Hook Form, removed background images, and adopted Shadcn components.                                                     |
+| **[ForgotPassword.tsx](file:///Users/manh/Documents/WDP/WDP_Project/SmartStayAI-System/client/src/pages/ForgotPassword.tsx)**                        | `[MODIFY]` Auth Screen            | Removed background images, adopted Shadcn components.                                                                                                             |
+| **[VerifyIdentity.tsx](file:///Users/manh/Documents/WDP/WDP_Project/SmartStayAI-System/client/src/pages/VerifyIdentity.tsx)**                        | `[MODIFY]` Auth Screen            | Removed background images, adopted Shadcn components for numeric OTP codes and resend triggers.                                                                   |
+| **[Home/Hero.tsx](file:///Users/manh/Documents/WDP/WDP_Project/SmartStayAI-System/client/src/components/Home/Hero.tsx)**                             | `[MODIFY]` Home Component         | Migrated search trigger to Shadcn Button.                                                                                                                         |
+| **[Home/LoyaltyBanner.tsx](file:///Users/manh/Documents/WDP/WDP_Project/SmartStayAI-System/client/src/components/Home/LoyaltyBanner.tsx)**           | `[MODIFY]` Home Component         | Migrated standard buttons to Shadcn Button.                                                                                                                       |
+| **[Home/Promotions.tsx](file:///Users/manh/Documents/WDP/WDP_Project/SmartStayAI-System/client/src/components/Home/Promotions.tsx)**                 | `[MODIFY]` Home Component         | Migrated card triggers to Shadcn Button.                                                                                                                          |
+| **[Home/DiscoverVietnam.tsx](file:///Users/manh/Documents/WDP/WDP_Project/SmartStayAI-System/client/src/components/Home/DiscoverVietnam.tsx)**       | `[MODIFY]` Home Component         | Migrated link text trigger to Shadcn Button variant link.                                                                                                         |
+| **[Home/WeekendDeals.tsx](file:///Users/manh/Documents/WDP/WDP_Project/SmartStayAI-System/client/src/components/Home/WeekendDeals.tsx)**             | `[MODIFY]` Home Component         | Migrated text link and circle favorite overlay buttons to Shadcn Buttons. Interlinked cards to route to `/room/executive-penthouse`.                              |
+| **[Home/AccommodationTypes.tsx](file:///Users/manh/Documents/WDP/WDP_Project/SmartStayAI-System/client/src/components/Home/AccommodationTypes.tsx)** | `[MODIFY]` Home Component         | Migrated type category card buttons to ghost Shadcn Buttons.                                                                                                      |
+| **[AccommodationTypes.tsx](file:///Users/manh/Documents/WDP/WDP_Project/SmartStayAI-System/client/src/pages/AccommodationTypes.tsx)**                | `[MODIFY]` Stays Page             | Interlinked accommodation cards to route to `/room/executive-penthouse`.                                                                                          |
+| **[RoomDetail.tsx](file:///Users/manh/Documents/WDP/WDP_Project/SmartStayAI-System/client/src/pages/RoomDetail.tsx)**                                | `[MODIFY]` Room Detail Page       | Refactored details layout into component folder delegating to `components/Detail` sub-components.                                                                 |
+| **[BookingConfirmation.tsx](file:///Users/manh/Documents/WDP/WDP_Project/SmartStayAI-System/client/src/components/Detail/BookingConfirmation.tsx)**  | `[MODIFY]` Details Component      | Updated 'Confirm Booking' action to transition users to `/booking-information` route.                                                                             |
+| **[BookingInformation.tsx](file:///Users/manh/Documents/WDP/WDP_Project/SmartStayAI-System/client/src/pages/BookingInformation.tsx)**                | `[NEW]` Booking Form Page         | Created the central BookingInformation customer form orchestrating dynamic pricing variables.                                                                     |
+| **[components/BookingInformation/\*](file:///Users/manh/Documents/WDP/WDP_Project/SmartStayAI-System/client/src/components/BookingInformation)**     | `[NEW]` Components folder         | Extracted stepper progress indicator, user input form (Hook Form + Zod), highlights perks, and calendar snapshot sidebars.                                        |
+| **[App.tsx](file:///Users/manh/Documents/WDP/WDP_Project/SmartStayAI-System/client/src/App.tsx)**                                                    | `[MODIFY]` Main Router            | Registered the `/booking-information` route.                                                                                                                      |
 
 ---
 
-*Last Updated: 2026-05-30*
+_Last Updated: 2026-06-01_
+
+- [x] **Admin Multi-Page Refactor (Based on New Mockups)**:
+  - Reworked admin routing to nested pages under /admin/\* with shared shell layout.
+  - Extracted and reused AdminSidebar, AdminNavbar, and AdminLayout as a true admin frame.
+  - Added separate pages for AdminPropertiesPage, AdminUsersPage, AdminBookingsPage, and AdminAnalyticsPage based on provided references.
+  - Switched new admin action controls and search fields to Shadcn primitives (Button, Input).
+- [x] **Admin Component Decomposition (All Pages + Dashboard)**:
+  - Added dedicated `/admin/dashboard` page based on the provided dashboard reference.
+  - Split dashboard into small components: stat card, growth chart panel, app panel, quick actions panel, activity log table, and system health card.
+  - Refactored admin pages (`analytics`, `properties`, `users`, `bookings`) to compose from modular components instead of large page files.
+  - Added shared admin primitives: `AdminPageHeader` and `AdminTable` for consistent structure and reuse across admin screens.
+  - Verified build success after refactor (`npm run build`).
+- [x] **Admin Responsive Tailwind Tuning (Laptop + Mobile)**:
+  - Refined admin shell spacing and breakpoints (`AdminLayout`, `AdminNavbar`, `AdminSidebar`) for better laptop fit.
+  - Reduced oversized typography and normalized card/table spacing on dashboard widgets.
+  - Added horizontal overflow handling and minimum width strategy for admin tables on smaller screens.
+  - Tuned analytics/dashboard chart-card sizing and responsive ring/chart placeholders.
+  - Verified compile success after class updates with `npm run build`.
+- [x] **Admin Fixed Shell + Narrower Content Width**:
+  - Made admin sidebar fixed to viewport on desktop (`lg+`) so it no longer stretches with page content height.
+  - Made admin navbar fixed at top on desktop with proper left offset matching sidebar width.
+  - Reduced effective page footprint by constraining main content container to `max-w-[1120px]` / `xl:max-w-[1200px]`.
+  - Added top padding compensation for fixed navbar to avoid overlap.
+  - Verified build success after layout changes (`npm run build`).
+- [x] **Admin Dashboard Resizing to Match Latest Reference**:
+  - Re-tuned fixed-shell dimensions (sidebar, navbar offsets, content container) for the latest provided dashboard proportion.
+  - Resized dashboard-specific UI blocks (KPI cards, growth panel, device panel, right app rail, quick action rail, activity log, system health) to align with the screenshot's larger visual scale.
+  - Verified build passes after class adjustments (`npm run build`).

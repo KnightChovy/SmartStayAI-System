@@ -38,7 +38,7 @@ export default function DiscoverVietnam() {
         <Button
           variant="link"
           onClick={() => alert('Loading all Vietnam sanctuaries...')}
-          className="text-sm font-semibold text-primary font-bold hover:underline flex items-center gap-2 cursor-pointer h-auto p-0"
+          className="text-sm font-semibold text-primary hover:underline flex items-center gap-2 cursor-pointer h-auto p-0"
         >
           View all destinations
           <span className="material-symbols-outlined text-sm font-bold">
@@ -53,7 +53,7 @@ export default function DiscoverVietnam() {
             onClick={() => alert(`Curating itinerary for ${dest.name}...`)}
             className="group cursor-pointer"
           >
-            <div className="relative aspect-[4/5] rounded-3xl overflow-hidden mb-4 shadow-md">
+            <div className="relative aspect-4/5 rounded-3xl overflow-hidden mb-4 shadow-md">
               <img
                 alt={dest.name}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"

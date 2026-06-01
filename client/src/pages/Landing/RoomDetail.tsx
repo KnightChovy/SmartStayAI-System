@@ -1,13 +1,13 @@
 import { useState } from 'react';
-import { ImageGallery } from '../components/Detail/ImageGallery';
-import { RoomInfo } from '../components/Detail/RoomInfo';
-import { RoomAvailability } from '../components/Detail/RoomAvailability';
-import { BookingCard } from '../components/Detail/BookingCard';
-import { GuestReviews } from '../components/Detail/GuestReviews';
-import { NearbyAttractions } from '../components/Detail/NearbyAttractions';
-import { PropertyFacilities } from '../components/Detail/PropertyFacilities';
-import { HouseRules } from '../components/Detail/HouseRules';
-import { BookingConfirmation } from '../components/Detail/BookingConfirmation';
+import { ImageGallery } from '../../components/Detail/ImageGallery';
+import { RoomInfo } from '../../components/Detail/RoomInfo';
+import { RoomAvailability } from '../../components/Detail/RoomAvailability';
+import { BookingCard } from '../../components/Detail/BookingCard';
+import { GuestReviews } from '../../components/Detail/GuestReviews';
+import { NearbyAttractions } from '../../components/Detail/NearbyAttractions';
+import { PropertyFacilities } from '../../components/Detail/PropertyFacilities';
+import { HouseRules } from '../../components/Detail/HouseRules';
+import { BookingConfirmation } from '../../components/Detail/BookingConfirmation';
 
 interface Room {
   id: string;
@@ -61,7 +61,8 @@ export default function RoomDetail() {
       name: 'Superior Double Room',
       price: 280,
       rating: '9.6',
-      description: 'Elegant city sanctuary blending high-fidelity interior architecture with modern smart convenience. Unwind with customized ambient options.',
+      description:
+        'Elegant city sanctuary blending high-fidelity interior architecture with modern smart convenience. Unwind with customized ambient options.',
       details: '35 m² • City View • 1 Large Double Bed',
       capacity: 'Max 2 guests',
       size: 'Size: 35 m²',
@@ -75,7 +76,8 @@ export default function RoomDetail() {
       name: 'Executive Penthouse Suite',
       price: 450,
       rating: '9.8',
-      description: 'Ascend to the pinnacle of coastal luxury in our Executive Penthouse Suite. Designed for the discerning traveler, this expansive residence blends architectural precision with an editorial aesthetic. Every detail—from the bespoke walnut cabinetry to the curated art pieces—reflects our commitment to \'Quiet Luxury\'. Enjoy panoramic views of the ocean from your private terrace, or unwind in the integrated smart living area powered by our proprietary AI concierge.',
+      description:
+        "Ascend to the pinnacle of coastal luxury in our Executive Penthouse Suite. Designed for the discerning traveler, this expansive residence blends architectural precision with an editorial aesthetic. Every detail—from the bespoke walnut cabinetry to the curated art pieces—reflects our commitment to 'Quiet Luxury'. Enjoy panoramic views of the ocean from your private terrace, or unwind in the integrated smart living area powered by our proprietary AI concierge.",
       details: '85 m² • Ocean View • 1 King Bed',
       capacity: 'Max 4 guests',
       size: 'Size: 85 m²',
@@ -106,21 +108,29 @@ export default function RoomDetail() {
   const handlePrevPhoto = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (activePhotoIdx !== null) {
-      setActivePhotoIdx(prev => (prev === null ? null : (prev - 1 + images.length) % images.length));
+      setActivePhotoIdx(prev =>
+        prev === null ? null : (prev - 1 + images.length) % images.length
+      );
     }
   };
 
   const handleNextPhoto = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (activePhotoIdx !== null) {
-      setActivePhotoIdx(prev => (prev === null ? null : (prev + 1) % images.length));
+      setActivePhotoIdx(prev =>
+        prev === null ? null : (prev + 1) % images.length
+      );
     }
   };
 
   const formatDisplayDate = (dateStr: string) => {
     try {
       const date = new Date(dateStr);
-      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      });
     } catch {
       return dateStr;
     }

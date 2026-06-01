@@ -1,5 +1,3 @@
-
-
 interface Room {
   rating: string;
 }
@@ -21,7 +19,9 @@ export function GuestReviews({ selectedRoom }: GuestReviewsProps) {
             </div>
             <div>
               <p className="font-bold text-lg text-on-surface">Exceptional</p>
-              <p className="text-on-surface-variant text-xs font-semibold">Based on 124 reviews</p>
+              <p className="text-on-surface-variant text-xs font-semibold">
+                Based on 124 reviews
+              </p>
             </div>
           </div>
           <div className="space-y-3.5 pt-2">
@@ -48,31 +48,51 @@ export function GuestReviews({ selectedRoom }: GuestReviewsProps) {
           <div className="bg-surface-container-low/40 p-5 rounded-2xl border border-outline-variant/10 shadow-2xs hover:shadow-xs transition-shadow duration-300">
             <div className="flex justify-between items-start mb-3">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-primary-fixed-dim flex items-center justify-center font-bold text-primary text-xs">EJ</div>
+                <div className="w-9 h-9 rounded-full bg-primary-fixed-dim flex items-center justify-center font-bold text-primary text-xs">
+                  EJ
+                </div>
                 <div>
-                  <h4 className="text-xs font-bold text-on-surface">Elena J.</h4>
-                  <p className="text-[9px] text-outline font-bold uppercase tracking-wider">United Kingdom • Oct 2024</p>
+                  <h4 className="text-xs font-bold text-on-surface">
+                    Elena J.
+                  </h4>
+                  <p className="text-[9px] text-outline font-bold uppercase tracking-wider">
+                    United Kingdom • Oct 2024
+                  </p>
                 </div>
               </div>
-              <span className="font-bold text-primary text-sm bg-white dark:bg-card px-2.5 py-0.5 rounded-full border border-outline-variant/10 shadow-2xs">10.0</span>
+              <span className="font-bold text-primary text-sm bg-white dark:bg-card px-2.5 py-0.5 rounded-full border border-outline-variant/10 shadow-2xs">
+                10.0
+              </span>
             </div>
             <p className="text-on-surface-variant italic leading-relaxed text-xs">
-              "The AI concierge perfectly anticipated our dinner preferences. The view of the sunset from the penthouse is truly life-changing. An absolute editorial dream."
+              "The AI concierge perfectly anticipated our dinner preferences.
+              The view of the sunset from the penthouse is truly life-changing.
+              An absolute editorial dream."
             </p>
           </div>
           <div className="bg-surface-container-low/40 p-5 rounded-2xl border border-outline-variant/10 shadow-2xs hover:shadow-xs transition-shadow duration-300">
             <div className="flex justify-between items-start mb-3">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-secondary-fixed-dim flex items-center justify-center font-bold text-secondary text-xs">MK</div>
+                <div className="w-9 h-9 rounded-full bg-secondary-fixed-dim flex items-center justify-center font-bold text-secondary text-xs">
+                  MK
+                </div>
                 <div>
-                  <h4 className="text-xs font-bold text-on-surface">Marcus K.</h4>
-                  <p className="text-[9px] text-outline font-bold uppercase tracking-wider">Germany • Sep 2024</p>
+                  <h4 className="text-xs font-bold text-on-surface">
+                    Marcus K.
+                  </h4>
+                  <p className="text-[9px] text-outline font-bold uppercase tracking-wider">
+                    Germany • Sep 2024
+                  </p>
                 </div>
               </div>
-              <span className="font-bold text-primary text-sm bg-white dark:bg-card px-2.5 py-0.5 rounded-full border border-outline-variant/10 shadow-2xs">9.6</span>
+              <span className="font-bold text-primary text-sm bg-white dark:bg-card px-2.5 py-0.5 rounded-full border border-outline-variant/10 shadow-2xs">
+                9.6
+              </span>
             </div>
             <p className="text-on-surface-variant italic leading-relaxed text-xs">
-              "Impeccable design. The soundproofing is remarkable - you feel like the only person in the world while being steps away from the city center."
+              "Impeccable design. The soundproofing is remarkable - you feel
+              like the only person in the world while being steps away from the
+              city center."
             </p>
           </div>
         </div>

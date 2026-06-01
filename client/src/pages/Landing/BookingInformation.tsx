@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
-import { BookingStepper } from '../components/BookingInformation/BookingStepper';
-import { BookingSidebar } from '../components/BookingInformation/BookingSidebar';
-import { BookingDetailsForm } from '../components/BookingInformation/BookingDetailsForm';
-import { BookingPerks } from '../components/BookingInformation/BookingPerks';
-import { Button } from '../components/ui/button';
+import { BookingStepper } from '../../components/BookingInformation/BookingStepper';
+import { BookingSidebar } from '../../components/BookingInformation/BookingSidebar';
+import { BookingDetailsForm } from '../../components/BookingInformation/BookingDetailsForm';
+import { BookingPerks } from '../../components/BookingInformation/BookingPerks';
+import { Button } from '../../components/ui/button';
 
 interface BookingFormValues {
   firstName: string;
@@ -41,7 +41,8 @@ export default function BookingInformation() {
   }
 
   // Summary Stateful Overlay
-  const [successDetails, setSuccessDetails] = useState<BookingFormValues | null>(null);
+  const [successDetails, setSuccessDetails] =
+    useState<BookingFormValues | null>(null);
 
   const handleFormSubmit = (values: BookingFormValues) => {
     setSuccessDetails(values);
@@ -50,7 +51,11 @@ export default function BookingInformation() {
   const formatDisplayDate = (dateStr: string) => {
     try {
       const date = new Date(dateStr);
-      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      });
     } catch {
       return dateStr;
     }
@@ -90,54 +95,80 @@ export default function BookingInformation() {
 
       {/* Success Confirmation Modal */}
       {successDetails && (
-        <div className="fixed inset-0 z-[100] bg-black/60 flex items-center justify-center p-4 backdrop-blur-md animate-fade-in">
+        <div className="fixed inset-0 z-100 bg-black/60 flex items-center justify-center p-4 backdrop-blur-md animate-fade-in">
           <div className="bg-white dark:bg-card p-6 md:p-8 rounded-3xl max-w-md w-full shadow-2xl border border-outline-variant/30 space-y-6 text-center animate-scale-in">
             <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto text-green-600 border border-green-500/20 shadow-inner">
-              <span className="material-symbols-outlined text-3xl animate-bounce" style={{ fontVariationSettings: "'FILL' 1" }}>
+              <span
+                className="material-symbols-outlined text-3xl animate-bounce"
+                style={{ fontVariationSettings: "'FILL' 1" }}
+              >
                 check_circle
               </span>
             </div>
-            
+
             <div className="space-y-2">
-              <h3 className="font-bold text-2xl text-on-surface">Details Saved Successfully</h3>
+              <h3 className="font-bold text-2xl text-on-surface">
+                Details Saved Successfully
+              </h3>
               <p className="text-xs text-on-surface-variant font-semibold">
-                Your reservation details are ready. Review summary before final authorization.
+                Your reservation details are ready. Review summary before final
+                authorization.
               </p>
             </div>
 
             <div className="bg-surface-container-low p-5 rounded-2xl border border-outline-variant/10 text-left text-xs space-y-3.5">
               <div className="flex justify-between">
-                <span className="text-on-surface-variant font-semibold">Name:</span>
+                <span className="text-on-surface-variant font-semibold">
+                  Name:
+                </span>
                 <span className="text-on-surface font-bold">
                   {successDetails.firstName} {successDetails.lastName}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-on-surface-variant font-semibold">Email:</span>
-                <span className="text-on-surface font-bold break-all">{successDetails.email}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-on-surface-variant font-semibold">Phone:</span>
-                <span className="text-on-surface font-bold">{successDetails.phone}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-on-surface-variant font-semibold">Dates:</span>
-                <span className="text-on-surface font-bold">
-                  {formatDisplayDate(checkIn)} — {formatDisplayDate(checkOut)} ({nights} {nights === 1 ? 'Night' : 'Nights'})
+                <span className="text-on-surface-variant font-semibold">
+                  Email:
+                </span>
+                <span className="text-on-surface font-bold break-all">
+                  {successDetails.email}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-on-surface-variant font-semibold">Suite selected:</span>
-                <span className="text-on-surface font-bold leading-tight text-right max-w-[200px]">
+                <span className="text-on-surface-variant font-semibold">
+                  Phone:
+                </span>
+                <span className="text-on-surface font-bold">
+                  {successDetails.phone}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-on-surface-variant font-semibold">
+                  Dates:
+                </span>
+                <span className="text-on-surface font-bold">
+                  {formatDisplayDate(checkIn)} — {formatDisplayDate(checkOut)} (
+                  {nights} {nights === 1 ? 'Night' : 'Nights'})
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-on-surface-variant font-semibold">
+                  Suite selected:
+                </span>
+                <span className="text-on-surface font-bold leading-tight text-right max-w-50">
                   {selectedRoom.name}
                 </span>
               </div>
-              {successDetails.arrivalTime && successDetails.arrivalTime !== 'Please select' && (
-                <div className="flex justify-between">
-                  <span className="text-on-surface-variant font-semibold">Arrival Time:</span>
-                  <span className="text-on-surface font-bold">{successDetails.arrivalTime}</span>
-                </div>
-              )}
+              {successDetails.arrivalTime &&
+                successDetails.arrivalTime !== 'Please select' && (
+                  <div className="flex justify-between">
+                    <span className="text-on-surface-variant font-semibold">
+                      Arrival Time:
+                    </span>
+                    <span className="text-on-surface font-bold">
+                      {successDetails.arrivalTime}
+                    </span>
+                  </div>
+                )}
               <hr className="border-outline-variant/10" />
               <div className="flex justify-between text-sm font-bold text-on-surface pt-1">
                 <span>Grand Total:</span>

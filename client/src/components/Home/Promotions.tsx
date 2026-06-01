@@ -11,7 +11,7 @@ export default function Promotions() {
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
             src="https://lh3.googleusercontent.com/aida-public/AB6AXuBwZm1mLcG2uWK34GELni3l9M7LTJOdSHF3oKKSUo1DlUmMrviQlkcFGUW4uyn6qZaipqVvFD4qKsjyyrb0drSGMbC_cUeTMUrX1DrsSM5Uws1-8THrXrlDlSVq6skw4ndssX1TymM2_J8kkdWoE_UDQCN_jFaeqtZOGzSJ4MnmhyzacsThZjWG5w8NRYDjL-FaVwjeiHg7sbavK-hk0SoD-Dd47Ec3BeG-buhT2iLnozQKMYWsdLnOt6duhci7v9sK1NQpKysIDNYu"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent flex flex-col justify-center p-8">
+          <div className="absolute inset-0 bg-linear-to-r from-black/60 to-transparent flex flex-col justify-center p-8">
             <span className="bg-ai-glow text-on-surface text-[10px] font-bold px-3 py-1 rounded-full w-fit mb-3 uppercase tracking-wider">
               Early Bird
             </span>
@@ -34,7 +34,7 @@ export default function Promotions() {
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
             src="https://lh3.googleusercontent.com/aida-public/AB6AXuCwbaucmuTapC804rAWuD3gnUC6PnXaPkoL9tSk7Hma_8E5oYnNAj7OMBKvAltg-TaoXpycEY1cCxHOYdUBoUpZUUK2FSq3S2a0E-clguSD91SaLCCwKpZoboLABtfiYLbC9PlOsECBor4ukUATq__aBjpFIn-hV5ZrdYuRD3vNfldHnHPntVBlg_LGxk4hAvzAjglhP-Ky2zLk29BOsVmdsTw-_RSnYYA6V-pYgsU-RqzkTw_7KR2PyS0b7cwHT9wgCseWi_U3LhYy"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent flex flex-col justify-center p-8">
+          <div className="absolute inset-0 bg-linear-to-r from-black/60 to-transparent flex flex-col justify-center p-8">
             <span className="bg-premium-gold text-white text-[10px] font-bold px-3 py-1 rounded-full w-fit mb-3 uppercase tracking-wider">
               Members Only
             </span>
