@@ -13,14 +13,15 @@ const heroSearchSchema = z.object({
 type HeroSearchFormValues = z.infer<typeof heroSearchSchema>;
 
 export default function Hero() {
-  const { register, handleSubmit, setValue, watch } = useForm<HeroSearchFormValues>({
-    resolver: zodResolver(heroSearchSchema),
-    defaultValues: {
-      destination: '',
-      dates: 'Add dates',
-      guests: 'Add guests',
-    },
-  });
+  const { register, handleSubmit, setValue, watch } =
+    useForm<HeroSearchFormValues>({
+      resolver: zodResolver(heroSearchSchema),
+      defaultValues: {
+        destination: '',
+        dates: 'Add dates',
+        guests: 'Add guests',
+      },
+    });
 
   const dates = watch('dates');
   const guests = watch('guests');
@@ -32,7 +33,7 @@ export default function Hero() {
   };
 
   return (
-    <section className="relative pt-20 pb-24 px-margin-mobile overflow-hidden bg-gradient-to-b from-surface to-transparent w-full">
+    <section className="relative pt-20 pb-24 px-margin-mobile overflow-hidden bg-linear-to-b from-surface to-transparent w-full">
       <div className="max-w-4xl mx-auto text-center mb-12">
         <h1 className="font-be-vietnam text-display-lg md:text-6xl text-on-surface mb-6 font-bold leading-tight">
           Find your next stay

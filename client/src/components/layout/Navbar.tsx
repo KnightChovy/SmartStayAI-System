@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../../hooks/useAuth';
 
 export default function Navbar() {
   const location = useLocation();
@@ -65,7 +65,9 @@ export default function Navbar() {
                     />
                   ) : (
                     <div className="size-8 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-bold text-xs">
-                      {(user?.name || user?.email || 'US').slice(0, 2).toUpperCase()}
+                      {(user?.name || user?.email || 'US')
+                        .slice(0, 2)
+                        .toUpperCase()}
                     </div>
                   )}
                   <span className="hidden md:inline text-sm font-semibold text-on-surface">

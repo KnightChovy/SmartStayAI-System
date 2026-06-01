@@ -44,7 +44,7 @@ export default function AccommodationTypes() {
               variant="ghost"
               key={type.name}
               onClick={() => setSelected(type.name)}
-              className={`flex flex-col items-center gap-4 min-w-[140px] group transition-all duration-300 h-auto p-0 hover:bg-transparent ${isSelected ? 'opacity-100 scale-102' : 'opacity-70 hover:opacity-100'}`}
+              className={`flex flex-col items-center gap-4 min-w-35 group transition-all duration-300 h-auto p-0 hover:bg-transparent ${isSelected ? 'opacity-100 scale-102' : 'opacity-70 hover:opacity-100'}`}
             >
               <div
                 className={`w-full aspect-square rounded-3xl bg-surface-container overflow-hidden ring-2 transition-all duration-300 shadow-sm ${isSelected ? 'ring-primary' : 'ring-outline-variant/20 group-hover:scale-105'}`}

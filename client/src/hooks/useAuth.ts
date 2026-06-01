@@ -1,20 +1,24 @@
 import { useMutation } from '@tanstack/react-query';
 import { useNavigate } from 'react-router';
 import { authService } from '../services/auth.service';
-import type { RegisterPayload, LoginPayload, ResetPasswordPayload } from '../services/auth.service';
+import type {
+  RegisterPayload,
+  LoginPayload,
+  ResetPasswordPayload,
+} from '../services/auth.service';
 import { useAuthStore } from '../stores/auth.store';
 
 export function useAuth() {
   const navigate = useNavigate();
-  const setAuth = useAuthStore((state) => state.setAuth);
-  const clearAuth = useAuthStore((state) => state.clearAuth);
-  const user = useAuthStore((state) => state.user);
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  const currentRefreshToken = useAuthStore((state) => state.refreshToken);
+  const setAuth = useAuthStore(state => state.setAuth);
+  const clearAuth = useAuthStore(state => state.clearAuth);
+  const user = useAuthStore(state => state.user);
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  const currentRefreshToken = useAuthStore(state => state.refreshToken);
 
   const loginMutation = useMutation({
     mutationFn: (payload: LoginPayload) => authService.login(payload),
-    onSuccess: (data) => {
+    onSuccess: data => {
       const { user, tokens } = data;
       if (user && tokens?.access?.token && tokens?.refresh?.token) {
         setAuth(user, tokens.access.token, tokens.refresh.token);
@@ -28,7 +32,7 @@ export function useAuth() {
 
   const registerMutation = useMutation({
     mutationFn: (payload: RegisterPayload) => authService.register(payload),
-    onSuccess: (data) => {
+    onSuccess: data => {
       const { user, tokens } = data;
       if (user && tokens?.access?.token && tokens?.refresh?.token) {
         setAuth(user, tokens.access.token, tokens.refresh.token);
@@ -54,8 +58,13 @@ export function useAuth() {
   });
 
   const resetPasswordMutation = useMutation({
-    mutationFn: ({ token, payload }: { token: string; payload: ResetPasswordPayload }) =>
-      authService.resetPassword(token, payload),
+    mutationFn: ({
+      token,
+      payload,
+    }: {
+      token: string;
+      payload: ResetPasswordPayload;
+    }) => authService.resetPassword(token, payload),
   });
 
   const verifyEmailMutation = useMutation({

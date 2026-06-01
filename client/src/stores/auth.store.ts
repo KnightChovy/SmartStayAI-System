@@ -24,7 +24,7 @@ export interface AuthState {
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    set => ({
       user: null,
       accessToken: null,
       refreshToken: null,
@@ -43,8 +43,8 @@ export const useAuthStore = create<AuthState>()(
           refreshToken: null,
           isAuthenticated: false,
         }),
-      updateUser: (updatedFields) =>
-        set((state) => ({
+      updateUser: updatedFields =>
+        set(state => ({
           user: state.user ? { ...state.user, ...updatedFields } : null,
         })),
     }),

@@ -30,14 +30,18 @@ export function BookingConfirmation({
   const navigate = useNavigate();
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black/60 flex items-center justify-center p-4 backdrop-blur-md animate-fade-in">
+    <div className="fixed inset-0 z-100 bg-black/60 flex items-center justify-center p-4 backdrop-blur-md animate-fade-in">
       <div className="bg-white dark:bg-card p-6 md:p-8 rounded-3xl max-w-md w-full shadow-2xl border border-outline-variant/30 space-y-6 text-center animate-scale-in">
         <div className="w-16 h-16 bg-primary-container/20 rounded-full flex items-center justify-center mx-auto text-primary border border-outline-variant/20 shadow-inner">
-          <span className="material-symbols-outlined text-3xl animate-pulse">hotel</span>
+          <span className="material-symbols-outlined text-3xl animate-pulse">
+            hotel
+          </span>
         </div>
-        
+
         <div className="space-y-2">
-          <h3 className="font-bold text-2xl text-on-surface">Confirm Your Reservation</h3>
+          <h3 className="font-bold text-2xl text-on-surface">
+            Confirm Your Reservation
+          </h3>
           <p className="text-xs text-on-surface-variant font-semibold">
             An editorial AI concierge experience is preparing for your arrival.
           </p>
@@ -45,21 +49,33 @@ export function BookingConfirmation({
 
         <div className="bg-surface-container-low p-5 rounded-2xl border border-outline-variant/10 text-left text-xs space-y-3.5">
           <div className="flex justify-between">
-            <span className="text-on-surface-variant font-semibold">Accommodation:</span>
-            <span className="text-on-surface font-bold">{selectedRoom.name}</span>
+            <span className="text-on-surface-variant font-semibold">
+              Accommodation:
+            </span>
+            <span className="text-on-surface font-bold">
+              {selectedRoom.name}
+            </span>
           </div>
           <div className="flex justify-between">
-            <span className="text-on-surface-variant font-semibold">Dates:</span>
+            <span className="text-on-surface-variant font-semibold">
+              Dates:
+            </span>
             <span className="text-on-surface font-bold text-right">
               {formatDisplayDate(checkIn)} — {formatDisplayDate(checkOut)}
             </span>
           </div>
           <div className="flex justify-between">
-            <span className="text-on-surface-variant font-semibold">Stay Duration:</span>
-            <span className="text-on-surface font-bold">{nights} {nights === 1 ? 'Night' : 'Nights'}</span>
+            <span className="text-on-surface-variant font-semibold">
+              Stay Duration:
+            </span>
+            <span className="text-on-surface font-bold">
+              {nights} {nights === 1 ? 'Night' : 'Nights'}
+            </span>
           </div>
           <div className="flex justify-between">
-            <span className="text-on-surface-variant font-semibold">Guests count:</span>
+            <span className="text-on-surface-variant font-semibold">
+              Guests count:
+            </span>
             <span className="text-on-surface font-bold">{guests}</span>
           </div>
           <hr className="border-outline-variant/10" />

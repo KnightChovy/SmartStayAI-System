@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import AccommodationTypes from '../components/Home/AccommodationTypes';
+import AccommodationTypes from '../../components/Home/AccommodationTypes';
 
 export default function AccommodationTypesPage() {
   const navigate = useNavigate();

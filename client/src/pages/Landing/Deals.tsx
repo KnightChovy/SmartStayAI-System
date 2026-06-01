@@ -1,6 +1,6 @@
-import Promotions from '../components/Home/Promotions';
-import WeekendDeals from '../components/Home/WeekendDeals';
-import LoyaltyBanner from '../components/Home/LoyaltyBanner';
+import Promotions from '../../components/Home/Promotions';
+import WeekendDeals from '../../components/Home/WeekendDeals';
+import LoyaltyBanner from '../../components/Home/LoyaltyBanner';
 
 export default function Deals() {
   return (

@@ -1,15 +1,20 @@
 import { useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../../hooks/useAuth';
 
 export default function VerifyEmail() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
-  const { verifyEmail, isVerifyingEmail, verifyEmailError, verifyEmailSuccess } = useAuth();
+  const {
+    verifyEmail,
+    isVerifyingEmail,
+    verifyEmailError,
+    verifyEmailSuccess,
+  } = useAuth();
 
   useEffect(() => {
     if (token) {
-      verifyEmail(token).catch((err) => {
+      verifyEmail(token).catch(err => {
         console.error('Email verification error:', err);
       });
     }
@@ -31,8 +36,11 @@ export default function VerifyEmail() {
 
       <main className="relative z-10 w-full max-w-md">
         <div className="text-center mb-stack-lg">
-          <Link to="/" className="inline-block hover:opacity-90 transition-opacity">
-            <h1 className="font-display-lg text-3xl font-extrabold tracking-widest uppercase text-transparent bg-clip-text bg-gradient-to-r from-secondary via-secondary-fixed-dim to-secondary text-glow">
+          <Link
+            to="/"
+            className="inline-block hover:opacity-90 transition-opacity"
+          >
+            <h1 className="font-display-lg text-3xl font-extrabold tracking-widest uppercase text-transparent bg-clip-text bg-linear-to-r from-secondary via-secondary-fixed-dim to-secondary text-glow">
               Smart Stay AI
             </h1>
           </Link>
@@ -50,10 +58,13 @@ export default function VerifyEmail() {
 
           {!token ? (
             <div className="flex flex-col items-center">
-              <span className="material-symbols-outlined text-error text-5xl mb-4">error</span>
+              <span className="material-symbols-outlined text-error text-5xl mb-4">
+                error
+              </span>
               <p className="font-semibold text-lg text-error">Missing Token</p>
               <p className="text-sm text-on-surface-variant mt-2 max-w-[300px]">
-                Mã xác minh không tồn tại hoặc không hợp lệ. Vui lòng kiểm tra lại liên kết trong email của bạn.
+                Mã xác minh không tồn tại hoặc không hợp lệ. Vui lòng kiểm tra
+                lại liên kết trong email của bạn.
               </p>
               <Link
                 to="/"
@@ -69,7 +80,8 @@ export default function VerifyEmail() {
               </span>
               <p className="font-semibold text-lg">Verifying Your Email...</p>
               <p className="text-sm text-on-surface-variant mt-2">
-                Hệ thống đang tiến hành kiểm tra mã xác thực của bạn. Vui lòng chờ trong giây lát.
+                Hệ thống đang tiến hành kiểm tra mã xác thực của bạn. Vui lòng
+                chờ trong giây lát.
               </p>
             </div>
           ) : verifyEmailSuccess ? (
@@ -77,9 +89,12 @@ export default function VerifyEmail() {
               <span className="material-symbols-outlined text-green-800 text-5xl mb-4 animate-bounce">
                 check_circle
               </span>
-              <p className="font-semibold text-lg text-green-700">Email Verified Successfully!</p>
+              <p className="font-semibold text-lg text-green-700">
+                Email Verified Successfully!
+              </p>
               <p className="text-sm text-on-surface-variant mt-2 max-w-[300px]">
-                Tài khoản của bạn đã được kích hoạt thành công. Bạn hiện có thể đăng nhập để trải nghiệm SmartStay AI.
+                Tài khoản của bạn đã được kích hoạt thành công. Bạn hiện có thể
+                đăng nhập để trải nghiệm SmartStay AI.
               </p>
               <Link
                 to="/login"
@@ -90,8 +105,12 @@ export default function VerifyEmail() {
             </div>
           ) : (
             <div className="flex flex-col items-center">
-              <span className="material-symbols-outlined text-error text-5xl mb-4">cancel</span>
-              <p className="font-semibold text-lg text-error">Verification Failed</p>
+              <span className="material-symbols-outlined text-error text-5xl mb-4">
+                cancel
+              </span>
+              <p className="font-semibold text-lg text-error">
+                Verification Failed
+              </p>
               <p className="text-sm text-on-surface-variant mt-2 max-w-[300px]">
                 {(verifyEmailError as any)?.response?.data?.message ||
                   'Mã xác thực đã hết hạn hoặc không chính xác. Vui lòng yêu cầu gửi lại email xác thực.'}
@@ -107,8 +126,8 @@ export default function VerifyEmail() {
         </div>
       </main>
 
-      <div className="fixed bottom-0 right-0 w-[50vw] h-[512px] bg-secondary/5 blur-[120px] rounded-full pointer-events-none z-0"></div>
-      <div className="fixed top-0 left-0 w-[30vw] h-[307px] bg-primary/5 blur-[100px] rounded-full pointer-events-none z-0"></div>
+      <div className="fixed bottom-0 right-0 w-[50vw] h-128 bg-secondary/5 blur-[120px] rounded-full pointer-events-none z-0"></div>
+      <div className="fixed top-0 left-0 w-[30vw] h-76.75 bg-primary/5 blur-[100px] rounded-full pointer-events-none z-0"></div>
     </div>
   );
 }

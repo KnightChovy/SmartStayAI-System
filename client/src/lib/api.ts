@@ -11,14 +11,14 @@ export const api = axios.create({
 });
 
 api.interceptors.request.use(
-  (config) => {
+  config => {
     const token = useAuthStore.getState().accessToken;
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
-  (error) => {
+  error => {
     return Promise.reject(error);
   }
 );
@@ -30,7 +30,7 @@ let failedQueue: Array<{
 }> = [];
 
 const processQueue = (error: Error | null, token: string | null = null) => {
-  failedQueue.forEach((prom) => {
+  failedQueue.forEach(prom => {
     if (error) {
       prom.reject(error);
     } else {
@@ -41,8 +41,8 @@ const processQueue = (error: Error | null, token: string | null = null) => {
 };
 
 api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
+  response => response,
+  async error => {
     const originalRequest = error.config;
 
     if (error.response?.status === 401 && !originalRequest._retry) {
@@ -50,13 +50,13 @@ api.interceptors.response.use(
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         })
-          .then((token) => {
+          .then(token => {
             if (originalRequest.headers) {
               originalRequest.headers.Authorization = `Bearer ${token}`;
             }
             return api(originalRequest);
           })
-          .catch((err) => {
+          .catch(err => {
             return Promise.reject(err);
           });
       }
@@ -73,15 +73,20 @@ api.interceptors.response.use(
       }
 
       try {
-        const response = await axios.post(`${API_BASE_URL}/auth/refresh-tokens`, {
-          refreshToken,
-        });
+        const response = await axios.post(
+          `${API_BASE_URL}/auth/refresh-tokens`,
+          {
+            refreshToken,
+          }
+        );
 
         const { access, refresh } = response.data;
         const currentUser = useAuthStore.getState().user;
 
         if (currentUser && access?.token && refresh?.token) {
-          useAuthStore.getState().setAuth(currentUser, access.token, refresh.token);
+          useAuthStore
+            .getState()
+            .setAuth(currentUser, access.token, refresh.token);
           processQueue(null, access.token);
 
           if (originalRequest.headers) {
