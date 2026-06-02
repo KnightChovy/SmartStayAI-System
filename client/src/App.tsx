@@ -20,10 +20,15 @@ import { AdminUsersPage } from './pages/Admin/AdminUsersPage';
 import { AdminDashboardPage } from './pages/Admin/AdminDashboardPage';
 import { AdminSettingsPage } from './pages/Admin/AdminSettingsPage';
 import { AdminSystemPage } from './pages/Admin/AdminSystemPage';
+import DashboardPage from './pages/hotel-partner/dashboard/DashboardPage';
+import { HotelPartnerLayout } from './components/hotel-partner/HotelPartnerLayout';
+import { TooltipProvider } from './components/ui/tooltip';
+import VerifyHotelPage from './pages/hotel-partner/hotel-verify/VerifyHotelPage';
 
 function App() {
   return (
-    <Routes>
+    <TooltipProvider>
+      <Routes>
       <Route path="/" element={<Layout />}>
         <Route index element={<Home />} />
         <Route path="destinations" element={<Destinations />} />
@@ -39,6 +44,13 @@ function App() {
       <Route path="login" element={<Login />} />
       <Route path="forgot-password" element={<ForgotPassword />} />
       <Route path="verify-identity" element={<VerifyIdentity />} />
+
+      <Route path="partner" element={<HotelPartnerLayout />}>
+        <Route index element={<Navigate to="dashboard" replace />} />
+        <Route path="dashboard" element={<DashboardPage />} />
+        <Route path="verify" element={<VerifyHotelPage />} />
+      </Route>
+
       <Route path="admin" element={<AdminShellPage />}>
         <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<AdminDashboardPage />} />
@@ -52,6 +64,7 @@ function App() {
         <Route path="settings" element={<AdminSettingsPage />} />
       </Route>
     </Routes>
+    </TooltipProvider>
   );
 }
 
