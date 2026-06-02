@@ -6,6 +6,25 @@ This file tracks the accomplished tasks, resolved user requests, and visual/func
 
 ## Completed Tasks Checklist
 
+### June 2, 2026
+
+- [x] **Hotel Partner Verification System**:
+  - Implemented the complete 8-step `VerifyHotelPage.tsx` wizard flow for hotel partners.
+  - Created welcome dashboard components (`VerificationHeroCard`, `VerificationBenefitsCard`, `VerificationStepsCard`, `VerificationCenter`).
+  - Built specialized step components: `BusinessInfoStep`, `PropertyDetailsStep`, `AccommodationCertificateStep`, `RepresentativeVerificationStep`, `PropertyImagesStep`, `PaymentPayoutsStep`, and `ReviewSubmitStep`.
+  - Created a robust shared UI component `FileUploadDropzone` for drag-and-drop file/image uploads with real-time previews and validation constraints (e.g., minFiles).
+  - Designed the complex `PaymentPayoutsStep` with a real-time responsive Banking Preview Card.
+  - Tuned layout paddings and text sizes across Verification components to ensure single-screen visibility on desktop devices without forced scrolling.
+- [x] **Common Layout & Shared Components UI Alignment**:
+  - Extracted and centralized `CommonSidebar` and `CommonNavbar` inside `src/common`.
+  - Refactored `HotelPartnerLayout` to consume the shared Layout elements and removed redundant specific sidebars.
+  - Aligned `CommonNavbar` and `CommonSidebar` to match the aesthetics of the `Admin` layout (reduced height, centered items, dynamic logo badges, rich active states, and user profile integration).
+  - Implemented seamless `collapsible="icon"` functionality for the Sidebar to handle clean icon-only rendering when shrunk.
+  - Established a robust `.btn-common` design system class in `index.css` containing theme-driven role modifiers (`.btn-role-guest`, `.btn-role-admin`, etc.) ensuring universal button consistency across portals.
+  - Updated Partner Dashboard components (`DashboardStats`, `DashboardHeader`) with polished Lucide icons, micro-animations, and unified role button styles.
+
+### Previous Updates
+
 - [x] **Simplified Registration Flow**:
   - Removed Verification Code and Send OTP fields from Register screen (`Register.tsx`).
 - [x] **Auth Screens Modernization (Visuals & Primives)**:

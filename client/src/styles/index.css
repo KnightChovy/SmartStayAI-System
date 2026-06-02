@@ -99,6 +99,23 @@
   --color-ai-glow: #8fd3d3;
   --color-premium-gold: #d4af37;
 
+  /* Role Themes Configuration */
+  --color-role-admin-primary: #1E293B;
+  --color-role-admin-secondary: #334155;
+  --color-role-admin-light: #F1F5F9;
+
+  --color-role-manager-primary: #2563EB;
+  --color-role-manager-secondary: #3B82F6;
+  --color-role-manager-light: #DBEAFE;
+
+  --color-role-partner-primary: #4F46E5;
+  --color-role-partner-secondary: #6366F1;
+  --color-role-partner-light: #EEF2FF;
+
+  --color-role-staff-primary: #475569;
+  --color-role-staff-secondary: #64748B;
+  --color-role-staff-light: #E2E8F0;
+
   /* Custom Spacing */
   --spacing-margin-mobile: 24px;
   --spacing-stack-sm: 8px;
@@ -221,4 +238,48 @@
 
 .text-glow {
   text-shadow: 0 0 10px rgba(143, 211, 211, 0.3);
+}
+.btn-common {
+  @apply inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors cursor-pointer;
+}
+
+.btn-common:focus-visible {
+  @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+}
+
+.btn-common:disabled {
+  @apply pointer-events-none opacity-50;
+}
+
+/* Role-based button colors */
+.btn-role-guest {
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+}
+.btn-role-guest:hover {
+  background-color: var(--color-surface-tint);
+}
+
+.btn-role-staff {
+  background-color: var(--color-secondary);
+  color: var(--color-on-secondary);
+}
+.btn-role-staff:hover {
+  background-color: #5c4728; /* darker secondary */
+}
+
+.btn-role-partner {
+  background-color: var(--color-tertiary);
+  color: var(--color-on-tertiary);
+}
+.btn-role-partner:hover {
+  background-color: #574500; /* darker tertiary */
+}
+
+.btn-role-manager {
+  @apply bg-blue-600 text-white hover:bg-blue-700;
+}
+
+.btn-role-admin {
+  @apply bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-50 dark:text-slate-900 dark:hover:bg-slate-200;
 }

@@ -1,0 +1,51 @@
+import { Outlet } from 'react-router';
+import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
+import CommonSidebar from '@/common/sidebar/Sidebar';
+import CommonNavbar from '@/common/navbar/Navbar';
+import { 
+  LayoutDashboard, 
+  ShieldCheck, 
+  Hotel, 
+  Archive, 
+  CalendarDays, 
+  Banknote, 
+  BarChart2, 
+  MessageSquareShare, 
+  Settings 
+} from 'lucide-react';
+
+const navItems = [
+  { name: 'Dashboard', href: '/partner/dashboard', icon: LayoutDashboard },
+  { name: 'Verification', href: '/partner/verify', icon: ShieldCheck },
+  { name: 'Hotels', href: '/partner/hotel-management', icon: Hotel },
+  { name: 'Inventory', href: '/partner/room-inventory', icon: Archive },
+  { name: 'Bookings', href: '/partner/bookings', icon: CalendarDays },
+  { name: 'Revenue', href: '/partner/revenue', icon: Banknote },
+  { name: 'Analytics', href: '/partner/analytics', icon: BarChart2 },
+  { name: 'Reviews', href: '/partner/reviews', icon: MessageSquareShare },
+];
+
+const footerItems = [
+  { name: 'Settings', href: '/partner/settings', icon: Settings },
+];
+
+export function HotelPartnerLayout() {
+  return (
+    <SidebarProvider>
+      <CommonSidebar 
+        title="SmartStay AI" 
+        subtitle="Partner Portal" 
+        navItems={navItems} 
+        footerItems={footerItems} 
+      />
+      <SidebarInset>
+        <CommonNavbar />
+        <main className="flex-1 p-4 md:p-6 overflow-y-auto bg-gray-50">
+          <div className="mx-auto w-full max-w-7xl">
+            <Outlet />
+          </div>
+        </main>
+      </SidebarInset>
+    </SidebarProvider>
+  );
+}
