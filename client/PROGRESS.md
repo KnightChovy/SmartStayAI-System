@@ -8,6 +8,14 @@ This file tracks the accomplished tasks, resolved user requests, and visual/func
 
 ### June 2, 2026
 
+- [x] **Admin Common Layout Integration**:
+  - Rewired `AdminLayout` to use `CommonSidebar` and `CommonNavbar` from `src/common`, matching the existing `HotelPartnerLayout` composition.
+  - Passed admin-specific nav items, footer settings, realtime calendar trigger, messages, support, and avatar controls through the shared common layout components.
+  - Extended `CommonNavbar` with optional `currentTime` and `onDateClick` props so admin can keep its realtime calendar modal behavior.
+  - Removed the now-unused `AdminNavbar` and `AdminSidebar` component files after migrating admin to the shared common layout.
+- [x] **Admin Analytics Two-Bar Revenue Chart**:
+  - Changed the analytics Revenue Growth visualization from one revenue bar plus a target line to paired revenue and target bars for each month.
+  - Removed hover-driven bar recoloring so revenue and target bars keep consistent colors while the tooltip still works.
 - [x] **Hotel Partner Verification System**:
   - Implemented the complete 8-step `VerifyHotelPage.tsx` wizard flow for hotel partners.
   - Created welcome dashboard components (`VerificationHeroCard`, `VerificationBenefitsCard`, `VerificationStepsCard`, `VerificationCenter`).

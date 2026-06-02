@@ -4,7 +4,6 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
-  Line,
   Pie,
   PieChart,
   ResponsiveContainer,
@@ -30,7 +29,10 @@ const demographicsData = [
   { color: '#020617', name: 'Long-stay Guests', value: 22 },
 ];
 
-const totalRevenue = revenueData.reduce((total, item) => total + item.revenue, 0);
+const totalRevenue = revenueData.reduce(
+  (total, item) => total + item.revenue,
+  0
+);
 const latestRevenue = revenueData[revenueData.length - 1].revenue;
 
 export function AdminAnalyticsCharts() {
@@ -134,24 +136,17 @@ export function AdminAnalyticsCharts() {
               />
               <Bar
                 dataKey="revenue"
+                fill="#2f7df6"
                 name="revenue"
                 radius={[8, 8, 0, 0]}
-              >
-                {revenueData.map((item, index) => (
-                  <Cell
-                    fill={activeRevenueIndex === index ? '#0f172a' : '#2f7df6'}
-                    key={`revenue-${item.month}`}
-                  />
-                ))}
-              </Bar>
-              <Line
+                barSize={18}
+              />
+              <Bar
                 dataKey="target"
-                dot={false}
+                fill="#94a3b8"
                 name="target"
-                stroke="#94a3b8"
-                strokeDasharray="5 5"
-                strokeWidth={2}
-                type="monotone"
+                radius={[8, 8, 0, 0]}
+                barSize={18}
               />
             </BarChart>
           </ResponsiveContainer>
@@ -160,9 +155,7 @@ export function AdminAnalyticsCharts() {
       <div className="rounded-2xl border bg-white p-4 sm:p-6">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h2 className="text-xl font-bold sm:text-2xl">
-              User Demographics
-            </h2>
+            <h2 className="text-xl font-bold sm:text-2xl">User Demographics</h2>
             <p className="text-sm text-muted-foreground">Segment share</p>
           </div>
           <div className="text-right">
@@ -231,7 +224,10 @@ export function AdminAnalyticsCharts() {
         </div>
         <div className="mt-3 space-y-2">
           {demographicsData.map(item => (
-            <div className="flex items-center justify-between gap-3" key={item.name}>
+            <div
+              className="flex items-center justify-between gap-3"
+              key={item.name}
+            >
               <div className="flex items-center gap-2">
                 <span
                   className="size-2.5 rounded-full"

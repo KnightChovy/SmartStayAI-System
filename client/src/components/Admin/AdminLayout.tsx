@@ -1,20 +1,48 @@
 import { useEffect, useState } from 'react';
 import { Outlet } from 'react-router';
+import {
+  BarChart3,
+  Bell,
+  Bot,
+  Building2,
+  CalendarDays,
+  CreditCard,
+  HelpCircle,
+  LayoutDashboard,
+  Settings,
+  ShieldAlert,
+  Users,
+} from 'lucide-react';
+import CommonNavbar from '@/common/navbar/Navbar';
+import CommonSidebar from '@/common/sidebar/Sidebar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { AdminCalendarModal } from './models/calendar/AdminCalendarModal';
 import { AdminCreateUserModal } from './models/user/AdminCreateUserModal';
 import { AdminFileManagerModal } from './models/file-manager/AdminFileManagerModal';
 import { AdminMaintenanceModal } from './models/maintenance/AdminMaintenanceModal';
 import { AdminMessagesModal } from './models/message/AdminMessagesModal';
 import { AdminModalProvider } from './models/AdminModalContext';
-import { AdminNavbar } from './AdminNavbar';
 import { AdminNotesModal } from './models/note/AdminNotesModal';
 import { AdminReportModal } from './models/report/AdminReportModal';
-import { AdminSidebar } from './AdminSidebar';
 import { AdminSupportModal } from './models/support/AdminSupportModal';
 import { AdminTasksModal } from './models/task/AdminTasksModal';
 
+const adminNavItems = [
+  { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
+  { name: 'Users', href: '/admin/users', icon: Users },
+  { name: 'Payments', href: '/admin/payments', icon: CreditCard },
+  { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
+  { name: 'AI Settings', href: '/admin/ai-settings', icon: Bot },
+  { name: 'Properties', href: '/admin/properties', icon: Building2 },
+  { name: 'System', href: '/admin/system', icon: ShieldAlert },
+];
+
+const adminFooterItems = [
+  { name: 'Settings', href: '/admin/settings', icon: Settings },
+];
+
 export function AdminLayout() {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [isCreateUserOpen, setIsCreateUserOpen] = useState(false);
   const [isFileManagerOpen, setIsFileManagerOpen] = useState(false);
@@ -44,7 +72,6 @@ export function AdminLayout() {
     setIsReportOpen(false);
     setIsSupportOpen(false);
     setIsTasksOpen(false);
-    setIsSidebarOpen(false);
   };
 
   const handleOpenCalendar = () => {
@@ -106,115 +133,128 @@ export function AdminLayout() {
         openTasks: handleOpenTasks,
       }}
     >
-      <div className="min-h-screen bg-[#f7f4f3] text-on-surface">
-        {isCalendarOpen ? (
-          <AdminCalendarModal
-            currentTime={currentTime}
-            onClose={() => setIsCalendarOpen(false)}
-          />
-        ) : null}
-
-        {isCreateUserOpen ? (
-          <AdminCreateUserModal
-            currentTime={currentTime}
-            onClose={() => setIsCreateUserOpen(false)}
-          />
-        ) : null}
-
-        {isFileManagerOpen ? (
-          <AdminFileManagerModal
-            currentTime={currentTime}
-            onClose={() => setIsFileManagerOpen(false)}
-          />
-        ) : null}
-
-        {isMaintenanceOpen ? (
-          <AdminMaintenanceModal
-            currentTime={currentTime}
-            onClose={() => setIsMaintenanceOpen(false)}
-          />
-        ) : null}
-
-        {isMessagesOpen ? (
-          <AdminMessagesModal
-            currentTime={currentTime}
-            onClose={() => setIsMessagesOpen(false)}
-          />
-        ) : null}
-
-        {isNotesOpen ? (
-          <AdminNotesModal
-            currentTime={currentTime}
-            onClose={() => setIsNotesOpen(false)}
-          />
-        ) : null}
-
-        {isReportOpen ? (
-          <AdminReportModal
-            currentTime={currentTime}
-            onClose={() => setIsReportOpen(false)}
-          />
-        ) : null}
-
-        {isSupportOpen ? (
-          <AdminSupportModal
-            currentTime={currentTime}
-            onClose={() => setIsSupportOpen(false)}
-          />
-        ) : null}
-
-        {isTasksOpen ? (
-          <AdminTasksModal
-            currentTime={currentTime}
-            onClose={() => setIsTasksOpen(false)}
-          />
-        ) : null}
-
-        {isSidebarOpen ? (
-          <div
-            aria-modal="true"
-            className="fixed inset-0 z-50 lg:hidden"
-            role="dialog"
-          >
-            <button
-              aria-label="Close admin sidebar"
-              className="absolute inset-0 h-full w-full bg-black/35 backdrop-blur-[2px]"
-              onClick={() => setIsSidebarOpen(false)}
-              type="button"
-            />
-            <div className="relative z-10 h-full w-[min(82vw,288px)] shadow-2xl">
-              <AdminSidebar
-                onClose={() => setIsSidebarOpen(false)}
-                onOpenCalendar={handleOpenCalendar}
-                onNavigate={() => setIsSidebarOpen(false)}
-              />
-            </div>
-          </div>
-        ) : null}
-
-        <div className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:block lg:w-[256px]">
-          <AdminSidebar onOpenCalendar={handleOpenCalendar} />
-        </div>
-
-        <div className="lg:pl-64">
-          <div className="z-30 lg:fixed lg:top-0 lg:right-0 lg:left-64">
-            <AdminNavbar
+      <SidebarProvider>
+        <CommonSidebar
+          logoChar="A"
+          title="SmartStay AI"
+          subtitle="Admin Portal"
+          navItems={adminNavItems}
+          footerItems={adminFooterItems}
+          onLogout={closeAllModals}
+        />
+        <SidebarInset className="bg-[#f7f4f3] text-on-surface">
+          {isCalendarOpen ? (
+            <AdminCalendarModal
               currentTime={currentTime}
-              onOpenCalendar={handleOpenCalendar}
-              onOpenMessages={handleOpenMessages}
-              onOpenSupport={handleOpenSupport}
-              onMenuClick={() => setIsSidebarOpen(true)}
-              searchPlaceholder="Search data, reports, users..."
+              onClose={() => setIsCalendarOpen(false)}
             />
-          </div>
+          ) : null}
 
-          <main className="px-4 py-4 sm:px-5 sm:py-5 lg:px-6 lg:pt-22 lg:pb-6">
+          {isCreateUserOpen ? (
+            <AdminCreateUserModal
+              currentTime={currentTime}
+              onClose={() => setIsCreateUserOpen(false)}
+            />
+          ) : null}
+
+          {isFileManagerOpen ? (
+            <AdminFileManagerModal
+              currentTime={currentTime}
+              onClose={() => setIsFileManagerOpen(false)}
+            />
+          ) : null}
+
+          {isMaintenanceOpen ? (
+            <AdminMaintenanceModal
+              currentTime={currentTime}
+              onClose={() => setIsMaintenanceOpen(false)}
+            />
+          ) : null}
+
+          {isMessagesOpen ? (
+            <AdminMessagesModal
+              currentTime={currentTime}
+              onClose={() => setIsMessagesOpen(false)}
+            />
+          ) : null}
+
+          {isNotesOpen ? (
+            <AdminNotesModal
+              currentTime={currentTime}
+              onClose={() => setIsNotesOpen(false)}
+            />
+          ) : null}
+
+          {isReportOpen ? (
+            <AdminReportModal
+              currentTime={currentTime}
+              onClose={() => setIsReportOpen(false)}
+            />
+          ) : null}
+
+          {isSupportOpen ? (
+            <AdminSupportModal
+              currentTime={currentTime}
+              onClose={() => setIsSupportOpen(false)}
+            />
+          ) : null}
+
+          {isTasksOpen ? (
+            <AdminTasksModal
+              currentTime={currentTime}
+              onClose={() => setIsTasksOpen(false)}
+            />
+          ) : null}
+
+          <CommonNavbar
+            currentTime={currentTime}
+            onDateClick={handleOpenCalendar}
+            searchPlaceholder="Search data, reports, users..."
+            userName="Admin"
+            rightContent={
+              <>
+                <button
+                  aria-label="Open calendar"
+                  className="inline-flex size-8 items-center justify-center rounded-full border border-outline-variant/40"
+                  onClick={handleOpenCalendar}
+                  type="button"
+                >
+                  <CalendarDays className="size-3.5" />
+                </button>
+                <button
+                  aria-label="Open messages"
+                  className="inline-flex size-8 items-center justify-center rounded-full border border-outline-variant/40"
+                  onClick={handleOpenMessages}
+                  type="button"
+                >
+                  <Bell className="size-3.5" />
+                </button>
+                <button
+                  aria-label="Open support"
+                  className="inline-flex size-8 items-center justify-center rounded-full border border-outline-variant/40"
+                  onClick={handleOpenSupport}
+                  type="button"
+                >
+                  <HelpCircle className="size-3.5" />
+                </button>
+                <div className="hidden h-6 w-px bg-outline-variant/40 sm:block" />
+                <div className="hidden items-center gap-2 sm:flex">
+                  <Avatar className="size-8 rounded-full bg-surface-container">
+                    <AvatarFallback>A</AvatarFallback>
+                  </Avatar>
+                  <p className="text-sm font-semibold">Admin</p>
+                </div>
+              </>
+            }
+          />
+
+          <main className="flex-1 px-4 py-4 sm:px-5 sm:py-5 lg:px-6 lg:py-6">
             <div className="mx-auto w-full max-w-280">
               <Outlet />
             </div>
           </main>
-        </div>
-      </div>
+        </SidebarInset>
+      </SidebarProvider>
     </AdminModalProvider>
   );
 }

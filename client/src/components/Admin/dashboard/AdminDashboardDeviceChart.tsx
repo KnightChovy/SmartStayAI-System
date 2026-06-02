@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 
 const deviceData = [
@@ -8,12 +7,6 @@ const deviceData = [
 ];
 
 export function AdminDashboardDeviceChart() {
-  const [activeDeviceIndex, setActiveDeviceIndex] = useState<number | null>(
-    null
-  );
-  const activeDevice =
-    activeDeviceIndex === null ? null : deviceData[activeDeviceIndex];
-
   return (
     <div className="rounded-sm border bg-white p-4">
       <div className="flex items-start justify-between gap-3">
@@ -31,40 +24,12 @@ export function AdminDashboardDeviceChart() {
       <div className="mx-auto mt-4 h-40 max-w-52">
         <ResponsiveContainer height="100%" width="100%">
           <PieChart>
-            {activeDevice ? (
-              <>
-                <text
-                  dominantBaseline="middle"
-                  fill="#0f172a"
-                  fontSize="22"
-                  fontWeight="800"
-                  textAnchor="middle"
-                  x="50%"
-                  y="46%"
-                >
-                  {activeDevice.value}%
-                </text>
-                <text
-                  dominantBaseline="middle"
-                  fill="#64748b"
-                  fontSize="11"
-                  fontWeight="700"
-                  textAnchor="middle"
-                  x="50%"
-                  y="57%"
-                >
-                  {activeDevice.label}
-                </text>
-              </>
-            ) : null}
             <Pie
               cx="50%"
               cy="50%"
               data={deviceData}
               dataKey="value"
               innerRadius="58%"
-              onMouseEnter={(_, index: number) => setActiveDeviceIndex(index)}
-              onMouseLeave={() => setActiveDeviceIndex(null)}
               outerRadius="82%"
               paddingAngle={2}
             >
