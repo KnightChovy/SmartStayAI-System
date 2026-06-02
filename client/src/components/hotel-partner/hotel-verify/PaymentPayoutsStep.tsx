@@ -128,30 +128,56 @@ export function PaymentPayoutsStep({ onBack, onContinue }: { onBack?: () => void
           {/* Preview Sidebar */}
           <div className="lg:col-span-1">
             <h4 className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-3">Payout Account Preview</h4>
-            
-            <div className="bg-gradient-to-br from-[#1a2332] to-[#0f172a] rounded-xl p-6 shadow-lg text-white border border-slate-800 relative overflow-hidden">
-              {/* Decorative faint pattern/glow */}
-              <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
+            {/* ATM Card Design */}
+            <div className="w-full aspect-[1.586/1] mx-auto bg-gradient-to-tr from-slate-900 via-slate-800 to-slate-900 rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-xl text-white border border-slate-700/50 relative overflow-hidden flex flex-col justify-between group transform transition-transform hover:scale-[1.02] duration-300">
+              {/* Decorative faint patterns */}
+              <div className="absolute top-0 right-0 w-32 sm:w-48 h-32 sm:h-48 bg-white/5 rounded-full blur-2xl sm:blur-3xl -mr-10 sm:-mr-16 -mt-10 sm:-mt-16 pointer-events-none transition-transform group-hover:scale-110 duration-700"></div>
+              <div className="absolute bottom-0 left-0 w-24 sm:w-32 h-24 sm:h-32 bg-blue-500/10 rounded-full blur-xl sm:blur-2xl -ml-8 sm:-ml-10 -mb-8 sm:-mb-10 pointer-events-none"></div>
 
-              <div className="relative z-10">
-                <div className="flex justify-between items-start mb-8">
-                  <Landmark className="w-8 h-8 text-slate-300" />
-                  <span className="text-[10px] font-bold uppercase bg-white/20 px-2 py-1.5 rounded-md text-white border border-white/10">Primary</span>
+              {/* Top Row: Bank Name & Contactless */}
+              <div className="relative z-10 flex justify-between items-start">
+                <div className="font-bold text-[11px] sm:text-sm tracking-wide text-slate-100 flex items-center gap-1.5">
+                  <Landmark className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-400" />
+                  <span className="truncate max-w-[120px] sm:max-w-[150px]">{displayBankName}</span>
+                </div>
+                {/* Contactless Icon (Mock) */}
+                <svg className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400/80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M8.5 21.3C5.4 18 4 13.5 4.5 9.1" />
+                  <path d="M13 21.8C9.5 17.5 8 11.5 9 6" />
+                  <path d="M17.5 22.3C13.6 17 12 10.5 13.5 4.5" />
+                  <path d="M22 22.8C18 16 16.5 9 18 3" />
+                </svg>
+              </div>
+
+              {/* Middle: Chip & Card Number */}
+              <div className="relative z-10 space-y-1.5 sm:space-y-2.5">
+                {/* EMV Chip */}
+                <div className="w-7 h-5 sm:w-9 sm:h-6 bg-gradient-to-br from-yellow-200 via-yellow-400 to-yellow-600 rounded-[3px] border border-yellow-500/50 opacity-90 relative overflow-hidden">
+                  <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent_20%,rgba(0,0,0,0.1)_20%,rgba(0,0,0,0.1)_25%,transparent_25%,transparent_75%,rgba(0,0,0,0.1)_75%,rgba(0,0,0,0.1)_80%,transparent_80%)]"></div>
+                  <div className="absolute inset-0 bg-[linear-gradient(0deg,transparent_40%,rgba(0,0,0,0.1)_40%,rgba(0,0,0,0.1)_60%,transparent_60%)]"></div>
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 sm:w-5 h-2.5 sm:h-3 border border-black/10 rounded-[1px]"></div>
                 </div>
                 
-                <div className="space-y-1 mb-10">
-                  <p className="text-[11px] text-slate-400 uppercase tracking-wider">Account Holder</p>
-                  <p className="text-lg font-bold truncate text-white">{accountHolder || 'Not provided'}</p>
-                </div>
+                {/* Account Number */}
+                <p className="text-xs sm:text-sm md:text-base font-mono tracking-widest text-slate-100 drop-shadow-sm font-semibold truncate">
+                  {displayAccountNumber}
+                </p>
+              </div>
 
-                <div className="flex justify-between items-end">
-                  <div className="space-y-1">
-                    <p className="text-[11px] text-slate-400 uppercase tracking-wider">Account Ending In</p>
-                    <p className="text-sm font-semibold tracking-widest text-slate-200">{displayAccountNumber}</p>
-                  </div>
-                  <div className="space-y-1 text-right">
-                    <p className="text-[11px] text-slate-400 uppercase tracking-wider">Bank</p>
-                    <p className="text-sm font-semibold truncate max-w-[80px] text-slate-200">{displayBankName}</p>
+              {/* Bottom Row: Cardholder & Brand */}
+              <div className="relative z-10 flex justify-between items-end">
+                <div className="space-y-0.5">
+                  <p className="text-[7px] sm:text-[8px] text-slate-400 uppercase tracking-widest font-semibold">Account Holder</p>
+                  <p className="text-[10px] sm:text-xs font-semibold tracking-wider text-slate-100 truncate max-w-[120px] sm:max-w-[160px] uppercase">
+                    {accountHolder || 'YOUR NAME'}
+                  </p>
+                </div>
+                <div className="flex flex-col items-end">
+                  <span className="text-[7px] sm:text-[8px] font-bold uppercase tracking-widest text-slate-400 mb-0.5 sm:mb-1">Primary</span>
+                  {/* Master/Visa style mock circles */}
+                  <div className="flex -space-x-1.5">
+                    <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-red-500/80 mix-blend-screen"></div>
+                    <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-yellow-500/80 mix-blend-screen"></div>
                   </div>
                 </div>
               </div>
