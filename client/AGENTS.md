@@ -23,13 +23,13 @@
 
 SmartStay AI frontend là ứng dụng **single-page application (SPA)** phục vụ **5 role-based portal** trên cùng một codebase Vite + React + TypeScript:
 
-| Portal    | Route prefix | Người dùng                  |
-| --------- | ------------ | --------------------------- |
-| Guest     | `/`          | Khách đặt phòng             |
-| Staff     | `/staff`     | Lễ tân, chăm sóc khách hàng |
-| Marketing | `/marketing` | Marketing Manager           |
-| Manager   | `/manager`   | Hotel Manager               |
-| Admin     | `/admin`     | System Admin                |
+| Portal        | Route prefix     | Người dùng                  |
+| ------------- | ---------------- | --------------------------- |
+| Guest         | `/`              | Khách đặt phòng             |
+| Staff         | `/staff`         | Lễ tân, chăm sóc khách hàng |
+| Hotel-Partner | `/hotel-partner` | Hotel Partner               |
+| Manager       | `/manager`       | Hotel Manager               |
+| Admin         | `/admin`         | System Admin                |
 
 **Các tính năng AI nổi bật hiển thị trên frontend:**
 
@@ -70,11 +70,13 @@ src/
 │   │   ├── CheckInPage.tsx
 │   │   ├── InboxPage.tsx       # Unified inbox
 │   │   └── ReviewsPage.tsx
-│   ├── marketing/
-│   │   ├── DashboardPage.tsx
-│   │   ├── ContentStudioPage.tsx
-│   │   ├── SchedulerPage.tsx
-│   │   └── CampaignsPage.tsx
+│   ├── hotel-partner/
+│   │   ├── bookings/
+│   │   ├── dashboard/
+│   │   ├── hotel-management/
+│   │   ├── hotel-verify/
+│   │   ├── revenue/
+│   │   └── room-inventory/
 │   ├── manager/
 │   │   ├── DashboardPage.tsx
 │   │   ├── RoomManagePage.tsx
@@ -115,7 +117,7 @@ src/
 │   │   ├── BookingTable/
 │   │   └── CheckInForm/
 │   │
-│   ├── marketing/
+│   ├── hotel-partner/
 │   │   ├── ContentEditor/      # AI draft + review workflow
 │   │   ├── ContentCalendar/
 │   │   └── MetricsChart/
