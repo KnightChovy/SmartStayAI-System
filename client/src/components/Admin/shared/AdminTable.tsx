@@ -1,10 +1,4 @@
-import type { ReactNode } from 'react';
-
-interface AdminTableProps {
-  headers: string[];
-  rows: string[][];
-  renderLastColumn?: (row: string[]) => ReactNode;
-}
+import type { AdminTableProps } from '@/types/admin.types';
 
 export function AdminTable({
   headers,

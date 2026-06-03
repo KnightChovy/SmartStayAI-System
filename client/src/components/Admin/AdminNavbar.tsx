@@ -1,9 +1,6 @@
 import { Bell, HelpCircle, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-
-interface AdminNavbarProps {
-  searchPlaceholder: string;
-}
+import type { AdminNavbarProps } from '@/types/admin.types';
 
 export function AdminNavbar({ searchPlaceholder }: AdminNavbarProps) {
   return (

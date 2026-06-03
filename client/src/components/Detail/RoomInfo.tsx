@@ -1,19 +1,5 @@
 import { Button } from '../ui/button';
-
-interface Room {
-  name: string;
-  capacity: string;
-  size: string;
-  bed: string;
-  view: string;
-  description: string;
-}
-
-interface RoomInfoProps {
-  selectedRoom: Room;
-  isExpanded: boolean;
-  setIsExpanded: (val: boolean) => void;
-}
+import type { RoomInfoProps } from '@/types/detail.types';
 
 export function RoomInfo({
   selectedRoom,

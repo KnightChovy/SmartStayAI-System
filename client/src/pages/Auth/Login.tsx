@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
-import { useAuth } from '../../hooks/useAuth';
+import { useLoginMutation } from '../../hooks/auth';
 import {
   loginSchema,
   type LoginInput,
@@ -13,7 +13,11 @@ import {
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login, isLoggingIn, loginError } = useAuth();
+  const {
+    mutateAsync: login,
+    isPending: isLoggingIn,
+    error: loginError,
+  } = useLoginMutation();
   const [showPassword, setShowPassword] = useState(false);
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);

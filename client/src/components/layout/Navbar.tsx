@@ -1,9 +1,12 @@
 import { Link, useLocation } from 'react-router';
-import { useAuth } from '../../hooks/useAuth';
+import { useLogoutMutation } from '../../hooks/auth';
+import { useAuthStore } from '../../stores/auth.store';
 
 export default function Navbar() {
   const location = useLocation();
-  const { isAuthenticated, user, logout, isLoggingOut } = useAuth();
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  const user = useAuthStore(state => state.user);
+  const { mutateAsync: logout, isPending: isLoggingOut } = useLogoutMutation();
 
   return (
     <nav className="bg-surface/80 backdrop-blur-xl sticky top-0 z-50 w-full border-b border-outline-variant/30">

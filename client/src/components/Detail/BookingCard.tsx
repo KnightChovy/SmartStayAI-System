@@ -1,26 +1,5 @@
 import { Button } from '../ui/button';
-
-interface Room {
-  name: string;
-  price: number;
-  inHighDemand: boolean;
-  roomsLeft: number;
-}
-
-interface BookingCardProps {
-  selectedRoom: Room;
-  checkIn: string;
-  setCheckIn: (val: string) => void;
-  checkOut: string;
-  setCheckOut: (val: string) => void;
-  guests: string;
-  setGuests: (val: string) => void;
-  nights: number;
-  roomTotal: number;
-  totalConciergeFee: number;
-  grandTotal: number;
-  onReserve: () => void;
-}
+import type { BookingCardProps } from '@/types/detail.types';
 
 export function BookingCard({
   selectedRoom,

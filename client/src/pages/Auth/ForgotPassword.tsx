@@ -5,7 +5,7 @@ import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useAuth } from '../../hooks/useAuth';
+import { useForgotPasswordMutation } from '../../hooks/auth';
 import {
   forgotPasswordSchema,
   type ForgotPasswordFormValues,
@@ -13,11 +13,11 @@ import {
 
 export default function ForgotPassword() {
   const {
-    forgotPassword,
-    isSendingForgotPassword,
-    forgotPasswordError,
-    forgotPasswordSuccess,
-  } = useAuth();
+    mutateAsync: forgotPassword,
+    isPending: isSendingForgotPassword,
+    error: forgotPasswordError,
+    isSuccess: forgotPasswordSuccess,
+  } = useForgotPasswordMutation();
   const [emailFocused, setEmailFocused] = useState(false);
 
   const {

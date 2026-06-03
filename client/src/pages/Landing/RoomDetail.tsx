@@ -8,21 +8,7 @@ import { NearbyAttractions } from '../../components/Detail/NearbyAttractions';
 import { PropertyFacilities } from '../../components/Detail/PropertyFacilities';
 import { HouseRules } from '../../components/Detail/HouseRules';
 import { BookingConfirmation } from '../../components/Detail/BookingConfirmation';
-
-interface Room {
-  id: string;
-  name: string;
-  price: number;
-  rating: string;
-  description: string;
-  details: string;
-  capacity: string;
-  size: string;
-  bed: string;
-  view: string;
-  inHighDemand: boolean;
-  roomsLeft: number;
-}
+import type { Room } from '@/types/room.types';
 
 export default function RoomDetail() {
   // Description Read More State

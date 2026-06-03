@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
-import { useAuth } from '../../hooks/useAuth';
+import { useResetPasswordMutation } from '../../hooks/auth';
 import {
   resetPasswordSchema,
   type ResetPasswordInput,
@@ -16,11 +16,11 @@ export default function ResetPassword() {
   const token = searchParams.get('token');
   const navigate = useNavigate();
   const {
-    resetPassword,
-    isResettingPassword,
-    resetPasswordError,
-    resetPasswordSuccess,
-  } = useAuth();
+    mutateAsync: resetPassword,
+    isPending: isResettingPassword,
+    error: resetPasswordError,
+    isSuccess: resetPasswordSuccess,
+  } = useResetPasswordMutation();
 
   const [passwordFocused, setPasswordFocused] = useState(false);
   const [confirmPasswordFocused, setConfirmPasswordFocused] = useState(false);

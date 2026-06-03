@@ -1,8 +1,4 @@
-interface AdminDashboardStatCardProps {
-  label: string;
-  value: string;
-  trend: string;
-}
+import type { AdminDashboardStatCardProps } from '@/types/admin.types';
 
 export function AdminDashboardStatCard({
   label,

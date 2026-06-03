@@ -1,8 +1,5 @@
 import { AdminTable } from '@/components/Admin/shared/AdminTable';
-
-interface AdminUsersTableProps {
-  rows: string[][];
-}
+import type { AdminUsersTableProps } from '@/types/admin.types';
 
 export function AdminUsersTable({ rows }: AdminUsersTableProps) {
   return (

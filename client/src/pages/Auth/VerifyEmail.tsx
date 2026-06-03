@@ -1,16 +1,16 @@
 import { useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router';
-import { useAuth } from '../../hooks/useAuth';
+import { useVerifyEmailMutation } from '../../hooks/auth';
 
 export default function VerifyEmail() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
   const {
-    verifyEmail,
-    isVerifyingEmail,
-    verifyEmailError,
-    verifyEmailSuccess,
-  } = useAuth();
+    mutateAsync: verifyEmail,
+    isPending: isVerifyingEmail,
+    error: verifyEmailError,
+    isSuccess: verifyEmailSuccess,
+  } = useVerifyEmailMutation();
 
   useEffect(() => {
     if (token) {

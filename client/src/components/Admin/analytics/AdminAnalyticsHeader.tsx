@@ -1,11 +1,7 @@
 import { Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AdminPageHeader } from '@/components/Admin/shared/AdminPageHeader';
-
-interface AdminAnalyticsHeaderProps {
-  title: string;
-  description: string;
-}
+import type { AdminAnalyticsHeaderProps } from '@/types/admin.types';
 
 export function AdminAnalyticsHeader({
   title,
