@@ -1,10 +1,4 @@
-interface Room {
-  rating: string;
-}
-
-interface GuestReviewsProps {
-  selectedRoom: Room;
-}
+import type { GuestReviewsProps } from '@/types/detail.types';
 
 export function GuestReviews({ selectedRoom }: GuestReviewsProps) {
   return (

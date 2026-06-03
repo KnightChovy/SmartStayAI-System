@@ -1,17 +1,5 @@
 import { Button } from '../ui/button';
-
-interface Image {
-  url: string;
-  alt: string;
-}
-
-interface ImageGalleryProps {
-  images: Image[];
-  activePhotoIdx: number | null;
-  setActivePhotoIdx: (idx: number | null) => void;
-  handlePrevPhoto: (e: React.MouseEvent) => void;
-  handleNextPhoto: (e: React.MouseEvent) => void;
-}
+import type { ImageGalleryProps } from '@/types/detail.types';
 
 export function ImageGallery({
   images,

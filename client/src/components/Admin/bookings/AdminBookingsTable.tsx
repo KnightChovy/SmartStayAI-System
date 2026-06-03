@@ -1,9 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { AdminTable } from '@/components/Admin/shared/AdminTable';
-
-interface AdminBookingsTableProps {
-  rows: string[][];
-}
+import type { AdminBookingsTableProps } from '@/types/admin.types';
 
 export function AdminBookingsTable({ rows }: AdminBookingsTableProps) {
   return (

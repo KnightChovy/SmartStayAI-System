@@ -1,20 +1,26 @@
 import { useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
+import { useLoginMutation } from '../../hooks/auth';
 import {
   loginSchema,
   type LoginInput,
 } from '../../validations/auth.validation';
 
 export default function Login() {
+  const navigate = useNavigate();
+  const {
+    mutateAsync: login,
+    isPending: isLoggingIn,
+    error: loginError,
+  } = useLoginMutation();
   const [showPassword, setShowPassword] = useState(false);
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
 
   const {
     register,
@@ -32,18 +38,17 @@ export default function Login() {
     setShowPassword(!showPassword);
   };
 
-  const onSubmit = (data: LoginInput) => {
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      alert(`Welcome back, ${data.email}!`);
-      // Reset form or redirect
-    }, 1500);
+  const onSubmit = async (data: LoginInput) => {
+    try {
+      await login({ email: data.email, password: data.password });
+      navigate('/');
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   return (
     <div className="relative min-h-screen text-on-surface select-none overflow-hidden flex items-center justify-center p-gutter-mobile bg-background">
-      {/* Inline styles for custom classes */}
       <style>{`
         .glass-card {
           background: rgba(245, 242, 238, 0.85);
@@ -71,7 +76,6 @@ export default function Login() {
         </div>
 
         <div className="glass-card rounded-xxl p-stack-lg md:p-12 border border-white/20">
-          {/* Branding/Header */}
           <div className="text-center mb-stack-lg">
             <h2 className="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface mb-2 font-semibold">
               Welcome Back
@@ -86,6 +90,13 @@ export default function Login() {
             className="space-y-stack-md"
             onSubmit={handleFormSubmit(onSubmit)}
           >
+            {loginError && (
+              <div className="bg-error/10 border border-error/20 text-error p-3 rounded-xl text-sm font-semibold">
+                {(loginError as any)?.response?.data?.message ||
+                  'Login failed. Please verify your credentials.'}
+              </div>
+            )}
+
             {/* Email Container */}
             <div
               style={{
@@ -117,7 +128,6 @@ export default function Login() {
               )}
             </div>
 
-            {/* Password Container */}
             <div
               style={{
                 transform: passwordFocused
@@ -170,13 +180,12 @@ export default function Login() {
             <Button
               className="w-full bg-primary text-on-primary font-label-lg text-label-lg py-4 rounded-full shadow-lg hover:bg-primary/90 active:scale-[0.98] transition-all mt-stack-md uppercase tracking-widest cursor-pointer outline-none border-none h-auto"
               type="submit"
-              disabled={isLoading}
+              disabled={isLoggingIn}
             >
-              {isLoading ? 'Logging in...' : 'Login'}
+              {isLoggingIn ? 'Logging in...' : 'Login'}
             </Button>
           </form>
 
-          {/* Divider */}
           <div className="relative flex items-center py-stack-lg">
             <div className="grow border-t border-outline-variant/30"></div>
             <span className="shrink mx-4 font-label-sm text-label-sm text-outline uppercase tracking-widest">
@@ -185,7 +194,6 @@ export default function Login() {
             <div className="grow border-t border-outline-variant/30"></div>
           </div>
 
-          {/* Social Login */}
           <Button
             className="w-full h-14 bg-surface-container-lowest border border-outline-variant/50 text-on-surface font-label-lg text-label-lg rounded-full shadow-sm hover:bg-surface-container-low active:scale-95 transition-all flex items-center justify-center gap-3 cursor-pointer outline-none"
             type="button"
@@ -212,7 +220,6 @@ export default function Login() {
             Login with Google
           </Button>
 
-          {/* Footer Link */}
           <div className="text-center mt-stack-lg space-y-4">
             <p className="font-body-md text-body-md text-on-surface-variant">
               Don't have an account?{' '}

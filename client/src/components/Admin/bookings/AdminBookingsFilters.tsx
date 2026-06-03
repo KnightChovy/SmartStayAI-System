@@ -1,8 +1,5 @@
 import { Input } from '@/components/ui/input';
-
-interface AdminBookingsFiltersProps {
-  searchPlaceholder: string;
-}
+import type { AdminBookingsFiltersProps } from '@/types/admin.types';
 
 export function AdminBookingsFilters({
   searchPlaceholder,

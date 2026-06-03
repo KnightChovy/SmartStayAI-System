@@ -1,25 +1,5 @@
 import { Button } from '../ui/button';
-
-interface Room {
-  id: string;
-  name: string;
-  price: number;
-  rating: string;
-  details: string;
-}
-
-interface RoomAvailabilityProps {
-  checkIn: string;
-  setCheckIn: (val: string) => void;
-  checkOut: string;
-  setCheckOut: (val: string) => void;
-  guests: string;
-  setGuests: (val: string) => void;
-  selectedRoomId: string;
-  setSelectedRoomId: (val: string) => void;
-  rooms: Record<string, Room>;
-  formatDisplayDate: (dateStr: string) => string;
-}
+import type { RoomAvailabilityProps } from '@/types/detail.types';
 
 export function RoomAvailability({
   checkIn,

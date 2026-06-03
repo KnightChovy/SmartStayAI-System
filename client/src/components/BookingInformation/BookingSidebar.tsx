@@ -1,12 +1,4 @@
-interface BookingSidebarProps {
-  checkIn: string;
-  checkOut: string;
-  nights: number;
-  guests: string;
-  roomName: string;
-  pricePerNight: number;
-  formatDisplayDate: (dateStr: string) => string;
-}
+import type { BookingSidebarProps } from '@/types/booking.types';
 
 export function BookingSidebar({
   checkIn,

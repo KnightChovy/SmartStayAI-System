@@ -1,8 +1,4 @@
-interface AdminAnalyticsKpiCardProps {
-  label: string;
-  value: string;
-  delta: string;
-}
+import type { AdminAnalyticsKpiCardProps } from '@/types/admin.types';
 
 export function AdminAnalyticsKpiCard({
   label,

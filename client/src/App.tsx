@@ -8,6 +8,8 @@ import Register from './pages/Auth/Register';
 import Login from './pages/Auth/Login';
 import ForgotPassword from './pages/Auth/ForgotPassword';
 import VerifyIdentity from './pages/Auth/VerifyIdentity';
+import ResetPassword from './pages/Auth/ResetPassword';
+import VerifyEmail from './pages/Auth/VerifyEmail';
 import RoomDetail from './pages/Landing/RoomDetail';
 import BookingInformation from './pages/Landing/BookingInformation';
 import { AdminShellPage } from './pages/Admin/AdminShellPage';
@@ -44,6 +46,8 @@ function App() {
       <Route path="login" element={<Login />} />
       <Route path="forgot-password" element={<ForgotPassword />} />
       <Route path="verify-identity" element={<VerifyIdentity />} />
+      <Route path="reset-password" element={<ResetPassword />} />
+      <Route path="verify-email" element={<VerifyEmail />} />
 
       <Route path="partner" element={<HotelPartnerLayout />}>
         <Route index element={<Navigate to="dashboard" replace />} />

@@ -7,10 +7,7 @@ import {
   bookingSchema,
   type BookingFormValues,
 } from '../../validations/booking.validation';
-
-interface BookingDetailsFormProps {
-  onSubmit: (values: BookingFormValues) => void;
-}
+import type { BookingDetailsFormProps } from '@/types/booking.types';
 
 export function BookingDetailsForm({ onSubmit }: BookingDetailsFormProps) {
   const navigate = useNavigate();

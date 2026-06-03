@@ -9,10 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-
-interface AdminUsersTableProps {
-  rows: string[][];
-}
+import type { AdminUsersTableProps } from '@/types/admin.types';
 
 export function AdminUsersTable({ rows }: AdminUsersTableProps) {
   const rowsWithActions = rows.map(row => [...row, '']);

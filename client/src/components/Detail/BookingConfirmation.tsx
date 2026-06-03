@@ -1,21 +1,6 @@
 import { useNavigate } from 'react-router';
 import { Button } from '../ui/button';
-
-interface Room {
-  name: string;
-  price: number;
-}
-
-interface BookingConfirmationProps {
-  selectedRoom: Room;
-  checkIn: string;
-  checkOut: string;
-  guests: string;
-  nights: number;
-  grandTotal: number;
-  setShowConfirmation: (val: boolean) => void;
-  formatDisplayDate: (dateStr: string) => string;
-}
+import type { BookingConfirmationProps } from '@/types/detail.types';
 
 export function BookingConfirmation({
   selectedRoom,

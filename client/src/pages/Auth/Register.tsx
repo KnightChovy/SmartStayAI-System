@@ -1,17 +1,22 @@
-import { useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
+import { useSendOtpMutation } from '../../hooks/auth';
 import {
   registerSchema,
   type RegisterInput,
 } from '../../validations/auth.validation';
 
 export default function Register() {
-  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
+  const {
+    mutateAsync: sendOtp,
+    isPending: isSendingOtp,
+    error: sendOtpError,
+  } = useSendOtpMutation();
 
   const {
     register,
@@ -20,24 +25,30 @@ export default function Register() {
   } = useForm<RegisterInput>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
+      name: '',
       email: '',
       password: '',
       confirmPassword: '',
     },
   });
 
-  const onSubmit = (data: RegisterInput) => {
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      alert(`Successfully registered account for ${data.email}!`);
-      // Reset form
-    }, 1500);
+  const onSubmit = async (data: RegisterInput) => {
+    try {
+      await sendOtp(data.email);
+      navigate('/verify-identity', {
+        state: {
+          email: data.email,
+          name: data.name,
+          password: data.password,
+        },
+      });
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   return (
     <div className="relative min-h-screen text-on-surface select-none overflow-hidden bg-background">
-      {/* Inline styles for custom elements */}
       <style>{`
         .glass-panel {
           background: rgba(245, 242, 238, 0.7);
@@ -49,7 +60,6 @@ export default function Register() {
         }
       `}</style>
 
-      {/* Main Content */}
       <main className="relative z-10 min-h-screen flex items-center justify-center px-margin-mobile py-stack-lg">
         <div className="w-full max-w-120">
           {/* Brand Logo Center */}
@@ -64,7 +74,6 @@ export default function Register() {
             </Link>
           </div>
 
-          {/* Registration Card */}
           <div className="glass-panel rounded-3xl p-stack-lg shadow-[0_4px_20px_rgba(26,26,26,0.04)] border border-white/20">
             <header className="text-center mb-stack-lg">
               <h2 className="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface mb-2">
@@ -79,6 +88,33 @@ export default function Register() {
               className="space-y-stack-md"
               onSubmit={handleFormSubmit(onSubmit)}
             >
+              {sendOtpError && (
+                <div className="bg-error/10 border border-error/20 text-error p-3 rounded-xl text-sm font-semibold">
+                  {(sendOtpError as any)?.response?.data?.message ||
+                    'Failed to send OTP code. Please try again.'}
+                </div>
+              )}
+
+              {/* Full Name */}
+              <div className="space-y-2">
+                <Label className="font-label-lg text-label-lg text-on-surface-variant uppercase">
+                  Full Name
+                </Label>
+                <div className="relative">
+                  <Input
+                    {...register('name')}
+                    className="w-full h-14 px-4 bg-surface-container-low/50 border-none rounded-xl font-body-md text-body-md focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-outline outline-none"
+                    placeholder="John Doe"
+                    type="text"
+                  />
+                </div>
+                {errors.name && (
+                  <p className="text-error text-xs font-semibold mt-1.5 ml-1">
+                    {errors.name.message}
+                  </p>
+                )}
+              </div>
+
               {/* Email */}
               <div className="space-y-2">
                 <Label className="font-label-lg text-label-lg text-on-surface-variant uppercase">
@@ -99,7 +135,6 @@ export default function Register() {
                 )}
               </div>
 
-              {/* Password */}
               <div className="space-y-2">
                 <Label className="font-label-lg text-label-lg text-on-surface-variant uppercase">
                   Password
@@ -119,7 +154,6 @@ export default function Register() {
                 )}
               </div>
 
-              {/* Confirm Password */}
               <div className="space-y-2">
                 <Label className="font-label-lg text-label-lg text-on-surface-variant uppercase">
                   Confirm Password
@@ -139,15 +173,14 @@ export default function Register() {
                 )}
               </div>
 
-              {/* Primary Action */}
               <div className="pt-4">
                 <Button
                   className="w-full h-14 bg-primary text-on-primary font-label-lg text-label-lg rounded-full shadow-lg hover:bg-primary/90 active:scale-95 transition-all flex items-center justify-center gap-2 group cursor-pointer outline-none border-none"
                   type="submit"
-                  disabled={isLoading}
+                  disabled={isSendingOtp}
                 >
-                  {isLoading ? 'Creating...' : 'Create Account'}
-                  {!isLoading && (
+                  {isSendingOtp ? 'Sending OTP Code...' : 'Create Account'}
+                  {!isSendingOtp && (
                     <span className="material-symbols-outlined text-[20px] group-hover:translate-x-1 transition-transform">
                       arrow_forward
                     </span>
@@ -155,7 +188,6 @@ export default function Register() {
                 </Button>
               </div>
 
-              {/* Divider */}
               <div className="flex items-center gap-4 my-stack-md">
                 <div className="h-px flex-1 bg-outline-variant/30"></div>
                 <span className="font-label-sm text-label-sm text-on-surface-variant uppercase">
@@ -164,7 +196,6 @@ export default function Register() {
                 <div className="h-px flex-1 bg-outline-variant/30"></div>
               </div>
 
-              {/* Google Register Button */}
               <div className="mt-4">
                 <Button
                   className="w-full h-14 bg-surface-container-lowest border border-outline-variant/50 text-on-surface font-label-lg text-label-lg rounded-full shadow-sm hover:bg-surface-container-low active:scale-95 transition-all flex items-center justify-center gap-3 cursor-pointer outline-none"
@@ -194,7 +225,6 @@ export default function Register() {
               </div>
             </form>
 
-            {/* Footer Links */}
             <footer className="mt-stack-lg text-center space-y-4">
               <p className="font-body-md text-body-md text-on-surface-variant">
                 Already have an account?{' '}

@@ -1,19 +1,24 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link } from 'react-router';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useForgotPasswordMutation } from '../../hooks/auth';
 import {
   forgotPasswordSchema,
   type ForgotPasswordFormValues,
 } from '../../validations/auth.validation';
 
 export default function ForgotPassword() {
+  const {
+    mutateAsync: forgotPassword,
+    isPending: isSendingForgotPassword,
+    error: forgotPasswordError,
+    isSuccess: forgotPasswordSuccess,
+  } = useForgotPasswordMutation();
   const [emailFocused, setEmailFocused] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
 
   const {
     register,
@@ -26,17 +31,16 @@ export default function ForgotPassword() {
     },
   });
 
-  const onSubmit = (values: ForgotPasswordFormValues) => {
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      navigate('/verify-identity', { state: { email: values.email } });
-    }, 1500);
+  const onSubmit = async (values: ForgotPasswordFormValues) => {
+    try {
+      await forgotPassword(values.email);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   return (
     <div className="relative min-h-screen text-on-surface select-none overflow-hidden h-screen w-screen bg-background antialiased flex items-center justify-center px-margin-mobile">
-      {/* Custom Styles */}
       <style>{`
         .glass-card {
           background: rgba(245, 242, 238, 0.7);
@@ -49,9 +53,7 @@ export default function ForgotPassword() {
         }
       `}</style>
 
-      {/* Centered Content Canvas */}
       <main className="relative z-10 w-full max-w-md">
-        {/* Brand Logo Center */}
         <div className="text-center mb-stack-lg">
           <Link
             to="/"
@@ -63,7 +65,6 @@ export default function ForgotPassword() {
           </Link>
         </div>
 
-        {/* Glassmorphic Card with Spring Micro-interaction */}
         <div
           className="glass-card w-full p-stack-lg rounded-[16px] shadow-[0_20px_40px_rgba(0,0,0,0.08)] duration-700"
           style={{
@@ -72,7 +73,6 @@ export default function ForgotPassword() {
               'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
           }}
         >
-          {/* Header Content */}
           <div className="text-center mb-stack-lg">
             <h2 className="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-on-surface mb-stack-sm font-semibold">
               Reset Your Password
@@ -83,47 +83,69 @@ export default function ForgotPassword() {
             </p>
           </div>
 
-          {/* Reset Form */}
-          <form className="space-y-stack-md" onSubmit={handleSubmit(onSubmit)}>
-            <div>
-              <Label
-                className="block font-label-lg text-label-lg text-on-surface-variant mb-2"
-                htmlFor="email"
-              >
-                Email Address
-              </Label>
-              <Input
-                {...register('email')}
-                className="w-full bg-primary-container border-none focus:ring-2 focus:ring-secondary/20 rounded-[16px] px-4 py-3 text-body-md text-on-surface placeholder:text-outline-variant transition-all duration-300 outline-none h-auto"
-                id="email"
-                placeholder="name@example.com"
-                type="email"
-                onFocus={() => setEmailFocused(true)}
-                onBlur={() => setEmailFocused(false)}
-              />
-              {errors.email && (
-                <p className="text-[10px] text-error font-semibold mt-1.5 px-1">
-                  {errors.email.message}
-                </p>
-              )}
+          {forgotPasswordSuccess ? (
+            <div className="bg-green-800/10 border border-green-800/20 text-green-700 p-4 rounded-xl text-center font-body-md flex flex-col items-center">
+              <span className="material-symbols-outlined text-green-800 text-4xl mb-2">
+                mark_email_read
+              </span>
+              <p className="font-semibold">Reset Link Sent!</p>
+              <p className="text-sm mt-1">
+                If this email is registered, we have sent a password reset link
+                to it. Please check your inbox.
+              </p>
             </div>
-
-            {/* Primary CTA */}
-            <Button
-              className="w-full bg-primary text-on-primary font-label-lg text-label-lg py-4 rounded-[16px] hover:bg-primary/95 active:scale-[0.98] transition-all duration-200 shadow-sm flex items-center justify-center gap-2 group cursor-pointer outline-none border-none h-auto"
-              type="submit"
-              disabled={isLoading}
+          ) : (
+            <form
+              className="space-y-stack-md"
+              onSubmit={handleSubmit(onSubmit)}
             >
-              {isLoading ? 'Sending OTP...' : 'Send OTP'}
-              {!isLoading && (
-                <span className="material-symbols-outlined text-[18px] group-hover:translate-x-1 transition-transform">
-                  arrow_forward
-                </span>
+              {forgotPasswordError && (
+                <div className="bg-error/10 border border-error/20 text-error p-3 rounded-xl text-sm font-semibold">
+                  {(forgotPasswordError as any)?.response?.data?.message ||
+                    'Failed to send recovery email. Please try again.'}
+                </div>
               )}
-            </Button>
-          </form>
 
-          {/* Secondary Actions */}
+              <div>
+                <Label
+                  className="block font-label-lg text-label-lg text-on-surface-variant mb-2"
+                  htmlFor="email"
+                >
+                  Email Address
+                </Label>
+                <Input
+                  {...register('email')}
+                  className="w-full bg-primary-container border-none focus:ring-2 focus:ring-secondary/20 rounded-[16px] px-4 py-3 text-body-md text-on-surface placeholder:text-outline-variant transition-all duration-300 outline-none h-auto"
+                  id="email"
+                  placeholder="name@example.com"
+                  type="email"
+                  onFocus={() => setEmailFocused(true)}
+                  onBlur={() => setEmailFocused(false)}
+                />
+                {errors.email && (
+                  <p className="text-[10px] text-error font-semibold mt-1.5 px-1">
+                    {errors.email.message}
+                  </p>
+                )}
+              </div>
+
+              <Button
+                className="w-full bg-primary text-on-primary font-label-lg text-label-lg py-4 rounded-[16px] hover:bg-primary/95 active:scale-[0.98] transition-all duration-200 shadow-sm flex items-center justify-center gap-2 group cursor-pointer outline-none border-none h-auto"
+                type="submit"
+                disabled={isSendingForgotPassword}
+              >
+                {isSendingForgotPassword
+                  ? 'Sending Recovery Email...'
+                  : 'Send Recovery Email'}
+                {!isSendingForgotPassword && (
+                  <span className="material-symbols-outlined text-[18px] group-hover:translate-x-1 transition-transform">
+                    arrow_forward
+                  </span>
+                )}
+              </Button>
+            </form>
+          )}
+
           <div className="mt-stack-lg text-center">
             <Link
               className="inline-flex items-center gap-2 font-label-lg text-label-lg text-secondary hover:text-on-secondary-container transition-colors duration-200"

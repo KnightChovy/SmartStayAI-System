@@ -332,6 +332,7 @@ export function RoomCard({ room, onSelect, isHighlighted = false, className }: R
 
 - Tên bắt đầu bằng `use`.
 - Mỗi hook làm **một việc** rõ ràng.
+- **Tách từng custom hook theo từng API** — mỗi endpoint là một hook riêng (vd: `useLoginMutation`, `useSendOtpMutation`, `useRegisterMutation`), **không gom nhiều API vào một hook tổng** kiểu `useAuth`. Nhóm theo domain trong thư mục con của `hooks/` (vd: `hooks/auth/`) và export qua `index.ts`.
 - Trả về object `{ data, isLoading, error }`, không trả về array trừ pair `[value, setValue]`.
 
 ```typescript
@@ -472,6 +473,8 @@ LoginPage → authService.login() → lưu JWT vào authStore
 3. **Server state = TanStack Query** — không lưu API data vào Zustand.
 4. **Import alias `@/`** trỏ về `src/` — dùng thay cho relative path dài.
 5. **Đặt file đúng thư mục** theo cấu trúc ở mục 2.
+6. **Luôn để type/interface trong thư mục `types/`** — mọi `interface`/`type` dùng chung (DTO, payload, entity, props chia sẻ) phải khai báo trong file tương ứng ở `src/types/` (vd: `auth.types.ts`), không định nghĩa rải rác trong service/hook/component.
+7. **Tách từng custom hook theo từng API** — mỗi endpoint một hook riêng (`useLoginMutation`, `useSendOtpMutation`, …), không gom nhiều API vào một hook tổng kiểu `useAuth`. Xem mục 5.4.
 
 ### Template: Component mới
 

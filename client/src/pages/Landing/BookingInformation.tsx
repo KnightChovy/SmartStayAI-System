@@ -5,16 +5,7 @@ import { BookingSidebar } from '../../components/BookingInformation/BookingSideb
 import { BookingDetailsForm } from '../../components/BookingInformation/BookingDetailsForm';
 import { BookingPerks } from '../../components/BookingInformation/BookingPerks';
 import { Button } from '../../components/ui/button';
-
-interface BookingFormValues {
-  firstName: string;
-  lastName: string;
-  email: string;
-  country: string;
-  phone: string;
-  specialRequests?: string;
-  arrivalTime?: string;
-}
+import type { BookingFormValues } from '../../validations/booking.validation';
 
 export default function BookingInformation() {
   const location = useLocation();
