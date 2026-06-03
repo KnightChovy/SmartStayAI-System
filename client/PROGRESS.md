@@ -192,3 +192,14 @@ _Last Updated: 2026-06-02_
 - [x] **Admin Users Shadcn Dropdown Actions**:
   - Added a shadcn-style DropdownMenu primitive backed by Radix UI.
   - Changed Users row actions from inline buttons to a compact dropdown containing View, Edit, and Delete.
+- [x] **Landing Hero Background Image**:
+  - Added a full-bleed luxury resort background image layer to `Home/Hero.tsx`, matching the warm quiet-luxury palette.
+  - Layered a light `surface` gradient overlay (`from-surface via-surface/85 to-surface/60`) so the dark heading text and white search bar stay readable.
+  - Lifted hero content above the background with explicit `z-10` stacking.
+- [x] **Auth Background Images (Login + Register)**:
+  - Re-introduced full-screen luxury background image layers behind the glass cards in `Auth/Login.tsx` and `Auth/Register.tsx`, leveraging the existing `backdrop-filter: blur(20px)` glassmorphism.
+  - Added a symmetric light overlay (`from-surface/85 via-surface/65 to-surface/85`) on both pages so the translucent cards and gradient brand logo stay legible.
+  - Used two harmonious warm-toned images (hotel interior for Login, resort for Register) sitting under the `relative z-10` content.
+- [x] **Auth Background Image (Forgot Password)**:
+  - Added a matching luxury background image layer + light `surface` overlay behind the glass card in `Auth/ForgotPassword.tsx`, consistent with Login/Register.
+  - Preserved the existing premium blur-glow accents above the new background layer.

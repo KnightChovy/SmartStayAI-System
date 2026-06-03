@@ -53,6 +53,21 @@ export default function ForgotPassword() {
         }
       `}</style>
 
+      {/* Background image layer */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
+        style={{
+          backgroundImage:
+            "url('https://images.unsplash.com/photo-1618773928121-c32242e63f39?q=80&w=2070&auto=format&fit=crop')",
+        }}
+      />
+      {/* Light overlay keeps the glass card and brand logo legible */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 z-0 bg-linear-to-b from-surface/85 via-surface/65 to-surface/85"
+      />
+
       <main className="relative z-10 w-full max-w-md">
         <div className="text-center mb-stack-lg">
           <Link

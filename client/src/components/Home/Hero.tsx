@@ -33,8 +33,22 @@ export default function Hero() {
   };
 
   return (
-    <section className="relative pt-20 pb-24 px-margin-mobile overflow-hidden bg-linear-to-b from-surface to-transparent w-full">
-      <div className="max-w-4xl mx-auto text-center mb-12">
+    <section className="relative pt-20 pb-24 px-margin-mobile overflow-hidden bg-surface w-full">
+      {/* Background image layer */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
+        style={{
+          backgroundImage:
+            "url('https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?q=80&w=2070&auto=format&fit=crop')",
+        }}
+      />
+      {/* Light gradient overlay keeps dark text & white search bar readable */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 z-0 bg-linear-to-b from-surface via-surface/85 to-surface/60"
+      />
+      <div className="relative z-10 max-w-4xl mx-auto text-center mb-12">
         <h1 className="font-be-vietnam text-display-lg md:text-6xl text-on-surface mb-6 font-bold leading-tight">
           Find your next stay
         </h1>
