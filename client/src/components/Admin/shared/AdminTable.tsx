@@ -13,7 +13,7 @@ export function AdminTable({
 }: AdminTableProps) {
   return (
     <div className="overflow-x-auto rounded-2xl border bg-white lg:rounded-3xl">
-      <table className="min-w-[760px] w-full text-left">
+      <table className="min-w-190 w-full text-left">
         <thead className="border-b bg-surface-container-low text-xs uppercase tracking-wide sm:text-sm">
           <tr>
             {headers.map(header => (

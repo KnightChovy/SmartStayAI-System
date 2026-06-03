@@ -11,11 +11,15 @@ import VerifyIdentity from './pages/Auth/VerifyIdentity';
 import RoomDetail from './pages/Landing/RoomDetail';
 import BookingInformation from './pages/Landing/BookingInformation';
 import { AdminShellPage } from './pages/Admin/AdminShellPage';
+import { AdminAiSettingsPage } from './pages/Admin/AdminAiSettingsPage';
 import { AdminAnalyticsPage } from './pages/Admin/AdminAnalyticsPage';
 import { AdminBookingsPage } from './pages/Admin/AdminBookingsPage';
 import { AdminPropertiesPage } from './pages/Admin/AdminPropertiesPage';
+import { AdminPaymentsPage } from './pages/Admin/AdminPaymentsPage';
 import { AdminUsersPage } from './pages/Admin/AdminUsersPage';
 import { AdminDashboardPage } from './pages/Admin/AdminDashboardPage';
+import { AdminSettingsPage } from './pages/Admin/AdminSettingsPage';
+import { AdminSystemPage } from './pages/Admin/AdminSystemPage';
 import DashboardPage from './pages/hotel-partner/dashboard/DashboardPage';
 import { HotelPartnerLayout } from './components/hotel-partner/HotelPartnerLayout';
 import { TooltipProvider } from './components/ui/tooltip';
@@ -52,9 +56,12 @@ function App() {
         <Route path="dashboard" element={<AdminDashboardPage />} />
         <Route path="properties" element={<AdminPropertiesPage />} />
         <Route path="users" element={<AdminUsersPage />} />
+        <Route path="payments" element={<AdminPaymentsPage />} />
         <Route path="bookings" element={<AdminBookingsPage />} />
         <Route path="analytics" element={<AdminAnalyticsPage />} />
-        <Route path="settings" element={<AdminAnalyticsPage />} />
+        <Route path="ai-settings" element={<AdminAiSettingsPage />} />
+        <Route path="system" element={<AdminSystemPage />} />
+        <Route path="settings" element={<AdminSettingsPage />} />
       </Route>
     </Routes>
     </TooltipProvider>

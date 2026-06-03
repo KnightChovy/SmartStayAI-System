@@ -8,6 +8,14 @@ This file tracks the accomplished tasks, resolved user requests, and visual/func
 
 ### June 2, 2026
 
+- [x] **Admin Common Layout Integration**:
+  - Rewired `AdminLayout` to use `CommonSidebar` and `CommonNavbar` from `src/common`, matching the existing `HotelPartnerLayout` composition.
+  - Passed admin-specific nav items, footer settings, realtime calendar trigger, messages, support, and avatar controls through the shared common layout components.
+  - Extended `CommonNavbar` with optional `currentTime` and `onDateClick` props so admin can keep its realtime calendar modal behavior.
+  - Removed the now-unused `AdminNavbar` and `AdminSidebar` component files after migrating admin to the shared common layout.
+- [x] **Admin Analytics Two-Bar Revenue Chart**:
+  - Changed the analytics Revenue Growth visualization from one revenue bar plus a target line to paired revenue and target bars for each month.
+  - Removed hover-driven bar recoloring so revenue and target bars keep consistent colors while the tooltip still works.
 - [x] **Hotel Partner Verification System**:
   - Implemented the complete 8-step `VerifyHotelPage.tsx` wizard flow for hotel partners.
   - Created welcome dashboard components (`VerificationHeroCard`, `VerificationBenefitsCard`, `VerificationStepsCard`, `VerificationCenter`).
@@ -125,3 +133,62 @@ _Last Updated: 2026-06-01_
   - Re-tuned fixed-shell dimensions (sidebar, navbar offsets, content container) for the latest provided dashboard proportion.
   - Resized dashboard-specific UI blocks (KPI cards, growth panel, device panel, right app rail, quick action rail, activity log, system health) to align with the screenshot's larger visual scale.
   - Verified build passes after class adjustments (`npm run build`).
+
+_Last Updated: 2026-06-02_
+
+- [x] **Admin Sidebar Mobile/Tablet Drawer**:
+  - Added a hamburger button to the admin navbar on screens below `lg`.
+  - Added a mobile/tablet slide-out sidebar drawer with backdrop dismissal and auto-close after navigation.
+  - Added a direct close button inside the mobile/tablet sidebar drawer.
+  - Kept the fixed desktop sidebar behavior unchanged on `lg+` screens.
+- [x] **Admin Settings Page**:
+  - Added a dedicated `/admin/settings` page instead of reusing the analytics route.
+  - Built responsive settings sections for platform defaults, AI automation, security controls, notifications, and API keys.
+- [x] **Admin Navbar Dynamic Time**:
+  - Replaced the hardcoded admin navbar timestamp with a browser-formatted realtime date/time that updates every second.
+- [x] **Admin Realtime Calendar Modal**:
+  - Added a responsive calendar overlay opened from the admin navbar date/time or calendar icon.
+  - Calendar renders the current month from live browser time, highlights today's date, and shows a realtime clock with today's schedule.
+  - Connected the sidebar Calendar item to open the same realtime calendar modal on desktop, tablet, and mobile.
+- [x] **Admin Dashboard App Panel Refresh**:
+  - Redesigned the dashboard app panel as a card-style shortcut launcher with icons, statuses, and responsive grid behavior.
+  - Connected the dashboard Calendar shortcut to the shared realtime calendar modal.
+- [x] **Admin Messages Modal**:
+  - Added a responsive messages overlay with conversation list, active chat thread, typing state, and message input.
+  - Connected the dashboard Messages shortcut to open the shared admin messages modal.
+- [x] **Admin Tasks Modal**:
+  - Added a task overview overlay matching the provided reference, with status, priority, task, assignee, and due columns.
+  - Connected the dashboard Tasks shortcut to open the shared admin tasks modal.
+- [x] **Admin File Manager Modal**:
+  - Added a file manager overlay with category sidebar, breadcrumb header, file search, folder cards, and recent files table.
+  - Connected the dashboard File Manager shortcut to open the shared admin file manager modal.
+- [x] **Admin Generate Report Modal**:
+  - Added a two-step report generation overlay with report parameters, date range, output format, delivery, and generate action.
+  - Connected the dashboard Quick Actions "Generate Report" button to open the shared admin report modal.
+- [x] **Admin Modal Coverage + Realtime Pass**:
+  - Added missing modals for Notes, Support, Create New User, and Schedule Maintenance.
+  - Connected every dashboard app shortcut and quick action to a modal.
+  - Passed the shared realtime admin clock into modals that display timestamps or date-sensitive values.
+  - Connected navbar Bell to Messages and Help to Support.
+- [x] **Admin Dashboard Growth Chart Rendering**:
+  - Replaced the empty Monthly User Growth placeholder with a responsive Recharts area chart.
+- [x] **Admin Analytics Numbers + Charts**:
+  - Added revenue totals/latest values and rendered the Revenue Growth chart with Recharts.
+  - Added user demographic total, pie chart, hover-only centered donut value, and numeric segment legend.
+- [x] **Admin Dashboard Device Chart Hover Values**:
+  - Replaced the dashboard Device Distribution CSS donut with a Recharts donut.
+  - Added numeric legend and hover-only centered value/label behavior.
+- [x] **Admin Criteria Coverage Pages**:
+  - Added Payments, AI Settings, and System Monitor admin pages.
+  - Updated dashboard stats to include users, revenue, bookings, and engagement metrics.
+  - Added user moderation actions for approve, activate, and deactivate.
+  - Added sidebar and routes for payments, AI settings, and system monitoring.
+- [x] **Admin Analytics Hover + User Actions**:
+  - Reworked analytics revenue chart hover so revenue is a single bar series and target is a dashed line.
+  - Simplified user management row actions into a cleaner View, primary moderation action, and secondary action layout.
+- [x] **Admin Users Action Semantics**:
+  - Updated Users table so Status remains the activity state and Actions only contains View, Edit, and Delete controls.
+  - Fixed Users table rendering so Actions no longer replaces the Status column.
+- [x] **Admin Users Shadcn Dropdown Actions**:
+  - Added a shadcn-style DropdownMenu primitive backed by Radix UI.
+  - Changed Users row actions from inline buttons to a compact dropdown containing View, Edit, and Delete.
