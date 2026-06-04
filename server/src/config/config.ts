@@ -22,6 +22,7 @@ const envVarsSchema = Joi.object()
     SMTP_USERNAME: Joi.string().description('username for email server'),
     SMTP_PASSWORD: Joi.string().description('password for email server'),
     EMAIL_FROM: Joi.string().description('the from field in the emails sent by the app'),
+    CLIENT_URL: Joi.string().required().description('Frontend URL used to build links in emails'),
   })
   .unknown();
 
@@ -34,6 +35,7 @@ if (error) {
 const config = {
   env: envVars.NODE_ENV,
   port: envVars.PORT,
+  clientUrl: envVars.CLIENT_URL,
   mongoose: {
     url: envVars.MONGODB_URL ? envVars.MONGODB_URL + (envVars.NODE_ENV === 'test' ? '-test' : '') : undefined,
     options: {

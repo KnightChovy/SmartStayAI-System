@@ -14,7 +14,8 @@ const jwtVerify = async (payload: JwtPayload, done: VerifiedCallback): Promise<v
     if (payload.type !== tokenTypes.ACCESS) {
       throw new Error('Invalid token type');
     }
-    const user = await prisma.user.findFirst({
+    //stateful check bổ sung cho tính stateless của JWT 
+    const user = await prisma.user.findFirst({//cai nay kiem tra xem user co ton tai va chua bi xoa/ban hay khong
       where: { id: payload.sub as string, deletedAt: null },
     });
     if (!user || user.status !== 'active') {
