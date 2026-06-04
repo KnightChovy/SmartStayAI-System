@@ -13,9 +13,9 @@ import type {
   VerificationRequestQueryOptions,
 } from '../dto/hotel-partner.dto';
 
-// Quan hệ kèm theo khi trả về một hồ sơ duyệt (license join sang file hiện hành qua currentDocument)
+// Quan hệ kèm theo khi trả về một hồ sơ duyệt (gồm ảnh khách sạn + license join file hiện hành)
 const requestInclude = {
-  hotel: true,
+  hotel: { include: { images: { orderBy: { sortOrder: 'asc' } } } },
   partner: true,
   documents: true,
   licenses: { include: { currentDocument: true } },
@@ -333,7 +333,11 @@ export class HotelPartnerService {
         skip,
         take: limit,
         orderBy,
-        include: { hotel: true, partner: true },
+        // List chỉ cần ảnh cover làm thumbnail, không lấy hết ảnh cho nhẹ
+        include: {
+          hotel: { include: { images: { where: { imageCategory: 'cover' }, orderBy: { sortOrder: 'asc' } } } },
+          partner: true,
+        },
       }),
       prisma.hotelVerificationRequest.count({ where }),
     ]);
