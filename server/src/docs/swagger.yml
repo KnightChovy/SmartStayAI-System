@@ -3,6 +3,10 @@ tags:
     description: Authentication
   - name: Users
     description: User management and retrieval
+  - name: Uploads
+    description: File upload (Cloudinary)
+  - name: HotelPartners
+    description: Hotel partner registration and verification
 
 paths:
   /auth/send-otp:
@@ -499,6 +503,297 @@ paths:
       responses:
         "200":
           description: No content
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  /uploads:
+    post:
+      summary: Upload a file to Cloudinary
+      description: Uploads a single image/PDF (multipart field "file") and returns its public URL.
+      tags: [Uploads]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: folder
+          schema:
+            type: string
+            enum: [licenses, representatives, properties, documents]
+          description: Cloudinary sub-folder to group the file
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "201":
+          description: Uploaded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+                    example: https://res.cloudinary.com/demo/image/upload/v1/smartstay/licenses/abc.jpg
+                  publicId:
+                    type: string
+                    example: smartstay/licenses/abc
+        "400":
+          description: No file uploaded or invalid file type/size
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+
+  /hotel-partners/registrations:
+    post:
+      summary: Submit a hotel partner registration
+      description: >
+        Creates a HotelPartner (pending), a Hotel (not yet active), its licenses, representative,
+        images, payout account and a pending verification request — all in one transaction.
+        Any authenticated user can submit. File URLs must be uploaded via POST /uploads first.
+      tags: [HotelPartners]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HotelRegistrationRequest'
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HotelVerificationRequest'
+        "400":
+          description: Validation error or duplicate pending/approved partner
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+    get:
+      summary: List verification requests (platform manager)
+      tags: [HotelPartners]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [pending, in_review, approved, rejected]
+        - in: query
+          name: sortBy
+          schema:
+            type: string
+          description: "field:(desc|asc) e.g. submittedAt:desc"
+        - in: query
+          name: limit
+          schema:
+            type: integer
+        - in: query
+          name: page
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+
+  /hotel-partners/registrations/me:
+    get:
+      summary: List my own verification requests
+      tags: [HotelPartners]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: OK
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+
+  /hotel-partners/registrations/{requestId}:
+    get:
+      summary: Get a verification request by id
+      description: Accessible by the owner or a platform manager.
+      tags: [HotelPartners]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: requestId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HotelVerificationRequest'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  /hotel-partners/registrations/{requestId}/review:
+    patch:
+      summary: Approve or reject a verification request (platform manager)
+      description: >
+        On approve - partner becomes approved, hotel becomes active and listed,
+        the owner user's role is upgraded to hotel_partner. On reject - a rejectionReason is required.
+      tags: [HotelPartners]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: requestId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - decision
+              properties:
+                decision:
+                  type: string
+                  enum: [approve, reject]
+                rejectionReason:
+                  type: string
+                  description: Required when decision is "reject"
+      responses:
+        "200":
+          description: Reviewed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HotelVerificationRequest'
+        "400":
+          description: Already reviewed or invalid payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  /hotel-partners/documents/{documentId}/review:
+    patch:
+      summary: Approve or reject a single document (platform manager)
+      description: >
+        Fine-grained review (Hướng B). On approve, if the document type is also a license type,
+        the matching license's current_document_id is set to this document.
+      tags: [HotelPartners]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: documentId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - decision
+              properties:
+                decision:
+                  type: string
+                  enum: [approve, reject]
+      responses:
+        "200":
+          description: Reviewed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HotelVerificationDocument'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  /hotel-partners/documents/{documentId}/replace:
+    post:
+      summary: Re-upload a rejected document (owner)
+      description: The partner who owns the document submits a new file URL; a new pending document is created and the old one is marked replaced.
+      tags: [HotelPartners]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: documentId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - fileUrl
+              properties:
+                fileUrl:
+                  type: string
+                  format: uri
+      responses:
+        "201":
+          description: Replacement document created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HotelVerificationDocument'
+        "400":
+          description: Document is not in a rejected state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         "401":
           $ref: '#/components/responses/Unauthorized'
         "403":

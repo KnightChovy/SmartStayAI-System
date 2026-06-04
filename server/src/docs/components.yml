@@ -47,6 +47,178 @@ components:
         message:
           type: string
 
+    HotelRegistrationRequest:
+      type: object
+      required: [businessInfo, businessLicense, certificates, representative, propertyImages, paymentPayouts]
+      properties:
+        businessInfo:
+          type: object
+          required: [businessName, address, cityProvince]
+          properties:
+            businessName: { type: string }
+            businessType: { type: string, enum: [hotel, resort, villa, apartment] }
+            businessRegistrationNumber: { type: string }
+            taxCode: { type: string }
+            phone: { type: string }
+            email: { type: string, format: email }
+            address: { type: string }
+            cityProvince: { type: string, example: hcmc }
+            district: { type: string, example: d1 }
+            ward: { type: string, example: w1 }
+            location:
+              type: object
+              properties:
+                lat: { type: number, example: 10.762622 }
+                lng: { type: number, example: 106.660172 }
+        businessLicense:
+          type: object
+          required: [documentFileUrl]
+          properties:
+            licenseNumber: { type: string }
+            issueDate: { type: string, format: date }
+            expiryDate: { type: string, format: date }
+            authority: { type: string }
+            status: { type: string, enum: [active, pending, expired] }
+            documentFileUrl: { type: string, format: uri }
+        certificates:
+          type: object
+          required: [operatingLicense, fireSafety]
+          properties:
+            operatingLicense:
+              type: object
+              required: [documentFileUrl]
+              properties:
+                licenseNumber: { type: string }
+                issueDate: { type: string, format: date }
+                authority: { type: string }
+                documentFileUrl: { type: string, format: uri }
+            fireSafety:
+              type: object
+              required: [documentFileUrl]
+              properties:
+                certificateNumber: { type: string }
+                issueDate: { type: string, format: date }
+                documentFileUrl: { type: string, format: uri }
+            securityOrder:
+              type: object
+              properties:
+                certificateNumber: { type: string }
+                issueDate: { type: string, format: date }
+                documentFileUrl: { type: string, format: uri }
+            classification:
+              type: object
+              required: [starRating, ratingCertificateFileUrl]
+              properties:
+                starRating: { type: string, enum: ["1", "2", "3", "4", "5", unrated] }
+                ratingCertificateFileUrl: { type: string, format: uri }
+        representative:
+          type: object
+          required: [fullName, role, idNumber]
+          properties:
+            fullName: { type: string }
+            role: { type: string, enum: [owner, general_manager, legal_representative, director] }
+            dob: { type: string, format: date }
+            idNumber: { type: string }
+            phone: { type: string }
+            address: { type: string }
+            idFrontImageUrl: { type: string, format: uri }
+            idBackImageUrl: { type: string, format: uri }
+        propertyImages:
+          type: object
+          required: [coverImages, exteriorImages, roomImages]
+          properties:
+            coverImages: { type: array, minItems: 1, items: { type: string, format: uri } }
+            exteriorImages: { type: array, minItems: 1, items: { type: string, format: uri } }
+            roomImages: { type: array, minItems: 3, items: { type: string, format: uri } }
+        paymentPayouts:
+          type: object
+          required: [bankAccount]
+          properties:
+            bankAccount:
+              type: object
+              required: [accountHolder, bankName, accountNumber]
+              properties:
+                accountHolder: { type: string }
+                bankName: { type: string }
+                accountNumber: { type: string }
+                bankBranch: { type: string }
+                swiftCode: { type: string }
+            taxInvoice:
+              type: object
+              properties:
+                taxIdVatNumber: { type: string }
+                registeredBusinessAddress: { type: string }
+
+    HotelVerificationDocument:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        verificationRequestId: { type: string, format: uuid }
+        documentType:
+          type: string
+          enum: [business_license, tax_certificate, owner_id, property_proof, operating_license, fire_safety, security_order, classification]
+        fileUrl: { type: string, format: uri }
+        status: { type: string, enum: [pending, approved, rejected] }
+        reviewedBy: { type: string, format: uuid, nullable: true }
+        reviewedAt: { type: string, format: date-time, nullable: true }
+        replacedById: { type: string, format: uuid, nullable: true }
+
+    HotelLicense:
+      type: object
+      description: Master data of a license; the file lives in the linked verification document (currentDocumentId).
+      properties:
+        id: { type: string, format: uuid }
+        licenseType: { type: string, enum: [business_license, operating_license, fire_safety, security_order, classification] }
+        licenseNumber: { type: string, nullable: true }
+        certificateNumber: { type: string, nullable: true }
+        issueDate: { type: string, format: date, nullable: true }
+        expiryDate: { type: string, format: date, nullable: true }
+        authority: { type: string, nullable: true }
+        validityStatus: { type: string, enum: [active, pending, expired], nullable: true }
+        starRating: { type: string, enum: [star1, star2, star3, star4, star5, unrated], nullable: true }
+        currentDocumentId: { type: string, format: uuid, nullable: true }
+        currentDocument:
+          allOf:
+            - $ref: '#/components/schemas/HotelVerificationDocument'
+          nullable: true
+
+    HotelVerificationRequest:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        partnerId: { type: string, format: uuid }
+        hotelId: { type: string, format: uuid }
+        status: { type: string, enum: [pending, in_review, approved, rejected] }
+        submittedAt: { type: string, format: date-time }
+        reviewedBy: { type: string, format: uuid, nullable: true }
+        reviewedAt: { type: string, format: date-time, nullable: true }
+        rejectionReason: { type: string, nullable: true }
+        hotel:
+          type: object
+          description: The hotel being verified (activated on approval)
+          properties:
+            id: { type: string, format: uuid }
+            name: { type: string }
+            city: { type: string }
+            country: { type: string }
+            starRating: { type: integer, nullable: true }
+            latitude: { type: number, nullable: true }
+            longitude: { type: number, nullable: true }
+            isActive: { type: boolean }
+            isListed: { type: boolean }
+        partner:
+          type: object
+          properties:
+            id: { type: string, format: uuid }
+            businessName: { type: string }
+            status: { type: string, enum: [pending, approved, suspended, rejected] }
+        documents:
+          type: array
+          items: { $ref: '#/components/schemas/HotelVerificationDocument' }
+        licenses:
+          type: array
+          items: { $ref: '#/components/schemas/HotelLicense' }
+
   responses:
     DuplicateEmail:
       description: Email already taken
