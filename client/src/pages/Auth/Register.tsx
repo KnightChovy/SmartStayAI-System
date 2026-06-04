@@ -83,8 +83,8 @@ export default function Register() {
               to="/"
               className="inline-block hover:opacity-90 transition-opacity"
             >
-              <h1 className="font-display-lg text-3xl font-extrabold tracking-widest uppercase text-transparent bg-clip-text bg-linear-to-r from-secondary via-secondary-fixed-dim to-secondary text-glow">
-                Smart Stay AI
+            <h1 className="font-display-lg text-3xl font-extrabold tracking-widest uppercase text-black-">
+                  SMART STAY AI
               </h1>
             </Link>
           </div>
