@@ -1,71 +1,64 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, UserRole } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 import bcrypt from 'bcryptjs';
-import path from 'path';
 import 'dotenv/config';
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
+// One sample account per role. Password convention: `<role>Password123`.
+const seedAccounts: { fullName: string; email: string; role: UserRole }[] = [
+  { fullName: 'SmartStay Admin', email: 'admin@smartstay.ai', role: 'admin' },
+  { fullName: 'Platform Manager', email: 'manager@smartstay.ai', role: 'platform_manager' },
+  { fullName: 'Hotel Partner', email: 'partner@smartstay.ai', role: 'hotel_partner' },
+  { fullName: 'Hotel Staff', email: 'staff@smartstay.ai', role: 'staff' },
+  { fullName: 'Marketing Staff', email: 'marketer@smartstay.ai', role: 'marketer' },
+  { fullName: 'Regular Customer', email: 'customer@smartstay.ai', role: 'customer' },
+  { fullName: 'Guest User', email: 'guest@smartstay.ai', role: 'guest' },
+];
+
 async function main() {
   console.log('Seeding database...');
 
-  // Cascade delete on foreign keys will clear associated tables
-  await prisma.userSession.deleteMany({});
-  await prisma.verificationToken.deleteMany({});
-  await prisma.userProfile.deleteMany({});
-  await prisma.user.deleteMany({});
+  // Reset all data (dev only): truncate every table except the migration history.
+  // CASCADE handles foreign-key dependencies regardless of onDelete: Restrict.
+  const tables = await prisma.$queryRaw<{ tablename: string }[]>`
+    SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename <> '_prisma_migrations'
+  `;
+  const tableNames = tables.map((t) => `"public"."${t.tablename}"`).join(', ');
+  if (tableNames) {
+    await prisma.$executeRawUnsafe(`TRUNCATE TABLE ${tableNames} RESTART IDENTITY CASCADE`);
+  }
 
-  const adminPassword = await bcrypt.hash('adminPassword123', 8);
-  const customerPassword = await bcrypt.hash('customerPassword123', 8);
+  for (const account of seedAccounts) {
+    const password = `${account.role}Password123`;
+    const passwordHash = await bcrypt.hash(password, 8);
 
-  const admin = await prisma.user.upsert({
-    where: { email: 'admin@smartstay.ai' },
-    update: {},
-    create: {
-      fullName: 'SmartStay Admin',
-      email: 'admin@smartstay.ai',
-      passwordHash: adminPassword,
-      role: 'admin',
-      status: 'active',
-      emailVerifiedAt: new Date(),
-      profile: {
-        create: {
-          nationality: 'Vietnamese',
-          marketingOptIn: true,
+    await prisma.user.upsert({
+      where: { email: account.email },
+      update: {},
+      create: {
+        fullName: account.fullName,
+        email: account.email,
+        passwordHash,
+        role: account.role,
+        status: 'active',
+        emailVerifiedAt: new Date(),
+        profile: {
+          create: {
+            nationality: 'Vietnamese',
+            marketingOptIn: false,
+          },
         },
       },
-    },
-  });
+    });
 
-  const customer = await prisma.user.upsert({
-    where: { email: 'customer@smartstay.ai' },
-    update: {},
-    create: {
-      fullName: 'Regular Customer',
-      email: 'customer@smartstay.ai',
-      passwordHash: customerPassword,
-      role: 'customer',
-      status: 'active',
-      emailVerifiedAt: null,
-      profile: {
-        create: {
-          nationality: 'Vietnamese',
-          marketingOptIn: false,
-        },
-      },
-    },
-  });
+    console.log(`  ✓ ${account.role.padEnd(18)} ${account.email}  (password: ${password})`);
+  }
 
   console.log('Seed completed successfully!');
-  console.log('Sample Admin account:');
-  console.log('  Email: admin@smartstay.ai');
-  console.log('  Password: adminPassword123');
-  console.log('Sample Customer account:');
-  console.log('  Email: customer@smartstay.ai');
-  console.log('  Password: customerPassword123');
 }
 
 main()
