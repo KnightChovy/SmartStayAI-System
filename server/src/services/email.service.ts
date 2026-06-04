@@ -159,7 +159,7 @@ export class EmailService {
    */
   sendResetPasswordEmail = async (to: string, token: string) => {
     const subject = 'Reset password';
-    const resetPasswordUrl = `http://link-to-app/reset-password?token=${token}`;
+    const resetPasswordUrl = `${config.clientUrl}/reset-password?token=${token}`;
     
     const text = `Dear user,
 To reset your password, click on this link: ${resetPasswordUrl}
@@ -190,7 +190,7 @@ If you did not request any password resets, then ignore this email.`;
    */
   sendVerificationEmail = async (to: string, token: string) => {
     const subject = 'Email Verification';
-    const verificationEmailUrl = `http://link-to-app/verify-email?token=${token}`;
+    const verificationEmailUrl = `${config.clientUrl}/verify-email?token=${token}`;
     
     const text = `Dear user,
 To verify your email, click on this link: ${verificationEmailUrl}

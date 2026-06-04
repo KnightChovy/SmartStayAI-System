@@ -1,7 +1,7 @@
 import type { UserRole } from '@prisma/client';
 
 /**
- * Dữ liệu tạo mới một người dùng (dùng cho đăng ký / tạo user).
+ * Payload for creating a new user (used by registration / user creation).
  */
 export interface CreateUserDto {
   name: string;
@@ -20,7 +20,7 @@ export interface CreateUserDto {
 }
 
 /**
- * Dữ liệu cập nhật người dùng (mọi trường đều tuỳ chọn).
+ * Payload for updating a user (all fields optional).
  */
 export interface UpdateUserDto {
   name?: string;
@@ -29,7 +29,7 @@ export interface UpdateUserDto {
 }
 
 /**
- * Bộ lọc khi truy vấn danh sách người dùng.
+ * Filters for querying the list of users.
  */
 export interface UserFilter {
   name?: string;
@@ -37,7 +37,7 @@ export interface UserFilter {
 }
 
 /**
- * Tuỳ chọn phân trang / sắp xếp khi truy vấn người dùng.
+ * Pagination / sorting options when querying users.
  */
 export interface UserQueryOptions {
   limit?: number;

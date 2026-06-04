@@ -3,9 +3,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 import bcrypt from 'bcryptjs';
 import path from 'path';
-import dotenv from 'dotenv';
-
-dotenv.config({ path: path.join(__dirname, '../.env') });
+import 'dotenv/config';
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
