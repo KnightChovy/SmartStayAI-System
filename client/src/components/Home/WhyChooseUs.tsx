@@ -24,8 +24,8 @@ export default function WhyChooseUs() {
 
   return (
     <section className="max-w-7xl mx-auto px-margin-mobile md:px-8 mb-section-gap w-full">
-      <div className="text-center mb-12">
-        <h2 className="font-be-vietnam text-2xl font-bold text-on-surface">
+      <div className="text-center mb-12 mt-12">
+        <h2 className="font-be-vietnam text-4xl font-bold text-on-surface">
           Why choose SmartStay?
         </h2>
       </div>
