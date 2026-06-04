@@ -265,6 +265,76 @@ enum PostStatus {
   failed
 }
 
+// --- Enum phục vụ Đăng ký Hotel Partner ---
+
+enum BusinessType {
+  hotel
+  resort
+  villa
+  apartment
+}
+
+enum HotelImageCategory {
+  cover
+  exterior
+  room
+}
+
+enum VerificationRequestStatus {
+  pending
+  in_review
+  approved
+  rejected
+}
+
+enum VerificationDocumentType {
+  business_license
+  tax_certificate
+  owner_id
+  property_proof
+  operating_license
+  fire_safety
+  security_order
+  classification
+}
+
+enum VerificationDocumentStatus {
+  pending
+  approved
+  rejected
+}
+
+enum LicenseType {
+  business_license
+  operating_license
+  fire_safety
+  security_order
+  classification
+}
+
+enum LicenseValidityStatus {
+  active
+  pending
+  expired
+}
+
+// Prisma không cho enum bắt đầu bằng số → dùng @map để DB lưu '1'..'5'
+enum LicenseStarRating {
+  star1 @map("1")
+  star2 @map("2")
+  star3 @map("3")
+  star4 @map("4")
+  star5 @map("5")
+  unrated
+}
+
+enum RepresentativeRole {
+  owner
+  general_manager
+  legal_representative
+  director
+}
+
 // ==========================================
 // 2. MODELS (Hệ thống Bảng Dữ Liệu)
 // ==========================================
@@ -302,6 +372,8 @@ model User {
   createdDrafts       ContentDraft[]         @relation("draftCreator")
   approvedDrafts      ContentDraft[]         @relation("draftApprover")
   auditLogs           AuditLog[]
+  reviewedVerificationRequests  HotelVerificationRequest[]  @relation("verificationReviewer")
+  reviewedVerificationDocuments HotelVerificationDocument[] @relation("documentReviewer")
 
   @@map("users")
 }
@@ -382,6 +454,10 @@ model HotelPartner {
 
   hotels         Hotel[]
   commissions    PlatformCommission[]
+  verificationRequests  HotelVerificationRequest[]
+  verificationDocuments HotelVerificationDocument[]
+  representatives       HotelRepresentative[]
+  payoutAccounts        HotelPayoutAccount[]
 
   @@map("hotel_partners")
 }
@@ -396,6 +472,11 @@ model Hotel {
   address       String
   city          String
   country       String
+  businessType               BusinessType? @map("business_type")
+  businessRegistrationNumber String?       @map("business_registration_number")
+  taxCode                    String?       @map("tax_code")
+  district                   String?
+  ward                       String?
   latitude      Decimal?  @db.Decimal(10, 8)
   longitude     Decimal?  @db.Decimal(11, 8)
   starRating    Int?      @map("star_rating") @db.SmallInt
@@ -426,14 +507,20 @@ model Hotel {
   contentDrafts    ContentDraft[]
   occupancyStats   DailyOccupancyStats[]
   metrics          ContentMetrics[]
+  verificationRequests  HotelVerificationRequest[]
+  verificationDocuments HotelVerificationDocument[]
+  licenses              HotelLicense[]
+  representatives       HotelRepresentative[]
+  payoutAccounts        HotelPayoutAccount[]
 
   @@map("hotels")
 }
 
 model HotelImage {
-  id        String   @id @default(uuid()) @db.Uuid
-  hotelId   String   @map("hotel_id") @db.Uuid
-  hotel     Hotel    @relation(fields: [hotelId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  id            String             @id @default(uuid()) @db.Uuid
+  hotelId       String             @map("hotel_id") @db.Uuid
+  hotel         Hotel              @relation(fields: [hotelId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  imageCategory HotelImageCategory @map("image_category")
   url       String
   caption   String?
   isPrimary Boolean? @default(false) @map("is_primary")
@@ -1080,4 +1167,125 @@ model PlatformRevenueStats {
   calculatedAt    DateTime @map("calculated_at")
 
   @@map("platform_revenue_stats")
+}
+
+// ==========================================
+// 3. ĐĂNG KÝ HOTEL PARTNER (Hồ sơ & duyệt)
+// ==========================================
+
+// Một yêu cầu duyệt hồ sơ đăng ký khách sạn của partner
+model HotelVerificationRequest {
+  id              String                    @id @default(uuid()) @db.Uuid
+  partnerId       String                    @map("partner_id") @db.Uuid
+  partner         HotelPartner              @relation(fields: [partnerId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  hotelId         String                    @map("hotel_id") @db.Uuid
+  hotel           Hotel                     @relation(fields: [hotelId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  status          VerificationRequestStatus
+  submittedAt     DateTime                  @default(now()) @map("submitted_at")
+  reviewedBy      String?                   @map("reviewed_by") @db.Uuid
+  reviewer        User?                     @relation("verificationReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  reviewedAt      DateTime?                 @map("reviewed_at")
+  rejectionReason String?                   @map("rejection_reason")
+  notes           String?
+  createdAt       DateTime                  @default(now()) @map("created_at")
+  updatedAt       DateTime                  @default(now()) @updatedAt @map("updated_at")
+
+  documents       HotelVerificationDocument[]
+  licenses        HotelLicense[]
+
+  @@map("hotel_verification_requests")
+}
+
+// File giấy tờ nộp kèm để duyệt (mỗi file có trạng thái duyệt riêng)
+model HotelVerificationDocument {
+  id                    String                     @id @default(uuid()) @db.Uuid
+  verificationRequestId String                     @map("verification_request_id") @db.Uuid
+  verificationRequest   HotelVerificationRequest   @relation(fields: [verificationRequestId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  partnerId             String                     @map("partner_id") @db.Uuid
+  partner               HotelPartner               @relation(fields: [partnerId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  hotelId               String                     @map("hotel_id") @db.Uuid
+  hotel                 Hotel                      @relation(fields: [hotelId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  documentType          VerificationDocumentType   @map("document_type")
+  fileUrl               String                     @map("file_url")
+  status                VerificationDocumentStatus
+  reviewedBy            String?                    @map("reviewed_by") @db.Uuid
+  reviewer              User?                      @relation("documentReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  reviewedAt            DateTime?                  @map("reviewed_at")
+  // Tự tham chiếu: document này được thay thế bởi document nào (khi nộp lại)
+  replacedById          String?                    @map("replaced_by") @db.Uuid
+  replacedBy            HotelVerificationDocument?  @relation("documentReplacement", fields: [replacedById], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  replaces              HotelVerificationDocument[] @relation("documentReplacement")
+  // Các license đang trỏ tới document này làm bản file hợp lệ hiện hành
+  currentForLicenses    HotelLicense[]              @relation("currentDocument")
+  createdAt             DateTime                   @default(now()) @map("created_at")
+  updatedAt             DateTime                   @default(now()) @updatedAt @map("updated_at")
+
+  @@map("hotel_verification_documents")
+}
+
+// Giấy phép có cấu trúc (số GP, ngày cấp/hết hạn, cơ quan cấp, hạng sao)
+model HotelLicense {
+  id                    String                    @id @default(uuid()) @db.Uuid
+  hotelId               String                    @map("hotel_id") @db.Uuid
+  hotel                 Hotel                     @relation(fields: [hotelId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  verificationRequestId String?                   @map("verification_request_id") @db.Uuid
+  verificationRequest   HotelVerificationRequest? @relation(fields: [verificationRequestId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  licenseType           LicenseType               @map("license_type")
+  licenseNumber         String?                   @map("license_number")
+  certificateNumber     String?                   @map("certificate_number")
+  issueDate             DateTime?                 @map("issue_date") @db.Date
+  expiryDate            DateTime?                 @map("expiry_date") @db.Date
+  authority             String?
+  validityStatus        LicenseValidityStatus?    @map("validity_status")
+  starRating            LicenseStarRating?        @map("star_rating")
+  // File không lưu ở đây nữa: trỏ tới bản document đã duyệt mới nhất trong hotel_verification_documents
+  currentDocumentId     String?                    @map("current_document_id") @db.Uuid
+  currentDocument       HotelVerificationDocument? @relation("currentDocument", fields: [currentDocumentId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  createdAt             DateTime                  @default(now()) @map("created_at")
+  updatedAt             DateTime                  @default(now()) @updatedAt @map("updated_at")
+
+  @@index([hotelId, licenseType])
+  @@map("hotel_licenses")
+}
+
+// Người đại diện pháp lý của khách sạn
+model HotelRepresentative {
+  id              String             @id @default(uuid()) @db.Uuid
+  hotelId         String             @map("hotel_id") @db.Uuid
+  hotel           Hotel              @relation(fields: [hotelId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  partnerId       String             @map("partner_id") @db.Uuid
+  partner         HotelPartner       @relation(fields: [partnerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  fullName        String             @map("full_name")
+  role            RepresentativeRole
+  dateOfBirth     DateTime?          @map("date_of_birth") @db.Date
+  idNumber        String             @map("id_number")
+  phone           String?
+  address         String?
+  idFrontImageUrl String?            @map("id_front_image_url")
+  idBackImageUrl  String?            @map("id_back_image_url")
+  createdAt       DateTime           @default(now()) @map("created_at")
+  updatedAt       DateTime           @default(now()) @updatedAt @map("updated_at")
+
+  @@map("hotel_representatives")
+}
+
+// Tài khoản nhận tiền của khách sạn (số TK mã hoá ở tầng ứng dụng)
+model HotelPayoutAccount {
+  id                        String       @id @default(uuid()) @db.Uuid
+  hotelId                   String       @map("hotel_id") @db.Uuid
+  hotel                     Hotel        @relation(fields: [hotelId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  partnerId                 String       @map("partner_id") @db.Uuid
+  partner                   HotelPartner @relation(fields: [partnerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  accountHolder             String       @map("account_holder")
+  bankName                  String       @map("bank_name")
+  accountNumber             String       @map("account_number")
+  bankBranch                String?      @map("bank_branch")
+  swiftCode                 String?      @map("swift_code")
+  taxIdVatNumber            String?      @map("tax_id_vat_number")
+  registeredBusinessAddress String?      @map("registered_business_address")
+  isPrimary                 Boolean      @default(true) @map("is_primary")
+  createdAt                 DateTime     @default(now()) @map("created_at")
+  updatedAt                 DateTime     @default(now()) @updatedAt @map("updated_at")
+
+  @@map("hotel_payout_accounts")
 }

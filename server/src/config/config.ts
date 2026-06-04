@@ -23,6 +23,15 @@ const envVarsSchema = Joi.object()
     SMTP_PASSWORD: Joi.string().description('password for email server'),
     EMAIL_FROM: Joi.string().description('the from field in the emails sent by the app'),
     CLIENT_URL: Joi.string().required().description('Frontend URL used to build links in emails'),
+    CLOUDINARY_CLOUD_NAME: Joi.string().required().description('Cloudinary cloud name'),
+    CLOUDINARY_API_KEY: Joi.string().required().description('Cloudinary API key'),
+    CLOUDINARY_API_SECRET: Joi.string().required().description('Cloudinary API secret'),
+    PARTNER_DEFAULT_COMMISSION_RATE: Joi.number()
+      .default(15)
+      .description('default commission rate (%) applied to a newly registered hotel partner'),
+    PAYOUT_ENCRYPTION_KEY: Joi.string()
+      .required()
+      .description('base64-encoded 32-byte key (AES-256-GCM) to encrypt sensitive payout data'),
   })
   .unknown();
 
@@ -67,6 +76,19 @@ const config = {
       },
     },
     from: envVars.EMAIL_FROM,
+  },
+  cloudinary: {
+    cloudName: envVars.CLOUDINARY_CLOUD_NAME,
+    apiKey: envVars.CLOUDINARY_API_KEY,
+    apiSecret: envVars.CLOUDINARY_API_SECRET,
+  },
+  partner: {
+    // Tỉ lệ hoa hồng (%) mặc định gán cho đối tác mới khi họ nộp hồ sơ đăng ký
+    defaultCommissionRate: envVars.PARTNER_DEFAULT_COMMISSION_RATE,
+  },
+  security: {
+    // Key mã hoá dữ liệu nhạy cảm (số tài khoản nhận tiền của đối tác)
+    payoutEncryptionKey: envVars.PAYOUT_ENCRYPTION_KEY,
   },
 };
 
