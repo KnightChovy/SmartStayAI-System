@@ -6,6 +6,15 @@ This file tracks the accomplished tasks, resolved user requests, and visual/func
 
 ## Completed Tasks Checklist
 
+### June 5, 2026
+
+- [x] **AGENTS.md Naming Convention Alignment**:
+  - Renamed portal folders to lowercase/kebab-case: `pages/admin`, `pages/auth`, and `pages/guest`.
+  - Renamed component folders to `components/admin`, `components/booking-information`, and `components/detail`.
+  - Added the `Page` suffix to guest and auth route component files and component names.
+  - Renamed shared infrastructure files to `lib/cn.ts`, `stores/authStore.ts`, and `hooks/useMobile.ts`.
+  - Updated all affected imports and preserved Git-visible case-only renames for cross-platform builds.
+
 ### June 2, 2026
 
 - [x] **Admin Common Layout Integration**:

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ArrowLeft, CheckCircle2, FileText, Image as ImageIcon, Landmark, ShieldCheck, Building2, FileCheck2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/cn';
 
 interface SummaryCardProps {
   icon: React.ComponentType<{ className?: string }>;

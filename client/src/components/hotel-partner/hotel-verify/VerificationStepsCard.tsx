@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/cn";
 import { LockKeyholeOpen } from "lucide-react";
 
 export function VerificationStepsCard() {

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Hourglass, CheckCircle2, Search, Loader2, Plus } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/cn';
 
 interface VerificationCenterProps {
   onVerifyNew: () => void;

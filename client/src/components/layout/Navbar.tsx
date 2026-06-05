@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router';
 import { useLogoutMutation } from '../../hooks/auth';
-import { useAuthStore } from '../../stores/auth.store';
+import { useAuthStore } from '../../stores/authStore';
 
 export default function Navbar() {
   const location = useLocation();
