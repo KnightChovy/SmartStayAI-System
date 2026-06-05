@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router';
 import { authService } from '@/services/auth.service';
 import { useAuthStore } from '@/stores/authStore';
 
-export function useLogoutMutation() {
+export function useLogout() {
   const navigate = useNavigate();
   const clearAuth = useAuthStore(state => state.clearAuth);
   const currentRefreshToken = useAuthStore(state => state.refreshToken);
