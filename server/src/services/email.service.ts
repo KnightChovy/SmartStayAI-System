@@ -160,7 +160,12 @@ export class EmailService {
   sendResetPasswordEmail = async (to: string, token: string) => {
     const subject = 'Reset password';
     const resetPasswordUrl = `${config.clientUrl}/reset-password?token=${token}`;
-    
+
+    // In non-production, surface the reset link in logs so local testing works without reading the inbox
+    if (config.env !== 'production') {
+      logger.info(`[Reset Password] The reset link for ${to} is: ${resetPasswordUrl}`);
+    }
+
     const text = `Dear user,
 To reset your password, click on this link: ${resetPasswordUrl}
 If you did not request any password resets, then ignore this email.`;
