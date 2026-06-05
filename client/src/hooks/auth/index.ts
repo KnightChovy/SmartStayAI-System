@@ -1,7 +1,7 @@
-export { useLoginMutation } from './useLoginMutation';
-export { useSendOtpMutation } from './useSendOtpMutation';
-export { useRegisterMutation } from './useRegisterMutation';
-export { useLogoutMutation } from './useLogoutMutation';
-export { useForgotPasswordMutation } from './useForgotPasswordMutation';
-export { useResetPasswordMutation } from './useResetPasswordMutation';
-export { useVerifyEmailMutation } from './useVerifyEmailMutation';
+export { useLogin } from './use-login';
+export { useSendOtp } from './use-send-otp';
+export { useRegister } from './use-register';
+export { useLogout } from './use-logout';
+export { useForgotPassword } from './use-forgot-password';
+export { useResetPassword } from './use-reset-password';
+export { useVerifyEmail } from './use-verify-email';

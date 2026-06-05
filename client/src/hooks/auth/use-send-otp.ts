@@ -1,8 +1,8 @@
 import { useMutation } from '@tanstack/react-query';
 import { authService } from '@/services/auth.service';
 
-export function useForgotPasswordMutation() {
+export function useSendOtp() {
   return useMutation({
-    mutationFn: (email: string) => authService.forgotPassword(email),
+    mutationFn: (email: string) => authService.sendOtp(email),
   });
 }
