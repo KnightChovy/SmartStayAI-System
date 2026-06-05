@@ -1,49 +1,152 @@
-import React from 'react';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
 import { FileUploadDropzone } from '@/components/ui/file-upload';
+import { propertyDetailsSchema, type PropertyDetailsFormValues } from '@/validations/hotel-verify.validation';
+import { hotelVerifyService } from '@/services/hotel-verify.service';
+import { useHotelVerifyStore } from '@/stores/hotel-verify.store';
 
-export function PropertyDetailsStep({ onBack, onContinue }: { onBack?: () => void, onContinue?: () => void }) {
+export function PropertyDetailsStep({
+  onBack,
+  onContinue,
+}: {
+  onBack?: () => void;
+  onContinue?: () => void;
+}) {
+  const { setBusinessLicense, draft } = useHotelVerifyStore();
+  const [docFiles, setDocFiles] = useState<File[]>([]);
+  const [docUploading, setDocUploading] = useState(false);
+  const [docUploadError, setDocUploadError] = useState<string | null>(null);
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    formState: { errors, isSubmitting },
+  } = useForm<PropertyDetailsFormValues>({
+    resolver: zodResolver(propertyDetailsSchema),
+    defaultValues: draft.businessLicense ?? {
+      licenseNumber: '',
+      issueDate: '',
+      expiryDate: '',
+      authority: '',
+      status: 'active',
+      documentFileUrl: '',
+    },
+  });
+
+  const handleDocumentFileChange = async (files: File[]) => {
+    setDocFiles(files);
+    if (files.length === 0) {
+      setValue('documentFileUrl', '', { shouldValidate: false });
+      return;
+    }
+    setDocUploading(true);
+    setDocUploadError(null);
+    try {
+      const url = await hotelVerifyService.uploadFile(files[0]);
+      setValue('documentFileUrl', url, { shouldValidate: true });
+    } catch {
+      setDocUploadError('Upload failed. Please try again.');
+      setValue('documentFileUrl', '', { shouldValidate: true });
+    } finally {
+      setDocUploading(false);
+    }
+  };
+
+  const onSubmit = (data: PropertyDetailsFormValues) => {
+    setBusinessLicense(data);
+    onContinue?.();
+  };
+
+  const isPending = isSubmitting || docUploading;
+
   return (
     <div className="w-full bg-white rounded-2xl p-6 md:p-8 border border-slate-200 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] mt-4">
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-slate-900 mb-2">Business License</h2>
-        <p className="text-slate-600">
-          Provide your legal business documentation and licensing details.
-        </p>
+        <p className="text-slate-600">Provide your legal business documentation and licensing details.</p>
       </div>
 
       <div className="h-px bg-slate-100 w-full mb-8" />
 
-      <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); onContinue?.(); }}>
-        
+      <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
+        {/* Hidden field — value set via setValue after upload */}
+        <input type="hidden" {...register('documentFileUrl')} />
+
         <div className="space-y-2">
-          <Label htmlFor="licenseNumber">Business License Number <span className="text-red-500">*</span></Label>
-          <Input id="licenseNumber" placeholder="e.g. 1234567890" className="h-11 border-slate-200" required />
+          <Label htmlFor="licenseNumber">
+            Business License Number <span className="text-red-500">*</span>
+          </Label>
+          <Input
+            id="licenseNumber"
+            placeholder="e.g. 1234567890"
+            className="h-11 border-slate-200"
+            {...register('licenseNumber')}
+          />
+          {errors.licenseNumber && (
+            <span className="text-xs text-red-500">{errors.licenseNumber.message}</span>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <Label htmlFor="issueDate">License Issue Date <span className="text-red-500">*</span></Label>
-            <Input id="issueDate" type="date" className="h-11 border-slate-200 text-slate-700" required />
+            <Label htmlFor="issueDate">
+              License Issue Date <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="issueDate"
+              type="date"
+              className="h-11 border-slate-200 text-slate-700"
+              {...register('issueDate')}
+            />
+            {errors.issueDate && (
+              <span className="text-xs text-red-500">{errors.issueDate.message}</span>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="expiryDate">License Expiry Date</Label>
-            <Input id="expiryDate" type="date" className="h-11 border-slate-200 text-slate-700" />
+            <Input
+              id="expiryDate"
+              type="date"
+              className="h-11 border-slate-200 text-slate-700"
+              {...register('expiryDate')}
+            />
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <Label htmlFor="authority">Issuing Authority <span className="text-red-500">*</span></Label>
-            <Input id="authority" placeholder="e.g. Department of Planning and Investment" className="h-11 border-slate-200" required />
+            <Label htmlFor="authority">
+              Issuing Authority <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="authority"
+              placeholder="e.g. Department of Planning and Investment"
+              className="h-11 border-slate-200"
+              {...register('authority')}
+            />
+            {errors.authority && (
+              <span className="text-xs text-red-500">{errors.authority.message}</span>
+            )}
           </div>
           <div className="space-y-2">
-            <Label>License Status</Label>
-            <Select defaultValue="active">
+            <Label>
+              License Status <span className="text-red-500">*</span>
+            </Label>
+            <Select
+              defaultValue={draft.businessLicense?.status ?? 'active'}
+              onValueChange={(val) =>
+                setValue('status', val as PropertyDetailsFormValues['status'], {
+                  shouldValidate: true,
+                })
+              }
+            >
               <SelectTrigger className="h-11 w-full border-slate-200 text-slate-700">
                 <SelectValue placeholder="Select status" />
               </SelectTrigger>
@@ -53,23 +156,46 @@ export function PropertyDetailsStep({ onBack, onContinue }: { onBack?: () => voi
                 <SelectItem value="expired">Expired</SelectItem>
               </SelectContent>
             </Select>
+            {errors.status && (
+              <span className="text-xs text-red-500">{errors.status.message}</span>
+            )}
           </div>
         </div>
 
         <div className="mt-4">
-          <FileUploadDropzone label="Business License Document" helperText="SVG, PNG, JPG or PDF (max. 5MB)" accept=".pdf,.jpg,.jpeg,.png" />
+          <FileUploadDropzone
+            label="Business License Document"
+            helperText="SVG, PNG, JPG or PDF (max. 5MB)"
+            accept=".pdf,.jpg,.jpeg,.png"
+            onFilesChange={handleDocumentFileChange}
+            isUploading={docUploading}
+            error={docUploadError ?? errors.documentFileUrl?.message}
+          />
         </div>
 
-        {/* Actions */}
         <div className="flex justify-between items-center pt-6 border-t border-slate-100 mt-8">
-          <Button type="button" variant="outline" onClick={onBack} className="h-11 px-6 bg-white border-slate-300 text-slate-700 hover:bg-slate-50 cursor-pointer">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onBack}
+            className="h-11 px-6 bg-white border-slate-300 text-slate-700 hover:bg-slate-50 cursor-pointer"
+          >
             <ArrowLeft className="w-4 h-4 mr-2" /> Back
           </Button>
           <div className="flex items-center gap-4">
-            <Button type="button" variant="outline" className="h-11 px-6 bg-white border-slate-300 text-slate-700 hover:bg-slate-50 cursor-pointer hidden md:flex">
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11 px-6 bg-white border-slate-300 text-slate-700 hover:bg-slate-50 cursor-pointer hidden md:flex"
+            >
               Save Draft
             </Button>
-            <Button type="submit" className="h-11 px-8 bg-role-partner-primary hover:bg-role-partner-secondary text-white cursor-pointer">
+            <Button
+              type="submit"
+              disabled={isPending}
+              className="h-11 px-8 bg-role-partner-primary hover:bg-role-partner-secondary text-white cursor-pointer"
+            >
+              {isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Continue <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           </div>
