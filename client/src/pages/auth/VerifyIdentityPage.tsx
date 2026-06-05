@@ -10,7 +10,7 @@ import {
   type VerifyFormValues,
 } from '../../validations/auth.validation';
 
-export default function VerifyIdentity() {
+export default function VerifyIdentityPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const {

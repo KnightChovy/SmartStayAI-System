@@ -1,16 +1,16 @@
 import { useState } from 'react';
-import { ImageGallery } from '../../components/Detail/ImageGallery';
-import { RoomInfo } from '../../components/Detail/RoomInfo';
-import { RoomAvailability } from '../../components/Detail/RoomAvailability';
-import { BookingCard } from '../../components/Detail/BookingCard';
-import { GuestReviews } from '../../components/Detail/GuestReviews';
-import { NearbyAttractions } from '../../components/Detail/NearbyAttractions';
-import { PropertyFacilities } from '../../components/Detail/PropertyFacilities';
-import { HouseRules } from '../../components/Detail/HouseRules';
-import { BookingConfirmation } from '../../components/Detail/BookingConfirmation';
+import { ImageGallery } from '../../components/detail/ImageGallery';
+import { RoomInfo } from '../../components/detail/RoomInfo';
+import { RoomAvailability } from '../../components/detail/RoomAvailability';
+import { BookingCard } from '../../components/detail/BookingCard';
+import { GuestReviews } from '../../components/detail/GuestReviews';
+import { NearbyAttractions } from '../../components/detail/NearbyAttractions';
+import { PropertyFacilities } from '../../components/detail/PropertyFacilities';
+import { HouseRules } from '../../components/detail/HouseRules';
+import { BookingConfirmation } from '../../components/detail/BookingConfirmation';
 import type { Room } from '@/types/room.types';
 
-export default function RoomDetail() {
+export default function RoomDetailPage() {
   // Description Read More State
   const [isExpanded, setIsExpanded] = useState(false);
 

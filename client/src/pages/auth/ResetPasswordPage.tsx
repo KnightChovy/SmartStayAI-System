@@ -11,7 +11,7 @@ import {
   type ResetPasswordInput,
 } from '../../validations/auth.validation';
 
-export default function ResetPassword() {
+export default function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
   const navigate = useNavigate();

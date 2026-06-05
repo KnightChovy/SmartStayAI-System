@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { useVerifyEmailMutation } from '../../hooks/auth';
 
-export default function VerifyEmail() {
+export default function VerifyEmailPage() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
   const {

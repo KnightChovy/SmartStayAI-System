@@ -1,8 +1,8 @@
-import DiscoverVietnam from '../../components/Home/DiscoverVietnam';
-import TrendingDestinations from '../../components/Home/TrendingDestinations';
-import PopularVietnameseTourists from '../../components/Home/PopularVietnameseTourists';
+import DiscoverVietnam from '../../components/home/DiscoverVietnam';
+import TrendingDestinations from '../../components/home/TrendingDestinations';
+import PopularVietnameseTourists from '../../components/home/PopularVietnameseTourists';
 
-export default function Destinations() {
+export default function DestinationsPage() {
   return (
     <div className="py-12 flex flex-col items-center w-full">
       <div className="max-w-7xl mx-auto px-margin-mobile md:px-8 text-center mb-16">

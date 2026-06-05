@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
-import { BookingStepper } from '../../components/BookingInformation/BookingStepper';
-import { BookingSidebar } from '../../components/BookingInformation/BookingSidebar';
-import { BookingDetailsForm } from '../../components/BookingInformation/BookingDetailsForm';
-import { BookingPerks } from '../../components/BookingInformation/BookingPerks';
+import { BookingStepper } from '../../components/booking-information/BookingStepper';
+import { BookingSidebar } from '../../components/booking-information/BookingSidebar';
+import { BookingDetailsForm } from '../../components/booking-information/BookingDetailsForm';
+import { BookingPerks } from '../../components/booking-information/BookingPerks';
 import { Button } from '../../components/ui/button';
 import type { BookingFormValues } from '../../validations/booking.validation';
 
-export default function BookingInformation() {
+export default function BookingInformationPage() {
   const location = useLocation();
   const navigate = useNavigate();
 

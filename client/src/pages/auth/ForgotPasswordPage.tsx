@@ -11,7 +11,7 @@ import {
   type ForgotPasswordFormValues,
 } from '../../validations/auth.validation';
 
-export default function ForgotPassword() {
+export default function ForgotPasswordPage() {
   const {
     mutateAsync: forgotPassword,
     isPending: isSendingForgotPassword,

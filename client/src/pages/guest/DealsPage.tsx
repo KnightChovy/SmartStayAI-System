@@ -1,8 +1,8 @@
-import Promotions from '../../components/Home/Promotions';
-import WeekendDeals from '../../components/Home/WeekendDeals';
-import LoyaltyBanner from '../../components/Home/LoyaltyBanner';
+import Promotions from '../../components/home/Promotions';
+import WeekendDeals from '../../components/home/WeekendDeals';
+import LoyaltyBanner from '../../components/home/LoyaltyBanner';
 
-export default function Deals() {
+export default function DealsPage() {
   return (
     <div className="py-12 flex flex-col items-center w-full">
       <div className="max-w-7xl mx-auto px-margin-mobile md:px-8 text-center mb-16">

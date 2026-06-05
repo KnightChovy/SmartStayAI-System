@@ -11,7 +11,7 @@ import {
   type LoginInput,
 } from '../../validations/auth.validation';
 
-export default function Login() {
+export default function LoginPage() {
   const navigate = useNavigate();
   const {
     mutateAsync: login,

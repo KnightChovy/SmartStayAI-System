@@ -10,7 +10,7 @@ import {
   type RegisterInput,
 } from '../../validations/auth.validation';
 
-export default function Register() {
+export default function RegisterPage() {
   const navigate = useNavigate();
   const {
     mutateAsync: sendOtp,
