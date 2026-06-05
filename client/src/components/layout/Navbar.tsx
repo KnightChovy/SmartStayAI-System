@@ -1,12 +1,38 @@
 import { Link, useLocation } from 'react-router';
-import { useLogoutMutation } from '../../hooks/auth';
+import { ChevronDown, LayoutDashboard, LogOut, User as UserIcon } from 'lucide-react';
+import { useLogout} from '../../hooks/auth';
 import { useAuthStore } from '../../stores/authStore';
+import { getLandingPathForRole, UserRole } from '@/constants/roles';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '../ui/dropdown-menu';
+
+/** Nhãn hiển thị thân thiện cho từng role. */
+const ROLE_LABELS: Record<string, string> = {
+  [UserRole.GUEST]: 'Guest',
+  [UserRole.CUSTOMER]: 'Customer',
+  [UserRole.STAFF]: 'Staff',
+  [UserRole.MARKETER]: 'Marketer',
+  [UserRole.HOTEL_PARTNER]: 'Hotel Partner',
+  [UserRole.PLATFORM_MANAGER]: 'Platform Manager',
+  [UserRole.ADMIN]: 'Admin',
+};
 
 export default function Navbar() {
   const location = useLocation();
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const user = useAuthStore(state => state.user);
-  const { mutateAsync: logout, isPending: isLoggingOut } = useLogoutMutation();
+  const { mutateAsync: logout, isPending: isLoggingOut } = useLogout();
+
+  const initials = (user?.name || user?.email || 'US')
+    .slice(0, 2)
+    .toUpperCase();
+  const dashboardPath = user ? getLandingPathForRole(user.role) : '/';
+  const hasDashboard = dashboardPath !== '/';
 
   return (
     <nav className="bg-surface/80 backdrop-blur-xl sticky top-0 z-50 w-full border-b border-outline-variant/30">
@@ -58,8 +84,8 @@ export default function Navbar() {
           </div>
           <div className="flex items-center gap-3">
             {isAuthenticated && user ? (
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger className="flex items-center gap-2 rounded-full p-1 pr-2 hover:bg-surface-container-low transition-colors outline-none cursor-pointer data-[state=open]:bg-surface-container-low">
                   {user.avatarUrl ? (
                     <img
                       src={user.avatarUrl}
@@ -68,23 +94,66 @@ export default function Navbar() {
                     />
                   ) : (
                     <div className="size-8 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-bold text-xs">
-                      {(user?.name || user?.email || 'US')
-                        .slice(0, 2)
-                        .toUpperCase()}
+                      {initials}
                     </div>
                   )}
-                  <span className="hidden md:inline text-sm font-semibold text-on-surface">
-                    {user?.name || user?.email || 'User'}
-                  </span>
-                </div>
-                <button
-                  onClick={() => logout()}
-                  disabled={isLoggingOut}
-                  className="px-4 py-2 text-sm font-semibold text-error border border-error/20 hover:bg-error/5 rounded-xl transition-all text-center cursor-pointer outline-none"
-                >
-                  {isLoggingOut ? 'Logging out...' : 'Log out'}
-                </button>
-              </div>
+                  <ChevronDown className="size-4 text-on-surface-variant" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-64">
+                  {/* User info header */}
+                  <div className="flex items-center gap-3 px-2 py-2.5">
+                    {user.avatarUrl ? (
+                      <img
+                        src={user.avatarUrl}
+                        alt={user?.name || 'User'}
+                        className="size-10 rounded-full object-cover border border-outline-variant"
+                      />
+                    ) : (
+                      <div className="size-10 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-bold text-sm">
+                        {initials}
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-on-surface truncate">
+                        {user?.name || 'User'}
+                      </p>
+                      <p className="text-xs text-on-surface-variant truncate">
+                        {user?.email}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="px-2 pb-1.5">
+                    <span className="inline-block rounded-full bg-secondary-container/60 text-on-secondary-container text-[11px] font-semibold px-2 py-0.5">
+                      {ROLE_LABELS[user.role] ?? user.role}
+                    </span>
+                  </div>
+                  <DropdownMenuSeparator />
+                  {hasDashboard && (
+                    <DropdownMenuItem asChild>
+                      <Link to={dashboardPath} className="cursor-pointer">
+                        <LayoutDashboard className="size-4" />
+                        Dashboard
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem asChild>
+                    <Link to="/" className="cursor-pointer">
+                      <UserIcon className="size-4" />
+                      My Account
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    variant="destructive"
+                    disabled={isLoggingOut}
+                    onSelect={() => logout()}
+                    className="cursor-pointer"
+                  >
+                    <LogOut className="size-4" />
+                    {isLoggingOut ? 'Logging out...' : 'Log out'}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             ) : (
               <>
                 <Link

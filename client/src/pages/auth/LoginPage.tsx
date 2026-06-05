@@ -5,7 +5,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
-import { useLoginMutation } from '../../hooks/auth';
+import { useLogin} from '../../hooks/auth';
+import { getLandingPathForRole } from '@/constants/roles';
 import {
   loginSchema,
   type LoginInput,
@@ -17,7 +18,7 @@ export default function LoginPage() {
     mutateAsync: login,
     isPending: isLoggingIn,
     error: loginError,
-  } = useLoginMutation();
+  } = useLogin();
   const [showPassword, setShowPassword] = useState(false);
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
@@ -40,8 +41,11 @@ export default function LoginPage() {
 
   const onSubmit = async (data: LoginInput) => {
     try {
-      await login({ email: data.email, password: data.password });
-      navigate('/');
+      const result = await login({
+        email: data.email,
+        password: data.password,
+      });
+      navigate(getLandingPathForRole(result?.user?.role), { replace: true });
     } catch (err) {
       console.error(err);
     }
