@@ -4,8 +4,8 @@ const allRoles = {
   staff: [],
   marketer: [],
   hotel_partner: [],
-  platform_manager: ['getUsers', 'manageUsers', 'manageHotelVerifications'],
-  admin: ['getUsers', 'manageUsers', 'manageHotelVerifications'],
+  platform_manager: ['getUsers', 'manageUsers', 'manageHotelVerifications', 'manageBookings', 'manageHotels'],
+  admin: ['getUsers', 'manageUsers', 'manageHotelVerifications', 'manageBookings', 'manageHotels', 'manageAmenities'],
 };
 
 export const roles = Object.keys(allRoles);

@@ -3,6 +3,9 @@ import authRoute from './auth.route';
 import userRoute from './user.route';
 import uploadRoute from './upload.route';
 import hotelPartnerRoute from './hotel-partner.route';
+import hotelRoute from './hotel.route';
+import bookingRoute from './booking.route';
+import amenityRoute from './amenity.route';
 import docsRoute from './docs.route';
 import config from '../../config/config';
 
@@ -24,6 +27,18 @@ const defaultRoutes = [
   {
     path: '/hotel-partners',
     route: hotelPartnerRoute,
+  },
+  {
+    path: '/hotels',
+    route: hotelRoute,
+  },
+  {
+    path: '/bookings',
+    route: bookingRoute,
+  },
+  {
+    path: '/amenities',
+    route: amenityRoute,
   },
 ];
 

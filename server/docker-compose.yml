@@ -1,0 +1,51 @@
+# Chạy toàn bộ backend bằng MỘT lệnh:  docker compose up
+#   - db:     Postgres 16 (data giữ trong volume "pgdata", port 5432 để client khác xem được)
+#   - server: push schema -> seed dữ liệu mẫu -> npm run dev (hot reload khi sửa code)
+#
+# Seed XOÁ và tạo lại dữ liệu mẫu mỗi lần up. Muốn giữ dữ liệu giữa các lần chạy:
+#   SEED_ON_START=false docker compose up
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: smartstay-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: '123456'
+      POSTGRES_DB: smartstay_db
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d smartstay_db']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  server:
+    build:
+      context: .
+      target: dev
+    container_name: smartstay-server
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      # Ghi đè .env: trong network của compose, Postgres tên là "db" chứ không phải localhost
+      DATABASE_URL: postgresql://postgres:123456@db:5432/smartstay_db?schema=public
+      SEED_ON_START: ${SEED_ON_START:-true}
+      # Bind mount trên Windows không bắn file event -> nodemon phải poll mới hot reload được
+      CHOKIDAR_USEPOLLING: 'true'
+    command: >
+      sh -c "npx prisma db push &&
+             if [ \"$$SEED_ON_START\" = 'true' ]; then npx prisma db seed; fi &&
+             npm run dev"
+    ports:
+      - '${PORT:-3000}:${PORT:-3000}'
+    volumes:
+      - .:/app
+      - /app/node_modules
+
+volumes:
+  pgdata:
