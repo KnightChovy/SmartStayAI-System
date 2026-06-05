@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
-import { useSendOtpMutation } from '../../hooks/auth';
+import { useSendOtp } from '../../hooks/auth';
 import {
   registerSchema,
   type RegisterInput,
@@ -16,7 +16,7 @@ export default function RegisterPage() {
     mutateAsync: sendOtp,
     isPending: isSendingOtp,
     error: sendOtpError,
-  } = useSendOtpMutation();
+  } = useSendOtp();
 
   const {
     register,

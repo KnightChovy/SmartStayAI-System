@@ -1,5 +1,6 @@
 import { api } from '../lib/api';
 import type {
+  AuthResponse,
   LoginPayload,
   RegisterPayload,
   ResetPasswordPayload,
@@ -16,8 +17,8 @@ export const authService = {
     return response.data;
   },
 
-  login: async (payload: LoginPayload) => {
-    const response = await api.post('/auth/login', payload);
+  login: async (payload: LoginPayload): Promise<AuthResponse> => {
+    const response = await api.post<AuthResponse>('/auth/login', payload);
     return response.data;
   },
 

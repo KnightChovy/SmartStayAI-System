@@ -4,7 +4,7 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useRegisterMutation, useSendOtpMutation } from '../../hooks/auth';
+import { useRegister, useSendOtp } from '../../hooks/auth';
 import {
   verifySchema,
   type VerifyFormValues,
@@ -17,9 +17,9 @@ export default function VerifyIdentityPage() {
     mutateAsync: registerApi,
     isPending: isRegistering,
     error: registerError,
-  } = useRegisterMutation();
+  } = useRegister();
   const { mutateAsync: sendOtp, isPending: isSendingOtp } =
-    useSendOtpMutation();
+    useSendOtp();
 
   const { email, name, password } = location.state || {};
 

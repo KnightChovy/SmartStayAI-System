@@ -45,12 +45,14 @@ api.interceptors.response.use(
   async error => {
     const originalRequest = error.config;
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject });
-        })
-          .then(token => {
+    if (error.response?.status === 401 || error.response?.status === 403) {
+      if (!originalRequest._retry) {
+        originalRequest._retry = true;
+        if (isRefreshing) {
+          return new Promise((resolve, reject) => {
+            failedQueue.push({ resolve, reject });
+          })
+            .then(token => {
             if (originalRequest.headers) {
               originalRequest.headers.Authorization = `Bearer ${token}`;
             }
@@ -107,4 +109,4 @@ api.interceptors.response.use(
 
     return Promise.reject(error);
   }
-);
+});

@@ -1,12 +1,29 @@
+import type { UserRole } from '@/constants/roles';
+
 export interface User {
   id: string;
   email: string;
   name: string;
-  role: string;
+  role: UserRole;
   phone?: string | null;
   avatarUrl?: string | null;
   status: string;
   emailVerifiedAt?: string | null;
+}
+
+export interface AuthToken {
+  token: string;
+  expires?: string;
+}
+
+export interface AuthTokens {
+  access: AuthToken;
+  refresh: AuthToken;
+}
+
+export interface AuthResponse {
+  user: User;
+  tokens: AuthTokens;
 }
 
 export interface AuthState {
