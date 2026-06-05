@@ -1,7 +1,7 @@
 import React from 'react';
 import { useLocation, Link } from 'react-router';
 import { LogOut } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/cn';
 import {
   Sidebar,
   SidebarContent,

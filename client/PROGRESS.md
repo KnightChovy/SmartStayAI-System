@@ -47,6 +47,15 @@ This file tracks the accomplished tasks, resolved user requests, and visual/func
   - Rewired `PaymentPayoutsStep` with React Hook Form + Zod; `watch` drives the live ATM card preview; `taxInvoice` omitted from payload if empty.
   - Rewrote `ReviewSubmitStep` to read live data from the Zustand store for all 6 summary cards; incomplete-step banner if any step is missing; calls `POST /hotel-partners/registrations` with assembled `HotelRegistrationRequest`; resets draft on success; shows inline error on failure.
 
+### June 5, 2026
+
+- [x] **AGENTS.md Naming Convention Alignment**:
+  - Renamed portal folders to lowercase/kebab-case: `pages/admin`, `pages/auth`, and `pages/guest`.
+  - Renamed component folders to `components/admin`, `components/booking-information`, and `components/detail`.
+  - Added the `Page` suffix to guest and auth route component files and component names.
+  - Renamed shared infrastructure files to `lib/cn.ts`, `stores/authStore.ts`, and `hooks/useMobile.ts`.
+  - Updated all affected imports and preserved Git-visible case-only renames for cross-platform builds.
+
 ### June 2, 2026
 
 - [x] **Admin Common Layout Integration**:
@@ -233,3 +242,14 @@ _Last Updated: 2026-06-02_
 - [x] **Admin Users Shadcn Dropdown Actions**:
   - Added a shadcn-style DropdownMenu primitive backed by Radix UI.
   - Changed Users row actions from inline buttons to a compact dropdown containing View, Edit, and Delete.
+- [x] **Landing Hero Background Image**:
+  - Added a full-bleed luxury resort background image layer to `Home/Hero.tsx`, matching the warm quiet-luxury palette.
+  - Layered a light `surface` gradient overlay (`from-surface via-surface/85 to-surface/60`) so the dark heading text and white search bar stay readable.
+  - Lifted hero content above the background with explicit `z-10` stacking.
+- [x] **Auth Background Images (Login + Register)**:
+  - Re-introduced full-screen luxury background image layers behind the glass cards in `Auth/Login.tsx` and `Auth/Register.tsx`, leveraging the existing `backdrop-filter: blur(20px)` glassmorphism.
+  - Added a symmetric light overlay (`from-surface/85 via-surface/65 to-surface/85`) on both pages so the translucent cards and gradient brand logo stay legible.
+  - Used two harmonious warm-toned images (hotel interior for Login, resort for Register) sitting under the `relative z-10` content.
+- [x] **Auth Background Image (Forgot Password)**:
+  - Added a matching luxury background image layer + light `surface` overlay behind the glass card in `Auth/ForgotPassword.tsx`, consistent with Login/Register.
+  - Preserved the existing premium blur-glow accents above the new background layer.

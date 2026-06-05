@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import { authService } from '@/services/auth.service';
-import { useAuthStore } from '@/stores/auth.store';
+import { useAuthStore } from '@/stores/authStore';
 import type { LoginPayload } from '@/types/auth.types';
 
 export function useLoginMutation() {

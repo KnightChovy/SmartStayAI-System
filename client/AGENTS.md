@@ -294,7 +294,7 @@ const price = (room as Room).pricePerNight;
 | ------------------ | ---------------------------- | ----------------------------------- |
 | Folder             | `kebab-case`                 | `room-price`, `handle-booking`      |
 | Biến / hàm         | `camelCase`                  | `roomPrice`, `handleBooking`        |
-| Component          | `PascalCase`                 | `RoomCard`, `BookingForm`           |
+| Component folder   | `kebab-case`                 | `room-card`, `booking-form`         |
 | File component     | `PascalCase.tsx`             | `RoomCard.tsx`                      |
 | File non-component | `camelCase.ts`               | `booking.service.ts`, `useRooms.ts` |
 | Constant           | `UPPER_SNAKE_CASE`           | `MAX_GUESTS`, `DEFAULT_PAGE_SIZE`   |

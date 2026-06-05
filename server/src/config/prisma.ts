@@ -8,7 +8,9 @@ const adapter = new PrismaPg(pool);
 
 const prisma = new PrismaClient({
   adapter,
-  log: config.env === 'development' ? ['query', 'info', 'warn', 'error'] : ['error'],
+  // Only warnings/errors by default to keep the console clean.
+  // Add 'query' here temporarily if you need to debug raw SQL.
+  log: config.env === 'development' ? ['warn', 'error'] : ['error'],
 });
 
 export default prisma;

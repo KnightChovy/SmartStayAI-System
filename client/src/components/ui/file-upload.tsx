@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { UploadCloud, X, File, Loader2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/cn';
 import { Label } from '@/components/ui/label';
 
 interface FileUploadDropzoneProps {
@@ -34,7 +34,7 @@ export function FileUploadDropzone({
       setFiles(newFiles);
       onFilesChange?.(newFiles);
     },
-    [onFilesChange],
+    [onFilesChange]
   );
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -56,17 +56,19 @@ export function FileUploadDropzone({
         updateFiles(multiple ? [...files, ...droppedFiles] : [droppedFiles[0]]);
       }
     },
-    [multiple, files, updateFiles],
+    [multiple, files, updateFiles]
   );
 
   const handleFileChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       if (e.target.files && e.target.files.length > 0) {
         const selectedFiles = Array.from(e.target.files);
-        updateFiles(multiple ? [...files, ...selectedFiles] : [selectedFiles[0]]);
+        updateFiles(
+          multiple ? [...files, ...selectedFiles] : [selectedFiles[0]]
+        );
       }
     },
-    [multiple, files, updateFiles],
+    [multiple, files, updateFiles]
   );
 
   const removeFile = (indexToRemove: number) => {
@@ -94,7 +96,7 @@ export function FileUploadDropzone({
             ? 'border-role-partner-primary bg-role-partner-primary/5'
             : error
               ? 'border-red-400'
-              : 'border-slate-300',
+              : 'border-slate-300'
         )}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -137,7 +139,11 @@ export function FileUploadDropzone({
             >
               {isImage(file) ? (
                 <div className="w-10 h-10 shrink-0 bg-slate-100 rounded flex items-center justify-center overflow-hidden">
-                  <img src={URL.createObjectURL(file)} alt="preview" className="w-full h-full object-cover" />
+                  <img
+                    src={URL.createObjectURL(file)}
+                    alt="preview"
+                    className="w-full h-full object-cover"
+                  />
                 </div>
               ) : (
                 <div className="w-10 h-10 shrink-0 bg-blue-50 text-blue-600 rounded flex items-center justify-center">
@@ -145,8 +151,12 @@ export function FileUploadDropzone({
                 </div>
               )}
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-slate-900 truncate">{file.name}</p>
-                <p className="text-[10px] text-slate-500">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                <p className="text-xs font-semibold text-slate-900 truncate">
+                  {file.name}
+                </p>
+                <p className="text-[10px] text-slate-500">
+                  {(file.size / 1024 / 1024).toFixed(2)} MB
+                </p>
               </div>
               <button
                 type="button"
