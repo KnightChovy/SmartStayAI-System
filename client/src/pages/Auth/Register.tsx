@@ -60,6 +60,21 @@ export default function Register() {
         }
       `}</style>
 
+      {/* Background image layer */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
+        style={{
+          backgroundImage:
+            "url('https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=2070&auto=format&fit=crop')",
+        }}
+      />
+      {/* Light overlay keeps the glass panel and brand logo legible */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 z-0 bg-linear-to-b from-surface/85 via-surface/65 to-surface/85"
+      />
+
       <main className="relative z-10 min-h-screen flex items-center justify-center px-margin-mobile py-stack-lg">
         <div className="w-full max-w-120">
           {/* Brand Logo Center */}
@@ -68,8 +83,8 @@ export default function Register() {
               to="/"
               className="inline-block hover:opacity-90 transition-opacity"
             >
-              <h1 className="font-display-lg text-3xl font-extrabold tracking-widest uppercase text-transparent bg-clip-text bg-linear-to-r from-secondary via-secondary-fixed-dim to-secondary text-glow">
-                Smart Stay AI
+            <h1 className="font-display-lg text-3xl font-extrabold tracking-widest uppercase text-black-">
+                  SMART STAY AI
               </h1>
             </Link>
           </div>
