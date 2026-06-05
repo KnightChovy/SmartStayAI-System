@@ -182,6 +182,16 @@ components:
             - $ref: '#/components/schemas/HotelVerificationDocument'
           nullable: true
 
+    HotelImage:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        imageCategory: { type: string, enum: [cover, exterior, room] }
+        url: { type: string, format: uri }
+        caption: { type: string, nullable: true }
+        isPrimary: { type: boolean, nullable: true }
+        sortOrder: { type: integer, nullable: true }
+
     HotelVerificationRequest:
       type: object
       properties:
@@ -206,6 +216,10 @@ components:
             longitude: { type: number, nullable: true }
             isActive: { type: boolean }
             isListed: { type: boolean }
+            images:
+              type: array
+              description: Hotel images (cover/exterior/room), ordered by sortOrder
+              items: { $ref: '#/components/schemas/HotelImage' }
         partner:
           type: object
           properties:
@@ -218,6 +232,41 @@ components:
         licenses:
           type: array
           items: { $ref: '#/components/schemas/HotelLicense' }
+
+    HotelVerificationRequestSummary:
+      type: object
+      description: Lightweight shape returned by the list endpoint — no documents/licenses, hotel carries cover image only.
+      properties:
+        id: { type: string, format: uuid }
+        partnerId: { type: string, format: uuid }
+        hotelId: { type: string, format: uuid }
+        status: { type: string, enum: [pending, in_review, approved, rejected] }
+        submittedAt: { type: string, format: date-time }
+        reviewedBy: { type: string, format: uuid, nullable: true }
+        reviewedAt: { type: string, format: date-time, nullable: true }
+        rejectionReason: { type: string, nullable: true }
+        hotel:
+          type: object
+          properties:
+            id: { type: string, format: uuid }
+            name: { type: string }
+            city: { type: string }
+            country: { type: string }
+            starRating: { type: integer, nullable: true }
+            latitude: { type: number, nullable: true }
+            longitude: { type: number, nullable: true }
+            isActive: { type: boolean }
+            isListed: { type: boolean }
+            images:
+              type: array
+              description: Cover images only
+              items: { $ref: '#/components/schemas/HotelImage' }
+        partner:
+          type: object
+          properties:
+            id: { type: string, format: uuid }
+            businessName: { type: string }
+            status: { type: string, enum: [pending, approved, suspended, rejected] }
 
   responses:
     DuplicateEmail:
