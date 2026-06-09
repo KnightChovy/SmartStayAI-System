@@ -7,6 +7,14 @@ tags:
     description: File upload (Cloudinary)
   - name: HotelPartners
     description: Hotel partner registration and verification
+  - name: Hotels
+    description: Public hotel & room search
+  - name: Bookings
+    description: Booking creation, cancellation and listing
+  - name: HotelManagement
+    description: Partner management of room types, rooms and pricing rules (hotel owner or manageHotels right)
+  - name: Amenities
+    description: Amenity catalog (list public, create admin-only)
 
 paths:
   /auth/send-otp:
@@ -773,6 +781,704 @@ paths:
           $ref: '#/components/responses/Forbidden'
         "404":
           $ref: '#/components/responses/NotFound'
+
+  /hotels:
+    get:
+      summary: Search hotels by city (with availability check)
+      description: >
+        Public. Returns active & listed hotels. When checkIn/checkOut are provided (they must go
+        together), only hotels with at least one room type available for every night of the stay
+        are returned. Each result includes minPrice (lowest base price among matching room types).
+      tags: [Hotels]
+      parameters:
+        - in: query
+          name: city
+          schema:
+            type: string
+          description: Case-insensitive partial match
+        - in: query
+          name: checkIn
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: checkOut
+          schema:
+            type: string
+            format: date
+          description: Must be after checkIn
+        - in: query
+          name: guests
+          schema:
+            type: integer
+            minimum: 1
+          description: Only hotels having a room type with maxOccupancy >= guests
+        - in: query
+          name: sortBy
+          schema:
+            type: string
+          description: "field:(desc|asc) e.g. starRating:desc"
+        - in: query
+          name: limit
+          schema:
+            type: integer
+        - in: query
+          name: page
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Paginated hotel list ({ results, page, limit, totalPages, totalResults })
+        "400":
+          description: Invalid query (e.g. checkIn without checkOut)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /hotels/{hotelId}/room-types:
+    get:
+      summary: Search room types within a hotel (with filters)
+      description: >
+        Public. Filters by capacity, price range, bed type and view type. When checkIn/checkOut
+        are provided, each room type includes numNights, availableRooms and totalPrice for the
+        stay (per-night priceOverride applied), and sold-out room types are excluded.
+      tags: [Hotels]
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: checkIn
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: checkOut
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: guests
+          schema:
+            type: integer
+            minimum: 1
+        - in: query
+          name: minPrice
+          schema:
+            type: number
+        - in: query
+          name: maxPrice
+          schema:
+            type: number
+        - in: query
+          name: bedType
+          schema:
+            type: string
+        - in: query
+          name: viewType
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Room types with images & amenities (plus availability and total price when dates given)
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  /bookings:
+    post:
+      summary: Create a booking
+      description: >
+        Authenticated customers book one room of a room type for [checkInDate, checkOutDate).
+        Prices are computed server-side (per-night priceOverride if set, else basePrice).
+        Inventory is reserved per night inside a transaction, so concurrent bookings cannot
+        oversell. Booking is created with status "pending" (payment flow is separate).
+      tags: [Bookings]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - hotelId
+                - roomTypeId
+                - checkInDate
+                - checkOutDate
+                - numGuests
+              properties:
+                hotelId:
+                  type: string
+                  format: uuid
+                roomTypeId:
+                  type: string
+                  format: uuid
+                checkInDate:
+                  type: string
+                  format: date
+                checkOutDate:
+                  type: string
+                  format: date
+                  description: Must be after checkInDate (max 30 nights)
+                numGuests:
+                  type: integer
+                  minimum: 1
+                specialRequests:
+                  type: string
+              example:
+                hotelId: 11111111-1111-1111-1111-111111111111
+                roomTypeId: 22222222-2222-2222-2222-222222222222
+                checkInDate: "2026-07-01"
+                checkOutDate: "2026-07-03"
+                numGuests: 2
+      responses:
+        "201":
+          description: Booking created (includes bookingCode, totals, hotel & roomType summary)
+        "400":
+          description: Sold out for a night, past check-in date, or capacity exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  /bookings/me:
+    get:
+      summary: List my bookings
+      tags: [Bookings]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [pending, confirmed, checked_in, checked_out, cancelled, no_show]
+        - in: query
+          name: sortBy
+          schema:
+            type: string
+          description: "field:(desc|asc) e.g. createdAt:desc"
+        - in: query
+          name: limit
+          schema:
+            type: integer
+        - in: query
+          name: page
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Paginated booking list ({ results, page, limit, totalPages, totalResults })
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+
+  /bookings/{bookingId}:
+    get:
+      summary: Get a booking by id
+      description: Accessible by the booking owner or a user with the manageBookings right.
+      tags: [Bookings]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: bookingId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: OK
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  /bookings/{bookingId}/cancel:
+    patch:
+      summary: Cancel a booking
+      description: >
+        Owner (or manageBookings) cancels a pending/confirmed booking before its check-in date.
+        Reserved inventory is released for every night of the stay.
+      tags: [Bookings]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: bookingId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+      responses:
+        "200":
+          description: Booking cancelled
+        "400":
+          description: Not cancellable (wrong status or check-in date reached)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  /hotels/{hotelId}/room-types/manage:
+    get:
+      summary: List room types for management (includes inactive)
+      description: Hotel owner or manageHotels. Each item includes images, amenities and physical room count.
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200": { description: OK }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
+        "404": { $ref: '#/components/responses/NotFound' }
+
+  /hotels/{hotelId}/room-types/create:
+    post:
+      summary: Create a room type (actual path is POST /hotels/{hotelId}/room-types)
+      description: >
+        Hotel owner or manageHotels. NOTE - the real path is POST /hotels/{hotelId}/room-types
+        (documented here separately because the GET on that path is the public search).
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, maxOccupancy, basePrice]
+              properties:
+                name: { type: string }
+                description: { type: string }
+                maxOccupancy: { type: integer, minimum: 1, maximum: 20 }
+                basePrice: { type: number, minimum: 0 }
+                areaSqm: { type: number }
+                bedType: { type: string }
+                viewType: { type: string }
+                isActive: { type: boolean, default: true }
+              example:
+                name: Phòng Deluxe Twin
+                maxOccupancy: 3
+                basePrice: 1200000
+                bedType: twin
+                viewType: city
+      responses:
+        "201": { description: Created }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
+        "404": { $ref: '#/components/responses/NotFound' }
+
+  /hotels/{hotelId}/room-types/{roomTypeId}:
+    put:
+      summary: Update a room type
+      description: Hotel owner or manageHotels. All fields optional; set isActive=false to stop selling.
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: path
+          name: roomTypeId
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                description: { type: string }
+                maxOccupancy: { type: integer }
+                basePrice: { type: number }
+                areaSqm: { type: number }
+                bedType: { type: string }
+                viewType: { type: string }
+                isActive: { type: boolean }
+      responses:
+        "200": { description: Updated }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
+        "404": { $ref: '#/components/responses/NotFound' }
+
+  /hotels/{hotelId}/room-types/{roomTypeId}/images:
+    post:
+      summary: Add images to a room type
+      description: >
+        URLs must be uploaded via POST /uploads first. If any new image has isPrimary=true,
+        the previous primary flag is cleared so there is always at most one primary image.
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: path
+          name: roomTypeId
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [images]
+              properties:
+                images:
+                  type: array
+                  minItems: 1
+                  items:
+                    type: object
+                    required: [url]
+                    properties:
+                      url: { type: string, format: uri }
+                      isPrimary: { type: boolean }
+                      sortOrder: { type: integer }
+      responses:
+        "201": { description: Full image list of the room type }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
+        "404": { $ref: '#/components/responses/NotFound' }
+
+  /hotels/{hotelId}/room-types/{roomTypeId}/amenities:
+    put:
+      summary: Set room type amenities (replace all, N-N)
+      description: The sent list REPLACES the current amenity set; an empty array clears all amenities.
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: path
+          name: roomTypeId
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [amenityIds]
+              properties:
+                amenityIds:
+                  type: array
+                  items: { type: string, format: uuid }
+      responses:
+        "200": { description: Room type with the new amenity set }
+        "400": { description: Some amenity ids do not exist }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
+        "404": { $ref: '#/components/responses/NotFound' }
+
+  /hotels/{hotelId}/rooms:
+    post:
+      summary: Create a physical room
+      description: >
+        Room number must be unique within the hotel. Future room_availability rows of the
+        room type get totalRooms incremented so already-priced nights sell the new room too.
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [roomTypeId, roomNumber]
+              properties:
+                roomTypeId: { type: string, format: uuid }
+                roomNumber: { type: string }
+                floor: { type: integer }
+                status: { type: string, enum: [available, occupied, maintenance, cleaning], default: available }
+                notes: { type: string }
+      responses:
+        "201": { description: Created }
+        "400": { description: Duplicate room number }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
+        "404": { $ref: '#/components/responses/NotFound' }
+    get:
+      summary: List physical rooms (filter by status, room type)
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: query
+          name: status
+          schema: { type: string, enum: [available, occupied, maintenance, cleaning] }
+        - in: query
+          name: roomTypeId
+          schema: { type: string, format: uuid }
+        - in: query
+          name: sortBy
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer }
+        - in: query
+          name: page
+          schema: { type: integer }
+      responses:
+        "200": { description: Paginated room list }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
+        "404": { $ref: '#/components/responses/NotFound' }
+
+  /hotels/{hotelId}/rooms/{roomId}:
+    put:
+      summary: Update a room (status, number, floor, notes)
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: path
+          name: roomId
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                roomNumber: { type: string }
+                floor: { type: integer }
+                status: { type: string, enum: [available, occupied, maintenance, cleaning] }
+                notes: { type: string }
+              example:
+                status: maintenance
+                notes: Hỏng điều hoà, chờ linh kiện
+      responses:
+        "200": { description: Updated }
+        "400": { description: Duplicate room number }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
+        "404": { $ref: '#/components/responses/NotFound' }
+
+  /hotels/{hotelId}/pricing-rules:
+    post:
+      summary: Create a pricing rule
+      description: >
+        roomTypeId null/omitted = rule applies to the whole hotel. Matching nights get the
+        highest-priority rule applied on top of (priceOverride ?? basePrice). early_bird rules
+        match when TODAY (booking time) is inside [startDate, endDate]; other types match the
+        stay night. occupancy rules require occupancyThreshold (% booked) and fire when the
+        night's occupancy reaches it. adjustmentValue can be negative (discount).
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, ruleType, startDate, endDate, adjustmentType, adjustmentValue]
+              properties:
+                roomTypeId: { type: string, format: uuid, nullable: true }
+                name: { type: string }
+                ruleType: { type: string, enum: [seasonal, weekend, occupancy, early_bird] }
+                startDate: { type: string, format: date }
+                endDate: { type: string, format: date }
+                dayOfWeek:
+                  type: array
+                  items: { type: integer, minimum: 0, maximum: 6 }
+                  description: 0=Sunday..6=Saturday; empty = every day
+                occupancyThreshold: { type: integer, minimum: 1, maximum: 100 }
+                adjustmentType: { type: string, enum: [percentage, fixed] }
+                adjustmentValue: { type: number, description: negative = discount }
+                priority: { type: integer, default: 0 }
+                isActive: { type: boolean, default: true }
+              example:
+                name: Phụ thu cuối tuần
+                ruleType: weekend
+                startDate: "2026-06-01"
+                endDate: "2026-08-31"
+                dayOfWeek: [5, 6]
+                adjustmentType: percentage
+                adjustmentValue: 20
+                priority: 10
+      responses:
+        "201": { description: Created }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
+        "404": { $ref: '#/components/responses/NotFound' }
+    get:
+      summary: List pricing rules of a hotel
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: query
+          name: roomTypeId
+          schema: { type: string, format: uuid }
+        - in: query
+          name: isActive
+          schema: { type: boolean }
+      responses:
+        "200": { description: Rules ordered by priority desc }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
+        "404": { $ref: '#/components/responses/NotFound' }
+
+  /hotels/{hotelId}/pricing-rules/{ruleId}:
+    put:
+      summary: Update a pricing rule
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: path
+          name: ruleId
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Any subset of the create fields
+      responses:
+        "200": { description: Updated }
+        "400": { description: endDate before startDate after merge }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
+        "404": { $ref: '#/components/responses/NotFound' }
+    delete:
+      summary: Delete a pricing rule
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: path
+          name: ruleId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "204": { description: Deleted }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
+        "404": { $ref: '#/components/responses/NotFound' }
+
+  /amenities:
+    get:
+      summary: List all amenities
+      description: Public. Optional category filter (room/hotel/service).
+      tags: [Amenities]
+      parameters:
+        - in: query
+          name: category
+          schema: { type: string, enum: [room, hotel, service] }
+      responses:
+        "200": { description: OK }
+    post:
+      summary: Create an amenity (admin only)
+      description: Requires the manageAmenities right (admin). Name is globally unique.
+      tags: [Amenities]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, category]
+              properties:
+                name: { type: string }
+                icon: { type: string }
+                category: { type: string, enum: [room, hotel, service] }
+              example:
+                name: Máy pha cà phê
+                icon: coffee
+                category: room
+      responses:
+        "201": { description: Created }
+        "400": { description: Duplicate name }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
 
   /hotel-partners/documents/{documentId}/replace:
     post:

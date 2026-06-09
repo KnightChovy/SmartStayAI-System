@@ -651,6 +651,8 @@ model RoomAvailability {
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
 
+  // Mỗi room type chỉ có 1 dòng tồn kho cho 1 ngày — unique để upsert an toàn khi tạo booking
+  @@unique([roomTypeId, date])
   @@map("room_availability")
 }
 
