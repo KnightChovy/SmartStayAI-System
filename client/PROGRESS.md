@@ -6,6 +6,72 @@ This file tracks the accomplished tasks, resolved user requests, and visual/func
 
 ## Completed Tasks Checklist
 
+### June 5, 2026 (continued 3)
+
+- [x] **Role-based redirect after login (admin / user / hotel partner)**:
+  - Created `src/constants/roles.ts` — `UserRole` const map (matching backend `server/src/config/roles.ts`: `guest`, `customer`, `staff`, `marketer`, `hotel_partner`, `platform_manager`, `admin`), a `ROLE_HOME_ROUTE` map, and a `getLandingPathForRole(role)` helper (admin/platform_manager → `/admin/dashboard`, hotel_partner → `/partner/dashboard`, guest/customer/others → `/`, unknown → `/`).
+  - Typed the auth flow: added `AuthToken`, `AuthTokens`, `AuthResponse` interfaces to `auth.types.ts` and changed `User.role` from `string` to `UserRole`; typed `authService.login` as `Promise<AuthResponse>` (`api.post<AuthResponse>`) to avoid `any`.
+  - Rewired `LoginPage.tsx` `onSubmit` to read the returned `user.role` from `login()` and `navigate(getLandingPathForRole(role), { replace: true })` instead of the hardcoded `navigate('/')`.
+  - Created `src/routes/ProtectedRoute.tsx` — role-based auth guard used as a layout route (`<Outlet />`): not authenticated → redirect `/login` (keeps intended page in `location.state.from`); wrong role → redirect to that role's own landing via `getLandingPathForRole`; `allowedRoles` prop optional (empty = login-only).
+  - Guarded route groups in `App.tsx`: wrapped `/partner/*` with `ProtectedRoute allowedRoles={[HOTEL_PARTNER]}` and `/admin/*` with `allowedRoles={[ADMIN, PLATFORM_MANAGER]}`.
+- [x] **Split routing into per-role modules (`routes/`)**:
+  - Replaced the monolithic `<Routes>` tree in `App.tsx` with react-router v7 object routes (`useRoutes`). `App.tsx` now only imports `appRoutes` + `TooltipProvider` (no page imports).
+  - Created `src/routes/authRoutes.tsx` (public auth pages), `guestRoutes.tsx` (guest `/` portal), `partnerRoutes.tsx` (`/partner`, guarded `hotel_partner`), `adminRoutes.tsx` (`/admin`, guarded `admin`/`platform_manager`) — each exports a typed `RouteObject[]`, with the `ProtectedRoute` guard baked into the partner/admin modules.
+  - Added `src/routes/index.ts` aggregating all modules into `appRoutes`.
+- [x] **Guest navbar user dropdown menu**:
+  - Replaced the inline avatar + name + Log out button in `components/layout/Navbar.tsx` with a shadcn/Radix `DropdownMenu`: avatar+name+chevron is the trigger; the menu shows a user-info header (avatar, name, email, role badge), a role-aware `Dashboard` link (only for roles whose landing page isn't `/`, via `getLandingPathForRole`), `My Account`, and a destructive `Log out` item.
+  - Added a `ROLE_LABELS` map for friendly role display; lucide icons (`LayoutDashboard`, `LogOut`, `User`, `ChevronDown`).
+
+### June 5, 2026 (continued 2)
+
+- [x] **Vietnam Geo: Remove District level (Province → Ward direct)**:
+  - Removed `District`, `ProvinceWithDistricts`, `DistrictWithWards` from `vietnam-geo.types.ts`; replaced with `ProvinceWithWards` (wards directly under province) and updated `Ward.province_code`.
+  - Removed `getProvinceWithDistricts` / `getDistrictWithWards` from `vietnam-geo.service.ts`; added `getProvinceWithWards(code)` calling `/p/${code}?depth=2`.
+  - Removed `useVietnamDistricts` from `useVietnamGeo.ts`; `useVietnamWards` now takes `provinceCode` directly (Province → Ward in one hop).
+  - Removed `district` field from `businessInfoSchema` (validation) and `SaveBusinessInfoDto` (types).
+  - Rewired `BusinessInfoStep.tsx`: replaced Province → District → Ward 3-level cascade với 2-level Province → Ward; district Select removed; ward geocoding dùng `${ward}, ${province}, Việt Nam`.
+- [x] **Map: Switch to VietMap Vector Tiles (maplibre-gl)**:
+  - Installed `maplibre-gl`.
+  - Rewrote `PropertyMapPicker.tsx` using `maplibre-gl` WebGL vector renderer; style URL built from `VITE_API_MAP_KEY` (`https://maps.vietmap.vn/api/maps/light/styles.json?apikey=…`).
+  - Replaced `react-leaflet` `TileLayer` (raster) + `Marker` với native maplibre-gl `Map`, `Marker`, `flyTo`; removed `VITE_MAP_TILE_URL` dependency.
+  - Pinned-coordinate badge moved inside map container as absolute overlay.
+
+### June 5, 2026 (continued)
+
+- [x] **Vietnam Address Cascading Selects + VietMap Integration (BusinessInfoStep)**:
+  - Created `src/types/vietnam-geo.types.ts` — `Province`, `District`, `Ward`, `ProvinceWithDistricts`, `DistrictWithWards` interfaces matching `provinces.open-api.vn` response shape.
+  - Created `src/services/vietnam-geo.service.ts` — calls free public API `https://provinces.open-api.vn/api/` for all 63 provinces, districts under a province (depth=2), and wards under a district (depth=2).
+  - Created `src/hooks/hotel-verify/useVietnamGeo.ts` — three TanStack Query hooks: `useVietnamProvinces`, `useVietnamDistricts(provinceCode)`, `useVietnamWards(districtCode)` with `staleTime: Infinity` (static reference data).
+  - Created `src/components/hotel-partner/hotel-verify/PropertyMapPicker.tsx` — `react-leaflet` map using VietMap raster tiles (`VITE_API_MAP_KEY`); falls back to OpenStreetMap tiles with an amber notice banner when key is absent; `MarkerMover` sub-component flies to the pinned position on first pin; click to place/move a marker; emits `{ lat, lng }` via `onChange`.
+  - Rewrote `BusinessInfoStep.tsx`: replaced hardcoded City/Province Select + free-text District Input with three fully cascading API-driven Selects (Province → District → Ward); each shows a spinner while loading; Province change resets District and Ward; `useEffect` restores province/district codes from saved names on wizard re-entry; replaced the static map placeholder with the live `PropertyMapPicker`; pinned coordinates shown as an emerald badge; all stored in the `location` field of `businessInfoSchema`.
+  - Installed `leaflet`, `react-leaflet`, `@types/leaflet`.
+
+### June 5, 2026
+
+- [x] **Hotel Verify Full Validation & API Integration**:
+  - Added complete Zod schemas for all 6 wizard steps in `hotel-verify.validation.ts`: `businessInfoSchema`, `propertyDetailsSchema`, `accommodationCertificateSchema`, `representativeSchema`, `propertyImagesSchema`, `paymentPayoutsSchema`.
+  - Added `HotelRegistrationRequest` interface to `hotel-verify.types.ts` mapping all step DTOs to the single POST payload.
+  - Added `uploadFile(file)` method to `hotel-verify.service.ts` (calls `POST /uploads`, returns URL) and typed `submitRegistration` with `HotelRegistrationRequest`.
+  - Created `src/stores/hotel-verify.store.ts` — Zustand draft store that accumulates all 6 step form values across the wizard; resets on successful submission.
+  - Updated `useHotelVerify.ts`: typed `useSubmitRegistration` with `HotelRegistrationRequest`, added `useUploadFile` hook.
+  - Extended `FileUploadDropzone` with `onFilesChange`, `error`, and `isUploading` props.
+  - Rewired `BusinessInfoStep` to save to store on Continue (uses draft as defaultValues for re-entry).
+  - Rewired `PropertyDetailsStep` with React Hook Form + Zod; file uploads on selection via `uploadFile`, URL injected via `setValue`; saves to store.
+  - Rewired `AccommodationCertificateStep` with React Hook Form + Zod; per-zone upload state (`useUploadZone` helper); optional sections (security, classification) omitted from store if empty.
+  - Rewired `RepresentativeVerificationStep` with React Hook Form + Zod; separate upload handlers for front/back ID images; saves to store.
+  - Rewired `PropertyImagesStep` — no RHF (all files); three `FileUploadDropzone` instances with manual min-count validation; all files uploaded in parallel on Continue; saves URL arrays to store.
+  - Rewired `PaymentPayoutsStep` with React Hook Form + Zod; `watch` drives the live ATM card preview; `taxInvoice` omitted from payload if empty.
+  - Rewrote `ReviewSubmitStep` to read live data from the Zustand store for all 6 summary cards; incomplete-step banner if any step is missing; calls `POST /hotel-partners/registrations` with assembled `HotelRegistrationRequest`; resets draft on success; shows inline error on failure.
+
+### June 5, 2026
+
+- [x] **AGENTS.md Naming Convention Alignment**:
+  - Renamed portal folders to lowercase/kebab-case: `pages/admin`, `pages/auth`, and `pages/guest`.
+  - Renamed component folders to `components/admin`, `components/booking-information`, and `components/detail`.
+  - Added the `Page` suffix to guest and auth route component files and component names.
+  - Renamed shared infrastructure files to `lib/cn.ts`, `stores/authStore.ts`, and `hooks/useMobile.ts`.
+  - Updated all affected imports and preserved Git-visible case-only renames for cross-platform builds.
+
 ### June 2, 2026
 
 - [x] **Admin Common Layout Integration**:
@@ -192,3 +258,14 @@ _Last Updated: 2026-06-02_
 - [x] **Admin Users Shadcn Dropdown Actions**:
   - Added a shadcn-style DropdownMenu primitive backed by Radix UI.
   - Changed Users row actions from inline buttons to a compact dropdown containing View, Edit, and Delete.
+- [x] **Landing Hero Background Image**:
+  - Added a full-bleed luxury resort background image layer to `Home/Hero.tsx`, matching the warm quiet-luxury palette.
+  - Layered a light `surface` gradient overlay (`from-surface via-surface/85 to-surface/60`) so the dark heading text and white search bar stay readable.
+  - Lifted hero content above the background with explicit `z-10` stacking.
+- [x] **Auth Background Images (Login + Register)**:
+  - Re-introduced full-screen luxury background image layers behind the glass cards in `Auth/Login.tsx` and `Auth/Register.tsx`, leveraging the existing `backdrop-filter: blur(20px)` glassmorphism.
+  - Added a symmetric light overlay (`from-surface/85 via-surface/65 to-surface/85`) on both pages so the translucent cards and gradient brand logo stay legible.
+  - Used two harmonious warm-toned images (hotel interior for Login, resort for Register) sitting under the `relative z-10` content.
+- [x] **Auth Background Image (Forgot Password)**:
+  - Added a matching luxury background image layer + light `surface` overlay behind the glass card in `Auth/ForgotPassword.tsx`, consistent with Login/Register.
+  - Preserved the existing premium blur-glow accents above the new background layer.
