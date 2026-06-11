@@ -29,8 +29,8 @@ export function VerificationStepsCard() {
     },
     {
       step: "STEP 5",
-      title: "Property Images",
-      description: "Upload hotel photos.",
+      title: "Property & Rooms",
+      description: "Photos & room setup.",
       isActive: false,
     },
     {

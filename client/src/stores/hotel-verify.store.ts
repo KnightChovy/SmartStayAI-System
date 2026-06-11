@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import type {
   BusinessInfoFormValues,
   PropertyDetailsFormValues,
@@ -8,7 +9,7 @@ import type {
   PaymentPayoutsFormValues,
 } from '@/validations/hotel-verify.validation';
 
-interface HotelVerifyDraft {
+export interface HotelVerifyDraft {
   businessInfo?: BusinessInfoFormValues;
   businessLicense?: PropertyDetailsFormValues;
   certificates?: AccommodationCertificateFormValues;
@@ -28,19 +29,29 @@ interface HotelVerifyStore {
   resetDraft: () => void;
 }
 
-export const useHotelVerifyStore = create<HotelVerifyStore>((set) => ({
-  draft: {},
-  setBusinessInfo: (businessInfo) =>
-    set((state) => ({ draft: { ...state.draft, businessInfo } })),
-  setBusinessLicense: (businessLicense) =>
-    set((state) => ({ draft: { ...state.draft, businessLicense } })),
-  setCertificates: (certificates) =>
-    set((state) => ({ draft: { ...state.draft, certificates } })),
-  setRepresentative: (representative) =>
-    set((state) => ({ draft: { ...state.draft, representative } })),
-  setPropertyImages: (propertyImages) =>
-    set((state) => ({ draft: { ...state.draft, propertyImages } })),
-  setPaymentPayouts: (paymentPayouts) =>
-    set((state) => ({ draft: { ...state.draft, paymentPayouts } })),
-  resetDraft: () => set({ draft: {} }),
-}));
+export const useHotelVerifyStore = create<HotelVerifyStore>()(
+  persist(
+    (set) => ({
+      draft: {},
+      setBusinessInfo: (businessInfo) =>
+        set((state) => ({ draft: { ...state.draft, businessInfo } })),
+      setBusinessLicense: (businessLicense) =>
+        set((state) => ({ draft: { ...state.draft, businessLicense } })),
+      setCertificates: (certificates) =>
+        set((state) => ({ draft: { ...state.draft, certificates } })),
+      setRepresentative: (representative) =>
+        set((state) => ({ draft: { ...state.draft, representative } })),
+      setPropertyImages: (propertyImages) =>
+        set((state) => ({ draft: { ...state.draft, propertyImages } })),
+      setPaymentPayouts: (paymentPayouts) =>
+        set((state) => ({ draft: { ...state.draft, paymentPayouts } })),
+      resetDraft: () => set({ draft: {} }),
+    }),
+    {
+      name: 'hotel-verify-draft',
+      storage: createJSONStorage(() => localStorage),
+      // Only persist the accumulated draft, not the action functions.
+      partialize: (state) => ({ draft: state.draft }),
+    }
+  )
+);

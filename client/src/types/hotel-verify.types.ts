@@ -41,7 +41,17 @@ export interface SaveBusinessInfoDto {
   address: string;
   cityProvince: string;
   ward?: string;
-  location?: LocationDto;
+  location: LocationDto;
+}
+
+export interface RoomTypeDto {
+  name: string;
+  quantity: number;
+}
+
+export interface RoomConfigDto {
+  totalRooms: number;
+  roomTypes: RoomTypeDto[];
 }
 
 export interface SaveBusinessLicenseDto {
@@ -113,6 +123,7 @@ export interface HotelRegistrationRequest {
   certificates: SaveCertificatesDto;
   representative: SaveRepresentativeDto;
   propertyImages: SavePropertyImagesDto;
+  roomConfig: RoomConfigDto;
   paymentPayouts: SavePaymentPayoutsDto;
 }
 

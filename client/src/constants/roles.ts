@@ -22,7 +22,7 @@ export type UserRole = (typeof UserRole)[keyof typeof UserRole];
  */
 export const ROLE_HOME_ROUTE: Record<UserRole, string> = {
   [UserRole.ADMIN]: '/admin/dashboard',
-  [UserRole.PLATFORM_MANAGER]: '/admin/dashboard',
+  [UserRole.PLATFORM_MANAGER]: '/manager/dashboard',
   [UserRole.HOTEL_PARTNER]: '/partner/dashboard',
   [UserRole.GUEST]: '/',
   [UserRole.CUSTOMER]: '/',

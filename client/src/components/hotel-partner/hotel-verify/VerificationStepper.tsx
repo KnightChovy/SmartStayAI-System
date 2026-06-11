@@ -12,13 +12,13 @@ export function VerificationStepper({ currentStep }: VerificationStepperProps) {
     { id: 2, label: 'Business License' },
     { id: 3, label: 'Accommodation Certificate' },
     { id: 4, label: 'Representative Verification' },
-    { id: 5, label: 'Property Images' },
-    { id: 6, label: 'Payment & Payouts'},
-    { id: 7, label: 'Review & Submit'}
+    { id: 5, label: 'Property & Rooms' },
+    { id: 6, label: 'Payment & Payouts' },
+    { id: 7, label: 'Review & Submit' },
   ];
 
   return (
-    <div className="w-full mb-16 px-4">
+    <div className="w-full mb-8 sm:mb-10">
       <div className="flex items-start justify-between w-full">
         {steps.map((step, index) => {
           const isActive = currentStep === step.id;
@@ -26,39 +26,47 @@ export function VerificationStepper({ currentStep }: VerificationStepperProps) {
 
           return (
             <React.Fragment key={step.id}>
-              {/* Step Item */}
-              <div className="flex flex-col items-center relative z-10 flex-shrink-0">
+              {/* Step Item — circle + label stacked in normal flow */}
+              <div className="flex flex-col items-center gap-2 shrink-0 w-14 sm:w-20 md:w-28">
                 <div
                   className={cn(
-                    "flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold border-2 transition-all bg-white",
+                    'flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full text-xs sm:text-sm font-semibold border-2 transition-all bg-white shrink-0',
                     isPast
-                      ? "bg-role-partner-primary border-role-partner-primary text-white"
-                      : isActive 
-                      ? "border-role-partner-primary text-role-partner-primary ring-4 ring-role-partner-light"
-                      : "border-slate-300 text-slate-400"
+                      ? 'bg-role-partner-primary border-role-partner-primary text-white'
+                      : isActive
+                        ? 'border-role-partner-primary text-role-partner-primary ring-4 ring-role-partner-light'
+                        : 'border-slate-300 text-slate-400'
                   )}
                 >
-                  {isPast ? <Check className="w-4 h-4" /> : step.id}
+                  {isPast ? (
+                    <Check className="w-3 h-3 sm:w-4 sm:h-4" />
+                  ) : (
+                    step.id
+                  )}
                 </div>
-                
-                {/* Text Label - Absolute positioned to not affect flex spacing of circles */}
+
+                {/* Text Label — always visible, wraps within the column */}
                 <span
                   className={cn(
-                    "text-[10px] md:text-[11px] text-center mt-3 absolute top-full left-1/2 -translate-x-1/2 w-20 md:w-28 leading-tight",
-                    isActive ? "text-role-partner-primary font-bold" : "text-slate-400 font-medium hidden md:block"
+                    'text-[9px] sm:text-[10px] md:text-xs text-center leading-tight',
+                    isActive
+                      ? 'text-role-partner-primary font-bold'
+                      : isPast
+                        ? 'text-slate-600 font-medium'
+                        : 'text-slate-400 font-medium'
                   )}
                 >
                   {step.label}
                 </span>
               </div>
 
-              {/* Connecting Line */}
+              {/* Connecting Line — aligned to circle vertical center */}
               {index < steps.length - 1 && (
-                <div 
+                <div
                   className={cn(
-                    "flex-1 h-[2px] mt-4 mx-1 sm:mx-2 transition-colors",
-                    isPast ? "bg-role-partner-primary" : "bg-slate-200"
-                  )} 
+                    'flex-1 h-0.5 mt-3.5 sm:mt-4 mx-0.5 sm:mx-1 transition-colors min-w-2',
+                    isPast ? 'bg-role-partner-primary' : 'bg-slate-200'
+                  )}
                 />
               )}
             </React.Fragment>

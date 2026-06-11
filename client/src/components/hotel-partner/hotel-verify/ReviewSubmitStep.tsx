@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   ArrowLeft,
+  ArrowRight,
   CheckCircle2,
   FileText,
   Image as ImageIcon,
@@ -14,7 +15,10 @@ import {
   Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
-import { useHotelVerifyStore } from '@/stores/hotel-verify.store';
+import {
+  useHotelVerifyStore,
+  type HotelVerifyDraft,
+} from '@/stores/hotel-verify.store';
 import { useSubmitRegistration } from '@/hooks/hotel-verify/useHotelVerify';
 import type { HotelRegistrationRequest } from '@/types/hotel-verify.types';
 
@@ -22,6 +26,8 @@ interface SummaryCardProps {
   icon: React.ComponentType<{ className?: string }>;
   title: string;
   isComplete: boolean;
+  stepNumber: number;
+  onNavigateToStep?: (step: number) => void;
   children: React.ReactNode;
 }
 
@@ -29,37 +35,79 @@ const SummaryCard = ({
   icon: Icon,
   title,
   isComplete,
+  stepNumber,
+  onNavigateToStep,
   children,
-}: SummaryCardProps) => (
-  <div className="border border-slate-200 rounded-xl p-5 bg-slate-50/50 relative hover:border-role-partner-light hover:bg-role-partner-light/10 transition-colors">
-    <div className="absolute top-4 right-4">
-      <div
-        className={cn(
-          'rounded-full p-1',
-          isComplete
-            ? 'bg-emerald-100 text-emerald-600'
-            : 'bg-amber-100 text-amber-600'
-        )}
-      >
-        {isComplete ? (
-          <CheckCircle2 className="w-4 h-4" />
-        ) : (
-          <AlertCircle className="w-4 h-4" />
-        )}
+}: SummaryCardProps) => {
+  const isClickable = !!onNavigateToStep;
+  const handleActivate = isClickable
+    ? () => onNavigateToStep(stepNumber)
+    : undefined;
+  return (
+    <div
+      role={isClickable ? 'button' : undefined}
+      tabIndex={isClickable ? 0 : undefined}
+      onClick={handleActivate}
+      onKeyDown={
+        isClickable
+          ? e => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handleActivate?.();
+              }
+            }
+          : undefined
+      }
+      className={cn(
+        'border rounded-xl p-5 bg-slate-50/50 relative transition-all outline-none',
+        isClickable && 'cursor-pointer focus-visible:ring-2 focus-visible:ring-role-partner-primary/50',
+        !isComplete
+          ? 'border-amber-200 hover:border-amber-400 hover:bg-amber-50/60 hover:shadow-md'
+          : 'border-slate-200 hover:border-role-partner-primary/40 hover:bg-role-partner-light/10 hover:shadow-md'
+      )}
+    >
+      <div className="absolute top-4 right-4">
+        <div
+          className={cn(
+            'rounded-full p-1',
+            isComplete
+              ? 'bg-emerald-100 text-emerald-600'
+              : 'bg-amber-100 text-amber-600'
+          )}
+        >
+          {isComplete ? (
+            <CheckCircle2 className="w-4 h-4" />
+          ) : (
+            <AlertCircle className="w-4 h-4" />
+          )}
+        </div>
       </div>
-    </div>
-    <div className="flex items-center gap-3 mb-3">
-      <div className="p-2 bg-white rounded-lg border border-slate-200 shadow-sm">
-        <Icon className="w-5 h-5 text-role-partner-primary" />
+      <div className="flex items-center gap-3 mb-3">
+        <div className="p-2 bg-white rounded-lg border border-slate-200 shadow-sm">
+          <Icon className="w-5 h-5 text-role-partner-primary" />
+        </div>
+        <h3 className="text-sm font-bold text-slate-900">{title}</h3>
       </div>
-      <h3 className="text-sm font-bold text-slate-900">{title}</h3>
+      <div className="text-sm text-slate-600 space-y-1.5 ml-13">{children}</div>
+      {isClickable && (
+        <div
+          className={cn(
+            'mt-3 pt-3 border-t flex items-center gap-1.5 text-xs font-semibold',
+            isComplete
+              ? 'border-slate-100 text-role-partner-primary'
+              : 'border-amber-100 text-amber-600'
+          )}
+        >
+          <ArrowRight className="w-3 h-3" />{' '}
+          {isComplete ? 'Tap to edit this step' : 'Tap to complete this step'}
+        </div>
+      )}
     </div>
-    <div className="text-sm text-slate-600 space-y-1.5 ml-13">{children}</div>
-  </div>
-);
+  );
+};
 
 function buildPayload(
-  draft: ReturnType<typeof useHotelVerifyStore>['draft']
+  draft: HotelVerifyDraft
 ): HotelRegistrationRequest | null {
   const {
     businessInfo,
@@ -82,6 +130,10 @@ function buildPayload(
 
   const so = certificates.securityOrder;
   const cl = certificates.classification;
+
+  // Room config is collected on the Property & Rooms step; lift it to a
+  // top-level `roomConfig` key and keep `propertyImages` as images only.
+  const { roomConfig, ...propertyImagesDto } = propertyImages;
 
   return {
     businessInfo,
@@ -111,7 +163,8 @@ function buildPayload(
         : {}),
     },
     representative,
-    propertyImages,
+    propertyImages: propertyImagesDto,
+    roomConfig,
     paymentPayouts: {
       bankAccount: {
         ...paymentPayouts.bankAccount,
@@ -133,9 +186,11 @@ function buildPayload(
 export function ReviewSubmitStep({
   onBack,
   onSubmit,
+  onNavigateToStep,
 }: {
   onBack?: () => void;
   onSubmit?: () => void;
+  onNavigateToStep?: (step: number) => void;
 }) {
   const { draft, resetDraft } = useHotelVerifyStore();
   const { mutateAsync, isPending } = useSubmitRegistration();
@@ -219,6 +274,8 @@ export function ReviewSubmitStep({
           icon={Building2}
           title="1. Business Info"
           isComplete={!!businessInfo}
+          stepNumber={1}
+          onNavigateToStep={onNavigateToStep}
         >
           <p>
             <span className="font-medium text-slate-900">Hotel Name:</span>{' '}
@@ -238,6 +295,8 @@ export function ReviewSubmitStep({
           icon={FileText}
           title="2. Business License"
           isComplete={!!businessLicense}
+          stepNumber={2}
+          onNavigateToStep={onNavigateToStep}
         >
           <p>
             <span className="font-medium text-slate-900">License No:</span>{' '}
@@ -263,6 +322,8 @@ export function ReviewSubmitStep({
           icon={FileCheck2}
           title="3. Accommodation Cert"
           isComplete={!!certificates}
+          stepNumber={3}
+          onNavigateToStep={onNavigateToStep}
         >
           <p>
             <span className="font-medium text-slate-900">
@@ -293,6 +354,8 @@ export function ReviewSubmitStep({
           icon={ShieldCheck}
           title="4. Representative"
           isComplete={!!representative}
+          stepNumber={4}
+          onNavigateToStep={onNavigateToStep}
         >
           <p>
             <span className="font-medium text-slate-900">Name:</span>{' '}
@@ -317,26 +380,45 @@ export function ReviewSubmitStep({
 
         <SummaryCard
           icon={ImageIcon}
-          title="5. Property Images"
+          title="5. Property & Rooms"
           isComplete={!!propertyImages}
+          stepNumber={5}
+          onNavigateToStep={onNavigateToStep}
         >
           <p>
-            <span className="font-medium text-slate-900">Total Uploaded:</span>{' '}
-            {totalImages} images
+            <span className="font-medium text-slate-900">Images:</span>{' '}
+            {totalImages} uploaded
           </p>
           {propertyImages && (
-            <p>
+            <p className="text-xs text-slate-500">
               Cover ({propertyImages.coverImages.length}), Exterior (
               {propertyImages.exteriorImages.length}), Rooms (
               {propertyImages.roomImages.length})
             </p>
           )}
+          <p>
+            <span className="font-medium text-slate-900">Rooms:</span>{' '}
+            {propertyImages?.roomConfig
+              ? `${propertyImages.roomConfig.totalRooms} rooms · ${propertyImages.roomConfig.roomTypes.length} type${
+                  propertyImages.roomConfig.roomTypes.length !== 1 ? 's' : ''
+                }`
+              : '—'}
+          </p>
+          {propertyImages?.roomConfig?.roomTypes?.length ? (
+            <p className="text-xs text-slate-500">
+              {propertyImages.roomConfig.roomTypes
+                .map(t => `${t.name || 'Unnamed'} (${t.quantity})`)
+                .join(', ')}
+            </p>
+          ) : null}
         </SummaryCard>
 
         <SummaryCard
           icon={Landmark}
           title="6. Payment &amp; Payouts"
           isComplete={!!paymentPayouts}
+          stepNumber={6}
+          onNavigateToStep={onNavigateToStep}
         >
           <p>
             <span className="font-medium text-slate-900">Bank:</span>{' '}

@@ -6,6 +6,22 @@ This file tracks the accomplished tasks, resolved user requests, and visual/func
 
 ## Completed Tasks Checklist
 
+### June 11, 2026 (continued)
+
+- [x] **Hotel Verify — Moved Room Config to Step 5 (Property & Rooms), required map location, top-level `roomConfig` payload**:
+  - **Room Config relocated**: moved the room configuration (total rooms + room types) out of Step 2 (Business License) into **Step 5**, which is renamed **"Property & Rooms"** (per design decision — room/inventory data belongs with the physical-property description, not legal docs). `roomConfigSchema` moved from `propertyDetailsSchema` → `propertyImagesSchema`. `PropertyDetailsStep` reverted to license-only (removed `useFieldArray`/`watch`/`control` + the room UI). `PropertyImagesStep` (manual-state, no RHF) now holds room config via local `useState` (`totalRooms`, `roomTypes` with add/remove + live "X / Y allocated" indicator and submit-time validation: total ≥1, each type named & ≥1 room, sum must equal total); persisted on both Back and Continue.
+  - **Payload shape**: `roomConfig` is now emitted as a **top-level key** in `HotelRegistrationRequest` (removed from `SaveBusinessLicenseDto`); `buildPayload` in `ReviewSubmitStep` destructures `roomConfig` out of the property-images draft and keeps `propertyImages` as images-only. Review card 2 reverted to "Business License"; card 5 → "Property & Rooms" now shows the room summary.
+  - **Labels**: `VerificationStepper` (step 2 → "Business License", step 5 → "Property & Rooms") and `VerificationStepsCard` updated to match.
+  - **Required map location**: `businessInfoSchema.location` is now **required** (was optional) so `lat`/`lng` are always sent to the BE — `SaveBusinessInfoDto.location` made non-optional, and `BusinessInfoStep` shows a red `*`, red map border + inline error when unpinned, and validates on pin.
+
+### June 11, 2026
+
+- [x] **Hotel Verify — Hotel-only, Room Configuration, Draft Persistence, Review Navigation**:
+  - **Draft persistence across reload**: wrapped `stores/hotel-verify.store.ts` with Zustand `persist` middleware (`name: 'hotel-verify-draft'`, `localStorage` via `createJSONStorage`, `partialize` keeps only `draft`). All 6 step DTOs now survive a page reload. Exported the `HotelVerifyDraft` interface (used to type `buildPayload` in `ReviewSubmitStep`, replacing the now-broken `ReturnType<typeof useHotelVerifyStore>['draft']`).
+  - **Step 1 hotel-only**: `BusinessInfoStep` no longer offers a property-type dropdown — removed the `Select` (resort/villa/apartment), hardcoded `businessType: 'hotel'` in defaults + a `useEffect(setValue('businessType','hotel'))`, and rendered a read-only "Hotel · Hotels only" badge (`BadgeCheck` icon).
+  - **Step 2 Room Configuration** (kept Business License, added a section below it): extended `propertyDetailsSchema` with `roomConfig` (`roomConfigSchema`: `totalRooms` coerced int ≥1, `roomTypes` array of `{ name, quantity }` min 1, plus a `superRefine` that the sum of per-type quantities must equal `totalRooms`). `PropertyDetailsStep` now uses `useFieldArray` for `roomConfig.roomTypes` — add/remove room types, per-type room count, a live "X / Y rooms allocated" indicator (emerald when matched, amber otherwise). Header renamed to "Business License & Rooms"; stepper/review labels → "License & Rooms". Added `RoomTypeDto`/`RoomConfigDto` to `hotel-verify.types.ts` and `roomConfig` to `SaveBusinessLicenseDto`.
+  - **Review card navigation**: `ReviewSubmitStep` `SummaryCard` is now clickable for **every** step (not just incomplete ones) — clicking/Enter/Space jumps to that step via `onNavigateToStep`; complete cards show "Tap to edit this step", incomplete show "Tap to complete this step"; added `role="button"`, `tabIndex`, and focus-visible ring for a11y. The License & Rooms card now also summarises total rooms + room-type breakdown.
+
 ### June 5, 2026 (continued 3)
 
 - [x] **Role-based redirect after login (admin / user / hotel partner)**:
@@ -21,6 +37,13 @@ This file tracks the accomplished tasks, resolved user requests, and visual/func
 - [x] **Guest navbar user dropdown menu**:
   - Replaced the inline avatar + name + Log out button in `components/layout/Navbar.tsx` with a shadcn/Radix `DropdownMenu`: avatar+name+chevron is the trigger; the menu shows a user-info header (avatar, name, email, role badge), a role-aware `Dashboard` link (only for roles whose landing page isn't `/`, via `getLandingPathForRole`), `My Account`, and a destructive `Log out` item.
   - Added a `ROLE_LABELS` map for friendly role display; lucide icons (`LayoutDashboard`, `LogOut`, `User`, `ChevronDown`).
+- [x] **Hotel Verify Wizard — Mobile Responsive, Data Persistence, Review Navigation**:
+  - `VerificationStepper`: added `overflow-x-auto` horizontal scroll wrapper with `min-w-max` inner container; reduced circle size to `w-7 h-7 sm:w-8 sm:h-8`; hides labels on mobile except active step; compact `mb-10 sm:mb-16` spacing.
+  - `VerifyHotelPage`: reduced outer padding to `p-4 sm:p-6`; passes `onNavigateToStep={updateStep}` to `ReviewSubmitStep`.
+  - `ReviewSubmitStep`: added `onNavigateToStep?: (step: number) => void` prop; `SummaryCard` becomes clickable (amber border + cursor-pointer) when step is incomplete and `onNavigateToStep` is provided; shows "Tap to complete this step →" CTA on incomplete cards.
+  - `PropertyDetailsStep`, `AccommodationCertificateStep`, `RepresentativeVerificationStep`, `PaymentPayoutsStep`: added `getValues` from `useForm`; Back button calls `setXxx(getValues())` before navigating so partially-filled form data is saved to Zustand draft without validation.
+  - `PropertyImagesStep`: fully rewritten — uploads files immediately per zone on `onFilesChange`; URL arrays initialised from `draft.propertyImages` on mount so re-entry shows previously-uploaded counts; Back saves partial URLs to store; Continue validates URL counts (not File objects); per-zone "N images uploaded" emerald banners on re-entry.
+  - `BusinessInfoStep`: map height changed to `h-52 sm:h-72` for mobile; fixed pre-existing `useRef` missing initial-value error.
 
 ### June 5, 2026 (continued 2)
 
