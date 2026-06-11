@@ -203,6 +203,7 @@ enum NotificationType {
   review_request
   alert
   promotion
+  partner_approved
 }
 
 enum NotificationChannel {
@@ -512,6 +513,7 @@ model Hotel {
   licenses              HotelLicense[]
   representatives       HotelRepresentative[]
   payoutAccounts        HotelPayoutAccount[]
+  roomConfig            HotelRoomConfig?
 
   @@map("hotels")
 }
@@ -1290,4 +1292,31 @@ model HotelPayoutAccount {
   updatedAt                 DateTime     @default(now()) @updatedAt @map("updated_at")
 
   @@map("hotel_payout_accounts")
+}
+
+// Khai báo cấu hình phòng lúc đăng ký (1-1 với Hotel; KHÔNG phải phòng vận hành thật)
+model HotelRoomConfig {
+  id         String                @id @default(uuid()) @db.Uuid
+  hotelId    String                @unique @map("hotel_id") @db.Uuid
+  hotel      Hotel                 @relation(fields: [hotelId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  totalRooms Int                   @map("total_rooms") // Số phòng dự kiến khai báo lúc đăng ký
+  createdAt  DateTime              @default(now()) @map("created_at")
+  updatedAt  DateTime              @default(now()) @updatedAt @map("updated_at")
+
+  types      HotelRoomConfigType[]
+
+  @@map("hotel_room_configs")
+}
+
+// Mỗi loại phòng khai báo: tên + số lượng (chưa có giá/phòng cụ thể; setup thật ở portal sau)
+model HotelRoomConfigType {
+  id           String          @id @default(uuid()) @db.Uuid
+  roomConfigId String          @map("room_config_id") @db.Uuid
+  roomConfig   HotelRoomConfig @relation(fields: [roomConfigId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  name         String
+  quantity     Int
+  createdAt    DateTime        @default(now()) @map("created_at")
+  updatedAt    DateTime        @default(now()) @updatedAt @map("updated_at")
+
+  @@map("hotel_room_config_types")
 }
