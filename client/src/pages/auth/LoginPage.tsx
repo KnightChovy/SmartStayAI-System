@@ -52,56 +52,73 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="relative min-h-screen text-on-surface select-none overflow-hidden flex items-center justify-center p-gutter-mobile bg-background">
+    <div className="relative min-h-screen text-on-surface select-none overflow-hidden grid md:grid-cols-2 bg-background">
       <style>{`
-        .glass-card {
-          background: rgba(245, 242, 238, 0.85);
-          backdrop-filter: blur(20px);
-          -webkit-backdrop-filter: blur(20px);
-          box-shadow: 0 4px 20px rgba(28, 27, 27, 0.04);
-        }
         .material-symbols-outlined {
           font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
       `}</style>
 
-      {/* Background image layer */}
+      {/* Left image panel */}
       <div
-        aria-hidden="true"
-        className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
-        style={{
-          backgroundImage:
-            "url('https://images.unsplash.com/photo-1611892440504-42a792e24d32?q=80&w=2070&auto=format&fit=crop')",
-        }}
-      />
-      {/* Light overlay keeps the glass card and brand logo legible */}
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 z-0 bg-linear-to-b from-surface/85 via-surface/65 to-surface/85"
-      />
-
-      {/* Login Container */}
-      <main className="relative z-10 w-full max-w-120">
-        {/* Brand Logo Center */}
-        <div className="text-center mb-stack-lg">
-          <Link
-            to="/"
-            className="inline-block hover:opacity-90 transition-opacity"
-          >
-        <h1 className="font-display-lg text-3xl font-extrabold tracking-widest uppercase text-black-">
-                  SMART STAY AI
-              </h1>
-          </Link>
+        className="relative hidden md:flex flex-col justify-between p-10 min-h-screen bg-cover bg-center"
+          style={{
+            backgroundImage:
+              "url('https://images.unsplash.com/photo-1611892440504-42a792e24d32?q=80&w=2070&auto=format&fit=crop')",
+          }}
+        >
+          {/* Dark overlay keeps the logo and tagline legible on the photo */}
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 bg-linear-to-t from-black/70 via-black/25 to-black/40"
+          />
+          {/* Top row: logo + back to website */}
+          <div className="relative z-10 flex items-center justify-between">
+            <h1 className="font-display-lg text-xl font-extrabold tracking-widest uppercase text-white">
+              SMART STAY AI
+            </h1>
+            <Link
+              to="/"
+              className="flex items-center gap-1 px-4 py-2 rounded-full bg-white/15 backdrop-blur-sm border border-white/20 text-white font-label-sm text-label-sm hover:bg-white/25 transition-colors"
+            >
+              Back to website
+              <span className="material-symbols-outlined text-[18px]">
+                arrow_forward
+              </span>
+            </Link>
+          </div>
+          {/* Bottom: tagline + carousel dots */}
+          <div className="relative z-10">
+            <h2 className="font-headline-lg text-headline-lg text-white max-w-xs">
+              Your Stay, Elevated by Intelligence
+            </h2>
+            <div className="mt-6 flex items-center gap-2">
+              <span className="h-1.5 w-4 rounded-full bg-white/40" />
+              <span className="h-1.5 w-4 rounded-full bg-white/40" />
+              <span className="h-1.5 w-8 rounded-full bg-white" />
+            </div>
+          </div>
         </div>
 
-        <div className="glass-card rounded-xxl p-stack-lg md:p-12 border border-white/20">
-          <div className="text-center mb-stack-lg">
-            <h2 className="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface mb-2 font-semibold">
+      {/* Right form panel */}
+      <div className="min-h-screen flex flex-col justify-center px-margin-mobile md:px-16 lg:px-24 py-stack-lg overflow-y-auto">
+        <div className="w-full max-w-md mx-auto">
+          <div className="mb-stack-lg">
+            <h2 className="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface mb-stack-sm font-semibold">
               Welcome Back
             </h2>
-            <p className="font-body-md text-body-md text-on-surface-variant">
-              Log in to your personal concierge dashboard.
-            </p>
+            {/* Sign in / Sign up segmented toggle */}
+            <div className="flex p-1 bg-surface-container-low rounded-full">
+              <span className="flex-1 text-center py-2.5 rounded-full font-label-lg text-label-lg bg-surface text-on-surface shadow-sm">
+                Sign In
+              </span>
+              <Link
+                to="/register"
+                className="flex-1 text-center py-2.5 rounded-full font-label-lg text-label-lg text-on-surface-variant hover:text-on-surface transition-colors"
+              >
+                Sign Up
+              </Link>
+            </div>
           </div>
 
           {/* Form */}
@@ -205,10 +222,10 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <div className="relative flex items-center py-stack-lg">
+          <div className="relative flex items-center py-stack-md">
             <div className="grow border-t border-outline-variant/30"></div>
             <span className="shrink mx-4 font-label-sm text-label-sm text-outline uppercase tracking-widest">
-              OR
+              Or login with
             </span>
             <div className="grow border-t border-outline-variant/30"></div>
           </div>
@@ -238,9 +255,7 @@ export default function LoginPage() {
             </svg>
             Login with Google
           </Button>
-
-          <div className="text-center mt-stack-lg space-y-4">
-            <p className="font-body-md text-body-md text-on-surface-variant">
+  <p className="font-body-md text-body-md text-on-surface-variant">
               Don't have an account?{' '}
               <Link
                 className="text-secondary font-semibold hover:underline transition-all"
@@ -249,31 +264,30 @@ export default function LoginPage() {
                 Register
               </Link>
             </p>
-            <div className="flex items-center justify-center gap-6 pt-4 border-t border-outline-variant/30">
-              <a
-                className="font-label-sm text-label-sm text-on-surface-variant uppercase hover:text-primary tracking-widest outline-none cursor-pointer"
-                href="#legal"
-                onClick={e => {
-                  e.preventDefault();
-                  alert('Legal info...');
-                }}
-              >
-                LEGAL
-              </a>
-              <a
-                className="font-label-sm text-label-sm text-on-surface-variant uppercase hover:text-primary tracking-widest outline-none cursor-pointer"
-                href="#privacy"
-                onClick={e => {
-                  e.preventDefault();
-                  alert('Privacy policy...');
-                }}
-              >
-                PRIVACY
-              </a>
-            </div>
+          <div className="mt-stack-md pt-4 border-t border-outline-variant/30 flex items-center justify-center gap-6">
+            <a
+              className="font-label-sm text-label-sm text-on-surface-variant uppercase hover:text-primary tracking-widest outline-none cursor-pointer"
+              href="#legal"
+              onClick={e => {
+                e.preventDefault();
+                alert('Legal info...');
+              }}
+            >
+              LEGAL
+            </a>
+            <a
+              className="font-label-sm text-label-sm text-on-surface-variant uppercase hover:text-primary tracking-widest outline-none cursor-pointer"
+              href="#privacy"
+              onClick={e => {
+                e.preventDefault();
+                alert('Privacy policy...');
+              }}
+            >
+              PRIVACY
+            </a>
           </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 }
