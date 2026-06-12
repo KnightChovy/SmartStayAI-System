@@ -15,10 +15,30 @@ import type {
 
 // Quan hệ kèm theo khi trả về một hồ sơ duyệt (gồm ảnh khách sạn + license join file hiện hành)
 const requestInclude = {
-  hotel: { include: { images: { orderBy: { sortOrder: 'asc' } } } },
+  hotel: {
+    include: {
+      images: { orderBy: { sortOrder: 'asc' } },
+      roomConfig: { include: { types: true } },
+      representatives: true,
+      // accountNumber cố tình bị loại (lưu mã hoá; chỉ giải mã khi thực sự chi trả)
+      payoutAccounts: {
+        select: {
+          id: true,
+          accountHolder: true,
+          bankName: true,
+          bankBranch: true,
+          swiftCode: true,
+          taxIdVatNumber: true,
+          registeredBusinessAddress: true,
+          isPrimary: true,
+        },
+      },
+    },
+  },
   partner: true,
   documents: true,
   licenses: { include: { currentDocument: true } },
+  reviewer: { select: { id: true, fullName: true, email: true } },
 } satisfies Prisma.HotelVerificationRequestInclude;
 
 // Các loại document đồng thời là một license (5/8 loại). Dùng để biết khi duyệt document thì
@@ -39,6 +59,10 @@ const STAR_ENUM: Record<string, LicenseStarRating> = {
   '5': 'star5',
   unrated: 'unrated',
 };
+
+// Default khi seed RoomType lúc duyệt; partner cập nhật giá/sức chứa thật ở Room Inventory sau
+const DEFAULT_ROOM_MAX_OCCUPANCY = 2;
+const DEFAULT_ROOM_BASE_PRICE = 0;
 
 const toNullableDate = (value?: string | null): Date | null => (value ? new Date(value) : null);
 
@@ -279,6 +303,20 @@ export class HotelPartnerService {
         },
       });
 
+      // Cấu hình phòng khai báo: 1 config (totalRooms) + nhiều loại phòng (tên + số lượng)
+      await tx.hotelRoomConfig.create({
+        data: {
+          hotelId: hotel.id,
+          totalRooms: payload.roomConfig.totalRooms,
+          types: {
+            create: payload.roomConfig.roomTypes.map((roomType) => ({
+              name: roomType.name,
+              quantity: roomType.quantity,
+            })),
+          },
+        },
+      });
+
       return tx.hotelVerificationRequest.findUniqueOrThrow({
         where: { id: request.id },
         include: requestInclude,
@@ -474,14 +512,58 @@ export class HotelPartnerService {
           where: { id: request.partnerId },
           data: { status: 'approved', approvedBy: reviewerId, approvedAt: reviewedAt, rejectionReason: null },
         });
+        // Kích hoạt hotel nhưng CHƯA publish (isListed=false) — partner hoàn thiện phòng rồi mới publish
         await tx.hotel.update({
           where: { id: request.hotelId },
-          data: { isActive: true, isListed: true },
+          data: { isActive: true, isListed: false },
         });
         await tx.user.update({
           where: { id: request.partner.ownerId },
           data: { role: 'hotel_partner' },
         });
+
+        // Seed RoomType + Room từ roomConfig khai báo (chỉ lần đầu; sau đó Room Inventory quản lý, không sync ngược)
+        const roomConfig = await tx.hotelRoomConfig.findUnique({
+          where: { hotelId: request.hotelId },
+          include: { types: true },
+        });
+        if (roomConfig) {
+          for (const type of roomConfig.types) {
+            const roomType = await tx.roomType.create({
+              data: {
+                hotelId: request.hotelId,
+                name: type.name,
+                maxOccupancy: DEFAULT_ROOM_MAX_OCCUPANCY,
+                basePrice: DEFAULT_ROOM_BASE_PRICE,
+                isActive: false, // chưa publish — partner điền giá/ảnh/mô tả ở Room Inventory rồi mới bật
+              },
+            });
+            if (type.quantity > 0) {
+              await tx.room.createMany({
+                data: Array.from({ length: type.quantity }, (_, index) => ({
+                  hotelId: request.hotelId,
+                  roomTypeId: roomType.id,
+                  roomNumber: `${type.name}-${index + 1}`,
+                  status: 'available' as const,
+                })),
+              });
+            }
+          }
+        }
+
+        // Thông báo partner: hồ sơ đã duyệt, vào Room Inventory hoàn thiện phòng
+        await tx.notification.create({
+          data: {
+            userId: request.partner.ownerId,
+            type: 'partner_approved',
+            title: 'Hồ sơ đăng ký khách sạn đã được duyệt',
+            body: 'Chúc mừng! Hồ sơ của bạn đã được duyệt. Vào Room Inventory để hoàn thiện thông tin phòng (giá, ảnh, mô tả) rồi publish để khách có thể đặt.',
+            channel: 'in_app',
+            status: 'sent',
+            sentAt: reviewedAt,
+          },
+        });
+
         return tx.hotelVerificationRequest.findUniqueOrThrow({ where: { id: requestId }, include: requestInclude });
       });
     }
