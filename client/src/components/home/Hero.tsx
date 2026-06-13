@@ -1,6 +1,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { useNavigate } from 'react-router';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 
@@ -13,6 +14,7 @@ const heroSearchSchema = z.object({
 type HeroSearchFormValues = z.infer<typeof heroSearchSchema>;
 
 export default function Hero() {
+  const navigate = useNavigate();
   const { register, handleSubmit, setValue, watch } =
     useForm<HeroSearchFormValues>({
       resolver: zodResolver(heroSearchSchema),
@@ -27,9 +29,13 @@ export default function Hero() {
   const guests = watch('guests');
 
   const onSubmit = (values: HeroSearchFormValues) => {
-    alert(
-      `Searching for: ${values.destination || 'Anywhere'} | Dates: ${values.dates} | Guests: ${values.guests}`
-    );
+    const params = new URLSearchParams();
+    if (values.destination) params.set('city', values.destination);
+    // "Add guests" là giá trị mặc định → bỏ qua; nếu nhập số thì lấy số khách
+    const guestNum = parseInt(values.guests, 10);
+    if (!Number.isNaN(guestNum)) params.set('guests', String(guestNum));
+    const query = params.toString();
+    navigate(query ? `/search?${query}` : '/search');
   };
 
   return (

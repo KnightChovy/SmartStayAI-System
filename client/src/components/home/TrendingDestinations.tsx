@@ -1,4 +1,7 @@
+import { useNavigate } from 'react-router';
+
 export default function TrendingDestinations() {
+  const navigate = useNavigate();
   const destinations = [
     {
       name: 'Bali',
@@ -26,7 +29,7 @@ export default function TrendingDestinations() {
         {destinations.map(dest => (
           <div
             key={dest.name}
-            onClick={() => alert(`Exploring ${dest.name} sanctuary...`)}
+            onClick={() => navigate(`/search?city=${encodeURIComponent(dest.name)}`)}
             className="relative h-112.5 rounded-3xl overflow-hidden group cursor-pointer shadow-xl"
           >
             <img
