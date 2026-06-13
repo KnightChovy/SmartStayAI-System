@@ -1,3 +1,11 @@
 export * as authValidation from './auth.validation';
 export * as customValidation from './custom.validation';
 export * as userValidation from './user.validation';
+export * as uploadValidation from './upload.validation';
+export * as hotelPartnerValidation from './hotel-partner.validation';
+export * as hotelValidation from './hotel.validation';
+export * as bookingValidation from './booking.validation';
+export * as roomTypeValidation from './room-type.validation';
+export * as roomValidation from './room.validation';
+export * as amenityValidation from './amenity.validation';
+export * as pricingRuleValidation from './pricing-rule.validation';

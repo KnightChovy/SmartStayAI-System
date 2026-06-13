@@ -14,3 +14,6 @@ coverage
 # build output
 dist/
 build/
+
+# runtime logs (Winston) — keep the folder, ignore the log files
+logs/*.log

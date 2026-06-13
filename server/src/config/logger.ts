@@ -8,17 +8,35 @@ const enumerateErrorFormat = winston.format((info) => {
   return info;
 });
 
+// Shared line format: "2026-06-05 10:00:00 info: message"
+const lineFormat = winston.format.combine(
+  enumerateErrorFormat(),
+  winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+  winston.format.splat(),
+  winston.format.printf(({ timestamp, level, message }) => `${timestamp} ${level}: ${message}`)
+);
+
 const logger = winston.createLogger({
   level: config.env === 'development' ? 'debug' : 'info',
-  format: winston.format.combine(
-    enumerateErrorFormat(),
-    config.env === 'development' ? winston.format.colorize() : winston.format.uncolorize(),
-    winston.format.splat(),
-    winston.format.printf(({ level, message }) => `${level}: ${message}`)
-  ),
   transports: [
+    // Console: colorized in development for readability
     new winston.transports.Console({
       stderrLevels: ['error'],
+      format: winston.format.combine(
+        config.env === 'development' ? winston.format.colorize() : winston.format.uncolorize(),
+        lineFormat
+      ),
+    }),
+    // File: every log line (no colors)
+    new winston.transports.File({
+      filename: 'logs/combined.log',
+      format: winston.format.combine(winston.format.uncolorize(), lineFormat),
+    }),
+    // File: errors only, for quick triage
+    new winston.transports.File({
+      filename: 'logs/error.log',
+      level: 'error',
+      format: winston.format.combine(winston.format.uncolorize(), lineFormat),
     }),
   ],
 });

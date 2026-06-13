@@ -34,18 +34,26 @@ Trước khi thực hiện, hãy đảm bảo bạn đã cài đặt các phần
    DATABASE_URL="postgresql://postgres:<mật_khẩu_pgadmin>@localhost:5432/smartstay_db?schema=public"
    ```
    *Lưu ý thay thế `<mật_khẩu_pgadmin>` thành mật khẩu đăng nhập cơ sở dữ liệu của bạn.*
+3. **(BẮT BUỘC)** Sinh khoá mã hoá `PAYOUT_ENCRYPTION_KEY` (key 32 byte mã hoá base64, dùng cho AES-256-GCM để mã hoá số tài khoản nhận tiền của đối tác) rồi dán giá trị vào `.env`:
+   ```bash
+   node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+   ```
+   > ⚠️ Nếu để trống hoặc giữ giá trị placeholder trong `.env.example`, server sẽ **không khởi động được** (lỗi "PAYOUT_ENCRYPTION_KEY phải là key 32 byte...").
+4. Các biến **bắt buộc** khác để server chạy được (đều có sẵn trong `.env.example`, chỉ cần điền giá trị thật): `JWT_SECRET`, `CLIENT_URL`, và `CLOUDINARY_CLOUD_NAME` / `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET` (lấy từ dashboard Cloudinary — cần cho chức năng upload giấy tờ khi đăng ký khách sạn).
+   > Riêng các bước Prisma bên dưới (generate / migrate / seed) chỉ cần `DATABASE_URL` là chạy được; còn các biến trên là để `npm run dev` khởi động được server.
 
 ### Bước 3: Đồng bộ cấu hình và sinh Prisma Client (Generate)
-Chạy lệnh sau tại thư mục `server` để phát sinh bộ thư viện Prisma Client tự động ánh xạ 43 bảng dữ liệu vào dự án:
+Chạy lệnh sau tại thư mục `server` để phát sinh bộ thư viện Prisma Client tự động ánh xạ 49 bảng dữ liệu vào dự án:
 ```bash
 npx prisma generate
 ```
 
-### Bước 4: Chạy Migration dựng 43 bảng dữ liệu
-Đồng bộ hóa schema thiết kế vào cơ sở dữ liệu PostgreSQL thực tế bằng lệnh:
+### Bước 4: Chạy Migration dựng 49 bảng dữ liệu
+Áp **toàn bộ các migration đã có sẵn trong repo** vào database trống của bạn:
 ```bash
-npx prisma migrate dev --name init_smartstay_schema
+npx prisma migrate dev
 ```
+> 💡 Trên database trống, lệnh này tuần tự áp tất cả migration trong `prisma/migrations/` (từ `init_smartstay_schema` → ... → `add_hotel_partner_registration` → `refine_verification_documents_houng_b`) và tự sinh lại Prisma Client; nó **không** tạo migration mới vì schema đã khớp.
 > 💡 **Mẹo nhỏ**: Nếu cơ sở dữ liệu đã từng được migrate bằng phiên bản schema cũ hơn và báo lỗi lệch pha cấu trúc (drift detected), hãy chạy lệnh:
 > ```bash
 > npx prisma migrate reset
@@ -76,7 +84,7 @@ npx prisma studio
 ```
 
 Trình duyệt sẽ tự động mở trang web tại địa chỉ: 👉 **[http://localhost:5555](http://localhost:5555)**. 
-Tại đây, bạn có thể xem danh sách 43 bảng dữ liệu, thêm, sửa, hoặc xóa các bản ghi `User`, `Token`, `Booking`, v.v. chỉ bằng các cú click chuột.
+Tại đây, bạn có thể xem danh sách 49 bảng dữ liệu, thêm, sửa, hoặc xóa các bản ghi `User`, `Token`, `Booking`, v.v. chỉ bằng các cú click chuột.
 
 ---
 
