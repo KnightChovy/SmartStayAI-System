@@ -1,4 +1,7 @@
+import { useNavigate } from 'react-router';
+
 export default function PopularVietnameseTourists() {
+  const navigate = useNavigate();
   const destinations = [
     {
       name: 'Singapore',
@@ -31,9 +34,7 @@ export default function PopularVietnameseTourists() {
         {destinations.map((dest, i) => (
           <div
             key={i}
-            onClick={() =>
-              alert(`Exploring ${dest.name} flights and hotels...`)
-            }
+            onClick={() => navigate(`/search?city=${encodeURIComponent(dest.name)}`)}
             className="group cursor-pointer"
           >
             <div className="h-48 rounded-3xl overflow-hidden mb-3 relative shadow-md">

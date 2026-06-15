@@ -14,7 +14,7 @@ import { ReviewSubmitStep } from '../../../components/hotel-partner/hotel-verify
 import { VerificationCenter } from '../../../components/hotel-partner/hotel-verify/VerificationCenter';
 import { CheckCircle2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useGetApplicationById } from '@/hooks/hotel-verify/useHotelVerify';
+import { useGetApplicationById } from '@/hooks/hotel-verify';
 
 export default function VerifyHotelPage() {
   const [searchParams, setSearchParams] = useSearchParams();

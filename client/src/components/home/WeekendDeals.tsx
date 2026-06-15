@@ -61,7 +61,7 @@ export default function WeekendDeals() {
         </div>
         <Button
           variant="link"
-          onClick={() => alert('Redirecting to all weekend specials...')}
+          onClick={() => navigate('/search')}
           className="text-sm font-semibold text-primary hover:underline cursor-pointer h-auto p-0"
         >
           View all deals
