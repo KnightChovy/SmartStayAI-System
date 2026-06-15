@@ -10,14 +10,9 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
-/** Ngày (UTC midnight) cách hôm nay n ngày — seed dùng ngày tương đối để luôn test được */
-const daysFromNow = (n: number): Date => {
-  const date = new Date();
-  date.setDate(date.getDate() + n);
-  return toUtcDate(date);
-};
-
-// One sample account per role. Password convention: `<role>Password123`.
+// Sample accounts: one per role + a few extra applicants (role customer) so the hotel
+// registration flow can be tested repeatedly (each applicant can submit one registration).
+// Password convention: `<role>Password123` (e.g. applicants use `customerPassword123`).
 const seedAccounts: { fullName: string; email: string; role: UserRole }[] = [
   { fullName: 'SmartStay Admin', email: 'admin@smartstay.ai', role: 'admin' },
   { fullName: 'Platform Manager', email: 'manager@smartstay.ai', role: 'platform_manager' },
@@ -26,6 +21,9 @@ const seedAccounts: { fullName: string; email: string; role: UserRole }[] = [
   { fullName: 'Marketing Staff', email: 'marketer@smartstay.ai', role: 'marketer' },
   { fullName: 'Regular Customer', email: 'customer@smartstay.ai', role: 'customer' },
   { fullName: 'Guest User', email: 'guest@smartstay.ai', role: 'guest' },
+  // Extra applicants for repeatable hotel-registration testing
+  { fullName: 'Hotel Applicant 1', email: 'applicant1@smartstay.ai', role: 'customer' },
+  { fullName: 'Hotel Applicant 2', email: 'applicant2@smartstay.ai', role: 'customer' },
 ];
 
 // ---------------------------------------------------------------------------

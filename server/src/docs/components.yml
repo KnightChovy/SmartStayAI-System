@@ -49,7 +49,7 @@ components:
 
     HotelRegistrationRequest:
       type: object
-      required: [businessInfo, businessLicense, certificates, representative, propertyImages, paymentPayouts]
+      required: [businessInfo, businessLicense, certificates, representative, propertyImages, roomConfig, paymentPayouts]
       properties:
         businessInfo:
           type: object
@@ -130,6 +130,20 @@ components:
             coverImages: { type: array, minItems: 1, items: { type: string, format: uri } }
             exteriorImages: { type: array, minItems: 1, items: { type: string, format: uri } }
             roomImages: { type: array, minItems: 3, items: { type: string, format: uri } }
+        roomConfig:
+          type: object
+          required: [totalRooms, roomTypes]
+          properties:
+            totalRooms: { type: integer, example: 50 }
+            roomTypes:
+              type: array
+              minItems: 1
+              items:
+                type: object
+                required: [name, quantity]
+                properties:
+                  name: { type: string, example: Deluxe }
+                  quantity: { type: integer, example: 20 }
         paymentPayouts:
           type: object
           required: [bankAccount]
@@ -203,6 +217,14 @@ components:
         reviewedBy: { type: string, format: uuid, nullable: true }
         reviewedAt: { type: string, format: date-time, nullable: true }
         rejectionReason: { type: string, nullable: true }
+        reviewer:
+          type: object
+          nullable: true
+          description: The platform manager who reviewed the request
+          properties:
+            id: { type: string, format: uuid }
+            fullName: { type: string }
+            email: { type: string, format: email }
         hotel:
           type: object
           description: The hotel being verified (activated on approval)
@@ -220,6 +242,49 @@ components:
               type: array
               description: Hotel images (cover/exterior/room), ordered by sortOrder
               items: { $ref: '#/components/schemas/HotelImage' }
+            roomConfig:
+              type: object
+              nullable: true
+              description: Room configuration declared at registration
+              properties:
+                totalRooms: { type: integer }
+                types:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id: { type: string, format: uuid }
+                      name: { type: string }
+                      quantity: { type: integer }
+            representatives:
+              type: array
+              description: Legal representatives (with ID card images)
+              items:
+                type: object
+                properties:
+                  id: { type: string, format: uuid }
+                  fullName: { type: string }
+                  role: { type: string, enum: [owner, general_manager, legal_representative, director] }
+                  dob: { type: string, format: date, nullable: true }
+                  idNumber: { type: string }
+                  phone: { type: string, nullable: true }
+                  address: { type: string, nullable: true }
+                  idFrontImageUrl: { type: string, format: uri, nullable: true }
+                  idBackImageUrl: { type: string, format: uri, nullable: true }
+            payoutAccounts:
+              type: array
+              description: Payout bank accounts (accountNumber omitted — encrypted, revealed only at payout)
+              items:
+                type: object
+                properties:
+                  id: { type: string, format: uuid }
+                  accountHolder: { type: string }
+                  bankName: { type: string }
+                  bankBranch: { type: string, nullable: true }
+                  swiftCode: { type: string, nullable: true }
+                  taxIdVatNumber: { type: string, nullable: true }
+                  registeredBusinessAddress: { type: string, nullable: true }
+                  isPrimary: { type: boolean }
         partner:
           type: object
           properties:
