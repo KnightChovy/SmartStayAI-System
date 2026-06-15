@@ -1,6 +1,6 @@
 import { useLocation, useNavigate, useParams } from 'react-router';
 import { CalendarDays, CheckCircle2, Download, MapPin } from 'lucide-react';
-import { useBooking } from '@/hooks/bookings/use-bookings';
+import { useBooking } from '@/hooks/bookings';
 import { ROUTES } from '@/constants/routes';
 import QRVoucher from '@/components/shared/QRVoucher';
 import { Skeleton } from '@/components/ui/skeleton';

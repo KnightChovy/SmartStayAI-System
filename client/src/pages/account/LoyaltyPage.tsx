@@ -1,5 +1,5 @@
 import { Gift, Sparkles, TrendingDown, TrendingUp } from 'lucide-react';
-import { useLoyalty } from '@/hooks/account/use-account';
+import { useLoyalty } from '@/hooks/account';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDateShort } from '@/utils/formatDate';
 import { cn } from '@/lib/cn';

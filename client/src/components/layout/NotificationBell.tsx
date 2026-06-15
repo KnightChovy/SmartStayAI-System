@@ -4,7 +4,7 @@ import {
   useMarkAllNotificationsRead,
   useMarkNotificationRead,
   useNotifications,
-} from '@/hooks/account/use-account';
+} from '@/hooks/account';
 import {
   DropdownMenu,
   DropdownMenuContent,

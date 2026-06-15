@@ -11,7 +11,7 @@ import {
   Users,
   XCircle,
 } from 'lucide-react';
-import { useBooking, useCancelBooking } from '@/hooks/bookings/use-bookings';
+import { useBooking, useCancelBooking } from '@/hooks/bookings';
 import { ROUTES } from '@/constants/routes';
 import BookingStatusBadge from '@/components/shared/BookingStatusBadge';
 import PriceSummary from '@/components/shared/PriceSummary';

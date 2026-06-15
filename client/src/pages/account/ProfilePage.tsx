@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { BadgeCheck, Loader2, Upload } from 'lucide-react';
-import { useProfile, useUpdateProfile } from '@/hooks/account/use-account';
+import { useProfile, useUpdateProfile } from '@/hooks/account';
 import { useUpload } from '@/hooks/use-upload';
 import { useAuthStore } from '@/stores/authStore';
 import { Button } from '@/components/ui/button';

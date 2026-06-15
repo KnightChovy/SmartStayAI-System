@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Check, Copy, Ticket } from 'lucide-react';
-import { useAvailablePromotions } from '@/hooks/account/use-account';
+import { useAvailablePromotions } from '@/hooks/account';
 import EmptyState from '@/components/shared/EmptyState';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatCurrency } from '@/utils/formatCurrency';

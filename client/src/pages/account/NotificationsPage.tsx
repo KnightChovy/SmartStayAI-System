@@ -3,7 +3,7 @@ import {
   useMarkAllNotificationsRead,
   useMarkNotificationRead,
   useNotifications,
-} from '@/hooks/account/use-account';
+} from '@/hooks/account';
 import EmptyState from '@/components/shared/EmptyState';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';

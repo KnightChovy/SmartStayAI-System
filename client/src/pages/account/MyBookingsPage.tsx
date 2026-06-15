@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { CalendarCheck } from 'lucide-react';
-import { useMyBookings } from '@/hooks/bookings/use-bookings';
+import { useMyBookings } from '@/hooks/bookings';
 import { ROUTES } from '@/constants/routes';
 import { cn } from '@/lib/cn';
 import BookingListItem from '@/components/account/BookingListItem';

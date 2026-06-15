@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { useHotelVerifyStore } from '@/stores/hotel-verify.store';
-import { useSubmitRegistration } from '@/hooks/hotel-verify/useHotelVerify';
+import { useSubmitRegistration } from '@/hooks/hotel-verify';
 import type { HotelRegistrationRequest } from '@/types/hotel-verify.types';
 
 interface SummaryCardProps {

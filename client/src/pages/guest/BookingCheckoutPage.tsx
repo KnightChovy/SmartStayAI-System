@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowLeft, ArrowRight, BedDouble, CalendarDays, ShieldCheck, Users } from 'lucide-react';
-import { useCreateBooking } from '@/hooks/bookings/use-bookings';
+import { useCreateBooking } from '@/hooks/bookings';
 import { useAuthStore } from '@/stores/authStore';
 import { ROUTES } from '@/constants/routes';
 import { guestDetailsSchema, type GuestDetailsValues } from '@/validations/checkout.validation';

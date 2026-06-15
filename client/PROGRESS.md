@@ -6,6 +6,16 @@ This file tracks the accomplished tasks, resolved user requests, and visual/func
 
 ## Completed Tasks Checklist
 
+### June 16, 2026
+
+- [x] **Split bundled hooks into one-file-per-API folders (theo chuẩn `hooks/auth/`)**:
+  - `hooks/account/use-account.ts` (gom 9 hook của 5 domain) → tách thành `use-profile.ts`, `use-update-profile.ts`, `use-loyalty.ts`, `use-notifications.ts`, `use-mark-notification-read.ts`, `use-mark-all-notifications-read.ts`, `use-my-reviews.ts`, `use-create-review.ts`, `use-available-promotions.ts` + `index.ts` barrel.
+  - `hooks/bookings/use-bookings.ts` → tách thành `use-my-bookings.ts`, `use-booking.ts`, `use-create-booking.ts`, `use-cancel-booking.ts` + `index.ts`.
+  - `hooks/hotel-verify/useHotelVerify.ts` → tách thành `use-get-applications.ts`, `use-get-application-by-id.ts`, `use-submit-registration.ts`, `use-upload-file.ts`, query keys dùng chung chuyển sang `keys.ts` + `index.ts` (đổi tên file camelCase → kebab-case).
+  - Thêm `hooks/hotels/index.ts` barrel (các hook đã ở file riêng từ trước).
+  - Cập nhật toàn bộ import liên quan (NotificationBell, các trang `pages/account/*`, `pages/guest/Booking*`, `VerificationCenter`, `ReviewSubmitStep`, `VerifyHotelPage`) sang import qua barrel của thư mục (`@/hooks/account`, `@/hooks/bookings`, `@/hooks/hotel-verify`).
+  - Bổ sung quy tắc chi tiết "mỗi endpoint = một file + barrel `index.ts`, import qua barrel" vào `AGENTS.md` mục 5.4 để lần sau làm y hệt.
+
 ### June 5, 2026 (continued 3)
 
 - [x] **Role-based redirect after login (admin / user / hotel partner)**:

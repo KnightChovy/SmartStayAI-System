@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ImagePlus, MessageSquareQuote, Plus, Star, X } from 'lucide-react';
-import { useCreateReview, useMyReviews } from '@/hooks/account/use-account';
+import { useCreateReview, useMyReviews } from '@/hooks/account';
 import StarRating from '@/components/shared/StarRating';
 import EmptyState from '@/components/shared/EmptyState';
 import { Skeleton } from '@/components/ui/skeleton';
