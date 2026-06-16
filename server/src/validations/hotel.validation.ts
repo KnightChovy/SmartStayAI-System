@@ -15,6 +15,10 @@ export const searchHotels = {
     .and('checkIn', 'checkOut'),
 };
 
+// Chi tiết một khách sạn theo id (public)
+export const getHotel = {
+  params: Joi.object().keys({
+    hotelId: Joi.string().uuid().required(),
 // Lấy danh sách khách sạn của một partner theo userId (chủ sở hữu = User.id)
 export const getHotelsByOwner = {
   params: Joi.object().keys({

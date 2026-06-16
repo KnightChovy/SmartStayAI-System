@@ -113,6 +113,33 @@ export class HotelService {
   };
 
   /**
+   * Chi tiết một khách sạn cho trang profile của guest — public, chỉ trả khách sạn đang mở bán
+   * (isActive + isListed, chưa xoá). Kèm toàn bộ ảnh, tiện nghi khách sạn và các loại phòng đang
+   * bán (mỗi loại có ảnh + tiện nghi + giá gốc). Tồn kho/giá theo ngày lấy riêng qua getRoomTypes.
+   */
+  getHotelById = async (hotelId: string) => {
+    const hotel = await prisma.hotel.findFirst({
+      where: { id: hotelId, isActive: true, isListed: true, deletedAt: null },
+      include: {
+        images: { orderBy: [{ isPrimary: 'desc' }, { sortOrder: 'asc' }] },
+        amenities: { include: { amenity: true } },
+        roomTypes: {
+          where: { isActive: true },
+          orderBy: { basePrice: 'asc' },
+          include: {
+            images: { orderBy: { sortOrder: 'asc' } },
+            amenities: { include: { amenity: true } },
+          },
+        },
+      },
+    });
+    if (!hotel) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy khách sạn');
+    }
+    return hotel;
+  };
+
+  /**
    * Tìm loại phòng trong một khách sạn theo bộ lọc (sức chứa, khoảng giá, loại giường, view).
    * Nếu có khoảng ngày thì kèm số phòng trống + tổng giá kỳ ở và loại bỏ loại phòng đã hết.
    */

@@ -9,6 +9,9 @@ const router = express.Router();
 // Tìm khách sạn theo thành phố (kèm kiểm tra phòng trống khi có checkIn/checkOut) — public
 router.get('/', validate(hotelValidation.searchHotels), hotelController.searchHotels);
 
+// Chi tiết một khách sạn (profile cho guest) — public, chỉ KS đang mở bán.
+// '/:hotelId' khớp 1 segment nên không đụng các route '/:hotelId/...' bên dưới.
+router.get('/:hotelId', validate(hotelValidation.getHotel), hotelController.getHotel);
 // Danh sách khách sạn của một partner. Param tên `userId` để middleware auth cho phép
 // chính chủ (userId trùng token) truy cập, ngoài ra cần quyền manageHotels (manager/admin).
 // Khớp 1 segment nên không đụng các route '/:hotelId/...' (2 segment) bên dưới.

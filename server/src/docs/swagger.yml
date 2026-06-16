@@ -839,6 +839,22 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /hotels/{hotelId}:
+    get:
+      summary: Get a hotel's full profile by id
+      description: >
+        Public. Returns one active & listed hotel with all images, hotel amenities and its active
+        room types (each with images, amenities and base price). Date-based availability/pricing is
+        fetched separately via GET /hotels/{hotelId}/room-types?checkIn=&checkOut=.
+      tags: [Hotels]
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200": { description: "Hotel profile (info + images + amenities + active room types)" }
+        "404": { $ref: '#/components/responses/NotFound' }
   /hotels/{userId}:
     get:
       summary: List hotels owned by a partner
