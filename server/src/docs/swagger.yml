@@ -693,8 +693,11 @@ paths:
     patch:
       summary: Approve or reject a verification request (platform manager)
       description: >
-        On approve - partner becomes approved, hotel becomes active and listed,
-        the owner user's role is upgraded to hotel_partner. On reject - a rejectionReason is required.
+        On approve - partner becomes approved, the owner user's role is upgraded to hotel_partner,
+        the hotel is activated but NOT yet published (isListed=false), RoomType + Room records are
+        seeded from the declared roomConfig (rooms inactive until the partner completes details and
+        publishes in Room Inventory), and the partner receives a 'partner_approved' notification.
+        On reject - a rejectionReason is required.
       tags: [HotelPartners]
       security:
         - bearerAuth: []

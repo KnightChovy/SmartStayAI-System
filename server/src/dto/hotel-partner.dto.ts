@@ -84,6 +84,17 @@ export interface PropertyImagesDto {
   roomImages: string[];
 }
 
+// Khai báo cấu hình phòng lúc đăng ký (tách khỏi phòng vận hành thật ở room_types/rooms)
+export interface RoomConfigTypeDto {
+  name: string;
+  quantity: number;
+}
+
+export interface RoomConfigDto {
+  totalRooms: number;
+  roomTypes: RoomConfigTypeDto[];
+}
+
 export interface BankAccountDto {
   accountHolder: string;
   bankName: string;
@@ -108,6 +119,7 @@ export interface RegisterHotelDto {
   certificates: CertificatesDto;
   representative: RegisterRepresentativeDto;
   propertyImages: PropertyImagesDto;
+  roomConfig: RoomConfigDto;
   paymentPayouts: PaymentPayoutsDto;
 }
 
