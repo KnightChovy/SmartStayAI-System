@@ -31,9 +31,32 @@ export class HotelService {
   };
 
   /**
-   * Danh sách khách sạn của một partner (theo ownerId = userId), dùng cho màn quản lý của partner.
-   * Quyền đã được chặn ở route bằng auth('manageHotels'): chỉ chính chủ (userId trùng token) hoặc
-   * người có quyền manageHotels (platform_manager/admin) mới gọi được — nên ở đây không kiểm lại.
+   * Chi tiết một khách sạn cho CHỦ SỞ HỮU / manager — trả về BẤT KỂ trạng thái (kể cả chưa listed /
+   * đang chờ duyệt), khác getHotelById (public chỉ trả KS đang bán). Quyền kiểm qua getManagedHotel.
+   * Kèm toàn bộ ảnh, tiện nghi, và TẤT CẢ loại phòng (cả đã tắt) với ảnh + tiện nghi + số phòng.
+   */
+  getManagedHotelDetail = async (hotelId: string, currentUser: User) => {
+    await this.getManagedHotel(hotelId, currentUser);
+    return prisma.hotel.findUniqueOrThrow({
+      where: { id: hotelId },
+      include: {
+        images: { orderBy: [{ isPrimary: 'desc' }, { sortOrder: 'asc' }] },
+        amenities: { include: { amenity: true } },
+        roomTypes: {
+          orderBy: { basePrice: 'asc' },
+          include: {
+            images: { orderBy: { sortOrder: 'asc' } },
+            amenities: { include: { amenity: true } },
+            _count: { select: { rooms: true } },
+          },
+        },
+      },
+    });
+  };
+
+  /**
+   * Danh sách khách sạn của partner đang đăng nhập (theo ownerId = userId lấy từ token).
+   * Quyền đã chặn ở route bằng auth() — controller truyền req.user.id, nên ở đây không kiểm lại.
    * Trả về CẢ khách sạn chưa mở bán / đang chờ duyệt (khác searchHotels public), chỉ bỏ khách sạn
    * đã xoá mềm. Kèm ảnh cover + số loại phòng / số phòng để hiển thị danh sách.
    */
