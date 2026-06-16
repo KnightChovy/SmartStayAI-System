@@ -12,6 +12,9 @@ import type { CreateBookingDto, BookingFilter, BookingQueryOptions } from '../dt
 // Đặt tối đa bao nhiêu đêm cho một booking (chặn khoảng ngày vô lý)
 const MAX_NIGHTS = 30;
 
+// Booking pending phải thanh toán trong khoảng này, quá hạn thì tự nhả tồn kho
+export const HOLD_MINUTES = 15;
+
 // Quan hệ kèm theo khi trả booking về client
 const bookingInclude = {
   hotel: { select: { id: true, name: true, address: true, city: true, checkInTime: true, checkOutTime: true } },
@@ -28,7 +31,48 @@ export class BookingService {
    * mỗi đêm upsert dòng tồn kho rồi tăng bookedRooms CÓ ĐIỀU KIỆN (bookedRooms < totalRooms)
    * — hai khách đặt phòng cuối cùng cùng lúc thì chỉ một người thành công, không bị overbooking.
    */
+  /**
+   * Nhả tồn kho cho các booking pending đã quá hạn giữ chỗ (chưa thanh toán).
+   * Gọi lười trước mỗi lần đặt mới + nên được cron gọi định kỳ. Mỗi booking xử lý
+   * có điều kiện (status pending) để không trả tồn kho hai lần nếu chạy song song.
+   * @returns số booking đã nhả
+   */
+  releaseExpiredHolds = async (): Promise<number> => {
+    const now = new Date();
+    const expired = await prisma.booking.findMany({
+      where: { status: 'pending', holdExpiresAt: { lt: now } },
+      select: { id: true, roomTypeId: true, checkInDate: true, checkOutDate: true },
+    });
+
+    let released = 0;
+    for (const booking of expired) {
+      const nights = eachNightOfStay(booking.checkInDate, booking.checkOutDate);
+      // eslint-disable-next-line no-await-in-loop
+      const done = await prisma.$transaction(async (tx) => {
+        const cancelled = await tx.booking.updateMany({
+          where: { id: booking.id, status: 'pending', holdExpiresAt: { lt: now } },
+          data: { status: 'cancelled', cancelledAt: now, cancellationReason: 'Quá hạn thanh toán' },
+        });
+        if (cancelled.count === 0) {
+          return false;
+        }
+        await tx.roomAvailability.updateMany({
+          where: { roomTypeId: booking.roomTypeId, date: { in: nights }, bookedRooms: { gt: 0 } },
+          data: { bookedRooms: { decrement: 1 } },
+        });
+        return true;
+      });
+      if (done) {
+        released += 1;
+      }
+    }
+    return released;
+  };
+
   createBooking = async (customerId: string, payload: CreateBookingDto) => {
+    // Dọn các giữ chỗ hết hạn trước để chúng không chiếm mất tồn kho của lượt đặt này
+    await this.releaseExpiredHolds();
+
     const checkIn = toUtcDate(payload.checkInDate);
     const checkOut = toUtcDate(payload.checkOutDate);
     const today = toUtcDate(new Date());
@@ -107,6 +151,7 @@ export class BookingService {
           status: 'pending',
           source: 'website',
           specialRequests: payload.specialRequests || null,
+          holdExpiresAt: new Date(Date.now() + HOLD_MINUTES * 60 * 1000),
         },
         include: bookingInclude,
       });

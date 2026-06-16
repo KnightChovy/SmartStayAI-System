@@ -4,6 +4,7 @@ export { uploadController } from './upload.controller';
 export { hotelPartnerController } from './hotel-partner.controller';
 export { hotelController } from './hotel.controller';
 export { bookingController } from './booking.controller';
+export { paymentController } from './payment.controller';
 export { roomTypeController } from './room-type.controller';
 export { roomController } from './room.controller';
 export { amenityController } from './amenity.controller';

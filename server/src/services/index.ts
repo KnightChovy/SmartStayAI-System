@@ -7,6 +7,7 @@ export { hotelPartnerService } from './hotel-partner.service';
 export { availabilityService } from './availability.service';
 export { hotelService } from './hotel.service';
 export { bookingService } from './booking.service';
+export { paymentService } from './payment.service';
 export { roomTypeService } from './room-type.service';
 export { roomService } from './room.service';
 export { amenityService } from './amenity.service';

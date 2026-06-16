@@ -700,6 +700,8 @@ model Booking {
   status            BookingStatus
   source            BookingSource
   specialRequests   String?       @map("special_requests")
+  // Hạn giữ chỗ cho booking chưa thanh toán: quá hạn mà vẫn pending thì nhả tồn kho (xem releaseExpiredHolds)
+  holdExpiresAt     DateTime?     @map("hold_expires_at")
   cancellationReason String?      @map("cancellation_reason")
   checkedInAt       DateTime?     @map("checked_in_at")
   checkedOutAt      DateTime?     @map("checked_out_at")

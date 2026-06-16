@@ -5,6 +5,7 @@ export * as uploadValidation from './upload.validation';
 export * as hotelPartnerValidation from './hotel-partner.validation';
 export * as hotelValidation from './hotel.validation';
 export * as bookingValidation from './booking.validation';
+export * as paymentValidation from './payment.validation';
 export * as roomTypeValidation from './room-type.validation';
 export * as roomValidation from './room.validation';
 export * as amenityValidation from './amenity.validation';

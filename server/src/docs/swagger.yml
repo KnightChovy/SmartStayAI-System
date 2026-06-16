@@ -11,6 +11,8 @@ tags:
     description: Public hotel & room search
   - name: Bookings
     description: Booking creation, cancellation and listing
+  - name: Payments
+    description: VNPay payment — create payment URL and handle gateway callbacks
   - name: HotelManagement
     description: Partner management of room types, rooms and pricing rules (hotel owner or manageHotels right)
   - name: Amenities
@@ -1100,6 +1102,97 @@ paths:
           $ref: '#/components/responses/Forbidden'
         "404":
           $ref: '#/components/responses/NotFound'
+
+  /payments/bookings/{bookingId}/vnpay:
+    post:
+      summary: Create a VNPay payment URL for a booking
+      description: >
+        Owner of a pending (not yet expired) booking requests a VNPay payment URL.
+        Creates a pending Payment row and returns the gateway URL the frontend should redirect to.
+        Requires VNP_TMN_CODE / VNP_HASH_SECRET to be configured (503 otherwise).
+      tags: [Payments]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: bookingId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "201":
+          description: Payment URL created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  paymentUrl:
+                    type: string
+                    example: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html?vnp_Amount=...
+        "400":
+          description: Booking not payable (wrong status or hold expired)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "503":
+          description: VNPay not configured
+
+  /payments/vnpay/return:
+    get:
+      summary: VNPay browser return URL (public)
+      description: >
+        VNPay redirects the user's browser here after payment. The signature (vnp_SecureHash)
+        is verified server-side; on success the booking is confirmed, commission recorded and an
+        e-voucher issued. The endpoint then 302-redirects to the client payment-result page.
+      tags: [Payments]
+      parameters:
+        - in: query
+          name: vnp_TxnRef
+          schema:
+            type: string
+        - in: query
+          name: vnp_ResponseCode
+          schema:
+            type: string
+        - in: query
+          name: vnp_SecureHash
+          schema:
+            type: string
+      responses:
+        "302":
+          description: Redirect to client payment-result page
+
+  /payments/vnpay/ipn:
+    get:
+      summary: VNPay IPN endpoint (server-to-server, public)
+      description: >
+        VNPay calls this server-to-server to confirm the transaction outcome. Same verification and
+        confirmation logic as the return URL, but responds with the VNPay JSON contract
+        ({ RspCode, Message }). Idempotent on repeated calls.
+      tags: [Payments]
+      responses:
+        "200":
+          description: VNPay acknowledgement
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  RspCode:
+                    type: string
+                    example: "00"
+                  Message:
+                    type: string
+                    example: Thanh toán thành công
 
   /hotels/{hotelId}/room-types/manage:
     get:
