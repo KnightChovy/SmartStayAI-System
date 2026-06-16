@@ -16,7 +16,9 @@ export function QuickActions() {
           <div className="w-8 h-8 rounded-full bg-white text-slate-600 flex items-center justify-center mb-3 shadow-sm border border-slate-100">
             <Package className="w-4 h-4" />
           </div>
-          <span className="text-xs font-bold text-slate-700">Update Inventory</span>
+          <span className="text-xs font-bold text-slate-700">
+            Update Room Inventory
+          </span>
         </button>
         <button className="flex flex-col items-center justify-center py-5 px-2 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-100 transition-colors cursor-pointer  duration-300 hover:scale-105">
           <div className="w-8 h-8 rounded-full bg-white text-role-partner-primary flex items-center justify-center mb-3 shadow-sm border border-slate-100">
@@ -34,4 +36,3 @@ export function QuickActions() {
     </div>
   );
 }
-

@@ -2,6 +2,7 @@ import { Outlet } from 'react-router';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import CommonSidebar from '@/common/sidebar/Sidebar';
 import CommonNavbar from '@/common/navbar/Navbar';
+import { useLogout } from '@/hooks/auth';
 import {
   LayoutDashboard,
   ShieldCheck,
@@ -24,6 +25,7 @@ const footerItems = [
 ];
 
 export function ManagerLayout() {
+  const { mutate: logout } = useLogout();
   return (
     <SidebarProvider>
       <CommonSidebar
@@ -31,6 +33,7 @@ export function ManagerLayout() {
         subtitle="Manager Portal"
         navItems={navItems}
         footerItems={footerItems}
+        onLogout={() => logout()}
       />
       <SidebarInset>
         <CommonNavbar />

@@ -37,7 +37,7 @@ paths:
               example:
                 email: khiembadinh987@gmail.com
       responses:
-        "200":
+        '200':
           description: OTP Sent successfully
           content:
             application/json:
@@ -50,7 +50,7 @@ paths:
                   message:
                     type: string
                     example: Verification OTP sent successfully to khiembadinh987@gmail.com
-        "400":
+        '400':
           description: Email already taken or invalid format
           content:
             application/json:
@@ -88,7 +88,7 @@ paths:
                 email: fake@example.com
                 password: password1
       responses:
-        "201":
+        '201':
           description: Created
           content:
             application/json:
@@ -99,7 +99,7 @@ paths:
                     $ref: '#/components/schemas/User'
                   tokens:
                     $ref: '#/components/schemas/AuthTokens'
-        "400":
+        '400':
           $ref: '#/components/responses/DuplicateEmail'
 
   /auth/login:
@@ -126,7 +126,7 @@ paths:
                 email: fake@example.com
                 password: password1
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
@@ -137,7 +137,7 @@ paths:
                     $ref: '#/components/schemas/User'
                   tokens:
                     $ref: '#/components/schemas/AuthTokens'
-        "401":
+        '401':
           description: Invalid email or password
           content:
             application/json:
@@ -165,9 +165,9 @@ paths:
               example:
                 refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1ZWJhYzUzNDk1NGI1NDEzOTgwNmMxMTIiLCJpYXQiOjE1ODkyOTg0ODQsImV4cCI6MTU4OTMwMDI4NH0.m1U63blB0MLej_WfB7yC2FTMnCziif9X8yzwDEfJXAg
       responses:
-        "204":
+        '204':
           description: No content
-        "404":
+        '404':
           $ref: '#/components/responses/NotFound'
 
   /auth/refresh-tokens:
@@ -188,13 +188,13 @@ paths:
               example:
                 refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1ZWJhYzUzNDk1NGI1NDEzOTgwNmMxMTIiLCJpYXQiOjE1ODkyOTg0ODQsImV4cCI6MTU4OTMwMDI4NH0.m1U63blB0MLej_WfB7yC2FTMnCziif9X8yzwDEfJXAg
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthTokens'
-        "401":
+        '401':
           $ref: '#/components/responses/Unauthorized'
 
   /auth/forgot-password:
@@ -217,9 +217,9 @@ paths:
               example:
                 email: fake@example.com
       responses:
-        "204":
+        '204':
           description: No content
-        "404":
+        '404':
           $ref: '#/components/responses/NotFound'
 
   /auth/reset-password:
@@ -250,9 +250,9 @@ paths:
               example:
                 password: password1
       responses:
-        "204":
+        '204':
           description: No content
-        "401":
+        '401':
           description: Password reset failed
           content:
             application/json:
@@ -270,9 +270,9 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "204":
+        '204':
           description: No content
-        "401":
+        '401':
           $ref: '#/components/responses/Unauthorized'
 
   /auth/verify-email:
@@ -287,9 +287,9 @@ paths:
             type: string
           description: The verify email token
       responses:
-        "204":
+        '204':
           description: No content
-        "401":
+        '401':
           description: verify email failed
           content:
             application/json:
@@ -330,25 +330,25 @@ paths:
                   minLength: 8
                   description: At least one number and one letter
                 role:
-                   type: string
-                   enum: [user, admin]
+                  type: string
+                  enum: [user, admin]
               example:
                 name: fake name
                 email: fake@example.com
                 password: password1
                 role: user
       responses:
-        "201":
+        '201':
           description: Created
           content:
             application/json:
               schema:
-                 $ref: '#/components/schemas/User'
-        "400":
+                $ref: '#/components/schemas/User'
+        '400':
           $ref: '#/components/responses/DuplicateEmail'
-        "401":
+        '401':
           $ref: '#/components/responses/Unauthorized'
-        "403":
+        '403':
           $ref: '#/components/responses/Forbidden'
 
     get:
@@ -388,7 +388,7 @@ paths:
             default: 1
           description: Page number
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
@@ -411,9 +411,9 @@ paths:
                   totalResults:
                     type: integer
                     example: 1
-        "401":
+        '401':
           $ref: '#/components/responses/Unauthorized'
-        "403":
+        '403':
           $ref: '#/components/responses/Forbidden'
 
   /users/{id}:
@@ -431,17 +431,17 @@ paths:
             type: string
           description: User id
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                 $ref: '#/components/schemas/User'
-        "401":
+                $ref: '#/components/schemas/User'
+        '401':
           $ref: '#/components/responses/Unauthorized'
-        "403":
+        '403':
           $ref: '#/components/responses/Forbidden'
-        "404":
+        '404':
           $ref: '#/components/responses/NotFound'
 
     patch:
@@ -480,19 +480,19 @@ paths:
                 email: fake@example.com
                 password: password1
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                 $ref: '#/components/schemas/User'
-        "400":
+                $ref: '#/components/schemas/User'
+        '400':
           $ref: '#/components/responses/DuplicateEmail'
-        "401":
+        '401':
           $ref: '#/components/responses/Unauthorized'
-        "403":
+        '403':
           $ref: '#/components/responses/Forbidden'
-        "404":
+        '404':
           $ref: '#/components/responses/NotFound'
 
     delete:
@@ -509,13 +509,13 @@ paths:
             type: string
           description: User id
       responses:
-        "200":
+        '200':
           description: No content
-        "401":
+        '401':
           $ref: '#/components/responses/Unauthorized'
-        "403":
+        '403':
           $ref: '#/components/responses/Forbidden'
-        "404":
+        '404':
           $ref: '#/components/responses/NotFound'
 
   /uploads:
@@ -545,7 +545,7 @@ paths:
                   type: string
                   format: binary
       responses:
-        "201":
+        '201':
           description: Uploaded
           content:
             application/json:
@@ -558,13 +558,13 @@ paths:
                   publicId:
                     type: string
                     example: smartstay/licenses/abc
-        "400":
+        '400':
           description: No file uploaded or invalid file type/size
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-        "401":
+        '401':
           $ref: '#/components/responses/Unauthorized'
 
   /hotel-partners/registrations:
@@ -584,19 +584,19 @@ paths:
             schema:
               $ref: '#/components/schemas/HotelRegistrationRequest'
       responses:
-        "201":
+        '201':
           description: Created
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HotelVerificationRequest'
-        "400":
+        '400':
           description: Validation error or duplicate pending/approved partner
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-        "401":
+        '401':
           $ref: '#/components/responses/Unauthorized'
     get:
       summary: List verification requests (platform manager)
@@ -613,7 +613,7 @@ paths:
           name: sortBy
           schema:
             type: string
-          description: "field:(desc|asc) e.g. submittedAt:desc"
+          description: 'field:(desc|asc) e.g. submittedAt:desc'
         - in: query
           name: limit
           schema:
@@ -623,7 +623,7 @@ paths:
           schema:
             type: integer
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
@@ -638,9 +638,9 @@ paths:
                   limit: { type: integer, example: 10 }
                   totalPages: { type: integer, example: 1 }
                   totalResults: { type: integer, example: 1 }
-        "401":
+        '401':
           $ref: '#/components/responses/Unauthorized'
-        "403":
+        '403':
           $ref: '#/components/responses/Forbidden'
 
   /hotel-partners/registrations/me:
@@ -650,7 +650,7 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
@@ -658,7 +658,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/HotelVerificationRequest'
-        "401":
+        '401':
           $ref: '#/components/responses/Unauthorized'
 
   /hotel-partners/registrations/{requestId}:
@@ -676,17 +676,17 @@ paths:
             type: string
             format: uuid
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HotelVerificationRequest'
-        "401":
+        '401':
           $ref: '#/components/responses/Unauthorized'
-        "403":
+        '403':
           $ref: '#/components/responses/Forbidden'
-        "404":
+        '404':
           $ref: '#/components/responses/NotFound'
 
   /hotel-partners/registrations/{requestId}/review:
@@ -724,23 +724,23 @@ paths:
                   type: string
                   description: Required when decision is "reject"
       responses:
-        "200":
+        '200':
           description: Reviewed
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HotelVerificationRequest'
-        "400":
+        '400':
           description: Already reviewed or invalid payload
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-        "401":
+        '401':
           $ref: '#/components/responses/Unauthorized'
-        "403":
+        '403':
           $ref: '#/components/responses/Forbidden'
-        "404":
+        '404':
           $ref: '#/components/responses/NotFound'
 
   /hotel-partners/documents/{documentId}/review:
@@ -772,17 +772,17 @@ paths:
                   type: string
                   enum: [approve, reject]
       responses:
-        "200":
+        '200':
           description: Reviewed
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HotelVerificationDocument'
-        "401":
+        '401':
           $ref: '#/components/responses/Unauthorized'
-        "403":
+        '403':
           $ref: '#/components/responses/Forbidden'
-        "404":
+        '404':
           $ref: '#/components/responses/NotFound'
 
   /hotels:
@@ -820,7 +820,7 @@ paths:
           name: sortBy
           schema:
             type: string
-          description: "field:(desc|asc) e.g. starRating:desc"
+          description: 'field:(desc|asc) e.g. starRating:desc'
         - in: query
           name: limit
           schema:
@@ -830,14 +830,36 @@ paths:
           schema:
             type: integer
       responses:
-        "200":
+        '200':
           description: Paginated hotel list ({ results, page, limit, totalPages, totalResults })
-        "400":
+        '400':
           description: Invalid query (e.g. checkIn without checkOut)
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+
+  /hotels/{userId}:
+    get:
+      summary: List hotels owned by a partner
+      description: >
+        Returns every hotel owned by the given user (partner), including unlisted/pending ones
+        (soft-deleted excluded) — for the partner's Hotel Management screen. Auth: the owner
+        themselves (path userId must equal the token user) OR a user with the manageHotels right
+        (platform_manager/admin). Each item includes the cover image and a count of room types and rooms.
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema: { type: string, format: uuid }
+          description: Owner (partner) user id
+      responses:
+        "200": { description: "Array of hotels (each with primary image + _count of roomTypes/rooms)" }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
 
   /hotels/{hotelId}/room-types:
     get:
@@ -886,9 +908,9 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: Room types with images & amenities (plus availability and total price when dates given)
-        "404":
+        '404':
           $ref: '#/components/responses/NotFound'
 
   /bookings:
@@ -936,21 +958,21 @@ paths:
               example:
                 hotelId: 11111111-1111-1111-1111-111111111111
                 roomTypeId: 22222222-2222-2222-2222-222222222222
-                checkInDate: "2026-07-01"
-                checkOutDate: "2026-07-03"
+                checkInDate: '2026-07-01'
+                checkOutDate: '2026-07-03'
                 numGuests: 2
       responses:
-        "201":
+        '201':
           description: Booking created (includes bookingCode, totals, hotel & roomType summary)
-        "400":
+        '400':
           description: Sold out for a night, past check-in date, or capacity exceeded
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-        "401":
+        '401':
           $ref: '#/components/responses/Unauthorized'
-        "404":
+        '404':
           $ref: '#/components/responses/NotFound'
 
   /bookings/me:
@@ -969,7 +991,7 @@ paths:
           name: sortBy
           schema:
             type: string
-          description: "field:(desc|asc) e.g. createdAt:desc"
+          description: 'field:(desc|asc) e.g. createdAt:desc'
         - in: query
           name: limit
           schema:
@@ -979,9 +1001,9 @@ paths:
           schema:
             type: integer
       responses:
-        "200":
+        '200':
           description: Paginated booking list ({ results, page, limit, totalPages, totalResults })
-        "401":
+        '401':
           $ref: '#/components/responses/Unauthorized'
 
   /bookings/{bookingId}:
@@ -999,13 +1021,13 @@ paths:
             type: string
             format: uuid
       responses:
-        "200":
+        '200':
           description: OK
-        "401":
+        '401':
           $ref: '#/components/responses/Unauthorized'
-        "403":
+        '403':
           $ref: '#/components/responses/Forbidden'
-        "404":
+        '404':
           $ref: '#/components/responses/NotFound'
 
   /bookings/{bookingId}/cancel:
@@ -1034,19 +1056,19 @@ paths:
                 reason:
                   type: string
       responses:
-        "200":
+        '200':
           description: Booking cancelled
-        "400":
+        '400':
           description: Not cancellable (wrong status or check-in date reached)
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-        "401":
+        '401':
           $ref: '#/components/responses/Unauthorized'
-        "403":
+        '403':
           $ref: '#/components/responses/Forbidden'
-        "404":
+        '404':
           $ref: '#/components/responses/NotFound'
 
   /hotels/{hotelId}/room-types/manage:
@@ -1062,10 +1084,10 @@ paths:
           required: true
           schema: { type: string, format: uuid }
       responses:
-        "200": { description: OK }
-        "401": { $ref: '#/components/responses/Unauthorized' }
-        "403": { $ref: '#/components/responses/Forbidden' }
-        "404": { $ref: '#/components/responses/NotFound' }
+        '200': { description: OK }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
 
   /hotels/{hotelId}/room-types/create:
     post:
@@ -1104,10 +1126,10 @@ paths:
                 bedType: twin
                 viewType: city
       responses:
-        "201": { description: Created }
-        "401": { $ref: '#/components/responses/Unauthorized' }
-        "403": { $ref: '#/components/responses/Forbidden' }
-        "404": { $ref: '#/components/responses/NotFound' }
+        '201': { description: Created }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
 
   /hotels/{hotelId}/room-types/{roomTypeId}:
     put:
@@ -1141,10 +1163,10 @@ paths:
                 viewType: { type: string }
                 isActive: { type: boolean }
       responses:
-        "200": { description: Updated }
-        "401": { $ref: '#/components/responses/Unauthorized' }
-        "403": { $ref: '#/components/responses/Forbidden' }
-        "404": { $ref: '#/components/responses/NotFound' }
+        '200': { description: Updated }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
 
   /hotels/{hotelId}/room-types/{roomTypeId}/images:
     post:
@@ -1183,10 +1205,10 @@ paths:
                       isPrimary: { type: boolean }
                       sortOrder: { type: integer }
       responses:
-        "201": { description: Full image list of the room type }
-        "401": { $ref: '#/components/responses/Unauthorized' }
-        "403": { $ref: '#/components/responses/Forbidden' }
-        "404": { $ref: '#/components/responses/NotFound' }
+        '201': { description: Full image list of the room type }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
 
   /hotels/{hotelId}/room-types/{roomTypeId}/amenities:
     put:
@@ -1216,11 +1238,11 @@ paths:
                   type: array
                   items: { type: string, format: uuid }
       responses:
-        "200": { description: Room type with the new amenity set }
-        "400": { description: Some amenity ids do not exist }
-        "401": { $ref: '#/components/responses/Unauthorized' }
-        "403": { $ref: '#/components/responses/Forbidden' }
-        "404": { $ref: '#/components/responses/NotFound' }
+        '200': { description: Room type with the new amenity set }
+        '400': { description: Some amenity ids do not exist }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
 
   /hotels/{hotelId}/rooms:
     post:
@@ -1250,11 +1272,11 @@ paths:
                 status: { type: string, enum: [available, occupied, maintenance, cleaning], default: available }
                 notes: { type: string }
       responses:
-        "201": { description: Created }
-        "400": { description: Duplicate room number }
-        "401": { $ref: '#/components/responses/Unauthorized' }
-        "403": { $ref: '#/components/responses/Forbidden' }
-        "404": { $ref: '#/components/responses/NotFound' }
+        '201': { description: Created }
+        '400': { description: Duplicate room number }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
     get:
       summary: List physical rooms (filter by status, room type)
       tags: [HotelManagement]
@@ -1281,10 +1303,10 @@ paths:
           name: page
           schema: { type: integer }
       responses:
-        "200": { description: Paginated room list }
-        "401": { $ref: '#/components/responses/Unauthorized' }
-        "403": { $ref: '#/components/responses/Forbidden' }
-        "404": { $ref: '#/components/responses/NotFound' }
+        '200': { description: Paginated room list }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
 
   /hotels/{hotelId}/rooms/{roomId}:
     put:
@@ -1316,11 +1338,11 @@ paths:
                 status: maintenance
                 notes: Hỏng điều hoà, chờ linh kiện
       responses:
-        "200": { description: Updated }
-        "400": { description: Duplicate room number }
-        "401": { $ref: '#/components/responses/Unauthorized' }
-        "403": { $ref: '#/components/responses/Forbidden' }
-        "404": { $ref: '#/components/responses/NotFound' }
+        '200': { description: Updated }
+        '400': { description: Duplicate room number }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
 
   /hotels/{hotelId}/pricing-rules:
     post:
@@ -1364,17 +1386,17 @@ paths:
               example:
                 name: Phụ thu cuối tuần
                 ruleType: weekend
-                startDate: "2026-06-01"
-                endDate: "2026-08-31"
+                startDate: '2026-06-01'
+                endDate: '2026-08-31'
                 dayOfWeek: [5, 6]
                 adjustmentType: percentage
                 adjustmentValue: 20
                 priority: 10
       responses:
-        "201": { description: Created }
-        "401": { $ref: '#/components/responses/Unauthorized' }
-        "403": { $ref: '#/components/responses/Forbidden' }
-        "404": { $ref: '#/components/responses/NotFound' }
+        '201': { description: Created }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
     get:
       summary: List pricing rules of a hotel
       tags: [HotelManagement]
@@ -1392,10 +1414,10 @@ paths:
           name: isActive
           schema: { type: boolean }
       responses:
-        "200": { description: Rules ordered by priority desc }
-        "401": { $ref: '#/components/responses/Unauthorized' }
-        "403": { $ref: '#/components/responses/Forbidden' }
-        "404": { $ref: '#/components/responses/NotFound' }
+        '200': { description: Rules ordered by priority desc }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
 
   /hotels/{hotelId}/pricing-rules/{ruleId}:
     put:
@@ -1420,11 +1442,11 @@ paths:
               type: object
               description: Any subset of the create fields
       responses:
-        "200": { description: Updated }
-        "400": { description: endDate before startDate after merge }
-        "401": { $ref: '#/components/responses/Unauthorized' }
-        "403": { $ref: '#/components/responses/Forbidden' }
-        "404": { $ref: '#/components/responses/NotFound' }
+        '200': { description: Updated }
+        '400': { description: endDate before startDate after merge }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
     delete:
       summary: Delete a pricing rule
       tags: [HotelManagement]
@@ -1440,10 +1462,10 @@ paths:
           required: true
           schema: { type: string, format: uuid }
       responses:
-        "204": { description: Deleted }
-        "401": { $ref: '#/components/responses/Unauthorized' }
-        "403": { $ref: '#/components/responses/Forbidden' }
-        "404": { $ref: '#/components/responses/NotFound' }
+        '204': { description: Deleted }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
 
   /amenities:
     get:
@@ -1455,7 +1477,7 @@ paths:
           name: category
           schema: { type: string, enum: [room, hotel, service] }
       responses:
-        "200": { description: OK }
+        '200': { description: OK }
     post:
       summary: Create an amenity (admin only)
       description: Requires the manageAmenities right (admin). Name is globally unique.
@@ -1478,10 +1500,10 @@ paths:
                 icon: coffee
                 category: room
       responses:
-        "201": { description: Created }
-        "400": { description: Duplicate name }
-        "401": { $ref: '#/components/responses/Unauthorized' }
-        "403": { $ref: '#/components/responses/Forbidden' }
+        '201': { description: Created }
+        '400': { description: Duplicate name }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
 
   /hotel-partners/documents/{documentId}/replace:
     post:
@@ -1510,21 +1532,21 @@ paths:
                   type: string
                   format: uri
       responses:
-        "201":
+        '201':
           description: Replacement document created
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HotelVerificationDocument'
-        "400":
+        '400':
           description: Document is not in a rejected state
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-        "401":
+        '401':
           $ref: '#/components/responses/Unauthorized'
-        "403":
+        '403':
           $ref: '#/components/responses/Forbidden'
-        "404":
+        '404':
           $ref: '#/components/responses/NotFound'

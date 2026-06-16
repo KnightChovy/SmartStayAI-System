@@ -19,7 +19,7 @@ import {
   useHotelVerifyStore,
   type HotelVerifyDraft,
 } from '@/stores/hotel-verify.store';
-import { useSubmitRegistration } from '@/hooks/hotel-verify/useHotelVerify';
+import { useSubmitRegistration } from '@/hooks/hotel-verify';
 import type { HotelRegistrationRequest } from '@/types/hotel-verify.types';
 
 interface SummaryCardProps {
@@ -60,7 +60,8 @@ const SummaryCard = ({
       }
       className={cn(
         'border rounded-xl p-5 bg-slate-50/50 relative transition-all outline-none',
-        isClickable && 'cursor-pointer focus-visible:ring-2 focus-visible:ring-role-partner-primary/50',
+        isClickable &&
+          'cursor-pointer focus-visible:ring-2 focus-visible:ring-role-partner-primary/50',
         !isComplete
           ? 'border-amber-200 hover:border-amber-400 hover:bg-amber-50/60 hover:shadow-md'
           : 'border-slate-200 hover:border-role-partner-primary/40 hover:bg-role-partner-light/10 hover:shadow-md'

@@ -1,5 +1,9 @@
 import { api } from '@/lib/api';
-import type { VerificationApplication, HotelRegistrationRequest } from '@/types/hotel-verify.types';
+import type {
+  VerificationApplication,
+  VerificationDocument,
+  HotelRegistrationRequest,
+} from '@/types/hotel-verify.types';
 
 export const hotelVerifyService = {
   async getApplications(): Promise<VerificationApplication[]> {
@@ -24,5 +28,17 @@ export const hotelVerifyService = {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
     return data.url;
+  },
+
+  // POST /documents/:documentId/replace — resubmit a rejected document.
+  async replaceDocument(
+    documentId: string,
+    fileUrl: string
+  ): Promise<VerificationDocument> {
+    const { data } = await api.post<VerificationDocument>(
+      `/hotel-partners/documents/${documentId}/replace`,
+      { fileUrl }
+    );
+    return data;
   },
 };

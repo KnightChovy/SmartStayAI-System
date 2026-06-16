@@ -21,6 +21,14 @@ export function useListRegistrations(params?: ListVerificationParams) {
   });
 }
 
+export function useGetRegistrationDetail(requestId: string | null) {
+  return useQuery({
+    queryKey: managerVerificationKeys.registration(requestId!),
+    queryFn: () => managerVerificationService.getRegistrationDetail(requestId!),
+    enabled: !!requestId,
+  });
+}
+
 export function useReviewRegistration() {
   const queryClient = useQueryClient();
   return useMutation({

@@ -1,12 +1,12 @@
 import { api } from '@/lib/api';
 import type {
   PaginatedVerificationRequests,
-  HotelVerificationRequest,
-  HotelVerificationDocument,
+  VerificationRequestDetail,
   ReviewRegistrationDto,
   ReviewDocumentDto,
   ListVerificationParams,
 } from '@/types/manager.types';
+import type { VerificationDocument } from '@/types/hotel-verify.types';
 
 export const managerVerificationService = {
   async listRegistrations(
@@ -16,7 +16,9 @@ export const managerVerificationService = {
     return data;
   },
 
-  async getRegistrationDetail(requestId: string) {
+  async getRegistrationDetail(
+    requestId: string
+  ): Promise<VerificationRequestDetail> {
     const { data } = await api.get(
       `/hotel-partners/registrations/${requestId}`
     );
@@ -26,7 +28,7 @@ export const managerVerificationService = {
   async reviewRegistration(
     requestId: string,
     dto: ReviewRegistrationDto
-  ): Promise<HotelVerificationRequest> {
+  ): Promise<VerificationRequestDetail> {
     const { data } = await api.patch(
       `/hotel-partners/registrations/${requestId}/review`,
       dto
@@ -37,7 +39,7 @@ export const managerVerificationService = {
   async reviewDocument(
     documentId: string,
     dto: ReviewDocumentDto
-  ): Promise<HotelVerificationDocument> {
+  ): Promise<VerificationDocument> {
     const { data } = await api.patch(
       `/hotel-partners/documents/${documentId}/review`,
       dto

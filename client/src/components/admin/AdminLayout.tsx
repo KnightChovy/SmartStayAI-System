@@ -17,6 +17,7 @@ import CommonNavbar from '@/common/navbar/Navbar';
 import CommonSidebar from '@/common/sidebar/Sidebar';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+import { useLogout } from '@/hooks/auth';
 import { AdminCalendarModal } from './models/calendar/AdminCalendarModal';
 import { AdminCreateUserModal } from './models/user/AdminCreateUserModal';
 import { AdminFileManagerModal } from './models/file-manager/AdminFileManagerModal';
@@ -72,6 +73,12 @@ export function AdminLayout() {
     setIsReportOpen(false);
     setIsSupportOpen(false);
     setIsTasksOpen(false);
+  };
+
+  const { mutate: logout } = useLogout();
+  const handleLogout = () => {
+    closeAllModals();
+    logout();
   };
 
   const handleOpenCalendar = () => {
@@ -140,7 +147,7 @@ export function AdminLayout() {
           subtitle="Admin Portal"
           navItems={adminNavItems}
           footerItems={adminFooterItems}
-          onLogout={closeAllModals}
+          onLogout={handleLogout}
         />
         <SidebarInset className="bg-[#f7f4f3] text-on-surface">
           {isCalendarOpen ? (

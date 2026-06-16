@@ -1,6 +1,8 @@
+import { useNavigate } from 'react-router';
 import { Button } from '../ui/button';
 
 export default function DiscoverVietnam() {
+  const navigate = useNavigate();
   const destinations = [
     {
       name: 'Ha Long Bay',
@@ -37,7 +39,7 @@ export default function DiscoverVietnam() {
         </div>
         <Button
           variant="link"
-          onClick={() => alert('Loading all Vietnam sanctuaries...')}
+          onClick={() => navigate('/search')}
           className="text-sm font-semibold text-primary hover:underline flex items-center gap-2 cursor-pointer h-auto p-0"
         >
           View all destinations
@@ -50,7 +52,7 @@ export default function DiscoverVietnam() {
         {destinations.map(dest => (
           <div
             key={dest.name}
-            onClick={() => alert(`Curating itinerary for ${dest.name}...`)}
+            onClick={() => navigate(`/search?city=${encodeURIComponent(dest.name)}`)}
             className="group cursor-pointer"
           >
             <div className="relative aspect-4/5 rounded-3xl overflow-hidden mb-4 shadow-md">

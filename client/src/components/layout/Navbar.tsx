@@ -10,6 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
+import NotificationBell from './NotificationBell';
 
 /** Nhãn hiển thị thân thiện cho từng role. */
 const ROLE_LABELS: Record<string, string> = {
@@ -84,6 +85,8 @@ export default function Navbar() {
           </div>
           <div className="flex items-center gap-3">
             {isAuthenticated && user ? (
+              <>
+              <NotificationBell />
               <DropdownMenu>
                 <DropdownMenuTrigger className="flex items-center gap-2 rounded-full p-1 pr-2 hover:bg-surface-container-low transition-colors outline-none cursor-pointer data-[state=open]:bg-surface-container-low">
                   {user.avatarUrl ? (
@@ -137,7 +140,7 @@ export default function Navbar() {
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuItem asChild>
-                    <Link to="/" className="cursor-pointer">
+                    <Link to="/account/profile" className="cursor-pointer">
                       <UserIcon className="size-4" />
                       My Account
                     </Link>
@@ -154,6 +157,7 @@ export default function Navbar() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+              </>
             ) : (
               <>
                 <Link

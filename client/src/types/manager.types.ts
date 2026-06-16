@@ -1,49 +1,63 @@
 import type {
-  SaveBusinessInfoDto,
-  SaveBusinessLicenseDto,
-  SaveCertificatesDto,
-  SaveRepresentativeDto,
-  SavePropertyImagesDto,
-  RoomConfigDto,
-  SavePaymentPayoutsDto,
+  VerificationStatus,
+  VerificationApplication,
+  HotelImage,
 } from './hotel-verify.types';
 
-export type VerificationStatus = 'pending' | 'in_review' | 'approved' | 'rejected';
+export type { VerificationStatus };
 export type ReviewDecision = 'approve' | 'reject';
 
-export interface HotelVerificationRequestSummary {
+// ─── List response (GET /registrations) ───────────────────────────────────────
+// Lighter than the detail: hotel carries only cover images, plus the partner.
+
+export interface VerificationListPartner {
   id: string;
+  ownerId: string;
+  businessName: string;
+  contactEmail: string | null;
+  contactPhone: string | null;
+  status: string;
+}
+
+export interface VerificationListHotel {
+  id: string;
+  name: string;
+  address: string;
+  city: string;
+  starRating: number | null;
+  isActive: boolean;
+  isListed: boolean;
+  images: HotelImage[]; // cover thumbnails only
+}
+
+export interface VerificationListItem {
+  id: string;
+  partnerId: string;
+  hotelId: string;
   status: VerificationStatus;
   submittedAt: string;
+  reviewedBy: string | null;
+  reviewedAt: string | null;
+  rejectionReason: string | null;
+  notes: string | null;
+  createdAt: string;
   updatedAt: string;
-  hotelName: string;
-  ownerName: string;
-  ownerEmail: string;
-  cityProvince: string;
-  businessType: string;
-  totalRooms: number;
-  licenseNumber: string;
-  rejectionReason?: string;
+  hotel: VerificationListHotel;
+  partner: VerificationListPartner;
 }
 
-export interface HotelVerificationRequest extends HotelVerificationRequestSummary {
-  businessRegistrationNumber: string;
-  taxCode?: string;
-  phone: string;
-  address: string;
-  ward?: string;
-  location: { lat: number; lng: number };
-  documentUrls: string[];
+export interface PaginatedVerificationRequests {
+  results: VerificationListItem[];
+  page: number;
+  limit: number;
+  totalPages: number;
+  totalResults: number;
 }
 
-export interface HotelVerificationDocument {
-  id: string;
-  requestId: string;
-  documentType: string;
-  fileUrl: string;
-  status: 'pending' | 'approved' | 'rejected';
-  reviewedAt?: string;
-}
+// Detail is the full application shape (shared with the partner side).
+export type VerificationRequestDetail = VerificationApplication;
+
+// ─── Review DTOs ───────────────────────────────────────────────────────────────
 
 export interface ReviewRegistrationDto {
   decision: ReviewDecision;
@@ -54,23 +68,7 @@ export interface ReviewDocumentDto {
   decision: ReviewDecision;
 }
 
-export interface PaginatedVerificationRequests {
-  results: HotelVerificationRequestSummary[];
-  page: number;
-  limit: number;
-  totalPages: number;
-  totalResults: number;
-}
-
-export interface HotelVerificationRequestDetail extends HotelVerificationRequestSummary {
-  businessInfo: SaveBusinessInfoDto;
-  businessLicense: SaveBusinessLicenseDto;
-  certificates: SaveCertificatesDto;
-  representative: SaveRepresentativeDto;
-  propertyImages: SavePropertyImagesDto;
-  roomConfig: RoomConfigDto;
-  paymentPayouts: SavePaymentPayoutsDto;
-}
+// ─── List query params ─────────────────────────────────────────────────────────
 
 export interface ListVerificationParams {
   status?: VerificationStatus;

@@ -6,6 +6,38 @@ This file tracks the accomplished tasks, resolved user requests, and visual/func
 
 ## Completed Tasks Checklist
 
+### June 16, 2026 (continued)
+
+- [x] **Hotel Verify — "Review & Fix" now prefills the wizard with the existing application**:
+  - **Bug**: clicking "Review & Fix" navigated to `?applicationId=…&step=1`; `VerifyHotelPage` fetched the application by id but never fed it into the wizard, so each step's RHF `defaultValues` (read from the Zustand `hotel-verify-draft`) showed an empty/stale form instead of the submitted data.
+  - **Fix**: added `mapApplicationToDraft(app)` + a `hydrateFromApplication` action to `stores/hotel-verify.store.ts` that maps the detail response (`hotel` + `documents[]` + `licenses[]` + `representatives[]` + `payoutAccounts[]`) back into the six step form-value shapes (cover/exterior/room images grouped by `imageCategory`, `roomConfig.types`, license metadata + current non-replaced document URLs per type, ISO dates sliced to `YYYY-MM-DD`). `VerifyHotelPage` calls it once per `applicationId` (ref-guarded) inside an effect and gates the wizard behind a `hydrated` flag so the prefill lands **before** the step forms mount.
+  - **Known limitation**: the bank **account number** is encrypted server-side and never returned, so it is left blank and must be re-entered when editing the Payment step.
+
+- [x] **Sonner toast notifications + logout feedback**:
+  - Installed `sonner`; added a shared `components/ui/sonner.tsx` Toaster wrapper (`position="top-right"`, `richColors`, `closeButton`) and mounted `<Toaster />` once at the App root (inside `TooltipProvider`, outside the route tree) so toasts persist across route changes.
+  - `useLogout` now fires `toast.success('Đăng xuất thành công')` on success and `toast.error(...)` on failure (the local session is still cleared + redirected to `/login` via `onSettled` either way). This is the project's first toast wiring — reuse the `toast` API from `sonner` for future mutations.
+- [x] **Sidebar Logout wired to the logout API across all portals**:
+  - The shared `CommonSidebar` already rendered a Logout button calling its `onLogout` prop, but the portal layouts never wired it to the real `POST /auth/logout` flow: `ManagerLayout`/`HotelPartnerLayout` passed no `onLogout` (button was a no-op) and `AdminLayout` passed `closeAllModals` (only closed modals).
+  - Wired the existing `useLogout()` hook (`hooks/auth/use-logout.ts` → `authService.logout(refreshToken)` then `clearAuth()` + redirect to `/login`) into all three layouts. `ManagerLayout` and `HotelPartnerLayout` now pass `onLogout={() => logout()}`; `AdminLayout` passes a `handleLogout` that closes any open modals first, then logs out.
+
+### June 16, 2026
+
+- [x] **Hotel Verify — Aligned the entire FE data layer to the real backend API spec (7 endpoints under `/v1/hotel-partners`)**:
+  - **Canonical types rewritten** (`hotel-verify.types.ts`): replaced the assumed/ad-hoc shapes with the real spec. `VerificationStatus` is now `'pending' | 'in_review' | 'approved' | 'rejected'` (dropped the invented `need_more_info`). Added spec enums `DocumentStatus`, `DocumentType` (incl. `tax_certificate`/`owner_id`/`property_proof`), `LicenseType`, `LicenseValidityStatus`, `StarRating`, `BusinessType`, `RepresentativeRole`. Rebuilt the detail entity `VerificationApplication` to match the GET detail response exactly: top-level `notes/createdAt/updatedAt`, nested `hotel` (with `images[]`, `roomConfig{ totalRooms, types[] }`, `representatives[]` using `dateOfBirth`, `payoutAccounts[]` **without** `accountNumber`), `partner`, `documents[]`, `licenses[]`, `reviewer`. `latitude`/`longitude` typed as `string | null` (Decimal serialised as string). Added `district?` back to `SaveBusinessInfoDto` and a `ReplaceDocumentDto`.
+  - **Manager types rewritten** (`manager.types.ts`): `PaginatedVerificationRequests.results` now uses `VerificationListItem` (the lighter list shape — nested `hotel{ cover images }` + `partner`, not flat `hotelName/ownerName`); `VerificationRequestDetail = VerificationApplication`. Removed the dead `HotelVerificationRequest*`/`HotelVerificationDocument` interfaces.
+  - **Services**: `hotel-verify.service.ts` added `replaceDocument(documentId, fileUrl)` → `POST /documents/:id/replace` (#7). `manager-verification.service.ts` retyped to the new list/detail/document shapes.
+  - **Hooks**: added `useReplaceDocument` (partner, invalidates the applications query). Manager `useReviewDocument` now returns a typed `VerificationDocument`.
+  - **Manager list page** (`VerificationRequestsPage.tsx`): reads nested `r.hotel.name`, `r.partner.businessName`, `r.hotel.city`; search filters on the nested fields.
+  - **Manager detail modal** (`VerificationDetailModal.tsx`): fully rewritten to read the real detail shape instead of the form shape. Sections: Hotel Info (`hotel` + partner contact), **Documents** (license metadata from `licenses[]` + each `documents[]` file with status badge, view link, and **per-document Approve/Reject** via `useReviewDocument` (#6)), Representatives (`hotel.representatives[]`), Property & Rooms (images grouped by `imageCategory` + `roomConfig.types`), Payment (`hotel.payoutAccounts[]`, account number shown as encrypted). Whole-request Approve/Reject (#5) reads the freshest status from the loaded detail.
+  - **Partner Verification Center** (`VerificationCenter.tsx`): status enum updated to spec (`in_review` replaces `need_more_info`; tabs now Pending Review / In Review / Approved / Rejected). Added a **Documents to Resubmit** card that lists rejected, not-yet-replaced documents and lets the partner re-upload + replace each file (`useUploadFile` → `useReplaceDocument`, #7).
+
+### June 15, 2026
+
+- [x] **Hotel Verify — Fixed blank/white screen on Verification Center after successful submit**:
+  - **Root cause**: `VerificationCenter.tsx` referenced an undefined `StepStatus` enum (never imported, never defined) plus fields that don't exist on the real `VerificationApplication` type (`overallStatus`, `createdAt`, `steps.businessInfo`). Once an application existed (i.e. right after a successful verify submit), rendering hit those references and threw `ReferenceError: StepStatus is not defined`, which unmounted the whole React tree → blank white page at `/partner/verify`.
+  - **Fix `VerificationCenter`**: rewrote the status card to use the actual `VerificationApplication` shape — `status` (`'pending' | 'approved' | 'rejected' | 'need_more_info'`) instead of `StepStatus.REJECTED`/`overallStatus`, `submittedAt` instead of `createdAt`, and `rejectionReason` instead of `steps.businessInfo`. Added proper handling for `approved` (emerald check icon, "Verification Approved", completed timeline) and `need_more_info` (treated as action-required alongside `rejected`); removed the now-unused `import React`.
+  - **Fix `VerifyHotelPage`**: corrected `const { data: isLoading } = useGetApplicationById(...)` → `const { isLoading } = ...`; the old alias assigned the loaded application object to `isLoading`, leaving the edit flow stuck on the spinner forever once data arrived.
+
 ### June 11, 2026 (continued)
 
 - [x] **Hotel Verify — Moved Room Config to Step 5 (Property & Rooms), required map location, top-level `roomConfig` payload**:

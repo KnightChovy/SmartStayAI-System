@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { VerificationHeroCard } from '@/components/hotel-partner/hotel-verify/VerificationHeroCard';
 import { VerificationBenefitsCard } from '@/components/hotel-partner/hotel-verify/VerificationBenefitsCard';
@@ -14,7 +14,8 @@ import { ReviewSubmitStep } from '@/components/hotel-partner/hotel-verify/Review
 import { VerificationCenter } from '@/components/hotel-partner/hotel-verify/VerificationCenter';
 import { CheckCircle2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useGetApplicationById } from '@/hooks/hotel-verify/useHotelVerify';
+import { useGetApplicationById } from '@/hooks/hotel-verify';
+import { useHotelVerifyStore } from '@/stores/hotel-verify.store';
 
 export default function VerifyHotelPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -38,9 +39,32 @@ export default function VerifyHotelPage() {
     });
   };
 
-  const { data: isLoading } = useGetApplicationById(applicationId);
+  const { data: application, isError } = useGetApplicationById(applicationId);
 
-  if (isLoading) {
+  // When editing an existing application ("Review & Fix"), prefill the wizard
+  // draft from the fetched data once — before the step forms mount, since RHF
+  // only reads defaultValues on mount.
+  const hydrateFromApplication = useHotelVerifyStore(
+    s => s.hydrateFromApplication
+  );
+  const hydratedIdRef = useRef<string | null>(null);
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    if (
+      application &&
+      applicationId &&
+      hydratedIdRef.current !== applicationId
+    ) {
+      hydrateFromApplication(application);
+      hydratedIdRef.current = applicationId;
+      setHydrated(true);
+    }
+  }, [application, applicationId, hydrateFromApplication]);
+
+  // Block rendering the wizard until the existing application has been loaded
+  // and mapped into the draft (skip the gate on fetch error so we don't hang).
+  if (applicationId && !hydrated && !isError) {
     return (
       <div className="flex items-center justify-center min-h-100">
         <Loader2 className="w-8 h-8 animate-spin text-role-partner-primary" />

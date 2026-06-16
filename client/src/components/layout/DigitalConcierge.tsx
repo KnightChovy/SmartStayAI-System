@@ -2,7 +2,10 @@ import { useState, useRef, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { Link } from 'react-router';
 import { Input } from '../ui/input';
+import { chatService } from '@/services/chat.service';
+import { formatCurrency } from '@/utils/formatCurrency';
 import type { Message } from '@/types/chat.types';
 
 const chatSchema = z.object({
@@ -11,112 +14,61 @@ const chatSchema = z.object({
 
 type ChatFormValues = z.infer<typeof chatSchema>;
 
+const now = () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
 export default function DigitalConcierge() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
       sender: 'ai',
-      text: "Good evening. I'm your digital concierge. How may I help you curate your next sanctuary today?",
-      time: new Date().toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit',
-      }),
+      text: "Good evening. I'm your digital concierge. Tell me a destination and I'll find stays for you.",
+      time: now(),
+      quickReplies: ['Stays in Da Nang', 'Weekend deals', 'My loyalty points'],
     },
   ]);
   const [isTyping, setIsTyping] = useState(false);
 
   const { register, handleSubmit, reset } = useForm<ChatFormValues>({
     resolver: zodResolver(chatSchema),
-    defaultValues: {
-      message: '',
-    },
+    defaultValues: { message: '' },
   });
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
   useEffect(() => {
-    if (isOpen) {
-      scrollToBottom();
-    }
+    if (isOpen) messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isOpen, isTyping]);
 
-  const onSubmit = (values: ChatFormValues) => {
-    const textVal = values.message.trim();
-    if (!textVal) return;
+  /** Gửi 1 câu (dùng cho cả ô nhập và quick-reply chip). */
+  const sendText = async (raw: string) => {
+    const textVal = raw.trim();
+    if (!textVal || isTyping) return;
 
-    const userMessage: Message = {
-      sender: 'user',
-      text: textVal,
-      time: new Date().toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit',
-      }),
-    };
-
-    setMessages(prev => [...prev, userMessage]);
-    const typedText = textVal.toLowerCase();
-    reset();
-
-    // Simulate AI response
+    setMessages(prev => [...prev, { sender: 'user', text: textVal, time: now() }]);
     setIsTyping(true);
-    setTimeout(() => {
-      let aiReply =
-        'I would be delighted to assist you. Smart Stay AI can curate a custom itinerary for you. Would you prefer a beach sanctuary in Phu Quoc, a cultural experience in Hoi An, or a French villa in Da Lat?';
-
-      if (typedText.includes('bali')) {
-        aiReply =
-          'Bali is a wonderful choice! We have 1,240 verified luxury properties there, including clifftop villas in Uluwatu and spiritual sanctuaries in Ubud. Let me know if you would like me to lock in members-only rates.';
-      } else if (typedText.includes('paris')) {
-        aiReply =
-          'Paris exudes classic sophistication. We feature 890 curated penthouses and boutique hotels overlooking the Seine. Would you like a view of the Eiffel Tower for your stay?';
-      } else if (
-        typedText.includes('vietnam') ||
-        typedText.includes('hạ long') ||
-        typedText.includes('ha long') ||
-        typedText.includes('hội an') ||
-        typedText.includes('hoi an') ||
-        typedText.includes('đà lạt') ||
-        typedText.includes('da lat') ||
-        typedText.includes('phú quốc') ||
-        typedText.includes('phu quoc')
-      ) {
-        aiReply =
-          'Vietnam offers some of our finest Quiet Luxury escapes. From emerald cruises in Ha Long Bay, heritage lantern villas in Hoi An, pine retreats in Da Lat, to sunset spa resorts in Phu Quoc. What type of scenery are you dreaming of?';
-      } else if (
-        typedText.includes('deal') ||
-        typedText.includes('khuyến mãi') ||
-        typedText.includes('giá') ||
-        typedText.includes('price')
-      ) {
-        aiReply =
-          "We currently have outstanding weekend deals! For instance, 'The Azure Sanctuary' in the Maldives is -15% off, and the 'Timberline Retreat' in Aspen is -20% off. You can see these under our 'Deals' section.";
-      } else if (
-        typedText.includes('hello') ||
-        typedText.includes('hi') ||
-        typedText.includes('xin chào')
-      ) {
-        aiReply =
-          'Hello! I am your AI-powered Concierge. I can help you find exclusive rates, book boutique hotels, and plan your luxury travel itineraries. Where would you like to explore?';
-      }
-
+    try {
+      const reply = await chatService.reply(textVal);
       setMessages(prev => [
         ...prev,
         {
           sender: 'ai',
-          text: aiReply,
-          time: new Date().toLocaleTimeString([], {
-            hour: '2-digit',
-            minute: '2-digit',
-          }),
+          text: reply.text,
+          time: now(),
+          recommendations: reply.recommendations,
+          quickReplies: reply.quickReplies,
         },
       ]);
+    } finally {
       setIsTyping(false);
-    }, 1500);
+    }
   };
+
+  const onSubmit = (values: ChatFormValues) => {
+    sendText(values.message);
+    reset();
+  };
+
+  const lastIndex = messages.length - 1;
 
   return (
     <div className="fixed bottom-8 right-8 z-100 group font-be-vietnam">
@@ -132,14 +84,10 @@ export default function DigitalConcierge() {
         <div className="bg-on-surface p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-ai-glow flex items-center justify-center animate-pulse">
-              <span className="material-symbols-outlined text-on-surface text-sm">
-                auto_awesome
-              </span>
+              <span className="material-symbols-outlined text-on-surface text-sm">auto_awesome</span>
             </div>
             <div>
-              <h4 className="text-white text-xs font-bold font-be-vietnam">
-                Digital Concierge
-              </h4>
+              <h4 className="text-white text-xs font-bold font-be-vietnam">Digital Concierge</h4>
               <p className="text-white/60 text-[9px] uppercase tracking-widest font-be-vietnam">
                 Always Online
               </p>
@@ -154,7 +102,7 @@ export default function DigitalConcierge() {
         </div>
 
         {/* Messages List */}
-        <div className="grow p-4 space-y-4 overflow-y-auto hide-scrollbar bg-surface-container-low/50">
+        <div className="grow p-4 space-y-4 overflow-y-auto hide-scrollbar bg-surface-container-low/50 flex flex-col">
           {messages.map((msg, index) => {
             const isAI = msg.sender === 'ai';
             return (
@@ -169,16 +117,60 @@ export default function DigitalConcierge() {
                       : 'bg-on-surface text-white rounded-tr-none'
                   }`}
                 >
-                  <p
-                    className={
-                      isAI
-                        ? 'italic text-on-surface-variant font-medium'
-                        : 'font-normal'
-                    }
-                  >
+                  <p className={isAI ? 'italic text-on-surface-variant font-medium' : 'font-normal'}>
                     {msg.text}
                   </p>
+
+                  {/* Recommendation cards (booking_card) */}
+                  {msg.recommendations && msg.recommendations.length > 0 && (
+                    <div className="mt-3 space-y-2 not-italic">
+                      {msg.recommendations.map(rec => (
+                        <Link
+                          key={rec.id}
+                          to={`/hotels/${rec.id}`}
+                          onClick={() => setIsOpen(false)}
+                          className="flex items-center gap-3 rounded-xl border border-outline-variant/30 bg-surface p-2 transition-colors hover:border-primary/40"
+                        >
+                          {rec.imageUrl && (
+                            <img
+                              src={rec.imageUrl}
+                              alt={rec.name}
+                              className="size-12 shrink-0 rounded-lg object-cover"
+                            />
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-xs font-semibold text-on-surface">{rec.name}</p>
+                            <p className="truncate text-[11px] text-on-surface-variant">{rec.city}</p>
+                            {rec.minPrice && (
+                              <p className="text-[11px] font-semibold text-primary">
+                                from {formatCurrency(rec.minPrice)}
+                              </p>
+                            )}
+                          </div>
+                          <span className="material-symbols-outlined text-base text-on-surface-variant">
+                            chevron_right
+                          </span>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
                 </div>
+
+                {/* Quick replies — chỉ hiện ở message AI mới nhất */}
+                {isAI && index === lastIndex && msg.quickReplies && msg.quickReplies.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {msg.quickReplies.map(qr => (
+                      <button
+                        key={qr}
+                        onClick={() => sendText(qr)}
+                        className="rounded-full border border-primary/30 bg-primary/5 px-3 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/10"
+                      >
+                        {qr}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
                 <span
                   className={`text-[9px] text-on-surface-variant/60 mt-1 ${isAI ? 'text-left' : 'text-right'}`}
                 >
@@ -209,7 +201,7 @@ export default function DigitalConcierge() {
             <Input
               {...register('message')}
               className="w-full bg-surface-container-high border-none rounded-xl py-3 pl-4 pr-12 text-sm focus:ring-1 focus:ring-ai-glow placeholder:text-outline/50 outline-none h-auto shadow-none focus-visible:ring-1"
-              placeholder="Ask anything (e.g. Bali, Paris, Deals)..."
+              placeholder="Ask anything (e.g. Da Nang, Hoi An, Deals)..."
               type="text"
             />
             <button
