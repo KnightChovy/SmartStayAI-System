@@ -9,6 +9,10 @@ const router = express.Router();
 // Tìm khách sạn theo thành phố (kèm kiểm tra phòng trống khi có checkIn/checkOut) — public
 router.get('/', validate(hotelValidation.searchHotels), hotelController.searchHotels);
 
+// Chi tiết một khách sạn (profile cho guest) — public, chỉ KS đang mở bán.
+// '/:hotelId' khớp 1 segment nên không đụng các route '/:hotelId/...' bên dưới.
+router.get('/:hotelId', validate(hotelValidation.getHotel), hotelController.getHotel);
+
 // ----- Quản lý loại phòng (chủ khách sạn hoặc quyền manageHotels — service tự kiểm) -----
 router
   .route('/:hotelId/room-types')

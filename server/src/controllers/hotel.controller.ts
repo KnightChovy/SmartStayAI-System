@@ -11,6 +11,11 @@ export class HotelController {
     res.send(result);
   });
 
+  getHotel = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const hotel = await hotelService.getHotelById(req.params.hotelId as string);
+    res.send(hotel);
+  });
+
   getRoomTypes = catchAsync(async (req: Request, res: Response): Promise<void> => {
     const filter = pick(req.query, ['checkIn', 'checkOut', 'guests', 'minPrice', 'maxPrice', 'bedType', 'viewType']);
     const roomTypes = await hotelService.getRoomTypes(req.params.hotelId as string, filter);
