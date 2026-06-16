@@ -2,38 +2,56 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useNavigate } from 'react-router';
+import { Minus, Plus } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
+import { toDateInputValue } from '@/utils/formatDate';
 
 const heroSearchSchema = z.object({
   destination: z.string(),
-  dates: z.string(),
-  guests: z.string(),
+  checkIn: z.string(),
+  checkOut: z.string(),
+  guests: z.number().int().min(1).max(20),
 });
 
 type HeroSearchFormValues = z.infer<typeof heroSearchSchema>;
 
 export default function Hero() {
   const navigate = useNavigate();
-  const { register, handleSubmit, setValue, watch } =
-    useForm<HeroSearchFormValues>({
-      resolver: zodResolver(heroSearchSchema),
-      defaultValues: {
-        destination: '',
-        dates: 'Add dates',
-        guests: 'Add guests',
-      },
-    });
+  const { register, handleSubmit, setValue, watch } = useForm<HeroSearchFormValues>({
+    resolver: zodResolver(heroSearchSchema),
+    defaultValues: {
+      destination: '',
+      checkIn: '',
+      checkOut: '',
+      guests: 2,
+    },
+  });
 
-  const dates = watch('dates');
+  const today = toDateInputValue(new Date());
+  const checkIn = watch('checkIn');
+  const checkOut = watch('checkOut');
   const guests = watch('guests');
+
+  // Đổi ngày nhận: nếu ngày trả <= ngày nhận mới thì đẩy ngày trả lên +1 ngày
+  const handleCheckIn = (value: string) => {
+    setValue('checkIn', value);
+    if (!checkOut || new Date(checkOut) <= new Date(value)) {
+      const d = new Date(value);
+      d.setDate(d.getDate() + 1);
+      setValue('checkOut', toDateInputValue(d));
+    }
+  };
 
   const onSubmit = (values: HeroSearchFormValues) => {
     const params = new URLSearchParams();
     if (values.destination) params.set('city', values.destination);
-    // "Add guests" là giá trị mặc định → bỏ qua; nếu nhập số thì lấy số khách
-    const guestNum = parseInt(values.guests, 10);
-    if (!Number.isNaN(guestNum)) params.set('guests', String(guestNum));
+    // checkIn/checkOut phải đi cùng nhau thì backend mới tính tồn kho + giá kỳ ở
+    if (values.checkIn && values.checkOut) {
+      params.set('checkIn', values.checkIn);
+      params.set('checkOut', values.checkOut);
+    }
+    params.set('guests', String(values.guests));
     const query = params.toString();
     navigate(query ? `/search?${query}` : '/search');
   };
@@ -80,40 +98,57 @@ export default function Hero() {
             />
           </div>
           <div className="hidden md:block w-px h-8 bg-outline-variant/30"></div>
-          <div
-            className="w-full md:flex-1 px-6 py-3 flex flex-col cursor-pointer"
-            onClick={() => {
-              const dateInput = prompt(
-                'Enter dates (e.g., Jun 12 - Jun 15):',
-                dates === 'Add dates' ? '' : dates
-              );
-              if (dateInput) setValue('dates', dateInput);
-            }}
-          >
+          <div className="w-full md:flex-1 px-6 py-3 flex flex-col">
             <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">
-              Check-in / Out
+              Check-in
             </label>
-            <span className="text-left text-sm font-medium text-outline/50 mt-1 hover:text-on-surface transition-colors block">
-              {dates}
-            </span>
+            <input
+              type="date"
+              value={checkIn}
+              min={today}
+              onChange={e => handleCheckIn(e.target.value)}
+              className="w-full bg-transparent border-none p-0 text-sm font-medium text-on-surface outline-none mt-1"
+            />
           </div>
           <div className="hidden md:block w-px h-8 bg-outline-variant/30"></div>
-          <div
-            className="w-full md:flex-1 px-6 py-3 flex flex-col cursor-pointer"
-            onClick={() => {
-              const guestInput = prompt(
-                'Enter number of guests (e.g., 2 guests, 1 room):',
-                guests === 'Add guests' ? '' : guests
-              );
-              if (guestInput) setValue('guests', guestInput);
-            }}
-          >
+          <div className="w-full md:flex-1 px-6 py-3 flex flex-col">
+            <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">
+              Check-out
+            </label>
+            <input
+              type="date"
+              value={checkOut}
+              min={checkIn || today}
+              onChange={e => setValue('checkOut', e.target.value)}
+              className="w-full bg-transparent border-none p-0 text-sm font-medium text-on-surface outline-none mt-1"
+            />
+          </div>
+          <div className="hidden md:block w-px h-8 bg-outline-variant/30"></div>
+          <div className="w-full md:flex-1 px-6 py-3 flex flex-col">
             <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">
               Guests
             </label>
-            <span className="text-left text-sm font-medium text-outline/50 mt-1 hover:text-on-surface transition-colors block">
-              {guests}
-            </span>
+            <div className="mt-1 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => setValue('guests', Math.max(1, guests - 1))}
+                disabled={guests <= 1}
+                className="flex size-6 items-center justify-center rounded-lg text-on-surface-variant hover:bg-primary/10 hover:text-primary disabled:opacity-30"
+                aria-label="Decrease guests"
+              >
+                <Minus className="size-4" />
+              </button>
+              <span className="min-w-8 text-center text-sm font-semibold text-on-surface">{guests}</span>
+              <button
+                type="button"
+                onClick={() => setValue('guests', Math.min(20, guests + 1))}
+                disabled={guests >= 20}
+                className="flex size-6 items-center justify-center rounded-lg text-on-surface-variant hover:bg-primary/10 hover:text-primary disabled:opacity-30"
+                aria-label="Increase guests"
+              >
+                <Plus className="size-4" />
+              </button>
+            </div>
           </div>
           <Button
             type="submit"

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link, useLocation, useNavigate } from 'react-router';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '../../components/ui/button';
@@ -12,8 +12,21 @@ import {
   type LoginInput,
 } from '../../validations/auth.validation';
 
+/**
+ * State đính kèm khi điều hướng tới `/login`:
+ * - `from`: trang muốn vào trước khi bị chặn (ProtectedRoute gửi cả location, còn
+ *   nút "Book now" ở trang chi tiết gửi `{ pathname }`).
+ * - `booking`: dữ liệu phòng đã chọn — chuyển tiếp sang trang checkout sau khi login.
+ */
+interface LoginRedirectState {
+  from?: { pathname?: string; search?: string };
+  booking?: unknown;
+}
+
 export default function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const redirect = (location.state as LoginRedirectState | null) ?? {};
   const {
     mutateAsync: login,
     isPending: isLoggingIn,
@@ -45,7 +58,12 @@ export default function LoginPage() {
         email: data.email,
         password: data.password,
       });
-      navigate(getLandingPathForRole(result?.user?.role), { replace: true });
+      // Quay lại trang đang muốn vào (vd /booking) kèm dữ liệu phòng đã chọn;
+      // nếu không có thì về cổng mặc định theo role.
+      const fromPath = redirect.from?.pathname
+        ? `${redirect.from.pathname}${redirect.from.search ?? ''}`
+        : getLandingPathForRole(result?.user?.role);
+      navigate(fromPath, { replace: true, state: redirect.booking });
     } catch (err) {
       console.error(err);
     }
