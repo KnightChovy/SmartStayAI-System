@@ -16,6 +16,11 @@ export class HotelController {
     const roomTypes = await hotelService.getRoomTypes(req.params.hotelId as string, filter);
     res.send(roomTypes);
   });
+
+  getHotelsByOwner = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const hotels = await hotelService.getHotelsByOwner(req.params.userId as string);
+    res.send(hotels);
+  });
 }
 
 export const hotelController = new HotelController();

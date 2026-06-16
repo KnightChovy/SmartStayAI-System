@@ -6,6 +6,32 @@ This file tracks the accomplished tasks, resolved user requests, and visual/func
 
 ## Completed Tasks Checklist
 
+### June 16, 2026
+
+- [x] **Split bundled hooks into one-file-per-API folders (theo chuẩn `hooks/auth/`)**:
+  - `hooks/account/use-account.ts` (gom 9 hook của 5 domain) → tách thành `use-profile.ts`, `use-update-profile.ts`, `use-loyalty.ts`, `use-notifications.ts`, `use-mark-notification-read.ts`, `use-mark-all-notifications-read.ts`, `use-my-reviews.ts`, `use-create-review.ts`, `use-available-promotions.ts` + `index.ts` barrel.
+  - `hooks/bookings/use-bookings.ts` → tách thành `use-my-bookings.ts`, `use-booking.ts`, `use-create-booking.ts`, `use-cancel-booking.ts` + `index.ts`.
+  - `hooks/hotel-verify/useHotelVerify.ts` → tách thành `use-get-applications.ts`, `use-get-application-by-id.ts`, `use-submit-registration.ts`, `use-upload-file.ts`, query keys dùng chung chuyển sang `keys.ts` + `index.ts` (đổi tên file camelCase → kebab-case).
+  - Thêm `hooks/hotels/index.ts` barrel (các hook đã ở file riêng từ trước).
+  - Cập nhật toàn bộ import liên quan (NotificationBell, các trang `pages/account/*`, `pages/guest/Booking*`, `VerificationCenter`, `ReviewSubmitStep`, `VerifyHotelPage`) sang import qua barrel của thư mục (`@/hooks/account`, `@/hooks/bookings`, `@/hooks/hotel-verify`).
+  - Bổ sung quy tắc chi tiết "mỗi endpoint = một file + barrel `index.ts`, import qua barrel" vào `AGENTS.md` mục 5.4 để lần sau làm y hệt.
+
+### June 5, 2026 (continued 3)
+
+- [x] **Role-based redirect after login (admin / user / hotel partner)**:
+  - Created `src/constants/roles.ts` — `UserRole` const map (matching backend `server/src/config/roles.ts`: `guest`, `customer`, `staff`, `marketer`, `hotel_partner`, `platform_manager`, `admin`), a `ROLE_HOME_ROUTE` map, and a `getLandingPathForRole(role)` helper (admin/platform_manager → `/admin/dashboard`, hotel_partner → `/partner/dashboard`, guest/customer/others → `/`, unknown → `/`).
+  - Typed the auth flow: added `AuthToken`, `AuthTokens`, `AuthResponse` interfaces to `auth.types.ts` and changed `User.role` from `string` to `UserRole`; typed `authService.login` as `Promise<AuthResponse>` (`api.post<AuthResponse>`) to avoid `any`.
+  - Rewired `LoginPage.tsx` `onSubmit` to read the returned `user.role` from `login()` and `navigate(getLandingPathForRole(role), { replace: true })` instead of the hardcoded `navigate('/')`.
+  - Created `src/routes/ProtectedRoute.tsx` — role-based auth guard used as a layout route (`<Outlet />`): not authenticated → redirect `/login` (keeps intended page in `location.state.from`); wrong role → redirect to that role's own landing via `getLandingPathForRole`; `allowedRoles` prop optional (empty = login-only).
+  - Guarded route groups in `App.tsx`: wrapped `/partner/*` with `ProtectedRoute allowedRoles={[HOTEL_PARTNER]}` and `/admin/*` with `allowedRoles={[ADMIN, PLATFORM_MANAGER]}`.
+- [x] **Split routing into per-role modules (`routes/`)**:
+  - Replaced the monolithic `<Routes>` tree in `App.tsx` with react-router v7 object routes (`useRoutes`). `App.tsx` now only imports `appRoutes` + `TooltipProvider` (no page imports).
+  - Created `src/routes/authRoutes.tsx` (public auth pages), `guestRoutes.tsx` (guest `/` portal), `partnerRoutes.tsx` (`/partner`, guarded `hotel_partner`), `adminRoutes.tsx` (`/admin`, guarded `admin`/`platform_manager`) — each exports a typed `RouteObject[]`, with the `ProtectedRoute` guard baked into the partner/admin modules.
+  - Added `src/routes/index.ts` aggregating all modules into `appRoutes`.
+- [x] **Guest navbar user dropdown menu**:
+  - Replaced the inline avatar + name + Log out button in `components/layout/Navbar.tsx` with a shadcn/Radix `DropdownMenu`: avatar+name+chevron is the trigger; the menu shows a user-info header (avatar, name, email, role badge), a role-aware `Dashboard` link (only for roles whose landing page isn't `/`, via `getLandingPathForRole`), `My Account`, and a destructive `Log out` item.
+  - Added a `ROLE_LABELS` map for friendly role display; lucide icons (`LayoutDashboard`, `LogOut`, `User`, `ChevronDown`).
+
 ### June 5, 2026 (continued 2)
 
 - [x] **Vietnam Geo: Remove District level (Province → Ward direct)**:

@@ -82,6 +82,21 @@ const propertyImages = Joi.object()
   })
   .required();
 
+const roomConfig = Joi.object()
+  .keys({
+    totalRooms: Joi.number().integer().min(0).required(),
+    roomTypes: Joi.array()
+      .items(
+        Joi.object().keys({
+          name: Joi.string().required(),
+          quantity: Joi.number().integer().min(0).required(),
+        })
+      )
+      .min(1)
+      .required(),
+  })
+  .required();
+
 const paymentPayouts = Joi.object()
   .keys({
     bankAccount: Joi.object()
@@ -107,6 +122,7 @@ export const submitRegistration = {
     certificates,
     representative,
     propertyImages,
+    roomConfig,
     paymentPayouts,
   }),
 };

@@ -693,8 +693,11 @@ paths:
     patch:
       summary: Approve or reject a verification request (platform manager)
       description: >
-        On approve - partner becomes approved, hotel becomes active and listed,
-        the owner user's role is upgraded to hotel_partner. On reject - a rejectionReason is required.
+        On approve - partner becomes approved, the owner user's role is upgraded to hotel_partner,
+        the hotel is activated but NOT yet published (isListed=false), RoomType + Room records are
+        seeded from the declared roomConfig (rooms inactive until the partner completes details and
+        publishes in Room Inventory), and the partner receives a 'partner_approved' notification.
+        On reject - a rejectionReason is required.
       tags: [HotelPartners]
       security:
         - bearerAuth: []
@@ -835,6 +838,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+
+  /hotels/{userId}:
+    get:
+      summary: List hotels owned by a partner
+      description: >
+        Returns every hotel owned by the given user (partner), including unlisted/pending ones
+        (soft-deleted excluded) — for the partner's Hotel Management screen. Auth: the owner
+        themselves (path userId must equal the token user) OR a user with the manageHotels right
+        (platform_manager/admin). Each item includes the cover image and a count of room types and rooms.
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema: { type: string, format: uuid }
+          description: Owner (partner) user id
+      responses:
+        "200": { description: "Array of hotels (each with primary image + _count of roomTypes/rooms)" }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
 
   /hotels/{hotelId}/room-types:
     get:
