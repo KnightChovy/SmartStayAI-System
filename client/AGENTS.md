@@ -332,17 +332,41 @@ export function RoomCard({ room, onSelect, isHighlighted = false, className }: R
 
 - Tên bắt đầu bằng `use`.
 - Mỗi hook làm **một việc** rõ ràng.
-- **Tách từng custom hook theo từng API** — mỗi endpoint là một hook riêng (vd: `useLoginMutation`, `useSendOtpMutation`, `useRegisterMutation`), **không gom nhiều API vào một hook tổng** kiểu `useAuth`. Nhóm theo domain trong thư mục con của `hooks/` (vd: `hooks/auth/`) và export qua `index.ts`.
+- **Tách từng custom hook theo từng API — MỖI ENDPOINT = MỘT FILE RIÊNG.** Không bao giờ gom nhiều hook/nhiều API vào chung một file kiểu `useAccount.ts` hay `use-bookings.ts`. Tham khảo `hooks/auth/` làm chuẩn.
+- **Quy tắc tổ chức thư mục (bắt buộc làm y hệt mỗi lần):**
+  1. Mỗi domain là một thư mục con `kebab-case` trong `hooks/` (vd: `hooks/account/`, `hooks/bookings/`, `hooks/hotel-verify/`).
+  2. Mỗi hook (mỗi API) là **một file `kebab-case` riêng**, đặt tên theo hook bên trong: `use-profile.ts`, `use-create-booking.ts`, `use-submit-registration.ts`.
+  3. Mỗi thư mục domain có một `index.ts` làm barrel, re-export tất cả hook con: `export { useProfile } from './use-profile';`.
+  4. Query keys dùng chung của domain tách ra file `keys.ts` trong thư mục đó (vd: `hooks/hotel-verify/keys.ts`) và export qua `index.ts`.
+  5. **Import luôn qua barrel của thư mục** (`@/hooks/account`), KHÔNG import thẳng vào từng file (`@/hooks/account/use-profile`).
+- Khi gặp một file gom nhiều hook: tách mỗi hook ra file riêng theo các bước trên, xóa file cũ, rồi cập nhật **tất cả** đường dẫn import liên quan sang barrel của thư mục.
 - Trả về object `{ data, isLoading, error }`, không trả về array trừ pair `[value, setValue]`.
 
+```text
+hooks/account/
+├── index.ts                          # barrel: re-export tất cả hook bên dưới
+├── use-profile.ts                    # 1 API = 1 file
+├── use-update-profile.ts
+├── use-loyalty.ts
+├── use-notifications.ts
+└── use-available-promotions.ts
+```
+
 ```typescript
-export function useGetRooms(filters: RoomFilters) {
-  const query = useQuery({
-    queryKey: queryKeys.rooms.list(filters),
-    queryFn: () => roomService.getRooms(filters),
+// hooks/account/use-profile.ts — một hook, một API
+export function useProfile(seed: Partial<UserProfile>) {
+  return useQuery({
+    queryKey: queryKeys.profile.me,
+    queryFn: () => profileService.get(seed),
   });
-  return { rooms: query.data, isLoading: query.isLoading, error: query.error };
 }
+
+// hooks/account/index.ts — barrel
+export { useProfile } from './use-profile';
+export { useUpdateProfile } from './use-update-profile';
+
+// Nơi dùng — luôn import qua barrel của thư mục
+import { useProfile, useUpdateProfile } from '@/hooks/account';
 ```
 
 ### 5.5 State management — quy tắc chọn

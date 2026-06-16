@@ -31,6 +31,24 @@ export class HotelService {
   };
 
   /**
+   * Danh sách khách sạn của một partner (theo ownerId = userId), dùng cho màn quản lý của partner.
+   * Quyền đã được chặn ở route bằng auth('manageHotels'): chỉ chính chủ (userId trùng token) hoặc
+   * người có quyền manageHotels (platform_manager/admin) mới gọi được — nên ở đây không kiểm lại.
+   * Trả về CẢ khách sạn chưa mở bán / đang chờ duyệt (khác searchHotels public), chỉ bỏ khách sạn
+   * đã xoá mềm. Kèm ảnh cover + số loại phòng / số phòng để hiển thị danh sách.
+   */
+  getHotelsByOwner = async (userId: string) => {
+    return prisma.hotel.findMany({
+      where: { partner: { ownerId: userId }, deletedAt: null },
+      include: {
+        images: { where: { isPrimary: true }, take: 1 },
+        _count: { select: { roomTypes: true, rooms: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  };
+
+  /**
    * Tìm khách sạn theo thành phố. Nếu có khoảng ngày (checkIn/checkOut) thì chỉ trả về
    * khách sạn còn ít nhất một loại phòng trống đủ sức chứa trong suốt kỳ ở.
    */

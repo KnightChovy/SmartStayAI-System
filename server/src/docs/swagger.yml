@@ -855,6 +855,27 @@ paths:
       responses:
         "200": { description: "Hotel profile (info + images + amenities + active room types)" }
         "404": { $ref: '#/components/responses/NotFound' }
+  /hotels/{userId}:
+    get:
+      summary: List hotels owned by a partner
+      description: >
+        Returns every hotel owned by the given user (partner), including unlisted/pending ones
+        (soft-deleted excluded) — for the partner's Hotel Management screen. Auth: the owner
+        themselves (path userId must equal the token user) OR a user with the manageHotels right
+        (platform_manager/admin). Each item includes the cover image and a count of room types and rooms.
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema: { type: string, format: uuid }
+          description: Owner (partner) user id
+      responses:
+        "200": { description: "Array of hotels (each with primary image + _count of roomTypes/rooms)" }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
 
   /hotels/{hotelId}/room-types:
     get:

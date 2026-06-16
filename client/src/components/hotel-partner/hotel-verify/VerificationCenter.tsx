@@ -9,7 +9,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
-import { useGetApplications } from '@/hooks/hotel-verify/useHotelVerify';
+import { useGetApplications } from '@/hooks/hotel-verify';
 import { useNavigate } from 'react-router';
 import { StepStatus } from '@/types/hotel-verify.types';
 

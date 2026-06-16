@@ -10,6 +10,13 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
+/** Ngày (UTC-midnight) cách hôm nay `days` ngày — dùng cho pricing rule / booking mẫu. */
+const daysFromNow = (days: number): Date => {
+  const d = toUtcDate(new Date());
+  d.setUTCDate(d.getUTCDate() + days);
+  return d;
+};
+
 // Sample accounts: one per role + a few extra applicants (role customer) so the hotel
 // registration flow can be tested repeatedly (each applicant can submit one registration).
 // Password convention: `<role>Password123` (e.g. applicants use `customerPassword123`).

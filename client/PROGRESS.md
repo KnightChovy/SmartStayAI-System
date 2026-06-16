@@ -6,6 +6,27 @@ This file tracks the accomplished tasks, resolved user requests, and visual/func
 
 ## Completed Tasks Checklist
 
+### June 16, 2026 (continued)
+
+- [x] **Fix luồng đặt phòng cho khách chưa đăng nhập (login redirect đánh rơi phòng đã chọn)**:
+  - `HotelDetailPage` khi khách chưa login bấm "Book now" → điều hướng `/login` kèm `state: { from: { pathname: '/booking' }, booking: { hotel, roomType, checkIn, checkOut, guests } }`. Nhưng `LoginPage` trước đây luôn `navigate(getLandingPathForRole(role))` sau khi login, **bỏ qua `from` + `booking`** → khách bị đẩy về `/` và mất phòng đã chọn (checkout hiện "No room selected").
+  - Sửa `pages/auth/LoginPage.tsx`: đọc `location.state` (kiểu `LoginRedirectState`), sau khi login thành công quay lại `from.pathname (+ search)` kèm `state: booking`; không có `from` thì mới về cổng mặc định theo role. Xử lý cả 2 nguồn redirect: `ProtectedRoute` (gửi cả `location`) và nút Book now (gửi `{ pathname }`).
+  - Kết quả: khách chưa đăng nhập có thể search → chọn phòng → login → về thẳng `/booking` với đủ dữ liệu → tạo booking (`POST /bookings`).
+
+- [x] **Verify guest "search hotels → booking" flow khớp với BE API + fix Hero search bỏ rơi ngày**:
+  - Rà soát toàn bộ luồng client đã nối đúng hợp đồng BE: `GET /hotels` (`useSearchHotels` → `SearchResultsPage`), `GET /hotels/:id/room-types` (`useRoomTypes` → `HotelDetailPage`), `POST /bookings` (`useCreateBooking` → `BookingCheckoutPage`), `GET /bookings/me|:id`, `PATCH /bookings/:id/cancel`. Service/hook/type (`hotel.service.ts`, `booking.service.ts`, `hotel.types.ts`, `booking.types.ts`) khớp đúng response (Decimal serialize thành string, `minPrice`, `availableRooms`/`totalPrice` chỉ có khi truyền `checkIn`/`checkOut`).
+  - Sửa `components/home/Hero.tsx`: form tìm kiếm trang chủ trước đây dùng `prompt()` lưu ngày dạng free-text rồi **vứt bỏ** khi submit (chỉ gửi `city` + `guests`) → BE bỏ qua bước tính tồn kho & giá kỳ ở. Thay bằng 2 `input[type=date]` thật (check-in tự đẩy check-out +1 ngày, `min` chặn quá khứ) + stepper số khách; `onSubmit` nay gửi `checkIn`/`checkOut`/`guests` sang `/search` để BE trả đúng phòng trống + tổng giá.
+
+### June 16, 2026
+
+- [x] **Split bundled hooks into one-file-per-API folders (theo chuẩn `hooks/auth/`)**:
+  - `hooks/account/use-account.ts` (gom 9 hook của 5 domain) → tách thành `use-profile.ts`, `use-update-profile.ts`, `use-loyalty.ts`, `use-notifications.ts`, `use-mark-notification-read.ts`, `use-mark-all-notifications-read.ts`, `use-my-reviews.ts`, `use-create-review.ts`, `use-available-promotions.ts` + `index.ts` barrel.
+  - `hooks/bookings/use-bookings.ts` → tách thành `use-my-bookings.ts`, `use-booking.ts`, `use-create-booking.ts`, `use-cancel-booking.ts` + `index.ts`.
+  - `hooks/hotel-verify/useHotelVerify.ts` → tách thành `use-get-applications.ts`, `use-get-application-by-id.ts`, `use-submit-registration.ts`, `use-upload-file.ts`, query keys dùng chung chuyển sang `keys.ts` + `index.ts` (đổi tên file camelCase → kebab-case).
+  - Thêm `hooks/hotels/index.ts` barrel (các hook đã ở file riêng từ trước).
+  - Cập nhật toàn bộ import liên quan (NotificationBell, các trang `pages/account/*`, `pages/guest/Booking*`, `VerificationCenter`, `ReviewSubmitStep`, `VerifyHotelPage`) sang import qua barrel của thư mục (`@/hooks/account`, `@/hooks/bookings`, `@/hooks/hotel-verify`).
+  - Bổ sung quy tắc chi tiết "mỗi endpoint = một file + barrel `index.ts`, import qua barrel" vào `AGENTS.md` mục 5.4 để lần sau làm y hệt.
+
 ### June 5, 2026 (continued 3)
 
 - [x] **Role-based redirect after login (admin / user / hotel partner)**:
