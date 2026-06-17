@@ -12,3 +12,5 @@ export { roomTypeService } from './room-type.service';
 export { roomService } from './room.service';
 export { amenityService } from './amenity.service';
 export { pricingRuleService } from './pricing-rule.service';
+export { staffService } from './staff.service';
+export { housekeepingService } from './housekeeping.service';

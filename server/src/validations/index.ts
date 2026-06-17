@@ -10,3 +10,5 @@ export * as roomTypeValidation from './room-type.validation';
 export * as roomValidation from './room.validation';
 export * as amenityValidation from './amenity.validation';
 export * as pricingRuleValidation from './pricing-rule.validation';
+export * as staffValidation from './staff.validation';
+export * as housekeepingValidation from './housekeeping.validation';

@@ -1,7 +1,7 @@
 import httpStatus from 'http-status';
 import crypto from 'crypto';
 import { Prisma } from '@prisma/client';
-import type { User } from '@prisma/client';
+import type { User, Payment } from '@prisma/client';
 import prisma from '../config/prisma';
 import config from '../config/config';
 import logger from '../config/logger';
@@ -292,6 +292,22 @@ export class PaymentService {
         voucherCode: data.voucherCode ?? '',
       })
       .catch((err) => logger.error(`[VNPay] Gửi email xác nhận booking thất bại: ${err.message}`));
+  };
+
+  /**
+   * Thực thi hoàn tiền ở cổng thanh toán. HIỆN MÔ PHỎNG — trả về mã giao dịch hoàn giả lập, KHÔNG
+   * gọi cổng thật (sandbox VNPay không hỗ trợ test refund). Đây là ĐIỂM DUY NHẤT cần thay khi muốn
+   * hoàn tiền thật:
+   *   - VNPay  ⇒ gọi Merchant Refund API (vnp_Command=refund) bằng VNP_API_URL đã cấu hình.
+   *   - SePay  ⇒ chuyển khoản ra cho khách qua API ngân hàng (tiền nằm sẵn ở TK của bạn).
+   * Giữ chữ ký async để khi cắm cổng thật (gọi mạng) không phải đổi nơi gọi ở booking.service.
+   */
+  executeGatewayRefund = async (
+    payment: Payment,
+    amount: Prisma.Decimal
+  ): Promise<{ refundTransactionId: string; success: boolean }> => {
+    logger.info(`[Refund] (mô phỏng) hoàn ${amount.toString()} cho giao dịch ${payment.transactionId}`);
+    return { refundTransactionId: `SIMREFUND-${Date.now().toString(36).toUpperCase()}`, success: true };
   };
 }
 

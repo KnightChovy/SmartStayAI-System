@@ -31,6 +31,34 @@ export class HotelService {
   };
 
   /**
+   * Lấy khách sạn cho thao tác VẬN HÀNH (xem booking, check-in/out): rộng hơn getManagedHotel.
+   * Cho phép CHỦ partner, người có quyền manageBookings (platform_manager/admin), HOẶC nhân viên
+   * đang được phân công vào đúng khách sạn này (hotel_staff_assignments còn hiệu lực). Vì staff cũng
+   * phải làm được check-in/out nhưng không phải chủ và không có quyền toàn cục.
+   */
+  getOperableHotel = async (hotelId: string, currentUser: User) => {
+    const hotel = await prisma.hotel.findFirst({
+      where: { id: hotelId, deletedAt: null },
+      include: { partner: { select: { ownerId: true } } },
+    });
+    if (!hotel) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy khách sạn');
+    }
+    const isOwner = hotel.partner.ownerId === currentUser.id;
+    const canManage = (roleRights.get(currentUser.role) || []).includes('manageBookings');
+    if (isOwner || canManage) {
+      return hotel;
+    }
+    const assignment = await prisma.hotelStaffAssignment.findFirst({
+      where: { hotelId, userId: currentUser.id, unassignedAt: null },
+    });
+    if (!assignment) {
+      throw new ApiError(httpStatus.FORBIDDEN, 'Forbidden');
+    }
+    return hotel;
+  };
+
+  /**
    * Chi tiết một khách sạn cho CHỦ SỞ HỮU / manager — trả về BẤT KỂ trạng thái (kể cả chưa listed /
    * đang chờ duyệt), khác getHotelById (public chỉ trả KS đang bán). Quyền kiểm qua getManagedHotel.
    * Kèm toàn bộ ảnh, tiện nghi, và TẤT CẢ loại phòng (cả đã tắt) với ảnh + tiện nghi + số phòng.
