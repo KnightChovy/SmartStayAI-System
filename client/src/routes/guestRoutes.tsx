@@ -10,6 +10,7 @@ import SearchResultsPage from '@/pages/guest/SearchResultsPage';
 import HotelDetailPage from '@/pages/guest/HotelDetailPage';
 import BookingCheckoutPage from '@/pages/guest/BookingCheckoutPage';
 import BookingSuccessPage from '@/pages/guest/BookingSuccessPage';
+import PaymentResultPage from '@/pages/guest/PaymentResultPage';
 import NotFoundPage from '@/pages/NotFoundPage';
 import { accountRoute } from './accountRoutes';
 
@@ -28,6 +29,7 @@ export const guestRoutes: RouteObject[] = [
       { path: 'room/executive-penthouse', element: <RoomDetailPage /> },
       { path: 'booking-information', element: <BookingInformationPage /> },
       { path: 'booking', element: <BookingCheckoutPage /> },
+      { path: 'booking/payment-result', element: <PaymentResultPage /> },
       { path: 'booking/:bookingId/success', element: <BookingSuccessPage /> },
       // Khu tài khoản customer (được ProtectedRoute bọc bên trong)
       accountRoute,

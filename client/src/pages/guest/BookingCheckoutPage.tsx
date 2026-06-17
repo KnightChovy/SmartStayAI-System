@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowLeft, ArrowRight, BedDouble, CalendarDays, ShieldCheck, Users } from 'lucide-react';
 import { useCreateBooking } from '@/hooks/bookings';
+import { useCreateVnpayPayment } from '@/hooks/payments';
 import { useAuthStore } from '@/stores/authStore';
 import { ROUTES } from '@/constants/routes';
 import { guestDetailsSchema, type GuestDetailsValues } from '@/validations/checkout.validation';
@@ -25,6 +26,15 @@ interface CheckoutState {
   guests?: number;
 }
 
+/** Lấy message lỗi từ axios error (nếu có) mà không dùng `any`. */
+function errorMessage(err: unknown, fallback: string): string {
+  if (err && typeof err === 'object' && 'response' in err) {
+    const resp = (err as { response?: { data?: { message?: string } } }).response;
+    return resp?.data?.message ?? fallback;
+  }
+  return fallback;
+}
+
 export default function BookingCheckoutPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -35,6 +45,9 @@ export default function BookingCheckoutPage() {
   const [step, setStep] = useState(0);
   const [payment, setPayment] = useState<PaymentMethod>('vnpay');
   const createBooking = useCreateBooking();
+  const createPayment = useCreateVnpayPayment();
+  // Giữ id booking đã tạo: bấm thanh toán lại chỉ gọi lại VNPay, không tạo booking trùng
+  const [createdBookingId, setCreatedBookingId] = useState<string | null>(null);
 
   const form = useForm<GuestDetailsValues>({
     resolver: zodResolver(guestDetailsSchema),
@@ -72,16 +85,28 @@ export default function BookingCheckoutPage() {
   }
 
   const handleConfirm = async () => {
-    const values = form.getValues();
-    const booking = await createBooking.mutateAsync({
-      hotelId: roomType.hotelId,
-      roomTypeId: roomType.id,
-      checkInDate: checkIn,
-      checkOutDate: checkOut,
-      numGuests: guests,
-      specialRequests: values.specialRequests || undefined,
-    });
-    navigate(ROUTES.bookingSuccess(booking.id), { state: { booking, hotel, roomType } });
+    try {
+      // Tạo booking (pending, giữ chỗ) đúng một lần; lần bấm sau chỉ tạo lại URL VNPay.
+      let bookingId = createdBookingId;
+      if (!bookingId) {
+        const values = form.getValues();
+        const booking = await createBooking.mutateAsync({
+          hotelId: roomType.hotelId,
+          roomTypeId: roomType.id,
+          checkInDate: checkIn,
+          checkOutDate: checkOut,
+          numGuests: guests,
+          specialRequests: values.specialRequests || undefined,
+        });
+        bookingId = booking.id;
+        setCreatedBookingId(bookingId);
+      }
+      // Lấy URL cổng VNPay rồi chuyển trình duyệt sang để khách thanh toán.
+      const { paymentUrl } = await createPayment.mutateAsync(bookingId);
+      window.location.href = paymentUrl;
+    } catch {
+      // Lỗi hiển thị qua createBooking.isError / createPayment.isError ở bước review.
+    }
   };
 
   const goPayment = form.handleSubmit(() => setStep(1));
@@ -158,7 +183,7 @@ export default function BookingCheckoutPage() {
                 <PaymentMethodSelect value={payment} onChange={setPayment} />
                 <p className="flex items-center gap-1.5 text-xs text-on-surface-variant">
                   <ShieldCheck className="size-4 text-primary" />
-                  This is a demo checkout — no real charge is made.
+                  You'll be securely redirected to VNPay to complete your payment.
                 </p>
                 <div className="flex gap-3">
                   <Button variant="outline" size="lg" onClick={() => setStep(0)}>
@@ -190,7 +215,7 @@ export default function BookingCheckoutPage() {
                   </div>
                   <div>
                     <dt className="text-on-surface-variant">Payment</dt>
-                    <dd className="font-medium uppercase text-on-surface">{payment}</dd>
+                    <dd className="font-medium uppercase text-on-surface">VNPAY</dd>
                   </div>
                   <div>
                     <dt className="text-on-surface-variant">Guests</dt>
@@ -199,7 +224,18 @@ export default function BookingCheckoutPage() {
                 </dl>
                 {createBooking.isError && (
                   <p className="rounded-xl bg-error/10 px-3 py-2 text-sm text-error">
-                    Could not create booking. The room may no longer be available for these dates.
+                    {errorMessage(
+                      createBooking.error,
+                      'Could not create booking. The room may no longer be available for these dates.'
+                    )}
+                  </p>
+                )}
+                {createPayment.isError && (
+                  <p className="rounded-xl bg-error/10 px-3 py-2 text-sm text-error">
+                    {errorMessage(
+                      createPayment.error,
+                      'Could not start the VNPay payment. Please try again.'
+                    )}
                   </p>
                 )}
                 <div className="flex gap-3">
@@ -209,10 +245,16 @@ export default function BookingCheckoutPage() {
                   <Button
                     size="lg"
                     className="bg-primary text-on-primary hover:bg-primary/90"
-                    disabled={createBooking.isPending}
+                    disabled={createBooking.isPending || createPayment.isPending}
                     onClick={handleConfirm}
                   >
-                    {createBooking.isPending ? 'Confirming…' : 'Confirm booking'}
+                    {createBooking.isPending
+                      ? 'Creating booking…'
+                      : createPayment.isPending
+                        ? 'Redirecting to VNPay…'
+                        : createdBookingId
+                          ? 'Retry payment'
+                          : 'Confirm & Pay'}
                   </Button>
                 </div>
               </div>
