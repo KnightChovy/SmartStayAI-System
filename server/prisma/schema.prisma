@@ -78,6 +78,12 @@ enum RoomStatus {
   cleaning
 }
 
+enum HousekeepingTaskStatus {
+  pending
+  in_progress
+  done
+}
+
 enum PricingRuleType {
   seasonal
   weekend
@@ -514,6 +520,7 @@ model Hotel {
   representatives       HotelRepresentative[]
   payoutAccounts        HotelPayoutAccount[]
   roomConfig            HotelRoomConfig?
+  housekeepingTasks     HousekeepingTask[]
 
   @@map("hotels")
 }
@@ -634,9 +641,27 @@ model Room {
   createdAt  DateTime   @default(now()) @map("created_at")
   updatedAt  DateTime   @default(now()) @updatedAt @map("updated_at")
 
-  bookingRooms BookingRoom[]
+  bookingRooms      BookingRoom[]
+  housekeepingTasks HousekeepingTask[]
 
   @@map("rooms")
+}
+
+// Task dọn phòng — auto-sinh khi check-out (S22), staff 1-tap hoàn thành để trả phòng về available
+model HousekeepingTask {
+  id          String                 @id @default(uuid()) @db.Uuid
+  hotelId     String                 @map("hotel_id") @db.Uuid
+  hotel       Hotel                  @relation(fields: [hotelId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  roomId      String                 @map("room_id") @db.Uuid
+  room        Room                   @relation(fields: [roomId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  bookingId   String?                @map("booking_id") @db.Uuid
+  booking     Booking?               @relation(fields: [bookingId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  status      HousekeepingTaskStatus @default(pending)
+  note        String?
+  createdAt   DateTime               @default(now()) @map("created_at")
+  completedAt DateTime?              @map("completed_at")
+
+  @@map("housekeeping_tasks")
 }
 
 model RoomAvailability {
@@ -717,6 +742,7 @@ model Booking {
   conversations      Conversation[]
   loyaltyTransactions LoyaltyTransaction[]
   promotions         BookingPromotion[]
+  housekeepingTasks  HousekeepingTask[]
 
   @@map("bookings")
 }

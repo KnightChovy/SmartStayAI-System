@@ -33,6 +33,71 @@ export class BookingController {
     );
     res.send(booking);
   });
+
+  // [M12] Staff/chủ KS liệt kê booking của một khách sạn
+  listHotelBookings = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const filter = pick(req.query, ['status', 'fromDate', 'toDate']);
+    const options = pick(req.query, ['sortBy', 'limit', 'page']);
+    const result = await bookingService.listHotelBookings(
+      req.params.hotelId as string,
+      req.user as User,
+      filter,
+      options
+    );
+    res.send(result);
+  });
+
+  // [M12] Staff/chủ KS xem chi tiết một booking của khách sạn
+  getHotelBooking = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const booking = await bookingService.getHotelBookingById(
+      req.params.hotelId as string,
+      req.params.bookingId as string,
+      req.user as User
+    );
+    res.send(booking);
+  });
+
+  // [M13] Check-in khách
+  checkIn = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const booking = await bookingService.checkInBooking(
+      req.params.hotelId as string,
+      req.params.bookingId as string,
+      req.user as User,
+      req.body
+    );
+    res.send(booking);
+  });
+
+  // [M13 + S12] Check-out khách + phát hành hoá đơn
+  checkOut = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const booking = await bookingService.checkOutBooking(
+      req.params.hotelId as string,
+      req.params.bookingId as string,
+      req.user as User,
+      req.body
+    );
+    res.send(booking);
+  });
+
+  // Staff ghi nhận đã thu tiền mặt cho booking trả tại khách sạn
+  recordCashPayment = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const booking = await bookingService.recordCashPayment(
+      req.params.hotelId as string,
+      req.params.bookingId as string,
+      req.user as User
+    );
+    res.send(booking);
+  });
+
+  // Staff đánh dấu khách no-show (không đến nhận phòng)
+  markNoShow = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const booking = await bookingService.markNoShow(
+      req.params.hotelId as string,
+      req.params.bookingId as string,
+      req.user as User
+    );
+    res.send(booking);
+  });
 }
 
 export const bookingController = new BookingController();

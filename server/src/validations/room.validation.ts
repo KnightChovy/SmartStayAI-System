@@ -42,3 +42,14 @@ export const listRooms = {
     page: Joi.number().integer().min(1),
   }),
 };
+
+// Staff đổi nhanh trạng thái phòng (bản đồ phòng / housekeeping 1-tap)
+export const updateRoomStatus = {
+  params: Joi.object().keys({
+    hotelId: Joi.string().uuid().required(),
+    roomId: Joi.string().uuid().required(),
+  }),
+  body: Joi.object().keys({
+    status: roomStatus.required(),
+  }),
+};
