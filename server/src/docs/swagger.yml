@@ -573,8 +573,9 @@ paths:
     post:
       summary: Submit a hotel partner registration
       description: >
-        Creates a HotelPartner (pending), a Hotel (not yet active), its licenses, representative,
-        images, payout account and a pending verification request — all in one transaction.
+        Reuses the user's active partner or creates one if none (a partner can own multiple hotels),
+        then creates a Hotel (not yet active), its licenses, representative, images, payout account,
+        room config and a pending verification request — all in one transaction.
         Any authenticated user can submit. File URLs must be uploaded via POST /uploads first.
       tags: [HotelPartners]
       security:
@@ -593,7 +594,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/HotelVerificationRequest'
         "400":
-          description: Validation error or duplicate pending/approved partner
+          description: Validation error
           content:
             application/json:
               schema:
