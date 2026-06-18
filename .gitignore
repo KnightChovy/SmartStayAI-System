@@ -8,3 +8,4 @@
 
 # Claude Code local settings/secrets (cấu hình theo máy, không commit)
 .claude/settings.local.json
+/.playwright-mcp

@@ -8,6 +8,13 @@ This file tracks the accomplished tasks, resolved user requests, and visual/func
 
 ### June 18, 2026
 
+- [x] **Làm lại UI/UX quầy lễ tân + nối nốt API/param còn thiếu (FE)**:
+  - Rà soát route + service BE: **toàn bộ endpoint staff-operable đã được call**. Phần thiếu là _param_ chưa dùng → nối nốt: `check-in` giờ gửi được `roomId` (chọn phòng bàn giao) ngoài `voucherCode`.
+  - `BookingDetailPage`: thêm dropdown **"Gán phòng"** lấy từ `useHotelRooms` (lọc phòng `available` đúng `roomTypeId`; rỗng = để BE tự gán); cảnh báo trước cửa sổ check-in (`checkInDate > hôm nay` → disable nút + báo rõ), cảnh báo quá kỳ lưu trú; thêm card Voucher (mã + đã/chưa dùng); gộp layout 2 cột rõ ràng.
+  - `FrontDeskPage`: bỏ bảng phẳng + dải status chip, đổi sang **4 ô lọc theo việc cần làm** (Cần check-in / Trả phòng hôm nay / Đang lưu trú / Chờ thanh toán) có đếm số, + nút "Xem tất cả". Mỗi dòng có **nút thao tác nhanh inline** (Check-in tự gán phòng / Check-out) + banner feedback dùng `errorMessage` (hiện message thật từ BE). "Cần check-in" = `confirmed && ngày nhận ≤ hôm nay < ngày trả`.
+  - Thêm helper dùng chung `toUtcDateKey` / `todayUtcKey` trong `utils/formatDate.ts` (so ngày theo UTC, khớp `toUtcDate` của BE). `npx tsc --noEmit` sạch.
+  - Cũng sửa bug interceptor `lib/api.ts`: `return Promise.reject(error)` bị kẹt trong nhánh `if (401||403)` khiến lỗi 400 fall-through → axios resolve `undefined` → `const {data}=undefined` ném lỗi không có `.response` → UI luôn hiện fallback. Đã đưa reject ra ngoài; gộp điều kiện `_retry`.
+
 - [x] **Cổng nhân viên (Staff Portal) — lễ tân + housekeeping + bản đồ phòng (FE, không sửa BE)**:
   - Đọc Swagger + route BE (`feat staff`): toàn bộ API staff nằm dưới `/hotels/:hotelId/...` và backend tự kiểm quyền qua `getOperableHotel` (chủ KS / manageBookings / staff được phân công). Nối đúng hợp đồng: `GET /hotels/:id/bookings` (lọc `status/fromDate/toDate/page/limit`, trả `{results,...}` kèm `customer`+`roomType`), `GET .../bookings/:bookingId`, `POST .../check-in` (`{roomId?,voucherCode?}`), `POST .../check-out` (`{extraCharge?}`), `POST .../record-cash-payment`, `POST .../no-show`, `GET .../housekeeping?status=`, `POST .../housekeeping/:taskId/complete`, `GET .../rooms`, `PATCH .../rooms/:roomId/status`.
   - Tầng dữ liệu theo chuẩn dự án: `types/staff.types.ts`, `services/staff.service.ts`, `hooks/staff/*` (mỗi API một file + `keys.ts` + barrel `index.ts`: `use-hotel-bookings`, `use-hotel-booking`, `use-check-in`, `use-check-out`, `use-record-cash-payment`, `use-mark-no-show`, `use-housekeeping-tasks`, `use-complete-housekeeping`, `use-hotel-rooms`, `use-update-room-status`, `use-staff-hotels`).
