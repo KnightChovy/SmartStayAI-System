@@ -14,3 +14,4 @@ export { amenityService } from './amenity.service';
 export { pricingRuleService } from './pricing-rule.service';
 export { staffService } from './staff.service';
 export { housekeepingService } from './housekeeping.service';
+export { conversationService } from './conversation.service';
