@@ -16,10 +16,10 @@ import { authService } from '@/services/auth.service';
 import { ROUTES } from '@/constants/routes';
 
 const navItems = [
-  { to: ROUTES.staffDashboard, label: 'Tổng quan', icon: LayoutDashboard, end: true },
-  { to: ROUTES.staffFrontDesk, label: 'Quầy lễ tân', icon: ConciergeBell, end: false },
-  { to: ROUTES.staffHousekeeping, label: 'Dọn phòng', icon: Sparkles, end: false },
-  { to: ROUTES.staffRooms, label: 'Bản đồ phòng', icon: BedDouble, end: false },
+  { to: ROUTES.staffDashboard, label: 'Overview', icon: LayoutDashboard, end: true },
+  { to: ROUTES.staffFrontDesk, label: 'Front desk', icon: ConciergeBell, end: false },
+  { to: ROUTES.staffHousekeeping, label: 'Housekeeping', icon: Sparkles, end: false },
+  { to: ROUTES.staffRooms, label: 'Room map', icon: BedDouble, end: false },
 ];
 
 export function StaffLayout() {
@@ -34,7 +34,7 @@ export function StaffLayout() {
     try {
       if (refreshToken) await authService.logout(refreshToken);
     } catch {
-      // Bỏ qua lỗi mạng khi logout — vẫn xoá phiên cục bộ.
+      // Ignore network errors on logout — still clear the local session.
     }
     clearAuth();
     navigate(ROUTES.login, { replace: true });
@@ -50,7 +50,7 @@ export function StaffLayout() {
           </div>
           <div className="leading-tight">
             <p className="text-sm font-semibold text-slate-900">SmartStay AI</p>
-            <p className="text-xs text-slate-500">Cổng nhân viên</p>
+            <p className="text-xs text-slate-500">Staff Portal</p>
           </div>
         </div>
 
@@ -81,7 +81,7 @@ export function StaffLayout() {
             className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-rose-600 transition-colors hover:bg-rose-50"
           >
             <LogOut className="size-4" />
-            Đăng xuất
+            Log out
           </button>
         </div>
       </aside>
@@ -97,7 +97,7 @@ export function StaffLayout() {
                 <span className="ml-1.5 text-slate-400">· {hotel.city}</span>
               </span>
             ) : (
-              <span className="text-slate-400">Chưa chọn khách sạn</span>
+              <span className="text-slate-400">No hotel selected</span>
             )}
             <Button
               variant="ghost"
@@ -109,17 +109,17 @@ export function StaffLayout() {
               }}
             >
               <RefreshCw className="size-3" />
-              Đổi
+              Change
             </Button>
           </div>
 
           <div className="flex items-center gap-3">
             <div className="text-right leading-tight">
-              <p className="text-sm font-medium text-slate-900">{user?.name ?? 'Nhân viên'}</p>
+              <p className="text-sm font-medium text-slate-900">{user?.name ?? 'Staff'}</p>
               <p className="text-xs text-slate-500">{user?.email}</p>
             </div>
             <div className="flex size-9 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
-              {(user?.name ?? 'NV').slice(0, 2).toUpperCase()}
+              {(user?.name ?? 'ST').slice(0, 2).toUpperCase()}
             </div>
           </div>
         </header>

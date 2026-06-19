@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { staffService } from '@/services/staff.service';
 import { staffKeys } from './keys';
 
-/** Danh sách phòng vật lý của khách sạn (bản đồ trạng thái phòng). */
+/** Physical room list for the hotel (room status map). */
 export function useHotelRooms(hotelId: string | undefined) {
   return useQuery({
     queryKey: staffKeys.rooms(hotelId ?? ''),

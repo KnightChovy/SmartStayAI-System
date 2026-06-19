@@ -3,7 +3,7 @@ import { staffService } from '@/services/staff.service';
 import type { CheckInPayload } from '@/types/staff.types';
 import { staffKeys } from './keys';
 
-/** Check-in khách tại quầy lễ tân. */
+/** Check in a guest at the front desk. */
 export function useCheckIn(hotelId: string | undefined) {
   const qc = useQueryClient();
   return useMutation({

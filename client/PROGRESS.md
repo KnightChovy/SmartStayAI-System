@@ -6,6 +6,13 @@ This file tracks the accomplished tasks, resolved user requests, and visual/func
 
 ## Completed Tasks Checklist
 
+### June 19, 2026
+
+- [x] **Localize Staff Portal UI to English**:
+  - Translated all Vietnamese user-facing text in the staff portal to English: pages (`StaffDashboardPage`, `FrontDeskPage`, `BookingDetailPage`, `HousekeepingPage`, `RoomsPage`, `SelectHotelPage`), layout/components (`StaffLayout` nav + topbar, `StatusBadge` booking/room/task/payment labels, `RequireStaffHotel`), and all toast/feedback/error strings.
+  - Also translated the in-code comments across `hooks/staff/*`, `routes/staffRoutes.tsx`, `stores/staffHotelStore.ts`, `types/staff.types.ts`, and `services/staff.service.ts` so the whole staff module reads in English.
+  - No behavior changes — labels/copy only. `tsc -b` clean (only pre-existing `baseUrl` deprecation warnings).
+
 ### June 18, 2026
 
 - [x] **Làm lại UI/UX quầy lễ tân + nối nốt API/param còn thiếu (FE)**:

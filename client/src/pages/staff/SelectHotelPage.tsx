@@ -8,8 +8,9 @@ import type { StaffHotel } from '@/types/staff.types';
 import { ROUTES } from '@/constants/routes';
 
 /**
- * Màn chọn khách sạn nơi staff đang trực. Danh sách lấy từ `GET /hotels` (công khai);
- * quyền thực sự do backend kiểm khi gọi API vận hành (chọn nhầm sẽ bị 403 ở màn sau).
+ * Screen for selecting the hotel the staff member is working at. The list comes from
+ * `GET /hotels` (public); actual permission is enforced by the backend when operational
+ * APIs are called (picking the wrong one returns 403 on the next screen).
  */
 export default function SelectHotelPage() {
   const navigate = useNavigate();
@@ -32,9 +33,9 @@ export default function SelectHotelPage() {
         <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
           <Building2 className="size-6" />
         </div>
-        <h1 className="text-xl font-semibold text-slate-900">Chọn khách sạn bạn đang trực</h1>
+        <h1 className="text-xl font-semibold text-slate-900">Select the hotel you're working at</h1>
         <p className="mt-1 text-sm text-slate-500">
-          Mọi thao tác lễ tân / dọn phòng sẽ áp dụng cho khách sạn này.
+          All front desk / housekeeping actions will apply to this hotel.
         </p>
       </div>
 
@@ -43,22 +44,22 @@ export default function SelectHotelPage() {
         <Input
           value={query}
           onChange={e => setQuery(e.target.value)}
-          placeholder="Tìm theo tên hoặc thành phố…"
+          placeholder="Search by name or city…"
           className="pl-9"
         />
       </div>
 
-      {isLoading && <p className="py-10 text-center text-sm text-slate-500">Đang tải khách sạn…</p>}
+      {isLoading && <p className="py-10 text-center text-sm text-slate-500">Loading hotels…</p>}
       {isError && (
         <p className="py-10 text-center text-sm text-rose-600">
-          Không tải được danh sách khách sạn. Vui lòng thử lại.
+          Could not load hotels. Please try again.
         </p>
       )}
 
       {!isLoading && !isError && (
         <div className="space-y-2">
           {filtered.length === 0 && (
-            <p className="py-10 text-center text-sm text-slate-500">Không tìm thấy khách sạn nào.</p>
+            <p className="py-10 text-center text-sm text-slate-500">No hotels found.</p>
           )}
           {filtered.map(hotel => (
             <button

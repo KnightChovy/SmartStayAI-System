@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { staffService } from '@/services/staff.service';
 import { staffKeys } from './keys';
 
-/** Hoàn thành (1-tap) một task dọn phòng → phòng trở lại available. */
+/** Complete a housekeeping task (1-tap) → room returns to available. */
 export function useCompleteHousekeeping(hotelId: string | undefined) {
   const qc = useQueryClient();
   return useMutation({

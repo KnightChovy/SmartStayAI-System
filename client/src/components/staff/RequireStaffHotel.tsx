@@ -3,9 +3,9 @@ import { useStaffHotelStore } from '@/stores/staffHotelStore';
 import { ROUTES } from '@/constants/routes';
 
 /**
- * Chặn các màn vận hành khi staff chưa chọn khách sạn đang trực. Vì backend không có
- * endpoint trả khách sạn được phân công cho staff, FE bắt buộc chọn một lần trước khi
- * gọi các API `/hotels/:hotelId/...`.
+ * Blocks operational screens until the staff member has selected the hotel they're working
+ * at. Since the backend has no endpoint returning the hotels assigned to a staff member, the
+ * frontend requires a one-time selection before calling the `/hotels/:hotelId/...` APIs.
  */
 export function RequireStaffHotel() {
   const hotel = useStaffHotelStore(state => state.hotel);

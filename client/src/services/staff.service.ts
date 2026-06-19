@@ -15,7 +15,7 @@ import type {
   StaffRoomsResponse,
 } from '@/types/staff.types';
 
-/** Bỏ field rỗng khỏi query string. */
+/** Drop empty fields from the query string. */
 function cleanParams<T extends object>(params: T): Record<string, unknown> {
   return Object.fromEntries(
     Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== '')
@@ -23,12 +23,12 @@ function cleanParams<T extends object>(params: T): Record<string, unknown> {
 }
 
 /**
- * Tầng gọi API cho cổng nhân viên (lễ tân / housekeeping). Mọi endpoint nằm dưới
- * `/hotels/:hotelId/...`; backend tự kiểm tra staff có được phân công vào khách sạn
- * (getOperableHotel) nên FE chỉ cần truyền đúng hotelId đang trực.
+ * API layer for the staff portal (front desk / housekeeping). All endpoints live under
+ * `/hotels/:hotelId/...`; the backend verifies whether the staff member is assigned to the
+ * hotel (getOperableHotel), so the FE only needs to pass the correct active hotelId.
  */
 export const staffService = {
-  /** Danh sách khách sạn công khai — dùng cho bộ chọn "nơi làm việc" của staff. */
+  /** Public hotel list — used for the staff "workplace" picker. */
   async listHotels(): Promise<StaffHotel[]> {
     const { data } = await api.get<Paginated<StaffHotel>>('/hotels', {
       params: { limit: 100 },
@@ -36,9 +36,9 @@ export const staffService = {
     return data.results;
   },
 
-  // ----- Booking / quầy lễ tân -----
+  // ----- Booking / front desk -----
 
-  /** Danh sách booking của khách sạn (`GET /hotels/:hotelId/bookings`). */
+  /** Hotel booking list (`GET /hotels/:hotelId/bookings`). */
   async listBookings(
     hotelId: string,
     params: HotelBookingsParams = {}
@@ -49,7 +49,7 @@ export const staffService = {
     return data;
   },
 
-  /** Chi tiết một booking (`GET /hotels/:hotelId/bookings/:bookingId`). */
+  /** Detail of a single booking (`GET /hotels/:hotelId/bookings/:bookingId`). */
   async getBooking(hotelId: string, bookingId: string): Promise<HotelBookingDetail> {
     const { data } = await api.get<HotelBookingDetail>(
       `/hotels/${hotelId}/bookings/${bookingId}`
@@ -57,7 +57,7 @@ export const staffService = {
     return data;
   },
 
-  /** Check-in khách (`POST .../check-in`). */
+  /** Check in a guest (`POST .../check-in`). */
   async checkIn(
     hotelId: string,
     bookingId: string,
@@ -70,7 +70,7 @@ export const staffService = {
     return data;
   },
 
-  /** Check-out khách (`POST .../check-out`). */
+  /** Check out a guest (`POST .../check-out`). */
   async checkOut(
     hotelId: string,
     bookingId: string,
@@ -83,7 +83,7 @@ export const staffService = {
     return data;
   },
 
-  /** Thu tiền mặt cho booking trả tại khách sạn (`POST .../record-cash-payment`). */
+  /** Record a cash payment for a pay-at-hotel booking (`POST .../record-cash-payment`). */
   async recordCashPayment(hotelId: string, bookingId: string): Promise<HotelBooking> {
     const { data } = await api.post<HotelBooking>(
       `/hotels/${hotelId}/bookings/${bookingId}/record-cash-payment`
@@ -91,7 +91,7 @@ export const staffService = {
     return data;
   },
 
-  /** Đánh dấu khách không đến (`POST .../no-show`). */
+  /** Mark a guest as a no-show (`POST .../no-show`). */
   async markNoShow(hotelId: string, bookingId: string): Promise<HotelBooking> {
     const { data } = await api.post<HotelBooking>(
       `/hotels/${hotelId}/bookings/${bookingId}/no-show`
@@ -101,7 +101,7 @@ export const staffService = {
 
   // ----- Housekeeping -----
 
-  /** Danh sách task dọn phòng (`GET /hotels/:hotelId/housekeeping`). */
+  /** Housekeeping task list (`GET /hotels/:hotelId/housekeeping`). */
   async listHousekeeping(
     hotelId: string,
     status?: HousekeepingTaskStatus
@@ -112,7 +112,7 @@ export const staffService = {
     return data;
   },
 
-  /** Hoàn thành task dọn phòng (`POST .../complete`). */
+  /** Complete a housekeeping task (`POST .../complete`). */
   async completeHousekeeping(hotelId: string, taskId: string): Promise<HousekeepingTask> {
     const { data } = await api.post<HousekeepingTask>(
       `/hotels/${hotelId}/housekeeping/${taskId}/complete`
@@ -120,15 +120,15 @@ export const staffService = {
     return data;
   },
 
-  // ----- Phòng vật lý -----
+  // ----- Physical rooms -----
 
-  /** Danh sách phòng vật lý (`GET /hotels/:hotelId/rooms`). */
+  /** Physical room list (`GET /hotels/:hotelId/rooms`). */
   async listRooms(hotelId: string): Promise<StaffRoom[]> {
     const { data } = await api.get<StaffRoomsResponse>(`/hotels/${hotelId}/rooms`);
     return data.results;
   },
 
-  /** Đổi nhanh trạng thái phòng (`PATCH .../status`). */
+  /** Quickly change a room's status (`PATCH .../status`). */
   async updateRoomStatus(
     hotelId: string,
     roomId: string,

@@ -10,10 +10,10 @@ import { formatDateShort } from '@/utils/formatDate';
 import { errorMessage } from '@/utils/errorMessage';
 
 const FILTERS: { value: HousekeepingTaskStatus | 'all'; label: string }[] = [
-  { value: 'all', label: 'Tất cả' },
-  { value: 'pending', label: 'Chờ dọn' },
-  { value: 'in_progress', label: 'Đang dọn' },
-  { value: 'done', label: 'Đã dọn' },
+  { value: 'all', label: 'All' },
+  { value: 'pending', label: 'To clean' },
+  { value: 'in_progress', label: 'Cleaning' },
+  { value: 'done', label: 'Cleaned' },
 ];
 
 export default function HousekeepingPage() {
@@ -31,8 +31,8 @@ export default function HousekeepingPage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-xl font-semibold text-slate-900">Dọn phòng</h1>
-        <p className="text-sm text-slate-500">Task dọn phòng tự sinh khi khách check-out.</p>
+        <h1 className="text-xl font-semibold text-slate-900">Housekeeping</h1>
+        <p className="text-sm text-slate-500">Housekeeping tasks are created automatically when guests check out.</p>
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -62,19 +62,19 @@ export default function HousekeepingPage() {
         <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
           <AlertTriangle className="mt-0.5 size-4 shrink-0" />
           <div>
-            <p className="font-medium">Chưa tải được danh sách dọn phòng.</p>
-            <p className="text-amber-700">{errorMessage(error, 'Lỗi máy chủ.')}</p>
+            <p className="font-medium">Could not load housekeeping tasks.</p>
+            <p className="text-amber-700">{errorMessage(error, 'Server error.')}</p>
           </div>
         </div>
       )}
 
-      {isLoading && <p className="text-sm text-slate-500">Đang tải…</p>}
+      {isLoading && <p className="text-sm text-slate-500">Loading…</p>}
 
       {!isLoading && !isError && (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {tasks.length === 0 && (
             <p className="col-span-full py-10 text-center text-sm text-slate-400">
-              Không có task dọn phòng.
+              No housekeeping tasks.
             </p>
           )}
           {tasks.map(task => (
@@ -85,13 +85,13 @@ export default function HousekeepingPage() {
                     <Sparkles className="size-5" />
                   </div>
                   <div>
-                    <p className="font-semibold text-slate-900">Phòng {task.room.roomNumber}</p>
-                    <p className="text-xs text-slate-500">Tầng {task.room.floor}</p>
+                    <p className="font-semibold text-slate-900">Room {task.room.roomNumber}</p>
+                    <p className="text-xs text-slate-500">Floor {task.room.floor}</p>
                   </div>
                 </div>
                 <TaskStatusBadge status={task.status} />
               </div>
-              <p className="mb-3 text-xs text-slate-400">Tạo: {formatDateShort(task.createdAt)}</p>
+              <p className="mb-3 text-xs text-slate-400">Created: {formatDateShort(task.createdAt)}</p>
               {task.status !== 'done' ? (
                 <Button
                   size="sm"
@@ -102,15 +102,15 @@ export default function HousekeepingPage() {
                     try {
                       await complete.mutateAsync({ taskId: task.id });
                     } catch (err) {
-                      setActionError(errorMessage(err, 'Không hoàn thành được task.'));
+                      setActionError(errorMessage(err, 'Could not complete the task.'));
                     }
                   }}
                 >
-                  <Check className="size-4" /> Hoàn thành
+                  <Check className="size-4" /> Mark complete
                 </Button>
               ) : (
                 <p className="text-center text-xs text-emerald-600">
-                  Đã dọn {formatDateShort(task.completedAt)}
+                  Cleaned {formatDateShort(task.completedAt)}
                 </p>
               )}
             </div>
