@@ -12,6 +12,7 @@ import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/stores/authStore';
 import { useStaffHotelStore } from '@/stores/staffHotelStore';
+import { useStaffHotels } from '@/hooks/staff';
 import { authService } from '@/services/auth.service';
 import { ROUTES } from '@/constants/routes';
 
@@ -29,6 +30,11 @@ export function StaffLayout() {
   const refreshToken = useAuthStore(state => state.refreshToken);
   const hotel = useStaffHotelStore(state => state.hotel);
   const clearHotel = useStaffHotelStore(state => state.clearHotel);
+
+  // Only let staff switch hotels when they're actually assigned to more than one. With a single
+  // assignment there's nothing to switch to, so the "Change" button is hidden.
+  const { data: assignedHotels } = useStaffHotels();
+  const canSwitchHotel = (assignedHotels?.length ?? 0) > 1;
 
   const handleLogout = async () => {
     try {
@@ -99,18 +105,20 @@ export function StaffLayout() {
             ) : (
               <span className="text-slate-400">No hotel selected</span>
             )}
-            <Button
-              variant="ghost"
-              size="xs"
-              className="ml-1 text-slate-500"
-              onClick={() => {
-                clearHotel();
-                navigate(ROUTES.staffSelectHotel);
-              }}
-            >
-              <RefreshCw className="size-3" />
-              Change
-            </Button>
+            {canSwitchHotel && (
+              <Button
+                variant="ghost"
+                size="xs"
+                className="ml-1 text-slate-500"
+                onClick={() => {
+                  clearHotel();
+                  navigate(ROUTES.staffSelectHotel);
+                }}
+              >
+                <RefreshCw className="size-3" />
+                Change
+              </Button>
+            )}
           </div>
 
           <div className="flex items-center gap-3">

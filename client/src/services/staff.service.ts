@@ -1,3 +1,4 @@
+import type { AxiosRequestConfig } from 'axios';
 import { api } from '@/lib/api';
 import type { Paginated } from '@/types/api.types';
 import type {
@@ -15,6 +16,14 @@ import type {
   StaffRoomsResponse,
 } from '@/types/staff.types';
 
+/**
+ * Axios config that sets the interceptor's `_retry` flag (see `lib/api.ts`). On a 401/403 the
+ * shared response interceptor normally tries to refresh the token (and can log the user out on
+ * repeated failures). For the hotel-access probes below, 403 is an EXPECTED answer, so we set
+ * `_retry: true` to make the interceptor skip its refresh branch and just reject cleanly.
+ */
+const skipAuthRetry = { _retry: true } as unknown as AxiosRequestConfig;
+
 /** Drop empty fields from the query string. */
 function cleanParams<T extends object>(params: T): Record<string, unknown> {
   return Object.fromEntries(
@@ -28,12 +37,27 @@ function cleanParams<T extends object>(params: T): Record<string, unknown> {
  * hotel (getOperableHotel), so the FE only needs to pass the correct active hotelId.
  */
 export const staffService = {
-  /** Public hotel list — used for the staff "workplace" picker. */
-  async listHotels(): Promise<StaffHotel[]> {
+  /**
+   * Hotels the logged-in staff member can actually operate.
+   *
+   * The backend exposes no endpoint that lists a staff member's assigned hotels (and we can't add
+   * one), so we discover them client-side: list the public hotels, then probe each staff-operable
+   * endpoint (guarded by `getOperableHotel`) and keep only the ones that don't return 403. The
+   * probes use `skipAuthRetry` so the expected 403s never trigger the token-refresh interceptor.
+   */
+  async listMyHotels(): Promise<StaffHotel[]> {
     const { data } = await api.get<Paginated<StaffHotel>>('/hotels', {
       params: { limit: 100 },
     });
-    return data.results;
+    const hotels = data.results;
+
+    const probes = await Promise.allSettled(
+      hotels.map(hotel =>
+        api.get(`/hotels/${hotel.id}/bookings`, { params: { limit: 1 }, ...skipAuthRetry })
+      )
+    );
+
+    return hotels.filter((_, i) => probes[i].status === 'fulfilled');
   },
 
   // ----- Booking / front desk -----

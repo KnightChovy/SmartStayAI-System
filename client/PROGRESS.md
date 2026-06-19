@@ -8,6 +8,14 @@ This file tracks the accomplished tasks, resolved user requests, and visual/func
 
 ### June 19, 2026
 
+- [x] **Staff only sees hotels they're assigned to (no free hotel switching) — client-only**:
+  - Constraint: no server changes allowed. The BE has no endpoint that lists a staff member's assigned hotels, so `staffService.listMyHotels` now **discovers them client-side**: list public `GET /hotels`, then probe each `GET /hotels/:id/bookings?limit=1` (guarded by `getOperableHotel`) and keep only the hotels that don't return 403.
+  - The probes pass a `skipAuthRetry` config (`{ _retry: true }`) so the expected 403s **skip the shared axios refresh-token interceptor** in `lib/api.ts` (which otherwise escalates 401/403 into a token refresh and can log the user out / thrash `refresh-tokens`).
+  - `SelectHotelPage`: lists only operable hotels; **auto-selects when there's exactly one**; clear empty state when the staff member isn't assigned to any hotel; removed the free-text search.
+  - `RequireStaffHotel` (guard): validates the persisted hotel against the operable list, **auto-picks the single assignment**, drops a stale/unassigned selection, and **holds rendering until a valid hotel is in the store** — so the operational pages never fire a 403 (fixes the leftover Đà Nẵng selection that was 403-ing).
+  - `StaffLayout`: the **"Change" button only shows when the staff member has >1 operable hotel**.
+  - `tsc` clean (client). Server folder untouched.
+
 - [x] **Localize Staff Portal UI to English**:
   - Translated all Vietnamese user-facing text in the staff portal to English: pages (`StaffDashboardPage`, `FrontDeskPage`, `BookingDetailPage`, `HousekeepingPage`, `RoomsPage`, `SelectHotelPage`), layout/components (`StaffLayout` nav + topbar, `StatusBadge` booking/room/task/payment labels, `RequireStaffHotel`), and all toast/feedback/error strings.
   - Also translated the in-code comments across `hooks/staff/*`, `routes/staffRoutes.tsx`, `stores/staffHotelStore.ts`, `types/staff.types.ts`, and `services/staff.service.ts` so the whole staff module reads in English.
