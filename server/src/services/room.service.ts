@@ -1,5 +1,5 @@
 import httpStatus from 'http-status';
-import type { Prisma, User } from '@prisma/client';
+import type { Prisma, User, RoomStatus } from '@prisma/client';
 import prisma from '../config/prisma';
 import ApiError from '../utils/ApiError';
 import { toUtcDate } from '../utils/dates';
@@ -67,9 +67,26 @@ export class RoomService {
     });
   };
 
-  /** Liệt kê phòng của khách sạn, lọc theo trạng thái / loại phòng + phân trang. */
+  /**
+   * Đổi trạng thái phòng (available/occupied/maintenance/cleaning) — cho STAFF (bản đồ phòng S20,
+   * housekeeping 1-tap). Hẹp hơn updateRoom (không đổi được số phòng/tầng), nên dùng getOperableHotel.
+   */
+  updateRoomStatus = async (hotelId: string, roomId: string, currentUser: User, status: RoomStatus) => {
+    await hotelService.getOperableHotel(hotelId, currentUser);
+    const room = await prisma.room.findFirst({ where: { id: roomId, hotelId } });
+    if (!room) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy phòng trong khách sạn này');
+    }
+    return prisma.room.update({
+      where: { id: roomId },
+      data: { status },
+      include: { roomType: { select: { id: true, name: true } } },
+    });
+  };
+
+  /** Liệt kê phòng của khách sạn (cho bản đồ phòng), lọc theo trạng thái / loại phòng + phân trang. */
   listRooms = async (hotelId: string, currentUser: User, filter: RoomFilter, options: RoomQueryOptions) => {
-    await hotelService.getManagedHotel(hotelId, currentUser);
+    await hotelService.getOperableHotel(hotelId, currentUser);
     const limit = options.limit || 50;
     const page = options.page || 1;
     const skip = (page - 1) * limit;

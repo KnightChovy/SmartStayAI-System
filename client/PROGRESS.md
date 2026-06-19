@@ -20,6 +20,53 @@ This file tracks the accomplished tasks, resolved user requests, and visual/func
   - The shared `CommonSidebar` already rendered a Logout button calling its `onLogout` prop, but the portal layouts never wired it to the real `POST /auth/logout` flow: `ManagerLayout`/`HotelPartnerLayout` passed no `onLogout` (button was a no-op) and `AdminLayout` passed `closeAllModals` (only closed modals).
   - Wired the existing `useLogout()` hook (`hooks/auth/use-logout.ts` → `authService.logout(refreshToken)` then `clearAuth()` + redirect to `/login`) into all three layouts. `ManagerLayout` and `HotelPartnerLayout` now pass `onLogout={() => logout()}`; `AdminLayout` passes a `handleLogout` that closes any open modals first, then logs out.
 
+### June 18, 2026
+
+- [x] **Làm lại UI/UX quầy lễ tân + nối nốt API/param còn thiếu (FE)**:
+  - Rà soát route + service BE: **toàn bộ endpoint staff-operable đã được call**. Phần thiếu là _param_ chưa dùng → nối nốt: `check-in` giờ gửi được `roomId` (chọn phòng bàn giao) ngoài `voucherCode`.
+  - `BookingDetailPage`: thêm dropdown **"Gán phòng"** lấy từ `useHotelRooms` (lọc phòng `available` đúng `roomTypeId`; rỗng = để BE tự gán); cảnh báo trước cửa sổ check-in (`checkInDate > hôm nay` → disable nút + báo rõ), cảnh báo quá kỳ lưu trú; thêm card Voucher (mã + đã/chưa dùng); gộp layout 2 cột rõ ràng.
+  - `FrontDeskPage`: bỏ bảng phẳng + dải status chip, đổi sang **4 ô lọc theo việc cần làm** (Cần check-in / Trả phòng hôm nay / Đang lưu trú / Chờ thanh toán) có đếm số, + nút "Xem tất cả". Mỗi dòng có **nút thao tác nhanh inline** (Check-in tự gán phòng / Check-out) + banner feedback dùng `errorMessage` (hiện message thật từ BE). "Cần check-in" = `confirmed && ngày nhận ≤ hôm nay < ngày trả`.
+  - Thêm helper dùng chung `toUtcDateKey` / `todayUtcKey` trong `utils/formatDate.ts` (so ngày theo UTC, khớp `toUtcDate` của BE). `npx tsc --noEmit` sạch.
+  - Cũng sửa bug interceptor `lib/api.ts`: `return Promise.reject(error)` bị kẹt trong nhánh `if (401||403)` khiến lỗi 400 fall-through → axios resolve `undefined` → `const {data}=undefined` ném lỗi không có `.response` → UI luôn hiện fallback. Đã đưa reject ra ngoài; gộp điều kiện `_retry`.
+
+- [x] **Cổng nhân viên (Staff Portal) — lễ tân + housekeeping + bản đồ phòng (FE, không sửa BE)**:
+  - Đọc Swagger + route BE (`feat staff`): toàn bộ API staff nằm dưới `/hotels/:hotelId/...` và backend tự kiểm quyền qua `getOperableHotel` (chủ KS / manageBookings / staff được phân công). Nối đúng hợp đồng: `GET /hotels/:id/bookings` (lọc `status/fromDate/toDate/page/limit`, trả `{results,...}` kèm `customer`+`roomType`), `GET .../bookings/:bookingId`, `POST .../check-in` (`{roomId?,voucherCode?}`), `POST .../check-out` (`{extraCharge?}`), `POST .../record-cash-payment`, `POST .../no-show`, `GET .../housekeeping?status=`, `POST .../housekeeping/:taskId/complete`, `GET .../rooms`, `PATCH .../rooms/:roomId/status`.
+  - Tầng dữ liệu theo chuẩn dự án: `types/staff.types.ts`, `services/staff.service.ts`, `hooks/staff/*` (mỗi API một file + `keys.ts` + barrel `index.ts`: `use-hotel-bookings`, `use-hotel-booking`, `use-check-in`, `use-check-out`, `use-record-cash-payment`, `use-mark-no-show`, `use-housekeeping-tasks`, `use-complete-housekeeping`, `use-hotel-rooms`, `use-update-room-status`, `use-staff-hotels`).
+  - Vì BE **không có** endpoint trả khách sạn được phân công cho staff (login chỉ trả `user`), thêm `stores/staffHotelStore.ts` (persist) + màn `SelectHotelPage` (chọn nơi trực từ `GET /hotels`) + guard `RequireStaffHotel`. Chọn nhầm KS không được phân công → BE trả 403 và UI báo rõ.
+  - Giao diện: `components/staff/StaffLayout.tsx` (sidebar + topbar hiển thị KS đang trực + nút "Đổi" + đăng xuất), `StatusBadge` (booking/room/task/payment), các trang `StaffDashboardPage` (đếm khách đến/đi/đang ở/chờ thanh toán hôm nay), `FrontDeskPage` (bảng booking + lọc trạng thái + tìm kiếm), `BookingDetailPage` (check-in/out, thu tiền mặt, no-show + feedback), `HousekeepingPage` (1-tap hoàn thành), `RoomsPage` (đổi nhanh trạng thái theo tầng).
+  - Định tuyến: `routes/staffRoutes.tsx` (`/staff`, guard `ProtectedRoute allowedRoles={[STAFF]}`), đăng ký trong `routes/index.ts`; thêm hằng `ROUTES.staff*` và đặt landing role STAFF → `/staff/dashboard`. Thêm util chung `utils/errorMessage.ts`.
+  - Tạo tài khoản nhân viên demo qua API có sẵn (`POST /hotels/:id/staff` với token partner): `staff@gmail.com` / `Manh2432004`, gán vào "SmartStay Hà Nội Old Quarter".
+  - ⚠️ Ghi nhận bug BE (chưa sửa theo yêu cầu): `GET /hotels/:id/housekeeping` trả 500 `prisma.housekeepingTask` undefined — Prisma Client chưa generate lại sau khi thêm model housekeeping. UI đã xử lý lỗi này mềm mại (banner cảnh báo).
+
+### June 17, 2026
+
+- [x] **Làm rõ hiển thị số phòng trống trên RoomTypeCard**:
+  - Trước: "X rooms left" là chữ xám nhỏ gộp chung dòng số đêm, dễ bỏ sót.
+  - Giờ: tách thành **badge pill nổi bật** (có icon `BedDouble`) ngay dưới thông số phòng. Bình thường (`> 3` phòng) dùng tông vàng `tertiary` ("X rooms available"); sắp hết (`≤ 3` phòng) dùng tông đỏ `error` ("Only X rooms left!") tạo cảm giác cần đặt sớm. Tránh dùng màu `primary` (taupe). Dòng giá chỉ còn số đêm cho gọn.
+
+- [x] **HotelDetailPage tự điền ngày mặc định để hiện số phòng trống ngay**:
+  - BE `getRoomTypes` chỉ trả `availableRooms`/`totalPrice`/`numNights` khi có cả `checkIn`+`checkOut`; mở trang chi tiết không kèm ngày (vd bấm từ HotelCard chưa chọn ngày) thì room-types không có số phòng.
+  - Thêm `useEffect` trong `HotelDetailPage`: nếu URL thiếu `checkIn`/`checkOut` → set mặc định hôm nay → mai (và `guests` nếu thiếu) vào URL bằng `setParams(..., { replace: true })`. Nhờ ghi vào URL nên DateRangePicker, `useRoomTypes` và bước đặt phòng (`handleSelectRoom`) đều dùng chung ngày hợp lệ; link cũng shareable. Có guard `if (checkIn && checkOut) return` để không đè ngày khách đã chọn từ trang search.
+
+- [x] **Nối thanh toán VNPay vào luồng đặt phòng (FE, không sửa BE)**:
+  - Đọc kỹ hợp đồng BE: `POST /payments/bookings/:bookingId/vnpay` (auth, chủ booking, booking phải `pending` & chưa hết hạn giữ chỗ) → trả `{ paymentUrl }`; sau khi khách trả tiền, VNPay redirect về BE rồi BE chuyển khách sang `${CLIENT_URL}/booking/payment-result?status=success|failed&bookingCode=...`.
+  - Tạo tầng dữ liệu thanh toán theo đúng chuẩn `hooks/` của dự án: `types/payment.types.ts` (`CreateVnpayPaymentResponse`, `PaymentResultStatus`), `services/payment.service.ts` (`createVnpay`), `hooks/payments/use-create-vnpay-payment.ts` + barrel `index.ts`.
+  - Thêm route + trang kết quả: `ROUTES.paymentResult` = `/booking/payment-result`, đăng ký trong `guestRoutes.tsx`, trang `pages/guest/PaymentResultPage.tsx` (đọc `status`/`bookingCode` trên query, hiện thành công/thất bại, invalidate `bookings` khi thành công).
+  - Nối `BookingCheckoutPage`: bước Confirm nay **tạo booking pending một lần** (giữ id để bấm lại không tạo trùng) → gọi `useCreateVnpayPayment` → `window.location.href = paymentUrl`. Thêm helper `errorMessage()` (không dùng `any`) để hiện lỗi từ BE; nút đổi nhãn `Confirm & Pay` / `Redirecting to VNPay…` / `Retry payment`; xử lý 503 khi VNPay chưa cấu hình (giữ khách ở trang, báo lỗi rõ ràng).
+  - Verify với BE đang chạy (seed): tạo booking `BKMQI8WO17C4B983` OK; `POST .../vnpay` trả đúng 503 "VNPay chưa được cấu hình" (do `.env` thiếu `VNP_TMN_CODE`/`VNP_HASH_SECRET`) — FE bắt và hiển thị message này. Để chạy redirect thật chỉ cần thêm 2 biến VNPay vào `server/.env` (không đụng code).
+  - Ràng buộc tồn kho ("đặt hết số lượng thì không đặt tiếp") đã được BE đảm bảo sẵn: search room-types ẩn loại hết phòng, `createBooking` tăng `bookedRooms` có điều kiện `< totalRooms`; FE hiện "X rooms left" và chặn đặt khi BE trả lỗi hết phòng.
+
+### June 16, 2026 (continued)
+
+- [x] **Fix luồng đặt phòng cho khách chưa đăng nhập (login redirect đánh rơi phòng đã chọn)**:
+  - `HotelDetailPage` khi khách chưa login bấm "Book now" → điều hướng `/login` kèm `state: { from: { pathname: '/booking' }, booking: { hotel, roomType, checkIn, checkOut, guests } }`. Nhưng `LoginPage` trước đây luôn `navigate(getLandingPathForRole(role))` sau khi login, **bỏ qua `from` + `booking`** → khách bị đẩy về `/` và mất phòng đã chọn (checkout hiện "No room selected").
+  - Sửa `pages/auth/LoginPage.tsx`: đọc `location.state` (kiểu `LoginRedirectState`), sau khi login thành công quay lại `from.pathname (+ search)` kèm `state: booking`; không có `from` thì mới về cổng mặc định theo role. Xử lý cả 2 nguồn redirect: `ProtectedRoute` (gửi cả `location`) và nút Book now (gửi `{ pathname }`).
+  - Kết quả: khách chưa đăng nhập có thể search → chọn phòng → login → về thẳng `/booking` với đủ dữ liệu → tạo booking (`POST /bookings`).
+
+- [x] **Verify guest "search hotels → booking" flow khớp với BE API + fix Hero search bỏ rơi ngày**:
+  - Rà soát toàn bộ luồng client đã nối đúng hợp đồng BE: `GET /hotels` (`useSearchHotels` → `SearchResultsPage`), `GET /hotels/:id/room-types` (`useRoomTypes` → `HotelDetailPage`), `POST /bookings` (`useCreateBooking` → `BookingCheckoutPage`), `GET /bookings/me|:id`, `PATCH /bookings/:id/cancel`. Service/hook/type (`hotel.service.ts`, `booking.service.ts`, `hotel.types.ts`, `booking.types.ts`) khớp đúng response (Decimal serialize thành string, `minPrice`, `availableRooms`/`totalPrice` chỉ có khi truyền `checkIn`/`checkOut`).
+  - Sửa `components/home/Hero.tsx`: form tìm kiếm trang chủ trước đây dùng `prompt()` lưu ngày dạng free-text rồi **vứt bỏ** khi submit (chỉ gửi `city` + `guests`) → BE bỏ qua bước tính tồn kho & giá kỳ ở. Thay bằng 2 `input[type=date]` thật (check-in tự đẩy check-out +1 ngày, `min` chặn quá khứ) + stepper số khách; `onSubmit` nay gửi `checkIn`/`checkOut`/`guests` sang `/search` để BE trả đúng phòng trống + tổng giá.
+
 ### June 16, 2026
 
 - [x] **Hotel Verify — Aligned the entire FE data layer to the real backend API spec (7 endpoints under `/v1/hotel-partners`)**:

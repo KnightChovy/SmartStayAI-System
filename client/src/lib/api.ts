@@ -45,25 +45,25 @@ api.interceptors.response.use(
   async error => {
     const originalRequest = error.config;
 
-    if (error.response?.status === 401 || error.response?.status === 403) {
-      if (!originalRequest._retry) {
-        originalRequest._retry = true;
-        if (isRefreshing) {
-          return new Promise((resolve, reject) => {
-            failedQueue.push({ resolve, reject });
-          })
-            .then(token => {
+    if (
+      (error.response?.status === 401 || error.response?.status === 403) &&
+      !originalRequest._retry
+    ) {
+      originalRequest._retry = true;
+
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then(token => {
             if (originalRequest.headers) {
               originalRequest.headers.Authorization = `Bearer ${token}`;
             }
             return api(originalRequest);
           })
-          .catch(err => {
-            return Promise.reject(err);
-          });
+          .catch(err => Promise.reject(err));
       }
 
-      originalRequest._retry = true;
       isRefreshing = true;
 
       const refreshToken = useAuthStore.getState().refreshToken;
@@ -77,9 +77,7 @@ api.interceptors.response.use(
       try {
         const response = await axios.post(
           `${API_BASE_URL}/auth/refresh-tokens`,
-          {
-            refreshToken,
-          }
+          { refreshToken }
         );
 
         const { access, refresh } = response.data;
@@ -95,9 +93,8 @@ api.interceptors.response.use(
             originalRequest.headers.Authorization = `Bearer ${access.token}`;
           }
           return api(originalRequest);
-        } else {
-          throw new Error('Invalid refresh response structure');
         }
+        throw new Error('Invalid refresh response structure');
       } catch (refreshError) {
         processQueue(refreshError as Error, null);
         useAuthStore.getState().clearAuth();
@@ -109,4 +106,4 @@ api.interceptors.response.use(
 
     return Promise.reject(error);
   }
-});
+);

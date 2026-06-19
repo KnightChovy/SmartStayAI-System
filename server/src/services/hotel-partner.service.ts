@@ -160,17 +160,18 @@ export class HotelPartnerService {
 
   /**
    * Nộp hồ sơ đăng ký khách sạn (theo cấu trúc form client).
-   * Tạo Partner (pending) + Hotel (chưa active) + mỗi giấy tờ tạo 1 document (file, pending) và
+   * Dùng lại Partner đang hoạt động hoặc tạo mới (1 partner -> N hotel) + Hotel (chưa active) +
+   * mỗi giấy tờ tạo 1 document (file, pending) và
    * 1 license (metadata, current_document_id null cho tới khi document được duyệt) + đại diện + ảnh
    * + tài khoản nhận tiền + yêu cầu duyệt — tất cả trong một transaction.
    */
   registerHotel = async (userId: string, payload: RegisterHotelDto) => {
+    // Hướng B — 1 partner sở hữu NHIỀU hotel: dùng lại partner đang hoạt động (pending/approved)
+    // nếu có; chưa có thì tạo mới. Partner đã bị rejected KHÔNG dùng lại (nộp lại = hồ sơ mới,
+    // theo quy ước resubmit đã chốt).
     const existingPartner = await prisma.hotelPartner.findFirst({
       where: { ownerId: userId, status: { in: ['pending', 'approved'] }, deletedAt: null },
     });
-    if (existingPartner) {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Bạn đã có hồ sơ đối tác đang chờ duyệt hoặc đã được duyệt');
-    }
 
     const bi = payload.businessInfo;
     const rep = payload.representative;
@@ -182,16 +183,18 @@ export class HotelPartnerService {
       classification && classification.starRating !== 'unrated' ? Number(classification.starRating) : null;
 
     return prisma.$transaction(async (tx) => {
-      const partner = await tx.hotelPartner.create({
-        data: {
-          ownerId: userId,
-          businessName: bi.businessName,
-          contactEmail: bi.email || null,
-          contactPhone: bi.phone || null,
-          status: 'pending',
-          commissionRate: config.partner.defaultCommissionRate,
-        },
-      });
+      const partner =
+        existingPartner ??
+        (await tx.hotelPartner.create({
+          data: {
+            ownerId: userId,
+            businessName: bi.businessName,
+            contactEmail: bi.email || null,
+            contactPhone: bi.phone || null,
+            status: 'pending',
+            commissionRate: config.partner.defaultCommissionRate,
+          },
+        }));
 
       const hotel = await tx.hotel.create({
         data: {
