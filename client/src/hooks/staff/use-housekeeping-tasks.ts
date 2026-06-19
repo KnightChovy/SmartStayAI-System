@@ -3,7 +3,7 @@ import { staffService } from '@/services/staff.service';
 import type { HousekeepingTaskStatus } from '@/types/staff.types';
 import { staffKeys } from './keys';
 
-/** Danh sách task dọn phòng của khách sạn đang trực. */
+/** Housekeeping task list for the active hotel. */
 export function useHousekeepingTasks(
   hotelId: string | undefined,
   status?: HousekeepingTaskStatus

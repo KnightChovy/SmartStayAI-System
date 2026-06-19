@@ -3,7 +3,7 @@ import { staffService } from '@/services/staff.service';
 import type { CheckOutPayload } from '@/types/staff.types';
 import { staffKeys } from './keys';
 
-/** Check-out khách (có thể kèm phụ phí). Backend tự sinh task dọn phòng. */
+/** Check out a guest (optionally with an extra charge). The backend creates a housekeeping task automatically. */
 export function useCheckOut(hotelId: string | undefined) {
   const qc = useQueryClient();
   return useMutation({

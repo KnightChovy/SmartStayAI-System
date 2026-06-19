@@ -8,7 +8,7 @@ import type { HotelBooking } from '@/types/staff.types';
 import { ROUTES } from '@/constants/routes';
 import { formatDateShort } from '@/utils/formatDate';
 
-/** Cùng ngày (so theo phần ngày, bỏ giờ). */
+/** Same day (compares the date part, ignoring time). */
 function isSameDay(iso: string, ref: Date): boolean {
   const d = new Date(iso);
   return (
@@ -56,29 +56,29 @@ export default function StaffDashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-semibold text-slate-900">Tổng quan hôm nay</h1>
+        <h1 className="text-xl font-semibold text-slate-900">Today's overview</h1>
         <p className="text-sm text-slate-500">{hotel?.name}</p>
       </div>
 
       {isError && (
         <div className="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
-          Không tải được dữ liệu booking. Có thể bạn chưa được phân công vào khách sạn này — hãy
-          bấm “Đổi” ở thanh trên để chọn lại.
+          Could not load booking data. You may not be assigned to this hotel — click “Change” in
+          the top bar to select another one.
         </div>
       )}
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <StatCard label="Khách đến hôm nay" value={arrivals.length} icon={LogIn} tone="bg-blue-100 text-blue-700" />
-        <StatCard label="Khách trả phòng" value={departures.length} icon={LogOut} tone="bg-amber-100 text-amber-700" />
-        <StatCard label="Đang lưu trú" value={inHouse.length} icon={BedDouble} tone="bg-emerald-100 text-emerald-700" />
-        <StatCard label="Chờ thanh toán" value={pendingPayment.length} icon={Clock} tone="bg-rose-100 text-rose-700" />
+        <StatCard label="Arrivals today" value={arrivals.length} icon={LogIn} tone="bg-blue-100 text-blue-700" />
+        <StatCard label="Departures" value={departures.length} icon={LogOut} tone="bg-amber-100 text-amber-700" />
+        <StatCard label="In-house" value={inHouse.length} icon={BedDouble} tone="bg-emerald-100 text-emerald-700" />
+        <StatCard label="Awaiting payment" value={pendingPayment.length} icon={Clock} tone="bg-rose-100 text-rose-700" />
       </div>
 
-      {isLoading && <p className="text-sm text-slate-500">Đang tải…</p>}
+      {isLoading && <p className="text-sm text-slate-500">Loading…</p>}
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <ArrivalsCard title="Khách đến hôm nay" items={arrivals} empty="Không có khách đến hôm nay." />
-        <ArrivalsCard title="Khách trả phòng hôm nay" items={departures} empty="Không có khách trả phòng hôm nay." />
+        <ArrivalsCard title="Arrivals today" items={arrivals} empty="No arrivals today." />
+        <ArrivalsCard title="Departures today" items={departures} empty="No departures today." />
       </div>
     </div>
   );
@@ -101,7 +101,7 @@ function ArrivalsCard({
           to={ROUTES.staffFrontDesk}
           className="flex items-center gap-1 text-xs font-medium text-primary hover:underline"
         >
-          Quầy lễ tân <ArrowRight className="size-3" />
+          Front desk <ArrowRight className="size-3" />
         </Link>
       </div>
       <div className="divide-y divide-slate-100">

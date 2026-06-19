@@ -10,7 +10,7 @@ import BookingDetailPage from '@/pages/staff/BookingDetailPage';
 import HousekeepingPage from '@/pages/staff/HousekeepingPage';
 import RoomsPage from '@/pages/staff/RoomsPage';
 
-/** Cổng nhân viên (`/staff`) — chỉ role `staff`. */
+/** Staff portal (`/staff`) — `staff` role only. */
 export const staffRoutes: RouteObject[] = [
   {
     element: <ProtectedRoute allowedRoles={[UserRole.STAFF]} />,
@@ -20,9 +20,9 @@ export const staffRoutes: RouteObject[] = [
         element: <StaffLayout />,
         children: [
           { index: true, element: <Navigate to="dashboard" replace /> },
-          // Chọn khách sạn đang trực (không cần đã chọn hotel)
+          // Select the active hotel (no prior hotel selection required)
           { path: 'select-hotel', element: <SelectHotelPage /> },
-          // Các màn vận hành — bắt buộc đã chọn khách sạn
+          // Operational screens — require a hotel to be selected
           {
             element: <RequireStaffHotel />,
             children: [

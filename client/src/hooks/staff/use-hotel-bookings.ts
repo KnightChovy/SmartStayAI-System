@@ -3,7 +3,7 @@ import { staffService } from '@/services/staff.service';
 import type { HotelBookingsParams } from '@/types/staff.types';
 import { staffKeys } from './keys';
 
-/** Danh sách booking của khách sạn đang trực (quầy lễ tân). */
+/** Booking list for the active hotel (front desk). */
 export function useHotelBookings(hotelId: string | undefined, params: HotelBookingsParams = {}) {
   return useQuery({
     queryKey: staffKeys.bookings(hotelId ?? '', params),

@@ -1,30 +1,33 @@
-import { useState } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { Building2, MapPin, Search, ArrowRight } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import { Building2, MapPin, ArrowRight, AlertTriangle } from 'lucide-react';
 import { useStaffHotels } from '@/hooks/staff';
 import { useStaffHotelStore } from '@/stores/staffHotelStore';
 import type { StaffHotel } from '@/types/staff.types';
 import { ROUTES } from '@/constants/routes';
 
 /**
- * Màn chọn khách sạn nơi staff đang trực. Danh sách lấy từ `GET /hotels` (công khai);
- * quyền thực sự do backend kiểm khi gọi API vận hành (chọn nhầm sẽ bị 403 ở màn sau).
+ * Workplace picker for staff. Only lists hotels the staff member is actually assigned to
+ * (`GET /hotels/staff/my-hotels`), so they can no longer pick a hotel that would 403.
+ * With a single assignment the choice is made automatically.
  */
 export default function SelectHotelPage() {
   const navigate = useNavigate();
   const setHotel = useStaffHotelStore(state => state.setHotel);
   const { data: hotels, isLoading, isError } = useStaffHotels();
-  const [query, setQuery] = useState('');
+
+  // One assignment → no need to ask, pick it and go straight to the dashboard.
+  useEffect(() => {
+    if (hotels && hotels.length === 1) {
+      setHotel(hotels[0]);
+      navigate(ROUTES.staffDashboard, { replace: true });
+    }
+  }, [hotels, setHotel, navigate]);
 
   const handlePick = (hotel: StaffHotel) => {
     setHotel(hotel);
     navigate(ROUTES.staffDashboard, { replace: true });
   };
-
-  const filtered = (hotels ?? []).filter(h =>
-    `${h.name} ${h.city}`.toLowerCase().includes(query.trim().toLowerCase())
-  );
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -32,35 +35,33 @@ export default function SelectHotelPage() {
         <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
           <Building2 className="size-6" />
         </div>
-        <h1 className="text-xl font-semibold text-slate-900">Chọn khách sạn bạn đang trực</h1>
+        <h1 className="text-xl font-semibold text-slate-900">Select your hotel</h1>
         <p className="mt-1 text-sm text-slate-500">
-          Mọi thao tác lễ tân / dọn phòng sẽ áp dụng cho khách sạn này.
+          All front desk / housekeeping actions will apply to the hotel you choose.
         </p>
       </div>
 
-      <div className="relative mb-4">
-        <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
-        <Input
-          value={query}
-          onChange={e => setQuery(e.target.value)}
-          placeholder="Tìm theo tên hoặc thành phố…"
-          className="pl-9"
-        />
-      </div>
-
-      {isLoading && <p className="py-10 text-center text-sm text-slate-500">Đang tải khách sạn…</p>}
+      {isLoading && <p className="py-10 text-center text-sm text-slate-500">Loading your hotels…</p>}
       {isError && (
         <p className="py-10 text-center text-sm text-rose-600">
-          Không tải được danh sách khách sạn. Vui lòng thử lại.
+          Could not load your hotels. Please try again.
         </p>
       )}
 
       {!isLoading && !isError && (
         <div className="space-y-2">
-          {filtered.length === 0 && (
-            <p className="py-10 text-center text-sm text-slate-500">Không tìm thấy khách sạn nào.</p>
+          {(hotels?.length ?? 0) === 0 && (
+            <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+              <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+              <div>
+                <p className="font-medium">You aren't assigned to any hotel yet.</p>
+                <p className="text-amber-700">
+                  Please ask your hotel manager to add you to a hotel, then sign in again.
+                </p>
+              </div>
+            </div>
           )}
-          {filtered.map(hotel => (
+          {hotels?.map(hotel => (
             <button
               key={hotel.id}
               onClick={() => handlePick(hotel)}
