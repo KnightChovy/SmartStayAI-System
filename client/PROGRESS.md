@@ -6,6 +6,16 @@ This file tracks the accomplished tasks, resolved user requests, and visual/func
 
 ## Completed Tasks Checklist
 
+### June 19, 2026
+
+- [x] **Hotel Partner — Split "Hotels" from "Room Inventory", convert management UI from cards → tables**:
+  - **Backend review**: confirmed the hotel-management API surface is complete and unchanged — partner hotels come from `GET /hotels/mine` (partner resolved from the access token, **no** `:userId` param), full detail from `GET /hotels/:id/manage`; room types (`…/room-types/manage`, `POST`, `PUT`, `…/images`, `…/amenities`), rooms (`…/rooms` paginated + `POST`/`PUT`/`PATCH …/status`), pricing rules (`…/pricing-rules` CRUD), amenities (`GET /amenities`). No new endpoints needed.
+  - **Fixed broken WIP data layer** (branch didn't compile): `usePartnerHotels` called a non-existent `hotelService.getByPartner(userId)` against the wrong path with an undefined `queryKeys.hotels.byPartner`, an undefined `PartnerHotel` type, and the hook wasn't even exported from the `hooks/hotels` barrel. Added `PartnerHotel` to `types/hotel.types.ts` (hotel fields + primary image + `_count{roomTypes,rooms}`), `hotelService.getMine()` → `GET /hotels/mine`, `queryKeys.hotels.mine`, rewrote `usePartnerHotels()` (no args, token-based) and exported it from the barrel.
+  - **Separated into two routed features** (both were missing from `partnerRoutes.tsx`): `/partner/hotel-management` → **HotelsPage** (property overview only) and `/partner/room-inventory` → **RoomInventoryPage** (room types / rooms / pricing for one hotel). Hotel + active tab live in the query string (`?hotelId=…&tab=…`) so refresh/share keeps state; "Manage inventory" on a hotel row deep-links into Room Inventory. Removed the old combined `HotelManagementPage`.
+  - **Cards → tables** (senior call: this is an internal ops surface — tables win on density, scannability and consistency with Staff/Admin; cards stay for guest-facing browsing). Added shared primitives `shared/DataTable.tsx` (generic `Column<T>[]`), `shared/TablePagination.tsx`, `shared/Pill.tsx`, and a `formatAdjustment()` helper in `shared/labels.ts`. Rebuilt `HotelsTable`, `RoomTypesTab`, `PricingRulesTab` as tables and refactored the already-tabular `RoomsTab` onto the same primitives. Deleted `PartnerHotelCard`, `RoomTypeCard`, `PricingRuleCard`.
+  - **DRY**: extracted `HotelDirectory` (search + listing filter + table) shared by HotelsPage and the Room Inventory hotel-picker; `InventoryTabs` owns the tab bar + a URL-safe `isInventoryTab` guard.
+  - `tsc -p tsconfig.app.json --noEmit` clean for all touched files (pre-existing repo errors — unused `React` imports under `noUnusedLocals` and a recharts formatter type in `manager/revenue` — are unrelated and untouched).
+
 ### June 16, 2026 (continued)
 
 - [x] **Hotel Verify — "Review & Fix" now prefills the wizard with the existing application**:

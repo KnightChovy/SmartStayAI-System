@@ -1,4 +1,5 @@
 import type { RoomStatus, RuleType, AdjustmentType } from '@/types/hotel-management.types';
+import { formatCurrency } from '@/utils/formatCurrency';
 
 /** Display config for room status (label + badge class). */
 export const ROOM_STATUS_CONFIG: Record<RoomStatus, { label: string; class: string }> = {
@@ -36,3 +37,19 @@ export const ADJUSTMENT_TYPE_OPTIONS: { value: AdjustmentType; label: string }[]
 
 /** 0 = Sunday ... 6 = Saturday. */
 export const DAY_OF_WEEK_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+/**
+ * Hiển thị mức điều chỉnh giá của một pricing rule.
+ * `adjustmentValue` âm = giảm giá (discount). Trả về text kèm cờ `isDiscount`
+ * để tô màu (đỏ = giảm, xanh = tăng).
+ */
+export function formatAdjustment(
+  type: AdjustmentType,
+  value: string
+): { text: string; isDiscount: boolean } {
+  const num = Number(value);
+  const isDiscount = num < 0;
+  const sign = num > 0 ? '+' : '';
+  const text = type === 'percentage' ? `${sign}${num}%` : `${sign}${formatCurrency(num)}`;
+  return { text, isDiscount };
+}

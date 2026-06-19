@@ -2,6 +2,9 @@ import { Navigate, type RouteObject } from 'react-router';
 import { HotelPartnerLayout } from '@/components/hotel-partner/HotelPartnerLayout';
 import DashboardPage from '@/pages/hotel-partner/dashboard/DashboardPage';
 import VerifyHotelPage from '@/pages/hotel-partner/hotel-verify/VerifyHotelPage';
+import HotelsPage from '@/pages/hotel-partner/hotel-management/HotelsPage';
+import HotelDetailPage from '@/pages/hotel-partner/hotel-management/HotelDetailPage';
+import RoomInventoryPage from '@/pages/hotel-partner/room-inventory/RoomInventoryPage';
 import { ProtectedRoute } from '@/routes/ProtectedRoute';
 import { UserRole } from '@/constants/roles';
 
@@ -17,6 +20,9 @@ export const partnerRoutes: RouteObject[] = [
           { index: true, element: <Navigate to="dashboard" replace /> },
           { path: 'dashboard', element: <DashboardPage /> },
           { path: 'verify', element: <VerifyHotelPage /> },
+          { path: 'hotel-management', element: <HotelsPage /> },
+          { path: 'hotel-management/:hotelId', element: <HotelDetailPage /> },
+          { path: 'room-inventory', element: <RoomInventoryPage /> },
         ],
       },
     ],

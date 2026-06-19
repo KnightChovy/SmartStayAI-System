@@ -1,16 +1,17 @@
 import { useState } from 'react';
-import { Plus, Tag } from 'lucide-react';
+import { Plus, Tag, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/button';
 import { LoadingState, ErrorState, EmptyState } from '@/components/hotel-partner/shared/states';
 import { ConfirmDialog } from '@/components/hotel-partner/shared/ConfirmDialog';
-import {
-  usePricingRules,
-  useRoomTypes,
-  useDeletePricingRule,
-} from '@/hooks/hotel-management';
+import { DataTable, type Column } from '@/components/hotel-partner/shared/DataTable';
+import { ActionMenu } from '@/components/hotel-partner/shared/ActionMenu';
+import { Pill } from '@/components/hotel-partner/shared/Pill';
+import { RULE_TYPE_LABELS, formatAdjustment } from '@/components/hotel-partner/shared/labels';
+import { usePricingRules, useRoomTypes, useDeletePricingRule } from '@/hooks/hotel-management';
+import { formatDateShort } from '@/utils/formatDate';
 import type { PricingRule } from '@/types/hotel-management.types';
-import { PricingRuleCard } from './PricingRuleCard';
 import { PricingRuleFormModal } from './PricingRuleFormModal';
 
 interface PricingRulesTabProps {
@@ -42,20 +43,87 @@ export function PricingRulesTab({ hotelId }: PricingRulesTabProps) {
     }
   };
 
+  const columns: Column<PricingRule>[] = [
+    {
+      id: 'name',
+      header: 'Rule',
+      cell: rule => (
+        <div className="min-w-0">
+          <p className="truncate font-semibold text-slate-900">{rule.name}</p>
+          <Pill tone="blue" className="mt-1">{RULE_TYPE_LABELS[rule.ruleType]}</Pill>
+        </div>
+      ),
+    },
+    {
+      id: 'scope',
+      header: 'Applies to',
+      className: 'hidden md:table-cell',
+      cell: rule => (
+        <span className="text-slate-600">{rule.roomType?.name ?? 'All room types'}</span>
+      ),
+    },
+    {
+      id: 'dates',
+      header: 'Date range',
+      className: 'hidden lg:table-cell',
+      cell: rule => (
+        <span className="text-slate-600">
+          {formatDateShort(rule.startDate)} – {formatDateShort(rule.endDate)}
+        </span>
+      ),
+    },
+    {
+      id: 'adjustment',
+      header: 'Adjustment',
+      cell: rule => {
+        const { text, isDiscount } = formatAdjustment(rule.adjustmentType, rule.adjustmentValue);
+        return (
+          <span className={cn('font-semibold', isDiscount ? 'text-red-600' : 'text-emerald-600')}>
+            {text}
+          </span>
+        );
+      },
+    },
+    {
+      id: 'priority',
+      header: 'Priority',
+      align: 'center',
+      className: 'hidden sm:table-cell',
+      cell: rule => <span className="text-slate-600">{rule.priority}</span>,
+    },
+    {
+      id: 'status',
+      header: 'Status',
+      cell: rule => (
+        <Pill tone={rule.isActive ? 'emerald' : 'slate'}>{rule.isActive ? 'Active' : 'Inactive'}</Pill>
+      ),
+    },
+    {
+      id: 'actions',
+      header: '',
+      align: 'right',
+      cell: rule => (
+        <ActionMenu
+          items={[
+            { label: 'Edit', icon: Pencil, onClick: () => { setEditing(rule); setFormOpen(true); } },
+            { label: 'Delete', icon: Trash2, destructive: true, onClick: () => setDeleteTarget(rule) },
+          ]}
+        />
+      ),
+    },
+  ];
+
   return (
     <div>
-      <div className="flex items-center justify-between gap-4 mb-4">
+      <div className="mb-4 flex items-center justify-between gap-4">
         <div>
           <h2 className="text-lg font-bold text-slate-900">Pricing Rules</h2>
           <p className="text-sm text-slate-500">
             Adjust prices by season, weekend, occupancy or early bird. Higher priority applies first.
           </p>
         </div>
-        <Button
-          onClick={openCreate}
-          className="bg-role-partner-primary hover:bg-role-partner-secondary text-white"
-        >
-          <Plus className="w-4 h-4 mr-1.5" /> Add rule
+        <Button onClick={openCreate} className="bg-role-partner-primary text-white hover:bg-role-partner-secondary">
+          <Plus className="mr-1.5 h-4 w-4" /> Add rule
         </Button>
       </div>
 
@@ -69,29 +137,13 @@ export function PricingRulesTab({ hotelId }: PricingRulesTabProps) {
           title="No pricing rules yet"
           description="Create your first rule to automatically adjust room prices by condition."
           action={
-            <Button
-              onClick={openCreate}
-              className="bg-role-partner-primary hover:bg-role-partner-secondary text-white"
-            >
-              <Plus className="w-4 h-4 mr-1.5" /> Add rule
+            <Button onClick={openCreate} className="bg-role-partner-primary text-white hover:bg-role-partner-secondary">
+              <Plus className="mr-1.5 h-4 w-4" /> Add rule
             </Button>
           }
         />
       ) : (
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-          {rules.map(rule => (
-            <PricingRuleCard
-              key={rule.id}
-              rule={rule}
-              onEdit={r => {
-                setEditing(r);
-                setFormOpen(true);
-              }}
-              onDelete={setDeleteTarget}
-              deleting={deleteRule.isPending && deleteTarget?.id === rule.id}
-            />
-          ))}
-        </div>
+        <DataTable columns={columns} rows={rules} rowKey={rule => rule.id} minWidthClass="min-w-[760px]" />
       )}
 
       <PricingRuleFormModal

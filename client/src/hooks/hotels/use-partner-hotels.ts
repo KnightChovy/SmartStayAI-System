@@ -3,13 +3,12 @@ import { hotelService } from '@/services/hotel.service';
 import { queryKeys } from '@/constants/queryKeys';
 
 /**
- * Lấy danh sách khách sạn của một partner (`GET /hotels/:userId`).
- * `userId` là `User.id` của chủ sở hữu (ownerId). Hook tự tắt khi chưa có id.
+ * Danh sách khách sạn của partner đang đăng nhập (`GET /hotels/mine`).
+ * Backend lấy partner từ access token nên hook không nhận tham số.
  */
-export function usePartnerHotels(userId: string | null | undefined) {
+export function usePartnerHotels() {
   return useQuery({
-    queryKey: queryKeys.hotels.byPartner(userId ?? ''),
-    queryFn: () => hotelService.getByPartner(userId!),
-    enabled: !!userId,
+    queryKey: queryKeys.hotels.mine,
+    queryFn: hotelService.getMine,
   });
 }

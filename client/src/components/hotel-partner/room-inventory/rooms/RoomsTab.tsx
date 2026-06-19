@@ -1,15 +1,12 @@
 import { useState } from 'react';
-import { Plus, BedDouble, Pencil, ChevronLeft, ChevronRight } from 'lucide-react';
-import { cn } from '@/lib/cn';
+import { Plus, BedDouble, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import AppFilter from '@/common/filter/AppFilter';
+import AppPagination from '@/common/pagination/AppPagination';
 import { LoadingState, ErrorState, EmptyState } from '@/components/hotel-partner/shared/states';
+import { DataTable, type Column } from '@/components/hotel-partner/shared/DataTable';
+import { ActionMenu } from '@/components/hotel-partner/shared/ActionMenu';
+import { Pill } from '@/components/hotel-partner/shared/Pill';
 import { ROOM_STATUS_CONFIG, ROOM_STATUS_OPTIONS } from '@/components/hotel-partner/shared/labels';
 import { useRooms, useRoomTypes } from '@/hooks/hotel-management';
 import type { PhysicalRoom, RoomStatus, RoomListParams } from '@/types/hotel-management.types';
@@ -23,6 +20,7 @@ const PAGE_SIZE = 20;
 const ALL = 'all';
 
 export function RoomsTab({ hotelId }: RoomsTabProps) {
+  const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<RoomStatus | typeof ALL>(ALL);
   const [roomTypeFilter, setRoomTypeFilter] = useState<string>(ALL);
   const [page, setPage] = useState(1);
@@ -44,9 +42,21 @@ export function RoomsTab({ hotelId }: RoomsTabProps) {
   const totalPages = data?.totalPages ?? 1;
   const hasRoomTypes = (roomTypes?.length ?? 0) > 0;
 
+  // Tìm theo số phòng được áp client-side trên trang hiện tại (BE chưa hỗ trợ search).
+  const q = search.trim().toLowerCase();
+  const visibleRooms = q ? rooms.filter(r => r.roomNumber.toLowerCase().includes(q)) : rooms;
+  const hasServerFilter = statusFilter !== ALL || roomTypeFilter !== ALL;
+
   const resetPageThen = (fn: () => void) => {
     setPage(1);
     fn();
+  };
+
+  const resetFilters = () => {
+    setSearch('');
+    setStatusFilter(ALL);
+    setRoomTypeFilter(ALL);
+    setPage(1);
   };
 
   const openCreate = () => {
@@ -54,9 +64,60 @@ export function RoomsTab({ hotelId }: RoomsTabProps) {
     setFormOpen(true);
   };
 
+  const statusOptions = [
+    { label: 'All statuses', value: ALL },
+    ...ROOM_STATUS_OPTIONS.map(o => ({ label: o.label, value: o.value })),
+  ];
+  const roomTypeOptions = [
+    { label: 'All room types', value: ALL },
+    ...(roomTypes ?? []).map(rt => ({ label: rt.name, value: rt.id })),
+  ];
+
+  const columns: Column<PhysicalRoom>[] = [
+    {
+      id: 'roomNumber',
+      header: 'Room number',
+      cell: room => <span className="font-semibold text-slate-900">{room.roomNumber}</span>,
+    },
+    { id: 'roomType', header: 'Room type', cell: room => <span className="text-slate-600">{room.roomType.name}</span> },
+    {
+      id: 'floor',
+      header: 'Floor',
+      align: 'center',
+      className: 'hidden sm:table-cell',
+      cell: room => <span className="text-slate-600">{room.floor ?? '—'}</span>,
+    },
+    {
+      id: 'status',
+      header: 'Status',
+      cell: room => {
+        const cfg = ROOM_STATUS_CONFIG[room.status];
+        return <Pill className={cfg.class}>{cfg.label}</Pill>;
+      },
+    },
+    {
+      id: 'notes',
+      header: 'Notes',
+      className: 'hidden md:table-cell max-w-[200px]',
+      cell: room => <span className="block truncate text-slate-500">{room.notes || '—'}</span>,
+    },
+    {
+      id: 'actions',
+      header: '',
+      align: 'right',
+      cell: room => (
+        <ActionMenu
+          items={[
+            { label: 'Edit', icon: Pencil, onClick: () => { setEditing(room); setFormOpen(true); } },
+          ]}
+        />
+      ),
+    },
+  ];
+
   return (
     <div>
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+      <div className="mb-4 flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div>
           <h2 className="text-lg font-bold text-slate-900">Rooms</h2>
           <p className="text-sm text-slate-500">
@@ -67,47 +128,26 @@ export function RoomsTab({ hotelId }: RoomsTabProps) {
           onClick={openCreate}
           disabled={!hasRoomTypes}
           title={hasRoomTypes ? undefined : 'Create a room type first'}
-          className="bg-role-partner-primary hover:bg-role-partner-secondary text-white"
+          className="bg-role-partner-primary text-white hover:bg-role-partner-secondary"
         >
-          <Plus className="w-4 h-4 mr-1.5" /> Add room
+          <Plus className="mr-1.5 h-4 w-4" /> Add room
         </Button>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap gap-3 mb-4">
-        <Select
-          value={statusFilter}
-          onValueChange={v => resetPageThen(() => setStatusFilter(v as RoomStatus | typeof ALL))}
-        >
-          <SelectTrigger className="w-44 h-9">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL}>All statuses</SelectItem>
-            {ROOM_STATUS_OPTIONS.map(o => (
-              <SelectItem key={o.value} value={o.value}>
-                {o.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select value={roomTypeFilter} onValueChange={v => resetPageThen(() => setRoomTypeFilter(v))}>
-          <SelectTrigger className="w-56 h-9">
-            <SelectValue placeholder="Room type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL}>All room types</SelectItem>
-            {(roomTypes ?? []).map(rt => (
-              <SelectItem key={rt.id} value={rt.id}>
-                {rt.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div className="mb-4">
+        <AppFilter
+          search={search}
+          onSearchChange={setSearch}
+          status={statusFilter}
+          onStatusChange={v => resetPageThen(() => setStatusFilter(v as RoomStatus | typeof ALL))}
+          statusOptions={statusOptions}
+          category={roomTypeFilter}
+          onCategoryChange={v => resetPageThen(() => setRoomTypeFilter(v))}
+          categoryOptions={roomTypeOptions}
+          onReset={resetFilters}
+        />
       </div>
 
-      {/* Content */}
       {isLoading ? (
         <LoadingState label="Loading rooms..." />
       ) : isError ? (
@@ -115,93 +155,27 @@ export function RoomsTab({ hotelId }: RoomsTabProps) {
       ) : rooms.length === 0 ? (
         <EmptyState
           icon={BedDouble}
-          title="No rooms yet"
+          title={hasServerFilter ? 'No rooms match your filters' : 'No rooms yet'}
           description={
-            hasRoomTypes
-              ? 'Add physical rooms for your room types.'
-              : 'Create at least one room type before adding rooms.'
+            hasServerFilter
+              ? 'Try adjusting the status or room type filter.'
+              : hasRoomTypes
+                ? 'Add physical rooms for your room types.'
+                : 'Create at least one room type before adding rooms.'
           }
+        />
+      ) : visibleRooms.length === 0 ? (
+        <EmptyState
+          icon={BedDouble}
+          title="No rooms match your search"
+          description={`No room number on this page matches "${search}".`}
         />
       ) : (
         <>
-          <div className="overflow-x-auto rounded-xl border border-slate-200">
-            <table className="w-full text-sm min-w-[640px]">
-              <thead>
-                <tr className="bg-slate-50 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                  <th className="px-4 py-3">Room number</th>
-                  <th className="px-4 py-3">Room type</th>
-                  <th className="px-4 py-3">Floor</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Notes</th>
-                  <th className="px-4 py-3 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {rooms.map(room => {
-                  const cfg = ROOM_STATUS_CONFIG[room.status];
-                  return (
-                    <tr key={room.id} className="hover:bg-slate-50/60">
-                      <td className="px-4 py-3 font-semibold text-slate-900">{room.roomNumber}</td>
-                      <td className="px-4 py-3 text-slate-600">{room.roomType.name}</td>
-                      <td className="px-4 py-3 text-slate-600">{room.floor ?? '—'}</td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={cn(
-                            'text-[11px] font-semibold px-2 py-0.5 rounded-full',
-                            cfg.class
-                          )}
-                        >
-                          {cfg.label}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-slate-500 max-w-[200px] truncate">
-                        {room.notes || '—'}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setEditing(room);
-                            setFormOpen(true);
-                          }}
-                        >
-                          <Pencil className="w-3.5 h-3.5 mr-1" /> Edit
-                        </Button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          <DataTable columns={columns} rows={visibleRooms} rowKey={room => room.id} />
+          <div className="mt-4">
+            <AppPagination currentPage={data?.page ?? page} totalPages={totalPages} onPageChange={setPage} />
           </div>
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-4">
-              <p className="text-xs text-slate-400">
-                Page {data?.page ?? page} / {totalPages}
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={page <= 1}
-                  onClick={() => setPage(p => Math.max(1, p - 1))}
-                >
-                  <ChevronLeft className="w-4 h-4" /> Prev
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={page >= totalPages}
-                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                >
-                  Next <ChevronRight className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-          )}
         </>
       )}
 

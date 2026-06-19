@@ -5,7 +5,7 @@
  * serialize qua JSON thành **string**; Date/DateTime trả về ISO 8601 string.
  */
 
-import type { Amenity } from '@/types/hotel.types';
+import type { Amenity, HotelImage } from '@/types/hotel.types';
 
 // ─── Shared enums ─────────────────────────────────────────────────────────────
 
@@ -51,6 +51,46 @@ export interface ManagedRoomType {
   images: ManagedRoomTypeImage[];
   amenities: RoomTypeAmenityLink[];
   _count: { rooms: number };
+}
+
+// ─── Hotel detail (quản trị) ──────────────────────────────────────────────────
+
+/** Bảng nối N-N giữa hotel và amenity (kèm chi tiết amenity). */
+export interface HotelAmenityLink {
+  hotelId: string;
+  amenityId: string;
+  createdAt: string;
+  amenity: Amenity;
+}
+
+/**
+ * Chi tiết khách sạn cho chủ/manager (`GET /hotels/:id/manage`) — xem được cả
+ * khi chưa listed. Gồm toàn bộ ảnh, amenity và danh sách loại phòng.
+ */
+export interface ManagedHotel {
+  id: string;
+  partnerId: string;
+  name: string;
+  slug: string | null;
+  description: string | null;
+  address: string;
+  city: string;
+  country: string;
+  businessType: string | null;
+  district: string | null;
+  ward: string | null;
+  latitude: string | null;
+  longitude: string | null;
+  starRating: number | null;
+  checkInTime: string | null;
+  checkOutTime: string | null;
+  isActive: boolean;
+  isListed: boolean;
+  createdAt: string;
+  updatedAt: string;
+  images: HotelImage[];
+  amenities: HotelAmenityLink[];
+  roomTypes: ManagedRoomType[];
 }
 
 // ─── Physical rooms ───────────────────────────────────────────────────────────

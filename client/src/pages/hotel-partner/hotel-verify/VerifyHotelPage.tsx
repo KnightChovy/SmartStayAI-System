@@ -62,8 +62,6 @@ export default function VerifyHotelPage() {
     }
   }, [application, applicationId, hydrateFromApplication]);
 
-  // Block rendering the wizard until the existing application has been loaded
-  // and mapped into the draft (skip the gate on fetch error so we don't hang).
   if (applicationId && !hydrated && !isError) {
     return (
       <div className="flex items-center justify-center min-h-100">

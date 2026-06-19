@@ -19,7 +19,7 @@ const navItems = [
   { name: 'Dashboard', href: '/partner/dashboard', icon: LayoutDashboard },
   { name: 'Verification', href: '/partner/verify', icon: ShieldCheck },
   { name: 'Hotels', href: '/partner/hotel-management', icon: Hotel },
-  { name: ' Room Inventory', href: '/partner/room-inventory', icon: Archive },
+  { name: 'Room Inventory', href: '/partner/room-inventory', icon: Archive },
   { name: 'Bookings', href: '/partner/bookings', icon: CalendarDays },
   { name: 'Revenue', href: '/partner/revenue', icon: Banknote },
   { name: 'Analytics', href: '/partner/analytics', icon: BarChart2 },
