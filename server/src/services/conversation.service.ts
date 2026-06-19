@@ -1,11 +1,13 @@
 import httpStatus from 'http-status';
-import type { User } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import type { User, ConversationStatus } from '@prisma/client';
 import prisma from '../config/prisma';
 import ApiError from '../utils/ApiError';
 import logger from '../config/logger';
 import { aiProvider, type ChatMessage } from './ai';
 import { availabilityService } from './availability.service';
 import { bookingService } from './booking.service';
+import { hotelService } from './hotel.service';
 import { AiTool } from './ai/ai.types';
 import { setPendingAction, consumePendingAction } from './ai/pending-action.store';
 
@@ -24,6 +26,10 @@ const cosine = (a: number[], b: number[]): number => {
 
 // #2: chỉ gửi lại N tin gần nhất cho LLM (tránh lịch sử dài vô hạn → tốn token / tràn context)
 const MAX_HISTORY = 20;
+
+// Khi hội thoại đã 'escalated' (chờ người thật): bot NGỪNG tự trả lời, chỉ báo khách chờ nhân viên,
+// để không "nói chen" trong lúc lễ tân đang xử lý (S04). Bot trả lời lại sau khi nhân viên reply (→ active).
+const HANDOFF_NOTICE = 'Cảm ơn bạn, yêu cầu đang được chuyển tới nhân viên. Nhân viên sẽ phản hồi trong giây lát.';
 
 // #1: cache embedding FAQ theo hotelId — embed 1 lần rồi dùng lại (tránh embed lại 31 câu mỗi tin).
 //     Lưu ý: nếu FAQ của KS đổi giữa lúc server đang chạy, cache sẽ cũ tới khi restart.
@@ -396,6 +402,13 @@ export class ConversationService {
       },
     });
 
+    // (3b) BÀN GIAO NGƯỜI THẬT: hội thoại đang 'escalated' ⇒ bot không tự trả lời, chỉ ghi nhận tin
+    //      của khách (để nhân viên thấy trong hộp thư S04) và báo khách chờ. Tránh bot nói chen.
+    if (conversation.status === 'escalated') {
+      await prisma.conversation.update({ where: { id: conversation.id }, data: { lastMessageAt: new Date() } });
+      return { conversationId: conversation.id, reply: HANDOFF_NOTICE };
+    }
+
     // (4) Đọc N TIN GẦN NHẤT (không lấy toàn bộ — #2) → đổi sang mảng ChatMessage cho LLM
     const recent = await prisma.message.findMany({
       where: { conversationId: conversation.id },
@@ -463,6 +476,16 @@ export class ConversationService {
       data: { conversationId: conversation.id, senderType: 'user', senderId: currentUser.id, content: text, messageType: 'text' },
     });
 
+    // (3b) BÀN GIAO: hội thoại 'escalated' ⇒ bot im, chỉ phát một mẩu báo chờ nhân viên (xem sendMessage)
+    if (conversation.status === 'escalated') {
+      const escalatedConvId = conversation.id;
+      async function* waiting(): AsyncGenerator<string> {
+        yield HANDOFF_NOTICE;
+        await prisma.conversation.update({ where: { id: escalatedConvId }, data: { lastMessageAt: new Date() } });
+      }
+      return { conversationId: escalatedConvId, stream: waiting() };
+    }
+
     const recent = await prisma.message.findMany({
       where: { conversationId: conversation.id },
       orderBy: { createdAt: 'desc' },
@@ -501,6 +524,117 @@ export class ConversationService {
     }
 
     return { conversationId: convId, stream: generate() };
+  };
+
+  // ===== S04: HỘP THƯ NHÂN VIÊN — xem & trả lời các hội thoại (đặc biệt 'escalated') =====
+
+  /**
+   * Liệt kê hội thoại của một khách sạn cho nhân viên/chủ KS, lọc theo trạng thái (mặc định 'escalated'),
+   * kèm preview tin cuối + tên khách. Quyền: chủ KS, manager, hoặc staff được phân công (getOperableHotel).
+   */
+  listHotelConversations = async (
+    hotelId: string,
+    currentUser: User,
+    filter: { status?: string },
+    options: { limit?: number; page?: number }
+  ) => {
+    await hotelService.getOperableHotel(hotelId, currentUser);
+    const limit = options.limit || 20;
+    const page = options.page || 1;
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.ConversationWhereInput = { hotelId };
+    if (filter.status) {
+      where.status = filter.status as ConversationStatus;
+    }
+
+    const [conversations, totalResults] = await prisma.$transaction([
+      prisma.conversation.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { lastMessageAt: 'desc' },
+        include: { messages: { orderBy: { createdAt: 'desc' }, take: 1 } }, // tin cuối để preview
+      }),
+      prisma.conversation.count({ where }),
+    ]);
+
+    // userId là FK trần (không có relation) ⇒ join thủ công lấy tên khách trong 1 truy vấn
+    const customerIds = [...new Set(conversations.map((c) => c.userId).filter((id): id is string => !!id))];
+    const customers = await prisma.user.findMany({
+      where: { id: { in: customerIds } },
+      select: { id: true, fullName: true, email: true },
+    });
+    const customerById = new Map(customers.map((u) => [u.id, u]));
+
+    const results = conversations.map((c) => ({
+      id: c.id,
+      status: c.status,
+      subject: c.subject,
+      channel: c.channel,
+      assignedTo: c.assignedTo,
+      lastMessageAt: c.lastMessageAt,
+      lastMessage: c.messages[0]?.content ?? null,
+      customer: c.userId ? customerById.get(c.userId) ?? null : null,
+    }));
+
+    return { results, page, limit, totalPages: Math.ceil(totalResults / limit), totalResults };
+  };
+
+  /** Chi tiết một hội thoại + toàn bộ tin nhắn (cho nhân viên/chủ KS). */
+  getHotelConversation = async (hotelId: string, conversationId: string, currentUser: User) => {
+    await hotelService.getOperableHotel(hotelId, currentUser);
+    const conversation = await prisma.conversation.findFirst({
+      where: { id: conversationId, hotelId },
+      include: { messages: { orderBy: { createdAt: 'asc' } } },
+    });
+    if (!conversation) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy hội thoại trong khách sạn này');
+    }
+    const customer = conversation.userId
+      ? await prisma.user.findUnique({
+          where: { id: conversation.userId },
+          select: { id: true, fullName: true, email: true, phone: true },
+        })
+      : null;
+    return { ...conversation, customer };
+  };
+
+  /**
+   * Nhân viên trả lời một hội thoại: lưu tin của staff, NHẬN hội thoại về mình (assignedTo) và
+   * chuyển trạng thái về 'active' (đã có người thật xử lý, rời khỏi hàng chờ 'escalated').
+   */
+  replyToConversation = async (hotelId: string, conversationId: string, currentUser: User, message: string) => {
+    await hotelService.getOperableHotel(hotelId, currentUser);
+    const conversation = await prisma.conversation.findFirst({ where: { id: conversationId, hotelId } });
+    if (!conversation) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy hội thoại trong khách sạn này');
+    }
+    if (conversation.status === 'closed') {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Hội thoại đã đóng, không thể trả lời');
+    }
+
+    const saved = await prisma.message.create({
+      data: { conversationId, senderType: 'staff', senderId: currentUser.id, content: message, messageType: 'text' },
+    });
+    await prisma.conversation.update({
+      where: { id: conversationId },
+      data: { status: 'active', assignedTo: currentUser.id, lastMessageAt: new Date() },
+    });
+    return saved;
+  };
+
+  /** Đánh dấu hội thoại đã xử lý xong ('resolved'). */
+  resolveConversation = async (hotelId: string, conversationId: string, currentUser: User) => {
+    await hotelService.getOperableHotel(hotelId, currentUser);
+    const conversation = await prisma.conversation.findFirst({ where: { id: conversationId, hotelId } });
+    if (!conversation) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy hội thoại trong khách sạn này');
+    }
+    return prisma.conversation.update({
+      where: { id: conversationId },
+      data: { status: 'resolved', resolvedAt: new Date() },
+    });
   };
 }
 

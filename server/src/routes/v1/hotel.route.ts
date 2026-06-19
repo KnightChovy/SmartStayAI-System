@@ -9,6 +9,7 @@ import {
   bookingValidation,
   staffValidation,
   housekeepingValidation,
+  conversationValidation,
 } from '../../validations';
 import {
   hotelController,
@@ -18,6 +19,7 @@ import {
   bookingController,
   staffController,
   housekeepingController,
+  conversationController,
 } from '../../controllers';
 
 const router = express.Router();
@@ -160,6 +162,36 @@ router.post(
   auth(),
   validate(housekeepingValidation.completeTask),
   housekeepingController.completeTask
+);
+
+// ----- Hộp thư hội thoại (S04) — nhân viên xem & trả lời, đặc biệt các hội thoại 'escalated' -----
+router.get(
+  '/:hotelId/conversations',
+  auth(),
+  validate(conversationValidation.listHotelConversations),
+  conversationController.listHotelConversations
+);
+
+// Chi tiết 1 hội thoại — đặt sau '/conversations' để '/:conversationId' không nuốt route danh sách
+router.get(
+  '/:hotelId/conversations/:conversationId',
+  auth(),
+  validate(conversationValidation.getHotelConversation),
+  conversationController.getHotelConversation
+);
+
+router.post(
+  '/:hotelId/conversations/:conversationId/reply',
+  auth(),
+  validate(conversationValidation.replyConversation),
+  conversationController.replyConversation
+);
+
+router.post(
+  '/:hotelId/conversations/:conversationId/resolve',
+  auth(),
+  validate(conversationValidation.resolveConversation),
+  conversationController.resolveConversation
 );
 
 // ----- Quản lý tài khoản nhân viên (S08) — chỉ chủ KS / manager -----
