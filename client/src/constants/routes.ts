@@ -24,6 +24,16 @@ export const ROUTES = {
   // Booking flow
   booking: '/booking',
   bookingSuccess: (bookingId: string = ':bookingId') => `/booking/${bookingId}/success`,
+  // Trang VNPay redirect khách về sau thanh toán (status + bookingCode trên query)
+  paymentResult: '/booking/payment-result',
+
+  // Cổng nhân viên (staff — lễ tân / housekeeping)
+  staffSelectHotel: '/staff/select-hotel',
+  staffDashboard: '/staff/dashboard',
+  staffFrontDesk: '/staff/front-desk',
+  staffBookingDetail: (bookingId: string = ':bookingId') => `/staff/front-desk/${bookingId}`,
+  staffHousekeeping: '/staff/housekeeping',
+  staffRooms: '/staff/rooms',
 
   // Account (customer, cần đăng nhập)
   account: '/account',

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
 import { ArrowLeft, Clock, MapPin } from 'lucide-react';
 import { useHotel } from '@/hooks/hotels/use-hotel';
@@ -13,6 +13,7 @@ import DateRangePicker from '@/components/shared/DateRangePicker';
 import GuestSelector from '@/components/shared/GuestSelector';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
+import { toDateInputValue } from '@/utils/formatDate';
 import type { HotelSearchResult, RoomType } from '@/types/hotel.types';
 
 const FALLBACK =
@@ -32,6 +33,20 @@ export default function HotelDetailPage() {
   const checkIn = params.get('checkIn') ?? '';
   const checkOut = params.get('checkOut') ?? '';
   const guests = params.get('guests') ? Number(params.get('guests')) : 2;
+
+  // Mở trang chi tiết mà chưa chọn ngày → mặc định hôm nay → mai và ghi vào URL,
+  // để thấy ngay số phòng trống + tổng giá và luồng đặt phòng có sẵn ngày hợp lệ.
+  useEffect(() => {
+    if (checkIn && checkOut) return;
+    const today = new Date();
+    const tomorrow = new Date();
+    tomorrow.setDate(today.getDate() + 1);
+    const next = new URLSearchParams(params);
+    next.set('checkIn', toDateInputValue(today));
+    next.set('checkOut', toDateInputValue(tomorrow));
+    if (!params.get('guests')) next.set('guests', String(guests));
+    setParams(next, { replace: true });
+  }, [checkIn, checkOut, guests, params, setParams]);
 
   const roomParams = useMemo(
     () => ({

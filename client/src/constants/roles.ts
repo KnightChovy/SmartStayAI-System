@@ -26,7 +26,7 @@ export const ROLE_HOME_ROUTE: Record<UserRole, string> = {
   [UserRole.HOTEL_PARTNER]: '/partner/dashboard',
   [UserRole.GUEST]: '/',
   [UserRole.CUSTOMER]: '/',
-  [UserRole.STAFF]: '/',
+  [UserRole.STAFF]: '/staff/dashboard',
   [UserRole.MARKETER]: '/',
 };
 
