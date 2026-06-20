@@ -2,6 +2,7 @@ import httpStatus from 'http-status';
 import { Request, Response } from 'express';
 import type { User } from '@prisma/client';
 import catchAsync from '../utils/catchAsync';
+import pick from '../utils/pick';
 import { conversationService } from '../services';
 
 export class ConversationController {
@@ -40,6 +41,52 @@ export class ConversationController {
     // Báo xong (event "done") rồi đóng kênh
     res.write('event: done\ndata: {}\n\n');
     res.end();
+  });
+
+  // ===== S04: hộp thư nhân viên — xem & trả lời hội thoại của một khách sạn =====
+
+  // Danh sách hội thoại của KS (mặc định lọc 'escalated'), kèm preview + tên khách
+  listHotelConversations = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const filter = pick(req.query, ['status']);
+    const options = pick(req.query, ['limit', 'page']);
+    const result = await conversationService.listHotelConversations(
+      req.params.hotelId as string,
+      req.user as User,
+      filter,
+      options
+    );
+    res.send(result);
+  });
+
+  // Chi tiết một hội thoại + toàn bộ tin nhắn
+  getHotelConversation = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const conversation = await conversationService.getHotelConversation(
+      req.params.hotelId as string,
+      req.params.conversationId as string,
+      req.user as User
+    );
+    res.send(conversation);
+  });
+
+  // Nhân viên gửi tin trả lời khách (nhận hội thoại + chuyển về 'active')
+  replyConversation = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const message = await conversationService.replyToConversation(
+      req.params.hotelId as string,
+      req.params.conversationId as string,
+      req.user as User,
+      req.body.message
+    );
+    res.status(httpStatus.CREATED).send(message);
+  });
+
+  // Đánh dấu hội thoại đã xử lý xong ('resolved')
+  resolveConversation = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const conversation = await conversationService.resolveConversation(
+      req.params.hotelId as string,
+      req.params.conversationId as string,
+      req.user as User
+    );
+    res.send(conversation);
   });
 }
 

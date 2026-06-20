@@ -1,11 +1,15 @@
 import httpStatus from 'http-status';
-import type { User } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import type { User, ConversationStatus } from '@prisma/client';
 import prisma from '../config/prisma';
 import ApiError from '../utils/ApiError';
 import logger from '../config/logger';
 import { aiProvider, type ChatMessage } from './ai';
 import { availabilityService } from './availability.service';
+import { bookingService } from './booking.service';
+import { hotelService } from './hotel.service';
 import { AiTool } from './ai/ai.types';
+import { setPendingAction, consumePendingAction } from './ai/pending-action.store';
 
 // Độ giống nghĩa giữa 2 vector: ~1 = trùng nghĩa, ~0 = không liên quan (cosine similarity)
 const cosine = (a: number[], b: number[]): number => {
@@ -22,6 +26,10 @@ const cosine = (a: number[], b: number[]): number => {
 
 // #2: chỉ gửi lại N tin gần nhất cho LLM (tránh lịch sử dài vô hạn → tốn token / tràn context)
 const MAX_HISTORY = 20;
+
+// Khi hội thoại đã 'escalated' (chờ người thật): bot NGỪNG tự trả lời, chỉ báo khách chờ nhân viên,
+// để không "nói chen" trong lúc lễ tân đang xử lý (S04). Bot trả lời lại sau khi nhân viên reply (→ active).
+const HANDOFF_NOTICE = 'Cảm ơn bạn, yêu cầu đang được chuyển tới nhân viên. Nhân viên sẽ phản hồi trong giây lát.';
 
 // #1: cache embedding FAQ theo hotelId — embed 1 lần rồi dùng lại (tránh embed lại 31 câu mỗi tin).
 //     Lưu ý: nếu FAQ của KS đổi giữa lúc server đang chạy, cache sẽ cũ tới khi restart.
@@ -50,6 +58,15 @@ export class ConversationService {
       lines.push('', 'Câu hỏi thường gặp của khách sạn (ưu tiên dùng để trả lời):');
       faqs.forEach((f) => lines.push(`- Hỏi: ${f.question} → Đáp: ${f.answer}`));
     }
+    // Luật cho HÀNH ĐỘNG GHI (đặt/huỷ): bắt buộc 2 bước có CỔNG XÁC NHẬN để không đặt/huỷ nhầm cho khách
+    lines.push(
+      '',
+      'Bạn CÓ THỂ giúp khách ĐẶT PHÒNG và HUỶ PHÒNG (không chỉ tư vấn). Quy trình BẮT BUỘC:',
+      '1) Gọi prepare_booking (đặt) hoặc prepare_cancellation (huỷ) để lấy TÓM TẮT — bước này CHƯA thay đổi gì thật.',
+      '2) Đọc tóm tắt cho khách và HỎI khách có đồng ý không.',
+      '3) CHỈ khi khách đồng ý rõ ràng ở lượt sau (vâng/ok/đặt đi/huỷ đi...) mới gọi confirm_action (không cần tham số) để thực hiện.',
+      'TUYỆT ĐỐI không gọi confirm_action khi khách chưa đồng ý. Mỗi lần đặt/huỷ phải prepare lại trước.'
+    );
     lines.push('', 'Trả lời ngắn gọn, lịch sự, bằng tiếng Việt. Nếu không chắc, hãy mời khách liên hệ lễ tân.');
     return lines.filter(Boolean).join('\n');
   };
@@ -200,6 +217,158 @@ export class ConversationService {
         return `Đã chuyển cuộc trò chuyện cho lễ tân (lý do: ${String(args.reason)}). Nhân viên sẽ liên hệ với bạn sớm.`;
       },
     },
+    {
+      name: 'prepare_booking',
+      description:
+        'BƯỚC 1 để ĐẶT PHÒNG: kiểm tra phòng trống + tính giá rồi tạo "phiếu chờ xác nhận". ' +
+        'KHÔNG đặt phòng thật ở bước này. Trả về tóm tắt + mã xác nhận để bạn đọc cho khách và hỏi đồng ý.',
+      parameters: {
+        type: 'object',
+        properties: {
+          roomTypeName: { type: 'string', description: 'Tên loại phòng, ví dụ "Phòng Cổ Điển"' },
+          checkInDate: { type: 'string', description: 'Ngày nhận phòng, YYYY-MM-DD' },
+          checkOutDate: { type: 'string', description: 'Ngày trả phòng, YYYY-MM-DD' },
+          guests: { type: 'number', description: 'Số khách' },
+          paymentMethod: {
+            type: 'string',
+            description: "Hình thức trả: 'cash' = trả tiền mặt tại khách sạn (mặc định), 'vnpay' = trả online",
+          },
+        },
+        required: ['roomTypeName', 'checkInDate', 'checkOutDate', 'guests'],
+      },
+      execute: async (args) => {
+        // Khách gọi phòng theo TÊN; tra ra id thật trong đúng khách sạn này
+        const roomType = await prisma.roomType.findFirst({
+          where: { hotelId, isActive: true, name: { equals: String(args.roomTypeName), mode: 'insensitive' } },
+          select: { id: true, hotelId: true, name: true, basePrice: true, maxOccupancy: true },
+        });
+        if (!roomType) {
+          return `Không tìm thấy loại phòng tên "${String(args.roomTypeName)}". Hãy dùng search_rooms để xem các loại phòng có thật.`;
+        }
+        const guests = Number(args.guests);
+        if (guests > roomType.maxOccupancy) {
+          return `Loại phòng "${roomType.name}" chỉ chứa tối đa ${roomType.maxOccupancy} khách.`;
+        }
+        // Báo giá + tồn kho dùng ĐÚNG hàm như search (giá server tự tính, không tin client)
+        const checkIn = new Date(String(args.checkInDate));
+        const checkOut = new Date(String(args.checkOutDate));
+        const quote = (await availabilityService.getStayQuotes([roomType], checkIn, checkOut)).get(roomType.id);
+        if (!quote || quote.availableRooms < 1) {
+          return `Tiếc quá, "${roomType.name}" đã hết phòng cho khoảng ngày này.`;
+        }
+        const method = args.paymentMethod === 'vnpay' ? 'vnpay' : 'cash';
+        const methodText = method === 'cash' ? 'trả tiền mặt tại khách sạn' : 'thanh toán online (VNPay)';
+        const summary =
+          `Đặt ${roomType.name} | ${String(args.checkInDate)} → ${String(args.checkOutDate)} | ` +
+          `${guests} khách | ${methodText} | tổng ${quote.totalPrice} VND`;
+        setPendingAction(conversationId, {
+          type: 'create_booking',
+          customerId: currentUser.id,
+          payload: {
+            hotelId,
+            roomTypeId: roomType.id,
+            checkInDate: String(args.checkInDate),
+            checkOutDate: String(args.checkOutDate),
+            numGuests: guests,
+            paymentMethod: method,
+          },
+          summary,
+        });
+        return (
+          `Đã tạo phiếu chờ xác nhận:\n${summary}\n` +
+          `Hãy đọc tóm tắt cho khách và HỎI khách đồng ý đặt không. ` +
+          `CHỈ khi khách đồng ý mới gọi confirm_action (không cần tham số).`
+        );
+      },
+    },
+    {
+      name: 'prepare_cancellation',
+      description:
+        'BƯỚC 1 để HUỶ PHÒNG: kiểm tra booking có huỷ được không rồi tạo "phiếu chờ xác nhận". ' +
+        'KHÔNG huỷ thật ở bước này. Trả về tóm tắt + mã xác nhận để hỏi khách.',
+      parameters: {
+        type: 'object',
+        properties: {
+          bookingCode: { type: 'string', description: 'Mã booking cần huỷ, ví dụ BK1A2B3C' },
+        },
+        required: ['bookingCode'],
+      },
+      execute: async (args) => {
+        // Chỉ huỷ được booking CỦA CHÍNH khách này tại đúng khách sạn này (bảo mật)
+        const booking = await prisma.booking.findFirst({
+          where: { bookingCode: String(args.bookingCode), hotelId, customerId: currentUser.id },
+          include: { roomType: { select: { name: true } } },
+        });
+        if (!booking) {
+          return 'Không tìm thấy booking với mã này (hoặc không thuộc về bạn).';
+        }
+        if (booking.status !== 'pending' && booking.status !== 'confirmed') {
+          return `Booking đang ở trạng thái "${booking.status}", không thể huỷ.`;
+        }
+        const fmt = (d: Date) => d.toISOString().slice(0, 10);
+        const summary =
+          `Huỷ booking ${booking.bookingCode} | ${booking.roomType.name} | ` +
+          `${fmt(booking.checkInDate)} → ${fmt(booking.checkOutDate)} | tổng ${booking.totalAmount} VND. ` +
+          `Tiền hoàn (nếu đã thanh toán) tính theo chính sách huỷ của khách sạn.`;
+        setPendingAction(conversationId, {
+          type: 'cancel_booking',
+          customerId: currentUser.id,
+          payload: { bookingId: booking.id },
+          summary,
+        });
+        return (
+          `Đã tạo phiếu chờ xác nhận:\n${summary}\n` +
+          `Hãy hỏi khách có chắc chắn huỷ không. CHỈ khi khách đồng ý mới gọi confirm_action (không cần tham số).`
+        );
+      },
+    },
+    {
+      name: 'confirm_action',
+      description:
+        'BƯỚC 2: thực thi THẬT hành động đã chuẩn bị (đặt/huỷ phòng) cho hội thoại này. ' +
+        'CHỈ gọi khi khách đã đồng ý rõ ràng. Không cần tham số.',
+      parameters: {
+        type: 'object',
+        properties: {},
+        required: [],
+      },
+      execute: async () => {
+        // Lấy & XOÁ phiếu chờ của HỘI THOẠI NÀY — chỉ chạy nếu còn hạn + đúng khách
+        const action = consumePendingAction(conversationId, currentUser.id);
+        if (!action) {
+          return 'Chưa có phiếu chờ xác nhận nào (hoặc đã hết hạn). Hãy tạo lại bằng prepare_booking / prepare_cancellation trước.';
+        }
+        try {
+          if (action.type === 'create_booking') {
+            const p = action.payload;
+            const booking = await bookingService.createBooking(currentUser.id, {
+              hotelId: String(p.hotelId),
+              roomTypeId: String(p.roomTypeId),
+              checkInDate: new Date(String(p.checkInDate)),
+              checkOutDate: new Date(String(p.checkOutDate)),
+              numGuests: Number(p.numGuests),
+              paymentMethod: p.paymentMethod === 'vnpay' ? 'vnpay' : 'cash',
+            });
+            return booking.status === 'confirmed'
+              ? `Đặt phòng thành công! Mã booking: ${booking.bookingCode}. Đã xác nhận — khách trả tiền mặt tại khách sạn khi nhận phòng.`
+              : `Đã tạo booking ${booking.bookingCode} (chờ thanh toán). Khách cần thanh toán online trong 15 phút để giữ phòng.`;
+          }
+          // cancel_booking
+          const result = await bookingService.cancelBooking(
+            String(action.payload.bookingId),
+            currentUser,
+            'Khách huỷ qua trợ lý AI'
+          );
+          const refundText = result.refund
+            ? `Số tiền hoàn: ${result.refund.amount} VND.`
+            : 'Booking chưa thanh toán nên không phát sinh hoàn tiền.';
+          return `Đã huỷ booking thành công. ${refundText}`;
+        } catch (err) {
+          // Lỗi nghiệp vụ (hết phòng, quá hạn huỷ...) → báo lại để agent giải thích cho khách
+          return `Không thực hiện được: ${(err as Error).message}`;
+        }
+      },
+    },
   ];
 
   sendMessage = async (hotelId: string, conversationId: string | undefined, currentUser: User, text: string) => {
@@ -232,6 +401,13 @@ export class ConversationService {
         messageType: 'text',
       },
     });
+
+    // (3b) BÀN GIAO NGƯỜI THẬT: hội thoại đang 'escalated' ⇒ bot không tự trả lời, chỉ ghi nhận tin
+    //      của khách (để nhân viên thấy trong hộp thư S04) và báo khách chờ. Tránh bot nói chen.
+    if (conversation.status === 'escalated') {
+      await prisma.conversation.update({ where: { id: conversation.id }, data: { lastMessageAt: new Date() } });
+      return { conversationId: conversation.id, reply: HANDOFF_NOTICE };
+    }
 
     // (4) Đọc N TIN GẦN NHẤT (không lấy toàn bộ — #2) → đổi sang mảng ChatMessage cho LLM
     const recent = await prisma.message.findMany({
@@ -300,6 +476,16 @@ export class ConversationService {
       data: { conversationId: conversation.id, senderType: 'user', senderId: currentUser.id, content: text, messageType: 'text' },
     });
 
+    // (3b) BÀN GIAO: hội thoại 'escalated' ⇒ bot im, chỉ phát một mẩu báo chờ nhân viên (xem sendMessage)
+    if (conversation.status === 'escalated') {
+      const escalatedConvId = conversation.id;
+      async function* waiting(): AsyncGenerator<string> {
+        yield HANDOFF_NOTICE;
+        await prisma.conversation.update({ where: { id: escalatedConvId }, data: { lastMessageAt: new Date() } });
+      }
+      return { conversationId: escalatedConvId, stream: waiting() };
+    }
+
     const recent = await prisma.message.findMany({
       where: { conversationId: conversation.id },
       orderBy: { createdAt: 'desc' },
@@ -338,6 +524,117 @@ export class ConversationService {
     }
 
     return { conversationId: convId, stream: generate() };
+  };
+
+  // ===== S04: HỘP THƯ NHÂN VIÊN — xem & trả lời các hội thoại (đặc biệt 'escalated') =====
+
+  /**
+   * Liệt kê hội thoại của một khách sạn cho nhân viên/chủ KS, lọc theo trạng thái (mặc định 'escalated'),
+   * kèm preview tin cuối + tên khách. Quyền: chủ KS, manager, hoặc staff được phân công (getOperableHotel).
+   */
+  listHotelConversations = async (
+    hotelId: string,
+    currentUser: User,
+    filter: { status?: string },
+    options: { limit?: number; page?: number }
+  ) => {
+    await hotelService.getOperableHotel(hotelId, currentUser);
+    const limit = options.limit || 20;
+    const page = options.page || 1;
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.ConversationWhereInput = { hotelId };
+    if (filter.status) {
+      where.status = filter.status as ConversationStatus;
+    }
+
+    const [conversations, totalResults] = await prisma.$transaction([
+      prisma.conversation.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { lastMessageAt: 'desc' },
+        include: { messages: { orderBy: { createdAt: 'desc' }, take: 1 } }, // tin cuối để preview
+      }),
+      prisma.conversation.count({ where }),
+    ]);
+
+    // userId là FK trần (không có relation) ⇒ join thủ công lấy tên khách trong 1 truy vấn
+    const customerIds = [...new Set(conversations.map((c) => c.userId).filter((id): id is string => !!id))];
+    const customers = await prisma.user.findMany({
+      where: { id: { in: customerIds } },
+      select: { id: true, fullName: true, email: true },
+    });
+    const customerById = new Map(customers.map((u) => [u.id, u]));
+
+    const results = conversations.map((c) => ({
+      id: c.id,
+      status: c.status,
+      subject: c.subject,
+      channel: c.channel,
+      assignedTo: c.assignedTo,
+      lastMessageAt: c.lastMessageAt,
+      lastMessage: c.messages[0]?.content ?? null,
+      customer: c.userId ? customerById.get(c.userId) ?? null : null,
+    }));
+
+    return { results, page, limit, totalPages: Math.ceil(totalResults / limit), totalResults };
+  };
+
+  /** Chi tiết một hội thoại + toàn bộ tin nhắn (cho nhân viên/chủ KS). */
+  getHotelConversation = async (hotelId: string, conversationId: string, currentUser: User) => {
+    await hotelService.getOperableHotel(hotelId, currentUser);
+    const conversation = await prisma.conversation.findFirst({
+      where: { id: conversationId, hotelId },
+      include: { messages: { orderBy: { createdAt: 'asc' } } },
+    });
+    if (!conversation) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy hội thoại trong khách sạn này');
+    }
+    const customer = conversation.userId
+      ? await prisma.user.findUnique({
+          where: { id: conversation.userId },
+          select: { id: true, fullName: true, email: true, phone: true },
+        })
+      : null;
+    return { ...conversation, customer };
+  };
+
+  /**
+   * Nhân viên trả lời một hội thoại: lưu tin của staff, NHẬN hội thoại về mình (assignedTo) và
+   * chuyển trạng thái về 'active' (đã có người thật xử lý, rời khỏi hàng chờ 'escalated').
+   */
+  replyToConversation = async (hotelId: string, conversationId: string, currentUser: User, message: string) => {
+    await hotelService.getOperableHotel(hotelId, currentUser);
+    const conversation = await prisma.conversation.findFirst({ where: { id: conversationId, hotelId } });
+    if (!conversation) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy hội thoại trong khách sạn này');
+    }
+    if (conversation.status === 'closed') {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Hội thoại đã đóng, không thể trả lời');
+    }
+
+    const saved = await prisma.message.create({
+      data: { conversationId, senderType: 'staff', senderId: currentUser.id, content: message, messageType: 'text' },
+    });
+    await prisma.conversation.update({
+      where: { id: conversationId },
+      data: { status: 'active', assignedTo: currentUser.id, lastMessageAt: new Date() },
+    });
+    return saved;
+  };
+
+  /** Đánh dấu hội thoại đã xử lý xong ('resolved'). */
+  resolveConversation = async (hotelId: string, conversationId: string, currentUser: User) => {
+    await hotelService.getOperableHotel(hotelId, currentUser);
+    const conversation = await prisma.conversation.findFirst({ where: { id: conversationId, hotelId } });
+    if (!conversation) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy hội thoại trong khách sạn này');
+    }
+    return prisma.conversation.update({
+      where: { id: conversationId },
+      data: { status: 'resolved', resolvedAt: new Date() },
+    });
   };
 }
 

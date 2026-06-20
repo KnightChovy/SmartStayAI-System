@@ -28,6 +28,9 @@ paths:
         Authenticated guest sends one message to a hotel's AI chatbot. If conversationId is omitted a
         new conversation is created; otherwise the message continues that conversation (the full history
         is replayed to the LLM each turn). Returns the bot reply and the conversationId to reuse next turn.
+        The assistant is agentic: besides answering FAQs and searching rooms, it can place and cancel
+        bookings on the guest's behalf via a two-step confirm-gate (it proposes a summary, then only acts
+        after the guest explicitly agrees). No extra request fields are needed — this is driven in-chat.
       tags: [Chatbot]
       security:
         - bearerAuth: []
@@ -1671,6 +1674,164 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  /hotels/{hotelId}/conversations:
+    get:
+      summary: List a hotel's chat conversations (staff inbox, S04)
+      description: >
+        Owner, manager, or assigned staff lists the hotel's chat conversations, filtered by status
+        (the inbox typically uses status=escalated to see chats the bot handed off). Each item includes
+        the customer, a preview of the last message, the assignee and lastMessageAt.
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [active, resolved, escalated, closed]
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        "200":
+          description: Paginated conversations
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  /hotels/{hotelId}/conversations/{conversationId}:
+    get:
+      summary: Get a conversation with all messages (staff)
+      description: >
+        Owner/manager/assigned staff views one conversation thread (all messages, oldest first) plus
+        customer info.
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: path
+          name: conversationId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Conversation with messages
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  /hotels/{hotelId}/conversations/{conversationId}/reply:
+    post:
+      summary: Staff replies to a conversation (S04)
+      description: >
+        Saves a staff reply, assigns the conversation to the replying staff, and moves its status to
+        "active" (taking it out of the escalated queue). Rejected if the conversation is closed.
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: path
+          name: conversationId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - message
+              properties:
+                message:
+                  type: string
+                  maxLength: 2000
+              example:
+                message: Chào anh/chị, em là lễ tân, em hỗ trợ mình ngay ạ.
+      responses:
+        "201":
+          description: Staff message saved
+        "400":
+          description: Conversation already closed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  /hotels/{hotelId}/conversations/{conversationId}/resolve:
+    post:
+      summary: Mark a conversation resolved (S04)
+      description: >
+        Owner/manager/assigned staff marks the conversation handled (status=resolved, resolvedAt set).
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: path
+          name: conversationId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Conversation resolved
         "401":
           $ref: '#/components/responses/Unauthorized'
         "403":
