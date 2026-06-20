@@ -1,6 +1,7 @@
-import { Bed, Eye, Maximize, Users } from 'lucide-react';
+import { Bed, BedDouble, Eye, Maximize, Users } from 'lucide-react';
 import type { RoomType } from '@/types/hotel.types';
 import { formatCurrency } from '@/utils/formatCurrency';
+import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/button';
 
 const FALLBACK_IMAGE =
@@ -18,6 +19,9 @@ export default function RoomTypeCard({ roomType, onSelect, selectable = false }:
   const image = roomType.images?.[0]?.url ?? FALLBACK_IMAGE;
   const amenities = roomType.amenities?.map(a => a.amenity) ?? [];
   const hasStayQuote = roomType.totalPrice !== undefined;
+  const availableRooms = roomType.availableRooms ?? 0;
+  // Sắp hết phòng (≤ 3) → badge tông đỏ tạo cảm giác cần đặt sớm
+  const isLowStock = hasStayQuote && availableRooms > 0 && availableRooms <= 3;
 
   return (
     <div className="flex flex-col overflow-hidden rounded-2xl border border-outline-variant/30 bg-surface md:flex-row">
@@ -49,6 +53,21 @@ export default function RoomTypeCard({ roomType, onSelect, selectable = false }:
           )}
         </div>
 
+        {/* Badge số phòng trống — chỉ hiện khi đã chọn ngày (có quote tồn kho) */}
+        {hasStayQuote && (
+          <span
+            className={cn(
+              'mt-3 inline-flex w-fit items-center gap-2 rounded-full px-3.5 py-1.5 text-sm font-bold',
+              isLowStock ? 'bg-error/10 text-error' : 'bg-tertiary/10 text-tertiary'
+            )}
+          >
+            <BedDouble className="size-4" />
+            {isLowStock
+              ? `Only ${availableRooms} room${availableRooms === 1 ? '' : 's'} left!`
+              : `${availableRooms} rooms available`}
+          </span>
+        )}
+
         {roomType.description && (
           <p className="mt-2 line-clamp-2 text-sm text-on-surface-variant/80">{roomType.description}</p>
         )}
@@ -71,8 +90,7 @@ export default function RoomTypeCard({ roomType, onSelect, selectable = false }:
             {hasStayQuote ? (
               <>
                 <p className="text-xs text-on-surface-variant">
-                  {roomType.numNights} night{roomType.numNights === 1 ? '' : 's'} ·{' '}
-                  {roomType.availableRooms} room{roomType.availableRooms === 1 ? '' : 's'} left
+                  {roomType.numNights} night{roomType.numNights === 1 ? '' : 's'} total
                 </p>
                 <p className="font-be-vietnam text-xl font-bold text-on-surface">
                   {formatCurrency(roomType.totalPrice)}

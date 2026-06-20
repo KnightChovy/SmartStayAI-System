@@ -8,6 +8,7 @@ export const createBooking = {
     checkOutDate: Joi.date().iso().greater(Joi.ref('checkInDate')).required(),
     numGuests: Joi.number().integer().min(1).required(),
     specialRequests: Joi.string().max(1000).allow('', null),
+    paymentMethod: Joi.string().valid('vnpay', 'cash').default('vnpay'),
   }),
 };
 
@@ -32,5 +33,67 @@ export const cancelBooking = {
   }),
   body: Joi.object().keys({
     reason: Joi.string().max(500).allow('', null),
+  }),
+};
+
+// Staff/chủ KS xem booking của một khách sạn
+export const listHotelBookings = {
+  params: Joi.object().keys({
+    hotelId: Joi.string().uuid().required(),
+  }),
+  query: Joi.object().keys({
+    status: Joi.string().valid('pending', 'confirmed', 'checked_in', 'checked_out', 'cancelled', 'no_show'),
+    fromDate: Joi.date().iso(),
+    toDate: Joi.date().iso(),
+    sortBy: Joi.string(),
+    limit: Joi.number().integer().min(1).max(100),
+    page: Joi.number().integer().min(1),
+  }),
+};
+
+// Staff/chủ KS xem chi tiết một booking của khách sạn
+export const getHotelBooking = {
+  params: Joi.object().keys({
+    hotelId: Joi.string().uuid().required(),
+    bookingId: Joi.string().uuid().required(),
+  }),
+};
+
+// Check-in: gán phòng (tuỳ chọn) + đối chiếu voucher (tuỳ chọn)
+export const checkInBooking = {
+  params: Joi.object().keys({
+    hotelId: Joi.string().uuid().required(),
+    bookingId: Joi.string().uuid().required(),
+  }),
+  body: Joi.object().keys({
+    roomId: Joi.string().uuid(),
+    voucherCode: Joi.string().max(50),
+  }),
+};
+
+// Check-out: phụ thu phát sinh (>= 0)
+export const checkOutBooking = {
+  params: Joi.object().keys({
+    hotelId: Joi.string().uuid().required(),
+    bookingId: Joi.string().uuid().required(),
+  }),
+  body: Joi.object().keys({
+    extraCharge: Joi.number().min(0),
+  }),
+};
+
+// Staff ghi nhận đã thu tiền mặt cho một booking trả tại khách sạn
+export const recordCashPayment = {
+  params: Joi.object().keys({
+    hotelId: Joi.string().uuid().required(),
+    bookingId: Joi.string().uuid().required(),
+  }),
+};
+
+// Staff đánh dấu khách no-show
+export const markNoShow = {
+  params: Joi.object().keys({
+    hotelId: Joi.string().uuid().required(),
+    bookingId: Joi.string().uuid().required(),
   }),
 };

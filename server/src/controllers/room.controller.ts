@@ -27,6 +27,17 @@ export class RoomController {
     const result = await roomService.listRooms(req.params.hotelId as string, req.user as User, filter, options);
     res.send(result);
   });
+
+  // Staff đổi nhanh trạng thái phòng (bản đồ phòng / housekeeping 1-tap)
+  updateRoomStatus = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const room = await roomService.updateRoomStatus(
+      req.params.hotelId as string,
+      req.params.roomId as string,
+      req.user as User,
+      req.body.status
+    );
+    res.send(room);
+  });
 }
 
 export const roomController = new RoomController();

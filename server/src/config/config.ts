@@ -32,6 +32,19 @@ const envVarsSchema = Joi.object()
     PAYOUT_ENCRYPTION_KEY: Joi.string()
       .required()
       .description('base64-encoded 32-byte key (AES-256-GCM) to encrypt sensitive payout data'),
+    VNP_TMN_CODE: Joi.string().allow('').default('').description('VNPay merchant terminal code (TmnCode)'),
+    VNP_HASH_SECRET: Joi.string().allow('').default('').description('VNPay HMAC-SHA512 secret'),
+    VNP_URL: Joi.string()
+      .default('https://sandbox.vnpayment.vn/paymentv2/vpcpay.html')
+      .description('VNPay payment gateway URL'),
+    VNP_API_URL: Joi.string()
+      .default('https://sandbox.vnpayment.vn/merchant_webapi/api/transaction')
+      .description('VNPay merchant API URL (query/refund)'),
+    VNP_RETURN_URL: Joi.string()
+      .default('http://localhost:5000/v1/payments/vnpay/return')
+      .description('Backend URL VNPay redirects the browser back to after payment'),
+    AI_PROVIDER: Joi.string().valid('gemini', 'claude').default('gemini').description('Nhà cung cấp LLM cho chatbot'),
+    GEMINI_API_KEY: Joi.string().allow('').default('').description('Google Gemini API key (free tier)'),
   })
   .unknown();
 
@@ -89,6 +102,18 @@ const config = {
   security: {
     // Key mã hoá dữ liệu nhạy cảm (số tài khoản nhận tiền của đối tác)
     payoutEncryptionKey: envVars.PAYOUT_ENCRYPTION_KEY,
+  },
+  ai: {
+    // Cần gạt của "công tắc": chọn nhà cung cấp LLM (gemini lúc dev, claude lúc demo)
+    provider: envVars.AI_PROVIDER,
+    geminiApiKey: envVars.GEMINI_API_KEY,
+  },
+  vnpay: {
+    tmnCode: envVars.VNP_TMN_CODE,
+    hashSecret: envVars.VNP_HASH_SECRET,
+    url: envVars.VNP_URL,
+    apiUrl: envVars.VNP_API_URL,
+    returnUrl: envVars.VNP_RETURN_URL,
   },
 };
 
