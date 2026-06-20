@@ -12,3 +12,4 @@
 # Tài liệu scope/nghiên cứu nội bộ ở thư mục gốc /AI (KHÔNG phải mã nguồn server/src/services/ai).
 # PHẢI neo bằng "/AI" — pattern trần "AI" sẽ nuốt luôn server/src/services/ai trên hệ thống không phân biệt hoa/thường.
 /AI
+/.playwright-mcp

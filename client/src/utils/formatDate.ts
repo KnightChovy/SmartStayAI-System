@@ -36,6 +36,18 @@ export function nightsBetween(checkIn?: string | null, checkOut?: string | null)
   return ms > 0 ? Math.round(ms / (1000 * 60 * 60 * 24)) : 0;
 }
 
+/** Khoá ngày UTC dạng YYYY-MM-DD từ ISO/Date — khớp cách BE truncate ngày (toUtcDate). */
+export function toUtcDateKey(value: string | Date | null | undefined): string {
+  if (!value) return '';
+  const d = typeof value === 'string' ? new Date(value) : value;
+  return Number.isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10);
+}
+
+/** Khoá ngày UTC của hôm nay (so với checkInDate/checkOutDate của booking). */
+export function todayUtcKey(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
 /** Chuỗi ngày dạng YYYY-MM-DD (dùng cho input[type=date] và query API). */
 export function toDateInputValue(date: Date): string {
   const y = date.getFullYear();
