@@ -1,4 +1,19 @@
 import { Link } from 'react-router';
+import { ROUTES } from '@/constants/routes';
+
+const supportLinks = [
+  { label: 'Help Center', to: ROUTES.helpCenter },
+  { label: 'Safety Information', to: ROUTES.safety },
+  { label: 'Cancellation Options', to: ROUTES.cancellationOptions },
+  { label: 'Report Concern', to: ROUTES.reportConcern },
+];
+
+const companyLinks = [
+  { label: 'About Us', to: ROUTES.about },
+  { label: 'Careers', to: ROUTES.careers },
+  { label: 'Press', to: ROUTES.press },
+  { label: 'Blog', to: ROUTES.blog },
+];
 
 export default function Footer() {
   return (
@@ -6,54 +21,14 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-margin-mobile md:px-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-stack-lg mb-stack-lg">
           {/* Brand Section */}
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-2">
             <span className="font-be-vietnam text-2xl font-bold tracking-tight text-on-surface block mb-4">
               Smart Stay AI
             </span>
-            <p className="text-sm text-on-surface-variant leading-relaxed">
+            <p className="text-sm text-on-surface-variant leading-relaxed max-w-sm">
               Revolutionizing luxury travel through intelligent discovery and
               seamless experiences.
             </p>
-          </div>
-          {/* Cities Column */}
-          <div>
-            <h5 className="text-xs font-bold text-on-surface uppercase tracking-widest mb-6">
-              Cities
-            </h5>
-            <ul className="space-y-4">
-              <li>
-                <Link
-                  to="/destinations"
-                  className="text-sm text-on-surface-variant hover:text-primary transition-colors"
-                >
-                  Paris
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/destinations"
-                  className="text-sm text-on-surface-variant hover:text-primary transition-colors"
-                >
-                  New York
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/destinations"
-                  className="text-sm text-on-surface-variant hover:text-primary transition-colors"
-                >
-                  London
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/destinations"
-                  className="text-sm text-on-surface-variant hover:text-primary transition-colors"
-                >
-                  Tokyo
-                </Link>
-              </li>
-            </ul>
           </div>
           {/* Support Column */}
           <div>
@@ -61,38 +36,16 @@ export default function Footer() {
               Support
             </h5>
             <ul className="space-y-4">
-              <li>
-                <a
-                  className="text-sm text-on-surface-variant hover:text-primary transition-colors"
-                  href="#"
-                >
-                  Help Center
-                </a>
-              </li>
-              <li>
-                <a
-                  className="text-sm text-on-surface-variant hover:text-primary transition-colors"
-                  href="#"
-                >
-                  Safety Information
-                </a>
-              </li>
-              <li>
-                <a
-                  className="text-sm text-on-surface-variant hover:text-primary transition-colors"
-                  href="#"
-                >
-                  Cancellation Options
-                </a>
-              </li>
-              <li>
-                <a
-                  className="text-sm text-on-surface-variant hover:text-primary transition-colors"
-                  href="#"
-                >
-                  Report Concern
-                </a>
-              </li>
+              {supportLinks.map(link => (
+                <li key={link.to}>
+                  <Link
+                    to={link.to}
+                    className="text-sm text-on-surface-variant hover:text-primary transition-colors"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
           {/* Company Column */}
@@ -101,38 +54,16 @@ export default function Footer() {
               Company
             </h5>
             <ul className="space-y-4">
-              <li>
-                <a
-                  className="text-sm text-on-surface-variant hover:text-primary transition-colors"
-                  href="#"
-                >
-                  About Us
-                </a>
-              </li>
-              <li>
-                <a
-                  className="text-sm text-on-surface-variant hover:text-primary transition-colors"
-                  href="#"
-                >
-                  Careers
-                </a>
-              </li>
-              <li>
-                <a
-                  className="text-sm text-on-surface-variant hover:text-primary transition-colors"
-                  href="#"
-                >
-                  Press
-                </a>
-              </li>
-              <li>
-                <a
-                  className="text-sm text-on-surface-variant hover:text-primary transition-colors"
-                  href="#"
-                >
-                  Blog
-                </a>
-              </li>
+              {companyLinks.map(link => (
+                <li key={link.to}>
+                  <Link
+                    to={link.to}
+                    className="text-sm text-on-surface-variant hover:text-primary transition-colors"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
         </div>

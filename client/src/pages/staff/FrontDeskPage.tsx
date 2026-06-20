@@ -7,6 +7,7 @@ import {
   LogOut,
   BedDouble,
   Clock,
+  CalendarCheck,
   CheckCircle2,
   AlertCircle,
   Loader2,
@@ -22,7 +23,7 @@ import { formatCurrency } from '@/utils/formatCurrency';
 import { formatDateShort, toUtcDateKey, todayUtcKey } from '@/utils/formatDate';
 import { errorMessage } from '@/utils/errorMessage';
 
-type Bucket = 'all' | 'checkin' | 'departure' | 'inhouse' | 'pending';
+type Bucket = 'all' | 'checkin' | 'confirmed' | 'departure' | 'inhouse' | 'pending';
 
 /** Booking within the actual check-in window (check-in date ≤ today < check-out date). */
 function canCheckIn(b: HotelBooking, today: string): boolean {
@@ -50,6 +51,7 @@ export default function FrontDeskPage() {
   const counts = useMemo(
     () => ({
       checkin: all.filter(b => canCheckIn(b, today)).length,
+      confirmed: all.filter(b => b.status === 'confirmed').length,
       departure: all.filter(b => b.status === 'checked_in' && toUtcDateKey(b.checkOutDate) === today)
         .length,
       inhouse: all.filter(b => b.status === 'checked_in').length,
@@ -70,6 +72,8 @@ export default function FrontDeskPage() {
       switch (bucket) {
         case 'checkin':
           return canCheckIn(b, today);
+        case 'confirmed':
+          return b.status === 'confirmed';
         case 'departure':
           return b.status === 'checked_in' && toUtcDateKey(b.checkOutDate) === today;
         case 'inhouse':
@@ -81,9 +85,10 @@ export default function FrontDeskPage() {
       }
     };
 
+    // Newest bookings first (by creation time).
     return all
       .filter(b => inBucket(b) && matchesQuery(b))
-      .sort((a, b) => toUtcDateKey(a.checkInDate).localeCompare(toUtcDateKey(b.checkInDate)));
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   }, [all, bucket, query, today]);
 
   const busyId = checkIn.isPending
@@ -120,7 +125,7 @@ export default function FrontDeskPage() {
       </div>
 
       {/* Filters by task to do */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         <BucketTile
           active={bucket === 'checkin'}
           onClick={() => setBucket('checkin')}
@@ -128,6 +133,14 @@ export default function FrontDeskPage() {
           label="To check in"
           count={counts.checkin}
           tone="emerald"
+        />
+        <BucketTile
+          active={bucket === 'confirmed'}
+          onClick={() => setBucket('confirmed')}
+          icon={CalendarCheck}
+          label="Confirmed"
+          count={counts.confirmed}
+          tone="indigo"
         />
         <BucketTile
           active={bucket === 'departure'}
@@ -285,6 +298,7 @@ export default function FrontDeskPage() {
 
 const TILE_TONES = {
   emerald: 'data-[active=true]:border-emerald-400 data-[active=true]:bg-emerald-50 text-emerald-600',
+  indigo: 'data-[active=true]:border-indigo-400 data-[active=true]:bg-indigo-50 text-indigo-600',
   amber: 'data-[active=true]:border-amber-400 data-[active=true]:bg-amber-50 text-amber-600',
   sky: 'data-[active=true]:border-sky-400 data-[active=true]:bg-sky-50 text-sky-600',
   slate: 'data-[active=true]:border-slate-400 data-[active=true]:bg-slate-50 text-slate-600',

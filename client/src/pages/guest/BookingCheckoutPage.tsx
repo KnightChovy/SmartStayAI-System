@@ -52,7 +52,7 @@ export default function BookingCheckoutPage() {
   const form = useForm<GuestDetailsValues>({
     resolver: zodResolver(guestDetailsSchema),
     defaultValues: {
-      fullName: user?.name ?? '',
+      fullName: user?.fullName ?? '',
       email: user?.email ?? '',
       phone: user?.phone ?? '',
       specialRequests: '',
