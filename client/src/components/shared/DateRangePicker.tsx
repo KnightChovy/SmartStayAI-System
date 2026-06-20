@@ -38,7 +38,7 @@ export default function DateRangePicker({ checkIn, checkOut, onChange, className
           value={checkIn}
           min={today}
           onChange={e => handleCheckIn(e.target.value)}
-          className="h-11 rounded-xl border border-outline-variant/40 bg-surface px-3 text-sm text-on-surface outline-none focus:border-primary"
+          className="h-11 w-full min-w-0 rounded-xl border border-outline-variant/40 bg-surface px-3 text-sm text-on-surface outline-none focus:border-primary"
         />
       </label>
       <label className="flex flex-col gap-1">
@@ -50,7 +50,7 @@ export default function DateRangePicker({ checkIn, checkOut, onChange, className
           value={checkOut}
           min={checkIn || today}
           onChange={e => onChange({ checkIn, checkOut: e.target.value })}
-          className="h-11 rounded-xl border border-outline-variant/40 bg-surface px-3 text-sm text-on-surface outline-none focus:border-primary"
+          className="h-11 w-full min-w-0 rounded-xl border border-outline-variant/40 bg-surface px-3 text-sm text-on-surface outline-none focus:border-primary"
         />
       </label>
     </div>

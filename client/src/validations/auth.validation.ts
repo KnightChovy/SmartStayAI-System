@@ -23,6 +23,20 @@ const registerSchema = z
     path: ['confirmPassword'],
   });
 
+const welcomeProfileSchema = z.object({
+  fullName: z.string().trim().min(1, 'Full name is required'),
+  email: z
+    .string()
+    .trim()
+    .min(1, 'Email address is required')
+    .email('Please enter a valid email address'),
+  phone: z
+    .string()
+    .trim()
+    .regex(/^[0-9+\-\s()]{8,15}$/, 'Please enter a valid phone number')
+    .or(z.literal('')),
+});
+
 const resetPasswordSchema = z
   .object({
     password: z.string().min(6, 'Password must be at least 6 characters long'),
@@ -53,6 +67,7 @@ type VerifyFormValues = z.infer<typeof verifySchema>;
 type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
 type LoginInput = z.infer<typeof loginSchema>;
 type RegisterInput = z.infer<typeof registerSchema>;
+type WelcomeProfileInput = z.infer<typeof welcomeProfileSchema>;
 type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 
 export {
@@ -60,6 +75,8 @@ export {
   type LoginInput,
   registerSchema,
   type RegisterInput,
+  welcomeProfileSchema,
+  type WelcomeProfileInput,
   forgotPasswordSchema,
   type ForgotPasswordFormValues,
   verifySchema,

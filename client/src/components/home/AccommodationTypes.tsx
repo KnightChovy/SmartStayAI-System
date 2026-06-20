@@ -36,7 +36,7 @@ export default function AccommodationTypes() {
       <h2 className="font-be-vietnam text-2xl font-bold text-on-surface mb-8">
         Search by type of accommodation
       </h2>
-      <div className="flex items-center gap-6 overflow-x-auto hide-scrollbar pb-6">
+      <div className="flex items-center gap-5 overflow-x-auto hide-scrollbar pt-6 pb-6 px-3">
         {types.map(type => {
           const isSelected = selected === type.name;
           return (
@@ -44,10 +44,10 @@ export default function AccommodationTypes() {
               variant="ghost"
               key={type.name}
               onClick={() => setSelected(type.name)}
-              className={`flex flex-col items-center gap-4 min-w-35 group transition-all duration-300 h-auto p-0 hover:bg-transparent ${isSelected ? 'opacity-100 scale-102' : 'opacity-70 hover:opacity-100'}`}
+              className={`flex flex-col items-center gap-4 min-w-55 group transition-all duration-300 h-auto p-0 hover:bg-transparent ${isSelected ? 'opacity-100 scale-102' : 'opacity-70 hover:opacity-100'}`}
             >
               <div
-                className={`w-full aspect-square rounded-3xl bg-surface-container overflow-hidden ring-2 transition-all duration-300 shadow-sm ${isSelected ? 'ring-primary' : 'ring-outline-variant/20 group-hover:scale-105'}`}
+                className={`w-55 aspect-square rounded-4xl bg-surface-container overflow-hidden ring-2 transition-all duration-300 shadow-sm group-hover:scale-105 ${isSelected ? 'ring-primary' : 'ring-outline-variant/20'}`}
               >
                 <img
                   alt={type.name}

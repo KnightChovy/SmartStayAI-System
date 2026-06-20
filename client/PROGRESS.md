@@ -6,6 +6,13 @@ This file tracks the accomplished tasks, resolved user requests, and visual/func
 
 ## Completed Tasks Checklist
 
+### June 21, 2026
+
+- [x] **Front desk: newest-first sort + "Confirmed" filter tile (FE, client-only)**:
+  - `FrontDeskPage` now sorts the booking list by `createdAt` descending so the newest bookings appear at the top (previously sorted by check-in date ascending).
+  - Added a 5th filter tile **"Confirmed"** (`CalendarCheck` icon, indigo tone) that lists every `status === 'confirmed'` booking — including upcoming arrivals not yet inside the check-in window. The existing "To check in" tile still shows only same-day actionable arrivals (`confirmed && check-in ≤ today < check-out`).
+  - Widened the tile grid to `grid-cols-2 sm:grid-cols-3 lg:grid-cols-5` and added an `indigo` entry to `TILE_TONES`. `tsc --noEmit` clean (only pre-existing `baseUrl` deprecation warning).
+
 ### June 20, 2026
 
 - [x] **Admin portal connected to existing backend admin APIs — client-only**:

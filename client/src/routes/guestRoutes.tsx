@@ -11,6 +11,14 @@ import HotelDetailPage from '@/pages/guest/HotelDetailPage';
 import BookingCheckoutPage from '@/pages/guest/BookingCheckoutPage';
 import BookingSuccessPage from '@/pages/guest/BookingSuccessPage';
 import PaymentResultPage from '@/pages/guest/PaymentResultPage';
+import HelpCenterPage from '@/pages/guest/HelpCenterPage';
+import SafetyInformationPage from '@/pages/guest/SafetyInformationPage';
+import CancellationOptionsPage from '@/pages/guest/CancellationOptionsPage';
+import ReportConcernPage from '@/pages/guest/ReportConcernPage';
+import AboutUsPage from '@/pages/guest/AboutUsPage';
+import CareersPage from '@/pages/guest/CareersPage';
+import PressPage from '@/pages/guest/PressPage';
+import BlogPage from '@/pages/guest/BlogPage';
 import NotFoundPage from '@/pages/NotFoundPage';
 import { accountRoute } from './accountRoutes';
 
@@ -31,6 +39,16 @@ export const guestRoutes: RouteObject[] = [
       { path: 'booking', element: <BookingCheckoutPage /> },
       { path: 'booking/payment-result', element: <PaymentResultPage /> },
       { path: 'booking/:bookingId/success', element: <BookingSuccessPage /> },
+      // Support
+      { path: 'help-center', element: <HelpCenterPage /> },
+      { path: 'safety', element: <SafetyInformationPage /> },
+      { path: 'cancellation-options', element: <CancellationOptionsPage /> },
+      { path: 'report-concern', element: <ReportConcernPage /> },
+      // Company
+      { path: 'about', element: <AboutUsPage /> },
+      { path: 'careers', element: <CareersPage /> },
+      { path: 'press', element: <PressPage /> },
+      { path: 'blog', element: <BlogPage /> },
       // Khu tài khoản customer (được ProtectedRoute bọc bên trong)
       accountRoute,
       // 404 — bắt mọi đường dẫn không khớp (vẫn trong Layout có Navbar/Footer)

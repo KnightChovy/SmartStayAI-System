@@ -86,6 +86,7 @@ export default function SearchResultsPage() {
               </label>
 
               <DateRangePicker
+                className="grid-cols-1"
                 checkIn={filters.checkIn ?? ''}
                 checkOut={filters.checkOut ?? ''}
                 onChange={range => update({ checkIn: range.checkIn, checkOut: range.checkOut })}

@@ -4,7 +4,6 @@ import {
   CalendarCheck,
   Gift,
   Settings,
-  Sparkles,
   Star,
   Ticket,
   UserCircle,
@@ -33,9 +32,6 @@ const NAV_ITEMS: NavItem[] = [
 export default function AccountSidebar() {
   return (
     <nav className="flex gap-1 overflow-x-auto md:flex-col md:gap-1 md:overflow-visible">
-      <div className="hidden items-center gap-2 px-3 pb-4 text-xs font-bold uppercase tracking-wider text-on-surface-variant md:flex">
-        <Sparkles className="size-3.5 text-primary" /> My account
-      </div>
       {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
         <NavLink
           key={to}
