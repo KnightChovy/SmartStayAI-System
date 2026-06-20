@@ -1,0 +1,111 @@
+import { api } from '@/lib/api';
+import type { Paginated } from '@/types/api.types';
+import type {
+  AdminBooking,
+  AdminCreateUserPayload,
+  AdminReviewVerificationPayload,
+  AdminUpdateUserPayload,
+  AdminUser,
+  AdminUsersParams,
+  AdminUsersResponse,
+  AdminVerificationRequestsParams,
+  AdminVerificationRequestsResponse,
+} from '@/types/admin.types';
+import type { HotelSearchResult } from '@/types/hotel.types';
+import type { HotelBookingsResponse } from '@/types/staff.types';
+
+function cleanParams<T extends object>(params: T): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(params).filter(
+      ([, v]) => v !== undefined && v !== null && v !== ''
+    )
+  );
+}
+
+export const adminService = {
+  // ----- Users: /users (getUsers/manageUsers) -----
+
+  async listUsers(params: AdminUsersParams = {}): Promise<AdminUsersResponse> {
+    const { data } = await api.get<AdminUsersResponse>('/users', {
+      params: cleanParams(params),
+    });
+    return data;
+  },
+
+  async createUser(payload: AdminCreateUserPayload): Promise<AdminUser> {
+    const { data } = await api.post<AdminUser>('/users', payload);
+    return data;
+  },
+
+  async updateUser(
+    userId: string,
+    payload: AdminUpdateUserPayload
+  ): Promise<AdminUser> {
+    const { data } = await api.patch<AdminUser>(`/users/${userId}`, payload);
+    return data;
+  },
+
+  async deleteUser(userId: string): Promise<void> {
+    await api.delete(`/users/${userId}`);
+  },
+
+  // ----- Hotel verification queue: /hotel-partners/registrations -----
+
+  async listVerificationRequests(
+    params: AdminVerificationRequestsParams = {}
+  ): Promise<AdminVerificationRequestsResponse> {
+    const { data } = await api.get<AdminVerificationRequestsResponse>(
+      '/hotel-partners/registrations',
+      {
+        params: cleanParams(params),
+      }
+    );
+    return data;
+  },
+
+  async reviewVerificationRequest(
+    requestId: string,
+    payload: AdminReviewVerificationPayload
+  ): Promise<unknown> {
+    const { data } = await api.patch(
+      `/hotel-partners/registrations/${requestId}/review`,
+      payload
+    );
+    return data;
+  },
+
+  // ----- Platform booking overview -----
+  // Backend has no global admin bookings endpoint. Admin/platform_manager can use manageBookings
+  // on each hotel, so the client builds an overview from /hotels + /hotels/:hotelId/bookings.
+  async listBookings(limitPerHotel = 20): Promise<AdminBooking[]> {
+    const { data: hotelsPage } = await api.get<Paginated<HotelSearchResult>>(
+      '/hotels',
+      {
+        params: { limit: 100 },
+      }
+    );
+
+    const bookingPages = await Promise.allSettled(
+      hotelsPage.results.map(async hotel => {
+        const { data } = await api.get<HotelBookingsResponse>(
+          `/hotels/${hotel.id}/bookings`,
+          {
+            params: { limit: limitPerHotel, sortBy: 'createdAt:desc' },
+          }
+        );
+        return data.results.map(booking => ({
+          ...booking,
+          hotelName: hotel.name,
+        }));
+      })
+    );
+
+    return bookingPages
+      .flatMap(result => (result.status === 'fulfilled' ? result.value : []))
+      .sort((a, b) => {
+        return (
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+      });
+  },
+};

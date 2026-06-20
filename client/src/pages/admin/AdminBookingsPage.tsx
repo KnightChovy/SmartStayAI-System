@@ -1,38 +1,25 @@
 import { AdminPageHeader } from '@/components/admin/shared/AdminPageHeader';
 import { AdminBookingsFilters } from '@/components/admin/bookings/AdminBookingsFilters';
 import { AdminBookingsTable } from '@/components/admin/bookings/AdminBookingsTable';
-
-const bookings = [
-  [
-    '#BK-9284',
-    'Seaside Villa Retreat',
-    'Eleanor Shellstrop',
-    'Oct 15 - Oct 20',
-    '$1,450.00',
-    'Confirmed',
-    '',
-  ],
-  [
-    '#BK-9285',
-    'Alpine Ski Chalet',
-    'Chidi Anagonye',
-    'Nov 02 - Nov 08',
-    '$2,800.00',
-    'Pending',
-    '',
-  ],
-  [
-    '#BK-9286',
-    'Downtown Urban Loft',
-    'Tahani Al-Jamil',
-    'Oct 18 - Oct 22',
-    '$950.00',
-    'Cancelled',
-    '',
-  ],
-];
+import { useAdminBookings } from '@/hooks/admin';
+import { errorMessage } from '@/utils/errorMessage';
+import { formatCurrency } from '@/utils/formatCurrency';
+import { formatDateShort } from '@/utils/formatDate';
 
 export function AdminBookingsPage() {
+  const { data, isLoading, isError, error } = useAdminBookings();
+
+  const rows =
+    data?.map(booking => [
+      booking.bookingCode,
+      booking.hotelName,
+      booking.customer.fullName,
+      `${formatDateShort(booking.checkInDate)} - ${formatDateShort(booking.checkOutDate)}`,
+      formatCurrency(booking.totalAmount),
+      booking.status,
+      '',
+    ]) ?? [];
+
   return (
     <div className="space-y-6">
       <AdminPageHeader
@@ -40,7 +27,15 @@ export function AdminBookingsPage() {
         description="Manage and track all property reservations."
       />
       <AdminBookingsFilters searchPlaceholder="Search by property or guest..." />
-      <AdminBookingsTable rows={bookings} />
+      {isLoading && (
+        <p className="text-sm text-muted-foreground">Loading bookings...</p>
+      )}
+      {isError && (
+        <p className="text-sm font-medium text-destructive">
+          {errorMessage(error, 'Could not load bookings.')}
+        </p>
+      )}
+      {!isLoading && !isError && <AdminBookingsTable rows={rows} />}
     </div>
   );
 }

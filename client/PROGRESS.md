@@ -8,6 +8,12 @@ This file tracks the accomplished tasks, resolved user requests, and visual/func
 
 ### June 20, 2026
 
+- [x] **Admin portal connected to existing backend admin APIs — client-only**:
+  - Read server admin-capable routes: `/users` (`getUsers`/`manageUsers`), `/hotel-partners/registrations` (`manageHotelVerifications`), and hotel-scoped bookings via `/hotels/:hotelId/bookings` (`manageBookings`).
+  - Added `services/admin.service.ts` plus `types/admin.types.ts` API DTOs for users, hotel verification requests, review payloads, and admin booking rows.
+  - Added `hooks/admin/*` following one-endpoint-per-file convention: users list/create/update/delete, verification list/review, and admin booking overview.
+  - Replaced mock data in Admin Users, Properties, and Bookings pages with backend fetches, including loading/error states.
+  - Properties now shows hotel verification requests from the platform review queue; bookings build an overview from available hotels and their hotel-scoped booking lists.
 - [x] **Guest chatbot widget connected to backend hotel concierge API — client-only**:
   - Added the 21st.dev shadcn floating chat widget dependency/component and adapted it for SmartStay guest pages instead of the registry demo agents.
   - Kept the widget mounted only in the guest/customer `Layout`; admin, partner, and staff portals use separate layouts and do not render it.
