@@ -6,6 +6,15 @@ This file tracks the accomplished tasks, resolved user requests, and visual/func
 
 ## Completed Tasks Checklist
 
+### June 20, 2026
+
+- [x] **Admin portal connected to existing backend admin APIs — client-only**:
+  - Read server admin-capable routes: `/users` (`getUsers`/`manageUsers`), `/hotel-partners/registrations` (`manageHotelVerifications`), and hotel-scoped bookings via `/hotels/:hotelId/bookings` (`manageBookings`).
+  - Added `services/admin.service.ts` plus `types/admin.types.ts` API DTOs for users, hotel verification requests, review payloads, and admin booking rows.
+  - Added `hooks/admin/*` following one-endpoint-per-file convention: users list/create/update/delete, verification list/review, and admin booking overview.
+  - Replaced mock data in Admin Users, Properties, and Bookings pages with backend fetches, including loading/error states.
+  - Properties now shows hotel verification requests from the platform review queue; bookings build an overview from available hotels and their hotel-scoped booking lists.
+
 ### June 19, 2026
 
 - [x] **Staff only sees hotels they're assigned to (no free hotel switching) — client-only**:
