@@ -2,6 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useNavigate } from 'react-router';
 import { authService } from '@/services/auth.service';
 import { useAuthStore } from '@/stores/authStore';
+import toast from 'react-hot-toast';
 
 export function useLogout() {
   const navigate = useNavigate();
@@ -15,9 +16,12 @@ export function useLogout() {
       }
       return Promise.resolve();
     },
+    onSuccess: () => {
+      toast.success('Logged out successfully', { duration: 3000 });
+    },
     onSettled: () => {
       clearAuth();
-      navigate('/login');
+      navigate('/');
     },
   });
 }
