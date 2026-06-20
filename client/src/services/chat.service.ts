@@ -1,5 +1,12 @@
 import { hotelService } from './hotel.service';
-import type { ChatReply } from '@/types/chat.types';
+import { API_BASE_URL, api } from '@/lib/api';
+import { useAuthStore } from '@/stores/authStore';
+import type {
+  ChatReply,
+  SendChatMessageDto,
+  SendChatMessageResponse,
+  SendChatMessageStreamHandlers,
+} from '@/types/chat.types';
 
 /**
  * [MOCK engine] Digital Concierge. Backend chưa có endpoint chatbot
@@ -10,12 +17,37 @@ import type { ChatReply } from '@/types/chat.types';
 
 // Một số thành phố để dò trong câu hỏi của người dùng
 const KNOWN_CITIES = [
-  'Da Nang', 'Đà Nẵng', 'Ha Noi', 'Hà Nội', 'Hanoi', 'Ho Chi Minh', 'Hồ Chí Minh', 'Saigon',
-  'Hoi An', 'Hội An', 'Da Lat', 'Đà Lạt', 'Dalat', 'Nha Trang', 'Phu Quoc', 'Phú Quốc',
-  'Ha Long', 'Hạ Long', 'Hue', 'Huế', 'Vung Tau', 'Vũng Tàu', 'Sapa', 'Sa Pa',
+  'Da Nang',
+  'Đà Nẵng',
+  'Ha Noi',
+  'Hà Nội',
+  'Hanoi',
+  'Ho Chi Minh',
+  'Hồ Chí Minh',
+  'Saigon',
+  'Hoi An',
+  'Hội An',
+  'Da Lat',
+  'Đà Lạt',
+  'Dalat',
+  'Nha Trang',
+  'Phu Quoc',
+  'Phú Quốc',
+  'Ha Long',
+  'Hạ Long',
+  'Hue',
+  'Huế',
+  'Vung Tau',
+  'Vũng Tàu',
+  'Sapa',
+  'Sa Pa',
 ];
 
-const DEFAULT_QUICK_REPLIES = ['Stays in Da Nang', 'Weekend deals', 'My loyalty points'];
+const DEFAULT_QUICK_REPLIES = [
+  'Stays in Da Nang',
+  'Weekend deals',
+  'My loyalty points',
+];
 
 function detectCity(text: string): string | null {
   const lower = text.toLowerCase();
@@ -23,7 +55,135 @@ function detectCity(text: string): string | null {
   return match ?? null;
 }
 
+function readSseJson(frame: string): { event: string; data: unknown } | null {
+  let event = 'message';
+  const dataLines: string[] = [];
+
+  frame.split(/\r?\n/).forEach(line => {
+    if (line.startsWith('event:')) {
+      event = line.slice('event:'.length).trim();
+    }
+    if (line.startsWith('data:')) {
+      dataLines.push(line.slice('data:'.length).trimStart());
+    }
+  });
+
+  if (dataLines.length === 0) {
+    return null;
+  }
+
+  const rawData = dataLines.join('\n');
+  try {
+    return { event, data: JSON.parse(rawData) };
+  } catch {
+    return { event, data: rawData };
+  }
+}
+
+function pickStreamText(data: unknown): string {
+  if (data && typeof data === 'object' && 'text' in data) {
+    const text = (data as { text?: unknown }).text;
+    return typeof text === 'string' ? text : '';
+  }
+  return '';
+}
+
+function pickStreamConversationId(data: unknown): string | undefined {
+  if (data && typeof data === 'object' && 'conversationId' in data) {
+    const conversationId = (data as { conversationId?: unknown })
+      .conversationId;
+    return typeof conversationId === 'string' ? conversationId : undefined;
+  }
+  return undefined;
+}
+
 export const chatService = {
+  /** Chatbot thật của từng khách sạn (`POST /conversations/messages`). Cần đăng nhập. */
+  async sendHotelMessage(
+    payload: SendChatMessageDto
+  ): Promise<SendChatMessageResponse> {
+    const { data } = await api.post<SendChatMessageResponse>(
+      '/conversations/messages',
+      payload
+    );
+    return data;
+  },
+
+  /** Chatbot stream (`POST /conversations/messages/stream`). Cần đăng nhập. */
+  async sendHotelMessageStream(
+    payload: SendChatMessageDto,
+    handlers: SendChatMessageStreamHandlers = {}
+  ): Promise<SendChatMessageResponse> {
+    const token = useAuthStore.getState().accessToken;
+    const response = await fetch(
+      `${API_BASE_URL}/conversations/messages/stream`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'text/event-stream',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    if (!response.ok) {
+      const message = await response.text();
+      throw new Error(message || 'Unable to connect to chatbot stream.');
+    }
+    if (!response.body) {
+      throw new Error('Chatbot stream did not return a readable body.');
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let reply = '';
+    let conversationId = payload.conversationId;
+
+    const processFrame = (frame: string) => {
+      const parsed = readSseJson(frame);
+      if (!parsed) return;
+
+      if (parsed.event === 'meta') {
+        const nextConversationId = pickStreamConversationId(parsed.data);
+        if (nextConversationId) {
+          conversationId = nextConversationId;
+          handlers.onConversationId?.(nextConversationId);
+        }
+        return;
+      }
+
+      if (parsed.event === 'chunk') {
+        const chunk = pickStreamText(parsed.data);
+        if (chunk) {
+          reply += chunk;
+          handlers.onChunk?.(chunk, reply);
+        }
+      }
+    };
+
+    while (true) {
+      const { done, value } = await reader.read();
+      buffer += decoder.decode(value, { stream: !done });
+
+      const frames = buffer.split(/\n\n/);
+      buffer = frames.pop() ?? '';
+      frames.forEach(processFrame);
+
+      if (done) {
+        if (buffer.trim()) {
+          processFrame(buffer);
+        }
+        break;
+      }
+    }
+
+    return { conversationId: conversationId ?? '', reply };
+  },
+
+  /** Fallback client-side cho các trang chưa có hotelId cụ thể. */
   async reply(text: string): Promise<ChatReply> {
     const lower = text.toLowerCase();
 
@@ -60,7 +220,7 @@ export const chatService = {
     // 2) Các intent tĩnh
     if (/(deal|khuyến mãi|giá|price|offer)/.test(lower)) {
       return {
-        text: "We have weekend deals running now — check the Deals page for members-only rates.",
+        text: 'We have weekend deals running now — check the Deals page for members-only rates.',
         quickReplies: ['Stays in Hoi An', 'Stays in Da Lat'],
       };
     }

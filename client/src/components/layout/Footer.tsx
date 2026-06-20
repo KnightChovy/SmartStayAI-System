@@ -139,7 +139,7 @@ export default function Footer() {
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-outline-variant/20 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-xs text-on-surface-variant">
-            © 2024 Smart Stay AI. All rights reserved.
+            © {new Date().getFullYear()} Smart Stay AI. All rights reserved.
           </p>
           <div className="flex gap-8">
             <a

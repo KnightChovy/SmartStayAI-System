@@ -6,6 +6,17 @@ This file tracks the accomplished tasks, resolved user requests, and visual/func
 
 ## Completed Tasks Checklist
 
+### June 20, 2026
+
+- [x] **Guest chatbot widget connected to backend hotel concierge API — client-only**:
+  - Added the 21st.dev shadcn floating chat widget dependency/component and adapted it for SmartStay guest pages instead of the registry demo agents.
+  - Kept the widget mounted only in the guest/customer `Layout`; admin, partner, and staff portals use separate layouts and do not render it.
+  - Read the backend conversation contract and connected authenticated hotel-detail chats to `POST /conversations/messages` with `{ hotelId, conversationId?, message }`, storing `conversationId` for follow-up turns.
+  - Connected the streaming endpoint `POST /conversations/messages/stream` by parsing SSE `meta`, `chunk`, and `done` events from a POST `fetch`; hotel chat now renders bot text incrementally and falls back to `/messages` if the stream cannot open.
+  - Added `types/chat.types.ts` DTO/response types, `chatService.sendHotelMessage`, and `hooks/chat/use-send-chat-message.ts` + barrel to follow the one-endpoint-per-hook convention.
+  - Added `validations/chat.validation.ts` and wired the widget input through `react-hook-form` + `zodResolver`; messages are trimmed, required, and limited to 2000 characters to match backend validation.
+  - Preserved the existing client-side fallback concierge for generic guest pages without a concrete `hotelId`.
+
 ### June 19, 2026
 
 - [x] **Staff only sees hotels they're assigned to (no free hotel switching) — client-only**:
