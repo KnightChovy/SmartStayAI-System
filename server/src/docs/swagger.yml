@@ -21,6 +21,8 @@ tags:
     description: Per-hotel AI chatbot (LLM provider is swappable via the AiProvider switch)
   - name: Internal
     description: Endpoints for an external scheduler (cron). Protected by the x-cron-secret header, not user JWT.
+  - name: Admin
+    description: Platform-wide admin dashboard & oversight (admin / platform_manager)
 
 paths:
   /conversations/messages:
@@ -117,6 +119,28 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         "404":
           $ref: '#/components/responses/NotFound'
+
+  /admin/overview:
+    get:
+      summary: Platform overview dashboard (admin)
+      description: >
+        Admin/platform_manager (viewPlatformStats) gets platform metrics computed live in one
+        consistent transaction: user counts by role, hotels listed/unlisted, bookings by status, and
+        revenue (GMV, platform commission pending/settled, total refunded). Money values are strings.
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Aggregated platform metrics
+          content:
+            application/json:
+              schema:
+                type: object
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
 
   /internal/jobs/release-holds:
     post:
@@ -675,6 +699,107 @@ paths:
       responses:
         '200':
           description: No content
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /users/{userId}/status:
+    patch:
+      summary: Change a user's account status (admin)
+      description: >
+        Admin/platform_manager (manageUsers) sets a user's status to active, inactive or suspended.
+        Suspending takes effect immediately — both login and JWT verification reject non-active users.
+        Cannot change your own status.
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum: [active, inactive, suspended]
+              example:
+                status: suspended
+      responses:
+        '200':
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Cannot change your own status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /users/{userId}/role:
+    patch:
+      summary: Change a user's role (admin only)
+      description: >
+        Requires the manageRoles right (admin only — platform_manager does NOT have it). Cannot change
+        your own role, and cannot demote the last remaining admin.
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - role
+              properties:
+                role:
+                  type: string
+                  enum: [guest, customer, staff, marketer, hotel_partner, platform_manager, admin]
+              example:
+                role: staff
+      responses:
+        '200':
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Cannot change own role / cannot demote last admin
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':

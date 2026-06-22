@@ -1,6 +1,6 @@
 import httpStatus from 'http-status';
 import bcrypt from 'bcryptjs';
-import type { Prisma, User } from '@prisma/client';
+import type { Prisma, User, UserRole, UserStatus } from '@prisma/client';
 import prisma from '../config/prisma';
 import config from '../config/config';
 import ApiError from '../utils/ApiError';
@@ -86,6 +86,9 @@ export class UserService {
     if (filter.role) {
       where.role = filter.role;
     }
+    if (filter.status) {
+      where.status = filter.status;
+    }
 
     let orderBy: Prisma.UserOrderByWithRelationInput | undefined;
     if (options.sortBy) {
@@ -144,6 +147,43 @@ export class UserService {
       where: { id: userId },
       data,
     });
+  };
+
+  /**
+   * [Admin] Đổi trạng thái tài khoản (active / inactive / suspended).
+   * Suspend có hiệu lực NGAY: passport + login đều chặn user status !== 'active'.
+   * Không cho tự đổi trạng thái của chính mình (tránh admin tự khoá mình).
+   */
+  setUserStatus = async (userId: string, status: UserStatus, currentUser: User): Promise<User> => {
+    if (userId === currentUser.id) {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Không thể tự đổi trạng thái tài khoản của chính mình');
+    }
+    const user = await this.getUserById(userId);
+    if (!user) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
+    }
+    return prisma.user.update({ where: { id: userId }, data: { status } });
+  };
+
+  /**
+   * [Admin, quyền manageRoles] Đổi vai trò 1 user.
+   * Không cho tự đổi vai trò mình, và không cho hạ cấp admin CUỐI CÙNG (giữ tối thiểu 1 admin).
+   */
+  setUserRole = async (userId: string, role: UserRole, currentUser: User): Promise<User> => {
+    if (userId === currentUser.id) {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Không thể tự đổi vai trò của chính mình');
+    }
+    const user = await this.getUserById(userId);
+    if (!user) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
+    }
+    if (user.role === 'admin' && role !== 'admin') {
+      const adminCount = await prisma.user.count({ where: { role: 'admin', deletedAt: null } });
+      if (adminCount <= 1) {
+        throw new ApiError(httpStatus.BAD_REQUEST, 'Không thể hạ cấp admin cuối cùng của hệ thống');
+      }
+    }
+    return prisma.user.update({ where: { id: userId }, data: { role } });
   };
 
   /**
