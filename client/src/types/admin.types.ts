@@ -152,3 +152,120 @@ export type AdminVerificationRequestsResponse =
 export interface AdminBooking extends HotelBooking {
   hotelName: string;
 }
+
+export interface AdminOverview {
+  users: {
+    total: number;
+    byRole: Record<string, number>;
+    suspended: number;
+    newThisMonth: number;
+  };
+  hotels: {
+    total: number;
+    listed: number;
+    unlisted: number;
+  };
+  bookings: {
+    total: number;
+    byStatus: Record<string, number>;
+    thisMonth: number;
+  };
+  revenue: {
+    gmv: string;
+    commissionPending: string;
+    commissionSettled: string;
+    refundedTotal: string;
+  };
+}
+
+export type AdminCommissionStatus = 'pending' | 'settled' | 'disputed';
+
+export interface AdminCommissionsParams {
+  status?: AdminCommissionStatus;
+  partnerId?: string;
+  limit?: number;
+  page?: number;
+}
+
+export interface AdminCommission {
+  id: string;
+  bookingId: string;
+  partnerId: string;
+  paymentId: string;
+  commissionRate: string;
+  commissionAmount: string;
+  status: AdminCommissionStatus;
+  settledAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  partner?: {
+    id: string;
+    businessName: string;
+  };
+  booking?: {
+    bookingCode: string;
+    totalAmount: string;
+  };
+}
+
+export type AdminCommissionsResponse = Paginated<AdminCommission>;
+
+export interface AdminHotelsParams {
+  search?: string;
+  isListed?: boolean;
+  isActive?: boolean;
+  limit?: number;
+  page?: number;
+}
+
+export interface AdminManagedHotel {
+  id: string;
+  name: string;
+  city: string;
+  starRating?: number | null;
+  isActive: boolean;
+  isListed: boolean;
+  createdAt: string;
+  partner?: {
+    id: string;
+    businessName: string;
+  };
+}
+
+export interface AdminUpdateHotelFlagsPayload {
+  isListed?: boolean;
+  isActive?: boolean;
+}
+
+export type AdminHotelsResponse = Paginated<AdminManagedHotel>;
+
+export interface AdminAuditLogsParams {
+  action?: string;
+  entityType?: string;
+  userId?: string;
+  limit?: number;
+  page?: number;
+}
+
+export interface AdminAuditUser {
+  id: string;
+  fullName?: string | null;
+  email: string;
+  role: UserRole;
+}
+
+export interface AdminAuditLog {
+  id: string;
+  userId: string;
+  action: string;
+  entityType: string;
+  entityId: string;
+  oldValue?: unknown;
+  newValue?: unknown;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+  createdAt: string;
+  user?: AdminAuditUser;
+}
+
+export type AdminAuditLogsResponse = Paginated<AdminAuditLog>;

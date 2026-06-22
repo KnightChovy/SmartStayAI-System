@@ -17,7 +17,6 @@ import CommonNavbar from '@/common/navbar/Navbar';
 import CommonSidebar from '@/common/sidebar/Sidebar';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
-import { useLogout } from '@/hooks/auth';
 import { AdminCalendarModal } from './models/calendar/AdminCalendarModal';
 import { AdminCreateUserModal } from './models/user/AdminCreateUserModal';
 import { AdminFileManagerModal } from './models/file-manager/AdminFileManagerModal';
@@ -28,7 +27,7 @@ import { AdminNotesModal } from './models/note/AdminNotesModal';
 import { AdminReportModal } from './models/report/AdminReportModal';
 import { AdminSupportModal } from './models/support/AdminSupportModal';
 import { AdminTasksModal } from './models/task/AdminTasksModal';
-import { useLogout } from '@/hooks/auth/use-logout';
+import { useLogout } from '@/hooks/auth';
 
 const adminNavItems = [
   { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
