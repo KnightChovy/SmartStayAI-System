@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
-import { useLogin} from '../../hooks/auth';
+import { useLogin } from '../../hooks/auth';
 import { getLandingPathForRole } from '@/constants/roles';
 import {
   loginSchema,
@@ -80,43 +80,43 @@ export default function LoginPage() {
       {/* Left image panel */}
       <div
         className="relative hidden md:flex flex-col justify-between p-10 min-h-screen bg-cover bg-center"
-          style={{
-            backgroundImage:
-              "url('https://images.unsplash.com/photo-1611892440504-42a792e24d32?q=80&w=2070&auto=format&fit=crop')",
-          }}
-        >
-          {/* Dark overlay keeps the logo and tagline legible on the photo */}
-          <div
-            aria-hidden="true"
-            className="absolute inset-0 bg-linear-to-t from-black/70 via-black/25 to-black/40"
-          />
-          {/* Top row: logo + back to website */}
-          <div className="relative z-10 flex items-center justify-between">
-            <h1 className="font-display-lg text-xl font-extrabold tracking-widest uppercase text-white">
-              SMART STAY AI
-            </h1>
-            <Link
-              to="/"
-              className="flex items-center gap-1 px-4 py-2 rounded-full bg-white/15 backdrop-blur-sm border border-white/20 text-white font-label-sm text-label-sm hover:bg-white/25 transition-colors"
-            >
-              Back to website
-              <span className="material-symbols-outlined text-[18px]">
-                arrow_forward
-              </span>
-            </Link>
-          </div>
-          {/* Bottom: tagline + carousel dots */}
-          <div className="relative z-10">
-            <h2 className="font-headline-lg text-headline-lg text-white max-w-xs">
-              Your Stay, Elevated by Intelligence
-            </h2>
-            <div className="mt-6 flex items-center gap-2">
-              <span className="h-1.5 w-4 rounded-full bg-white/40" />
-              <span className="h-1.5 w-4 rounded-full bg-white/40" />
-              <span className="h-1.5 w-8 rounded-full bg-white" />
-            </div>
+        style={{
+          backgroundImage:
+            "url('https://images.unsplash.com/photo-1611892440504-42a792e24d32?q=80&w=2070&auto=format&fit=crop')",
+        }}
+      >
+        {/* Dark overlay keeps the logo and tagline legible on the photo */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 bg-linear-to-t from-black/70 via-black/25 to-black/40"
+        />
+        {/* Top row: logo + back to website */}
+        <div className="relative z-10 flex items-center justify-between">
+          <h1 className="font-display-lg text-xl font-extrabold tracking-widest uppercase text-white">
+            SMART STAY AI
+          </h1>
+          <Link
+            to="/"
+            className="flex items-center gap-1 px-4 py-2 rounded-full bg-white/15 backdrop-blur-sm border border-white/20 text-white font-label-sm text-label-sm hover:bg-white/25 transition-colors"
+          >
+            Back to website
+            <span className="material-symbols-outlined text-[18px]">
+              arrow_forward
+            </span>
+          </Link>
+        </div>
+        {/* Bottom: tagline + carousel dots */}
+        <div className="relative z-10">
+          <h2 className="font-headline-lg text-headline-lg text-white max-w-xs">
+            Your Stay, Elevated by Intelligence
+          </h2>
+          <div className="mt-6 flex items-center gap-2">
+            <span className="h-1.5 w-4 rounded-full bg-white/40" />
+            <span className="h-1.5 w-4 rounded-full bg-white/40" />
+            <span className="h-1.5 w-8 rounded-full bg-white" />
           </div>
         </div>
+      </div>
 
       {/* Right form panel */}
       <div className="min-h-screen flex flex-col justify-center px-margin-mobile md:px-16 lg:px-24 py-stack-lg overflow-y-auto">
@@ -168,7 +168,7 @@ export default function LoginPage() {
               </Label>
               <Input
                 {...register('email')}
-                className="w-full bg-surface-container-low border-none rounded-xl h-14 px-4 font-body-md text-body-md text-on-surface focus:ring-2 focus:ring-primary/20 transition-all outline-none"
+                className="w-full bg-surface-container-low border border-outline-variant/60 rounded-xl h-14 px-4 font-body-md text-body-md text-on-surface focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none"
                 id="email"
                 placeholder="name@example.com"
                 type="email"
@@ -207,22 +207,23 @@ export default function LoginPage() {
               <div className="relative">
                 <Input
                   {...register('password')}
-                  className="w-full bg-surface-container-low border-none rounded-xl h-14 pl-4 pr-12 font-body-md text-body-md text-on-surface focus:ring-2 focus:ring-primary/20 transition-all outline-none"
+                  className="w-full bg-surface-container-low border border-outline-variant/60 rounded-xl h-14 pl-4 pr-12 font-body-md text-body-md text-on-surface focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none"
                   id="password"
                   placeholder="••••••••"
                   type={showPassword ? 'text' : 'password'}
                   onFocus={() => setPasswordFocused(true)}
                   onBlur={() => setPasswordFocused(false)}
                 />
-                <Button
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant/60 hover:text-on-surface transition-colors cursor-pointer outline-none bg-transparent hover:bg-transparent border-none p-0 size-auto"
+                <button
+                  className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center justify-center text-on-surface-variant/60 hover:text-on-surface transition-colors cursor-pointer outline-none bg-transparent border-none p-0"
                   type="button"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                   onClick={togglePasswordVisibility}
                 >
                   <span className="material-symbols-outlined text-[20px]">
                     {showPassword ? 'visibility_off' : 'visibility'}
                   </span>
-                </Button>
+                </button>
               </div>
               {errors.password && (
                 <p className="text-error text-xs font-semibold mt-1.5 ml-1">
@@ -232,7 +233,7 @@ export default function LoginPage() {
             </div>
 
             <Button
-              className="w-full bg-primary text-on-primary font-label-lg text-label-lg py-4 rounded-full shadow-lg hover:bg-primary/90 active:scale-[0.98] transition-all mt-stack-md uppercase tracking-widest cursor-pointer outline-none border-none h-auto"
+              className="w-full  font-label-lg text-label-lg py-4 rounded-full shadow-lg hover:bg-primary/90 active:scale-[0.98] transition-all mt-stack-md uppercase tracking-widest cursor-pointer outline-none border-none h-auto bg-black text-white "
               type="submit"
               disabled={isLoggingIn}
             >
@@ -273,15 +274,15 @@ export default function LoginPage() {
             </svg>
             Login with Google
           </Button>
-  <p className="font-body-md text-body-md text-on-surface-variant">
-              Don't have an account?{' '}
-              <Link
-                className="text-secondary font-semibold hover:underline transition-all"
-                to="/register"
-              >
-                Register
-              </Link>
-            </p>
+          <p className="font-body-md text-body-md text-on-surface-variant mt-5">
+            Don't have an account?{' '}
+            <Link
+              className="text-secondary font-semibold hover:underline transition-all"
+              to="/register"
+            >
+              Register
+            </Link>
+          </p>
           <div className="mt-stack-md pt-4 border-t border-outline-variant/30 flex items-center justify-center gap-6">
             <a
               className="font-label-sm text-label-sm text-on-surface-variant uppercase hover:text-primary tracking-widest outline-none cursor-pointer"

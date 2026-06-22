@@ -30,6 +30,45 @@ This file tracks the accomplished tasks, resolved user requests, and visual/func
   - The shared `CommonSidebar` already rendered a Logout button calling its `onLogout` prop, but the portal layouts never wired it to the real `POST /auth/logout` flow: `ManagerLayout`/`HotelPartnerLayout` passed no `onLogout` (button was a no-op) and `AdminLayout` passed `closeAllModals` (only closed modals).
   - Wired the existing `useLogout()` hook (`hooks/auth/use-logout.ts` → `authService.logout(refreshToken)` then `clearAuth()` + redirect to `/login`) into all three layouts. `ManagerLayout` and `HotelPartnerLayout` now pass `onLogout={() => logout()}`; `AdminLayout` passes a `handleLogout` that closes any open modals first, then logs out.
 
+### June 21, 2026
+
+- [x] **Front desk: newest-first sort + "Confirmed" filter tile (FE, client-only)**:
+  - `FrontDeskPage` now sorts the booking list by `createdAt` descending so the newest bookings appear at the top (previously sorted by check-in date ascending).
+  - Added a 5th filter tile **"Confirmed"** (`CalendarCheck` icon, indigo tone) that lists every `status === 'confirmed'` booking — including upcoming arrivals not yet inside the check-in window. The existing "To check in" tile still shows only same-day actionable arrivals (`confirmed && check-in ≤ today < check-out`).
+  - Widened the tile grid to `grid-cols-2 sm:grid-cols-3 lg:grid-cols-5` and added an `indigo` entry to `TILE_TONES`. `tsc --noEmit` clean (only pre-existing `baseUrl` deprecation warning).
+
+### June 20, 2026
+
+- [x] **Admin portal connected to existing backend admin APIs — client-only**:
+  - Read server admin-capable routes: `/users` (`getUsers`/`manageUsers`), `/hotel-partners/registrations` (`manageHotelVerifications`), and hotel-scoped bookings via `/hotels/:hotelId/bookings` (`manageBookings`).
+  - Added `services/admin.service.ts` plus `types/admin.types.ts` API DTOs for users, hotel verification requests, review payloads, and admin booking rows.
+  - Added `hooks/admin/*` following one-endpoint-per-file convention: users list/create/update/delete, verification list/review, and admin booking overview.
+  - Replaced mock data in Admin Users, Properties, and Bookings pages with backend fetches, including loading/error states.
+  - Properties now shows hotel verification requests from the platform review queue; bookings build an overview from available hotels and their hotel-scoped booking lists.
+- [x] **Guest chatbot widget connected to backend hotel concierge API — client-only**:
+  - Added the 21st.dev shadcn floating chat widget dependency/component and adapted it for SmartStay guest pages instead of the registry demo agents.
+  - Kept the widget mounted only in the guest/customer `Layout`; admin, partner, and staff portals use separate layouts and do not render it.
+  - Read the backend conversation contract and connected authenticated hotel-detail chats to `POST /conversations/messages` with `{ hotelId, conversationId?, message }`, storing `conversationId` for follow-up turns.
+  - Connected the streaming endpoint `POST /conversations/messages/stream` by parsing SSE `meta`, `chunk`, and `done` events from a POST `fetch`; hotel chat now renders bot text incrementally and falls back to `/messages` if the stream cannot open.
+  - Added `types/chat.types.ts` DTO/response types, `chatService.sendHotelMessage`, and `hooks/chat/use-send-chat-message.ts` + barrel to follow the one-endpoint-per-hook convention.
+  - Added `validations/chat.validation.ts` and wired the widget input through `react-hook-form` + `zodResolver`; messages are trimmed, required, and limited to 2000 characters to match backend validation.
+  - Preserved the existing client-side fallback concierge for generic guest pages without a concrete `hotelId`.
+
+### June 19, 2026
+
+- [x] **Staff only sees hotels they're assigned to (no free hotel switching) — client-only**:
+  - Constraint: no server changes allowed. The BE has no endpoint that lists a staff member's assigned hotels, so `staffService.listMyHotels` now **discovers them client-side**: list public `GET /hotels`, then probe each `GET /hotels/:id/bookings?limit=1` (guarded by `getOperableHotel`) and keep only the hotels that don't return 403.
+  - The probes pass a `skipAuthRetry` config (`{ _retry: true }`) so the expected 403s **skip the shared axios refresh-token interceptor** in `lib/api.ts` (which otherwise escalates 401/403 into a token refresh and can log the user out / thrash `refresh-tokens`).
+  - `SelectHotelPage`: lists only operable hotels; **auto-selects when there's exactly one**; clear empty state when the staff member isn't assigned to any hotel; removed the free-text search.
+  - `RequireStaffHotel` (guard): validates the persisted hotel against the operable list, **auto-picks the single assignment**, drops a stale/unassigned selection, and **holds rendering until a valid hotel is in the store** — so the operational pages never fire a 403 (fixes the leftover Đà Nẵng selection that was 403-ing).
+  - `StaffLayout`: the **"Change" button only shows when the staff member has >1 operable hotel**.
+  - `tsc` clean (client). Server folder untouched.
+
+- [x] **Localize Staff Portal UI to English**:
+  - Translated all Vietnamese user-facing text in the staff portal to English: pages (`StaffDashboardPage`, `FrontDeskPage`, `BookingDetailPage`, `HousekeepingPage`, `RoomsPage`, `SelectHotelPage`), layout/components (`StaffLayout` nav + topbar, `StatusBadge` booking/room/task/payment labels, `RequireStaffHotel`), and all toast/feedback/error strings.
+  - Also translated the in-code comments across `hooks/staff/*`, `routes/staffRoutes.tsx`, `stores/staffHotelStore.ts`, `types/staff.types.ts`, and `services/staff.service.ts` so the whole staff module reads in English.
+  - No behavior changes — labels/copy only. `tsc -b` clean (only pre-existing `baseUrl` deprecation warnings).
+
 ### June 18, 2026
 
 - [x] **Làm lại UI/UX quầy lễ tân + nối nốt API/param còn thiếu (FE)**:

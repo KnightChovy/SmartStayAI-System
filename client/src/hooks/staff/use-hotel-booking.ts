@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { staffService } from '@/services/staff.service';
 import { staffKeys } from './keys';
 
-/** Chi tiết một booking của khách sạn (cho màn lễ tân). */
+/** Detail of a single hotel booking (for the front desk screen). */
 export function useHotelBooking(hotelId: string | undefined, bookingId: string | undefined) {
   return useQuery({
     queryKey: staffKeys.booking(hotelId ?? '', bookingId ?? ''),

@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { staffService } from '@/services/staff.service';
 import { staffKeys } from './keys';
 
-/** Thu tiền mặt cho booking trả tại khách sạn. */
+/** Record a cash payment for a pay-at-hotel booking. */
 export function useRecordCashPayment(hotelId: string | undefined) {
   const qc = useQueryClient();
   return useMutation({

@@ -12,7 +12,7 @@ import type { UserProfile } from '@/types/account.types';
 export default function ProfilePage() {
   const user = useAuthStore(state => state.user);
   const seed: Partial<UserProfile> = {
-    fullName: user?.name ?? '',
+    fullName: user?.fullName ?? '',
     email: user?.email ?? '',
     phone: user?.phone ?? '',
     avatarUrl: user?.avatarUrl ?? null,
@@ -41,6 +41,7 @@ function ProfileForm({ initial }: { initial: UserProfile }) {
   const upload = useUpload();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState<UserProfile>(initial);
+  console.log('🚀 ~ file: ProfilePage.tsx:49 ~ ProfileForm ~ form:', form);
   const [saved, setSaved] = useState(false);
 
   const set = <K extends keyof UserProfile>(key: K, value: UserProfile[K]) => {

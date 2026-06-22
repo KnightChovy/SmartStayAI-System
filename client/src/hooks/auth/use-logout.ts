@@ -17,15 +17,11 @@ export function useLogout() {
       return Promise.resolve();
     },
     onSuccess: () => {
-      toast.success('Đăng xuất thành công');
-    },
-    onError: () => {
-      // Server-side logout failed, but we still clear the local session below.
-      toast.error('Đăng xuất gặp lỗi, phiên đăng nhập đã được xoá');
+      toast.success('Logged out successfully', { duration: 3000 });
     },
     onSettled: () => {
       clearAuth();
-      navigate('/login');
+      navigate('/');
     },
   });
 }

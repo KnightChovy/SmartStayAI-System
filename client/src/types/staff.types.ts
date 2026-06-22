@@ -1,7 +1,7 @@
 import type { Paginated } from '@/types/api.types';
 
 // ============================================================
-// Enum khớp backend (server/prisma/schema.prisma)
+// Enums matching the backend (server/prisma/schema.prisma)
 // ============================================================
 
 export type BookingStatus =
@@ -21,10 +21,10 @@ export type PaymentStatus = 'pending' | 'completed' | 'failed' | 'refunded';
 export type StaffPaymentMethod = 'vnpay' | 'cash';
 
 // ============================================================
-// Khách sạn staff đang trực (lấy từ GET /hotels — public list)
+// Hotel the staff member is working at (from GET /hotels — public list)
 // ============================================================
 
-/** Khách sạn rút gọn dùng cho bộ chọn "nơi làm việc" của staff. */
+/** Condensed hotel used for the staff "workplace" picker. */
 export interface StaffHotel {
   id: string;
   name: string;
@@ -33,8 +33,8 @@ export interface StaffHotel {
 }
 
 // ============================================================
-// Booking phía vận hành khách sạn (GET /hotels/:hotelId/bookings)
-// Decimal serialize thành string qua JSON.
+// Bookings from the hotel operations side (GET /hotels/:hotelId/bookings)
+// Decimals are serialized to strings via JSON.
 // ============================================================
 
 export interface BookingCustomerSummary {
@@ -64,7 +64,7 @@ export interface BookingRoomLink {
   room?: AssignedRoomSummary;
 }
 
-/** Một dòng booking trong danh sách quầy lễ tân. */
+/** A single booking row in the front desk list. */
 export interface HotelBooking {
   id: string;
   bookingCode: string;
@@ -115,7 +115,7 @@ export interface BookingInvoiceSummary {
   totalAmount?: string;
 }
 
-/** Chi tiết booking cho quầy lễ tân (GET /hotels/:hotelId/bookings/:bookingId). */
+/** Booking detail for the front desk (GET /hotels/:hotelId/bookings/:bookingId). */
 export interface HotelBookingDetail extends HotelBooking {
   voucher: BookingVoucherSummary | null;
   payments: BookingPaymentSummary[];
@@ -124,7 +124,7 @@ export interface HotelBookingDetail extends HotelBooking {
 
 export type HotelBookingsResponse = Paginated<HotelBooking>;
 
-/** Bộ lọc danh sách booking khách sạn. */
+/** Filters for the hotel booking list. */
 export interface HotelBookingsParams {
   status?: BookingStatus;
   fromDate?: string;
@@ -134,7 +134,7 @@ export interface HotelBookingsParams {
   page?: number;
 }
 
-// ----- Payload các hành động lễ tân -----
+// ----- Payloads for front desk actions -----
 
 export interface CheckInPayload {
   roomId?: string;
@@ -168,7 +168,7 @@ export interface HousekeepingTask {
 }
 
 // ============================================================
-// Phòng vật lý (GET /hotels/:hotelId/rooms)
+// Physical rooms (GET /hotels/:hotelId/rooms)
 // ============================================================
 
 export interface StaffRoom {

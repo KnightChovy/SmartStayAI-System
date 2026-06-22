@@ -151,7 +151,8 @@ export default function VerifyIdentityPage() {
         password,
         verificationCode: enteredOtp,
       });
-      navigate('/');
+      // Verify email xong → về trang chủ và bật modal nhập thêm thông tin.
+      navigate('/', { state: { justRegistered: true } });
     } catch (err) {
       console.error(err);
     }

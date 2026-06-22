@@ -28,3 +28,26 @@ export interface ChatReply {
   recommendations?: ChatRecommendation[];
   quickReplies?: string[];
 }
+
+/** Body gửi tới `POST /conversations/messages`. */
+export interface SendChatMessageDto {
+  hotelId: string;
+  conversationId?: string;
+  message: string;
+}
+
+/** Response backend chatbot trả về. */
+export interface SendChatMessageResponse {
+  conversationId: string;
+  reply: string;
+}
+
+export interface SendChatMessageStreamHandlers {
+  onConversationId?: (conversationId: string) => void;
+  onChunk?: (chunk: string, fullText: string) => void;
+}
+
+export interface SendChatMessageStreamPayload {
+  payload: SendChatMessageDto;
+  handlers?: SendChatMessageStreamHandlers;
+}

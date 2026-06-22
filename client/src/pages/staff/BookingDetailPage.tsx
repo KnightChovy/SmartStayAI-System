@@ -46,12 +46,12 @@ export default function BookingDetailPage() {
   const [extraCharge, setExtraCharge] = useState('');
   const [feedback, setFeedback] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
 
-  if (isLoading) return <p className="text-sm text-slate-500">Đang tải booking…</p>;
+  if (isLoading) return <p className="text-sm text-slate-500">Loading booking…</p>;
   if (isError || !booking)
     return (
       <div className="space-y-3">
         <BackLink />
-        <p className="text-sm text-rose-600">Không tải được booking (có thể bạn không có quyền).</p>
+        <p className="text-sm text-rose-600">Could not load booking (you may not have permission).</p>
       </div>
     );
 
@@ -59,14 +59,14 @@ export default function BookingDetailPage() {
     p => p.paymentMethod === 'cash' && p.status === 'pending'
   );
 
-  // Cửa sổ check-in thực tế: ngày nhận ≤ hôm nay < ngày trả.
+  // Actual check-in window: check-in date ≤ today < check-out date.
   const today = todayUtcKey();
   const checkInKey = toUtcDateKey(booking.checkInDate);
   const checkOutKey = toUtcDateKey(booking.checkOutDate);
   const beforeWindow = today < checkInKey;
   const afterWindow = today >= checkOutKey;
 
-  // Phòng trống đúng loại để lễ tân chọn bàn giao (rỗng = để BE tự gán).
+  // Available rooms of the right type for the receptionist to assign (empty = let BE auto-assign).
   const availableRooms = (rooms ?? []).filter(
     r => r.roomTypeId === booking.roomTypeId && r.status === 'available'
   );
@@ -118,24 +118,24 @@ export default function BookingDetailPage() {
       )}
 
       <div className="grid gap-4 lg:grid-cols-3">
-        {/* Thông tin */}
+        {/* Information */}
         <div className="space-y-4 lg:col-span-2">
-          <Card title="Thông tin lưu trú">
-            <Row label="Loại phòng" value={booking.roomType.name} />
-            <Row label="Số khách" value={`${booking.numGuests} khách`} />
+          <Card title="Stay details">
+            <Row label="Room type" value={booking.roomType.name} />
+            <Row label="Guests" value={`${booking.numGuests} guest(s)`} />
             <Row
-              label="Nhận → Trả phòng"
-              value={`${formatDateShort(booking.checkInDate)} → ${formatDateShort(booking.checkOutDate)} (${booking.numNights} đêm)`}
+              label="Check-in → Check-out"
+              value={`${formatDateShort(booking.checkInDate)} → ${formatDateShort(booking.checkOutDate)} (${booking.numNights} night(s))`}
             />
-            {assignedRooms && <Row label="Phòng đã gán" value={assignedRooms} />}
+            {assignedRooms && <Row label="Assigned rooms" value={assignedRooms} />}
             {booking.specialRequests && (
-              <Row label="Yêu cầu đặc biệt" value={booking.specialRequests} />
+              <Row label="Special requests" value={booking.specialRequests} />
             )}
           </Card>
 
-          <Card title="Khách hàng">
+          <Card title="Customer">
             <Row label="Email" value={booking.customer.email} />
-            <Row label="Điện thoại" value={booking.customer.phone ?? '—'} />
+            <Row label="Phone" value={booking.customer.phone ?? '—'} />
           </Card>
 
           {booking.voucher && (
@@ -150,25 +150,25 @@ export default function BookingDetailPage() {
                     booking.voucher.usedAt ? 'text-xs text-slate-400' : 'text-xs text-emerald-600'
                   }
                 >
-                  {booking.voucher.usedAt ? 'Đã sử dụng' : 'Chưa dùng'}
+                  {booking.voucher.usedAt ? 'Used' : 'Not used'}
                 </span>
               </div>
             </Card>
           )}
 
-          <Card title="Thanh toán">
-            <Row label="Tổng tiền" value={formatCurrency(booking.totalAmount)} />
+          <Card title="Payment">
+            <Row label="Total amount" value={formatCurrency(booking.totalAmount)} />
             {booking.discountAmount !== '0' && (
-              <Row label="Giảm giá" value={`- ${formatCurrency(booking.discountAmount)}`} />
+              <Row label="Discount" value={`- ${formatCurrency(booking.discountAmount)}`} />
             )}
             <div className="pt-2">
               {booking.payments.length === 0 && (
-                <p className="text-sm text-slate-400">Chưa có giao dịch.</p>
+                <p className="text-sm text-slate-400">No transactions yet.</p>
               )}
               {booking.payments.map(p => (
                 <div key={p.id} className="flex items-center justify-between py-1 text-sm">
                   <span className="text-slate-600">
-                    {p.paymentMethod === 'cash' ? 'Tiền mặt' : 'VNPay'} · {formatCurrency(p.amount)}
+                    {p.paymentMethod === 'cash' ? 'Cash' : 'VNPay'} · {formatCurrency(p.amount)}
                   </span>
                   <PaymentStatusBadge status={p.status} />
                 </div>
@@ -177,24 +177,24 @@ export default function BookingDetailPage() {
           </Card>
         </div>
 
-        {/* Hành động */}
+        {/* Actions */}
         <div className="space-y-3">
           <div className="rounded-xl border border-slate-200 bg-white p-4">
-            <h2 className="mb-3 text-sm font-semibold text-slate-900">Thao tác lễ tân</h2>
+            <h2 className="mb-3 text-sm font-semibold text-slate-900">Front desk actions</h2>
 
             {booking.status === 'confirmed' && (
               <div className="mb-3 space-y-3">
                 {beforeWindow && (
                   <div className="flex items-start gap-2 rounded-lg bg-amber-50 p-2.5 text-xs text-amber-700">
                     <CalendarClock className="mt-0.5 size-3.5 shrink-0" />
-                    Chưa tới ngày nhận phòng ({formatDateShort(booking.checkInDate)}). Chưa thể
-                    check-in.
+                    The check-in date ({formatDateShort(booking.checkInDate)}) has not arrived yet.
+                    Check-in is not available.
                   </div>
                 )}
 
                 <div className="space-y-1.5">
                   <Label htmlFor="room" className="flex items-center gap-1 text-xs text-slate-500">
-                    <BedDouble className="size-3.5" /> Gán phòng
+                    <BedDouble className="size-3.5" /> Assign room
                   </Label>
                   <select
                     id="room"
@@ -203,22 +203,22 @@ export default function BookingDetailPage() {
                     disabled={beforeWindow}
                     className="h-9 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-slate-400 focus:outline-none disabled:bg-slate-50"
                   >
-                    <option value="">Tự động chọn phòng trống</option>
+                    <option value="">Auto-select an available room</option>
                     {availableRooms.map(r => (
                       <option key={r.id} value={r.id}>
-                        Phòng {r.roomNumber}
-                        {r.floor ? ` · tầng ${r.floor}` : ''}
+                        Room {r.roomNumber}
+                        {r.floor ? ` · floor ${r.floor}` : ''}
                       </option>
                     ))}
                   </select>
                   {availableRooms.length === 0 && (
-                    <p className="text-xs text-rose-500">Không còn phòng trống đúng loại.</p>
+                    <p className="text-xs text-rose-500">No available rooms of this type.</p>
                   )}
                 </div>
 
                 <div className="space-y-1.5">
                   <Label htmlFor="voucher" className="text-xs text-slate-500">
-                    Mã voucher (không bắt buộc)
+                    Voucher code (optional)
                   </Label>
                   <Input
                     id="voucher"
@@ -241,8 +241,8 @@ export default function BookingDetailPage() {
                             ...(voucherCode ? { voucherCode } : {}),
                           },
                         }),
-                      'Đã check-in khách thành công.',
-                      'Check-in thất bại.'
+                      'Guest checked in successfully.',
+                      'Check-in failed.'
                     )
                   }
                 >
@@ -254,7 +254,7 @@ export default function BookingDetailPage() {
             {booking.status === 'checked_in' && (
               <div className="mb-3 space-y-2">
                 <Label htmlFor="extra" className="text-xs text-slate-500">
-                  Phụ phí (nếu có)
+                  Extra charge (if any)
                 </Label>
                 <Input
                   id="extra"
@@ -274,8 +274,8 @@ export default function BookingDetailPage() {
                           bookingId: booking.id,
                           payload: extraCharge ? { extraCharge: Number(extraCharge) } : {},
                         }),
-                      'Đã check-out khách thành công.',
-                      'Check-out thất bại.'
+                      'Guest checked out successfully.',
+                      'Check-out failed.'
                     )
                   }
                 >
@@ -292,12 +292,12 @@ export default function BookingDetailPage() {
                 onClick={() =>
                   run(
                     () => recordCash.mutateAsync({ bookingId: booking.id }),
-                    'Đã ghi nhận thu tiền mặt.',
-                    'Ghi nhận tiền mặt thất bại.'
+                    'Cash payment recorded.',
+                    'Failed to record cash payment.'
                   )
                 }
               >
-                <Banknote className="size-4" /> Thu tiền mặt
+                <Banknote className="size-4" /> Collect cash
               </Button>
             )}
 
@@ -309,26 +309,26 @@ export default function BookingDetailPage() {
                 onClick={() =>
                   run(
                     () => noShow.mutateAsync({ bookingId: booking.id }),
-                    'Đã đánh dấu khách không đến.',
-                    'Đánh dấu no-show thất bại.'
+                    'Marked as no-show.',
+                    'Failed to mark as no-show.'
                   )
                 }
               >
-                <UserX className="size-4" /> Đánh dấu không đến
+                <UserX className="size-4" /> Mark as no-show
               </Button>
             )}
 
             {['checked_out', 'cancelled', 'no_show'].includes(booking.status) && (
-              <p className="text-sm text-slate-400">Booking đã kết thúc, không còn thao tác.</p>
+              <p className="text-sm text-slate-400">Booking has ended, no actions available.</p>
             )}
             {booking.status === 'pending' && !pendingCashPayment && (
               <p className="text-sm text-slate-400">
-                Booking đang chờ khách thanh toán online (VNPay).
+                Booking is awaiting online payment from the guest (VNPay).
               </p>
             )}
             {afterWindow && booking.status === 'confirmed' && (
               <p className="mt-2 text-xs text-rose-500">
-                Đã quá kỳ lưu trú — nên xử lý là khách không đến.
+                The stay period has passed — this should be handled as a no-show.
               </p>
             )}
           </div>
@@ -344,7 +344,7 @@ function BackLink() {
       to={ROUTES.staffFrontDesk}
       className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900"
     >
-      <ArrowLeft className="size-4" /> Quầy lễ tân
+      <ArrowLeft className="size-4" /> Front desk
     </Link>
   );
 }

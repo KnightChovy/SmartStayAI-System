@@ -2,11 +2,11 @@ import { useQuery } from '@tanstack/react-query';
 import { staffService } from '@/services/staff.service';
 import { staffKeys } from './keys';
 
-/** Danh sách khách sạn (công khai) cho bộ chọn nơi làm việc của staff. */
+/** Hotels the logged-in staff member is assigned to (workplace picker). */
 export function useStaffHotels() {
   return useQuery({
     queryKey: staffKeys.hotels,
-    queryFn: staffService.listHotels,
+    queryFn: staffService.listMyHotels,
     staleTime: 5 * 60 * 1000,
   });
 }

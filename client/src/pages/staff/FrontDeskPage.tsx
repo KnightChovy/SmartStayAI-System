@@ -7,6 +7,7 @@ import {
   LogOut,
   BedDouble,
   Clock,
+  CalendarCheck,
   CheckCircle2,
   AlertCircle,
   Loader2,
@@ -22,9 +23,9 @@ import { formatCurrency } from '@/utils/formatCurrency';
 import { formatDateShort, toUtcDateKey, todayUtcKey } from '@/utils/formatDate';
 import { errorMessage } from '@/utils/errorMessage';
 
-type Bucket = 'all' | 'checkin' | 'departure' | 'inhouse' | 'pending';
+type Bucket = 'all' | 'checkin' | 'confirmed' | 'departure' | 'inhouse' | 'pending';
 
-/** Booking đang trong cửa sổ check-in thực tế (ngày nhận ≤ hôm nay < ngày trả). */
+/** Booking within the actual check-in window (check-in date ≤ today < check-out date). */
 function canCheckIn(b: HotelBooking, today: string): boolean {
   return (
     b.status === 'confirmed' &&
@@ -39,7 +40,7 @@ export default function FrontDeskPage() {
   const [query, setQuery] = useState('');
   const [feedback, setFeedback] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
 
-  // Lấy hết booking rồi phân nhóm phía client để hiện đếm theo từng việc cần làm.
+  // Fetch all bookings, then bucket them client-side to show counts per task to do.
   const { data, isLoading, isError } = useHotelBookings(hotel?.id, { limit: 100 });
   const checkIn = useCheckIn(hotel?.id);
   const checkOut = useCheckOut(hotel?.id);
@@ -50,6 +51,7 @@ export default function FrontDeskPage() {
   const counts = useMemo(
     () => ({
       checkin: all.filter(b => canCheckIn(b, today)).length,
+      confirmed: all.filter(b => b.status === 'confirmed').length,
       departure: all.filter(b => b.status === 'checked_in' && toUtcDateKey(b.checkOutDate) === today)
         .length,
       inhouse: all.filter(b => b.status === 'checked_in').length,
@@ -70,6 +72,8 @@ export default function FrontDeskPage() {
       switch (bucket) {
         case 'checkin':
           return canCheckIn(b, today);
+        case 'confirmed':
+          return b.status === 'confirmed';
         case 'departure':
           return b.status === 'checked_in' && toUtcDateKey(b.checkOutDate) === today;
         case 'inhouse':
@@ -81,9 +85,10 @@ export default function FrontDeskPage() {
       }
     };
 
+    // Newest bookings first (by creation time).
     return all
       .filter(b => inBucket(b) && matchesQuery(b))
-      .sort((a, b) => toUtcDateKey(a.checkInDate).localeCompare(toUtcDateKey(b.checkInDate)));
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   }, [all, bucket, query, today]);
 
   const busyId = checkIn.isPending
@@ -96,9 +101,9 @@ export default function FrontDeskPage() {
     setFeedback(null);
     try {
       await checkIn.mutateAsync({ bookingId: b.id, payload: {} });
-      setFeedback({ type: 'ok', msg: `Đã check-in ${b.customer.fullName}. Phòng được gán tự động.` });
+      setFeedback({ type: 'ok', msg: `Checked in ${b.customer.fullName}. Room assigned automatically.` });
     } catch (err) {
-      setFeedback({ type: 'err', msg: errorMessage(err, 'Check-in thất bại.') });
+      setFeedback({ type: 'err', msg: errorMessage(err, 'Check-in failed.') });
     }
   };
 
@@ -106,34 +111,42 @@ export default function FrontDeskPage() {
     setFeedback(null);
     try {
       await checkOut.mutateAsync({ bookingId: b.id, payload: {} });
-      setFeedback({ type: 'ok', msg: `Đã check-out ${b.customer.fullName}.` });
+      setFeedback({ type: 'ok', msg: `Checked out ${b.customer.fullName}.` });
     } catch (err) {
-      setFeedback({ type: 'err', msg: errorMessage(err, 'Check-out thất bại.') });
+      setFeedback({ type: 'err', msg: errorMessage(err, 'Check-out failed.') });
     }
   };
 
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-xl font-semibold text-slate-900">Quầy lễ tân</h1>
+        <h1 className="text-xl font-semibold text-slate-900">Front desk</h1>
         <p className="text-sm text-slate-500">{hotel?.name}</p>
       </div>
 
-      {/* Bộ lọc theo việc cần làm */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      {/* Filters by task to do */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         <BucketTile
           active={bucket === 'checkin'}
           onClick={() => setBucket('checkin')}
           icon={LogIn}
-          label="Cần check-in"
+          label="To check in"
           count={counts.checkin}
           tone="emerald"
+        />
+        <BucketTile
+          active={bucket === 'confirmed'}
+          onClick={() => setBucket('confirmed')}
+          icon={CalendarCheck}
+          label="Confirmed"
+          count={counts.confirmed}
+          tone="indigo"
         />
         <BucketTile
           active={bucket === 'departure'}
           onClick={() => setBucket('departure')}
           icon={LogOut}
-          label="Trả phòng hôm nay"
+          label="Departing today"
           count={counts.departure}
           tone="amber"
         />
@@ -141,7 +154,7 @@ export default function FrontDeskPage() {
           active={bucket === 'inhouse'}
           onClick={() => setBucket('inhouse')}
           icon={BedDouble}
-          label="Đang lưu trú"
+          label="In-house"
           count={counts.inhouse}
           tone="sky"
         />
@@ -149,7 +162,7 @@ export default function FrontDeskPage() {
           active={bucket === 'pending'}
           onClick={() => setBucket('pending')}
           icon={Clock}
-          label="Chờ thanh toán"
+          label="Awaiting payment"
           count={counts.pending}
           tone="slate"
         />
@@ -161,7 +174,7 @@ export default function FrontDeskPage() {
           <Input
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder="Tìm mã đặt phòng, tên hoặc email khách…"
+            placeholder="Search booking code, guest name or email…"
             className="pl-9"
           />
         </div>
@@ -174,7 +187,7 @@ export default function FrontDeskPage() {
               : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50'
           )}
         >
-          Xem tất cả booking
+          View all bookings
         </button>
       </div>
 
@@ -196,28 +209,28 @@ export default function FrontDeskPage() {
         </div>
       )}
 
-      {/* Danh sách */}
+      {/* List */}
       <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
         {isError && (
           <p className="px-4 py-10 text-center text-sm text-rose-600">
-            Không tải được booking. Có thể bạn chưa được phân công vào khách sạn này.
+            Could not load bookings. You may not be assigned to this hotel.
           </p>
         )}
-        {isLoading && <p className="px-4 py-10 text-center text-sm text-slate-500">Đang tải…</p>}
+        {isLoading && <p className="px-4 py-10 text-center text-sm text-slate-500">Loading…</p>}
         {!isLoading && !isError && filtered.length === 0 && (
-          <p className="px-4 py-10 text-center text-sm text-slate-400">Không có booking nào ở mục này.</p>
+          <p className="px-4 py-10 text-center text-sm text-slate-400">No bookings in this category.</p>
         )}
 
         {!isLoading && !isError && filtered.length > 0 && (
           <table className="w-full text-sm">
             <thead className="border-b border-slate-100 bg-slate-50 text-left text-xs text-slate-500">
               <tr>
-                <th className="px-4 py-2.5 font-medium">Mã / Khách</th>
-                <th className="hidden px-4 py-2.5 font-medium md:table-cell">Loại phòng</th>
-                <th className="hidden px-4 py-2.5 font-medium sm:table-cell">Nhận → Trả</th>
-                <th className="px-4 py-2.5 font-medium">Tổng tiền</th>
-                <th className="px-4 py-2.5 font-medium">Trạng thái</th>
-                <th className="px-4 py-2.5 text-right font-medium">Thao tác</th>
+                <th className="px-4 py-2.5 font-medium">Code / Guest</th>
+                <th className="hidden px-4 py-2.5 font-medium md:table-cell">Room type</th>
+                <th className="hidden px-4 py-2.5 font-medium sm:table-cell">Check-in → Check-out</th>
+                <th className="px-4 py-2.5 font-medium">Total</th>
+                <th className="px-4 py-2.5 font-medium">Status</th>
+                <th className="px-4 py-2.5 text-right font-medium">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -268,7 +281,7 @@ export default function FrontDeskPage() {
                           to={ROUTES.staffBookingDetail(b.id)}
                           className="inline-flex items-center gap-0.5 text-xs font-medium text-slate-500 hover:text-slate-900"
                         >
-                          Chi tiết <ChevronRight className="size-3" />
+                          Details <ChevronRight className="size-3" />
                         </Link>
                       </div>
                     </td>
@@ -285,6 +298,7 @@ export default function FrontDeskPage() {
 
 const TILE_TONES = {
   emerald: 'data-[active=true]:border-emerald-400 data-[active=true]:bg-emerald-50 text-emerald-600',
+  indigo: 'data-[active=true]:border-indigo-400 data-[active=true]:bg-indigo-50 text-indigo-600',
   amber: 'data-[active=true]:border-amber-400 data-[active=true]:bg-amber-50 text-amber-600',
   sky: 'data-[active=true]:border-sky-400 data-[active=true]:bg-sky-50 text-sky-600',
   slate: 'data-[active=true]:border-slate-400 data-[active=true]:bg-slate-50 text-slate-600',

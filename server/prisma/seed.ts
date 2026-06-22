@@ -73,6 +73,36 @@ const AMENITIES: { name: string; icon: string; category: AmenityCategory }[] = [
   { name: 'Ban công', icon: 'balcony', category: 'room' },
 ];
 
+// FAQ chung áp dụng cho mọi khách sạn. Nhiều câu → vector RAG mới có việc "chọn lọc" câu liên quan.
+const GENERIC_FAQS: { category: string; question: string; answer: string }[] = [
+  { category: 'Chính sách', question: 'Khách sạn có cho mang theo thú cưng không?', answer: 'Rất tiếc, khách sạn không nhận thú cưng, trừ chó dẫn đường hỗ trợ người khuyết tật.' },
+  { category: 'Chính sách', question: 'Chính sách hủy phòng như thế nào?', answer: 'Hủy miễn phí nếu báo trước 48 giờ so với giờ nhận phòng; trong vòng 48 giờ sẽ bị thu phí 1 đêm đầu.' },
+  { category: 'Chính sách', question: 'Khách sạn có cho hút thuốc trong phòng không?', answer: 'Tất cả phòng đều cấm hút thuốc. Có khu vực hút thuốc riêng ngoài trời.' },
+  { category: 'Chính sách', question: 'Trẻ em ở cùng có tính phí không?', answer: 'Trẻ dưới 6 tuổi ngủ ghép giường với bố mẹ được miễn phí; từ 6 tuổi tính như người lớn hoặc phụ thu giường phụ.' },
+  { category: 'Chính sách', question: 'Có thể yêu cầu giường phụ không?', answer: 'Có, giường phụ phụ thu 250.000đ/đêm; vui lòng báo trước vì số lượng có hạn.' },
+  { category: 'Chính sách', question: 'Nhận phòng cần giấy tờ gì?', answer: 'Khách vui lòng xuất trình CCCD/CMND hoặc hộ chiếu còn hiệu lực khi nhận phòng.' },
+  { category: 'Chính sách', question: 'Giờ nhận và trả phòng là mấy giờ?', answer: 'Nhận phòng từ 14:00, trả phòng trước 12:00.' },
+  { category: 'Chính sách', question: 'Nhận phòng sớm hoặc trả phòng muộn được không?', answer: 'Tuỳ tình trạng phòng. Trả phòng muộn sau 12:00 có thể phụ thu; vui lòng hỏi lễ tân.' },
+  { category: 'Chính sách', question: 'Khách có thể dẫn người tới thăm phòng không?', answer: 'Khách tới thăm cần đăng ký với lễ tân và xuất trình giấy tờ; không lưu trú qua đêm nếu chưa đăng ký.' },
+  { category: 'Chính sách', question: 'Khách sạn có yêu cầu đặt cọc không?', answer: 'Đặt phòng online đã thanh toán thì không cần cọc thêm; khi nhận phòng có thể cần cọc nhỏ cho minibar/hư hỏng, hoàn lại lúc trả phòng.' },
+  { category: 'Tiện ích', question: 'Khách sạn có WiFi miễn phí không?', answer: 'Có WiFi miễn phí tốc độ cao ở toàn bộ khu vực và trong phòng.' },
+  { category: 'Tiện ích', question: 'Hồ bơi mở cửa mấy giờ?', answer: 'Hồ bơi mở từ 6:00 đến 21:00 hằng ngày (nếu khách sạn có hồ bơi).' },
+  { category: 'Tiện ích', question: 'Khách sạn có phòng tập gym không?', answer: 'Một số cơ sở có phòng gym mở 24/7 cho khách lưu trú; vui lòng hỏi lễ tân.' },
+  { category: 'Tiện ích', question: 'Có chỗ đậu xe không?', answer: 'Có bãi đậu xe cho khách lưu trú (nếu khách sạn có dịch vụ này), ưu tiên theo chỗ trống.' },
+  { category: 'Tiện ích', question: 'Bữa sáng phục vụ mấy giờ?', answer: 'Bữa sáng buffet phục vụ từ 6:30 đến 9:30 và đã bao gồm trong hầu hết các hạng phòng.' },
+  { category: 'Tiện ích', question: 'Khách sạn có phục vụ ăn tại phòng (room service) không?', answer: 'Có room service trong khung giờ nhà hàng hoạt động; xem menu trong phòng hoặc gọi lễ tân.' },
+  { category: 'Tiện ích', question: 'Có dịch vụ giặt là không?', answer: 'Có dịch vụ giặt là tính phí; nhận đồ trước 9:00 thường trả trong ngày.' },
+  { category: 'Tiện ích', question: 'Khách sạn có đưa đón sân bay không?', answer: 'Có dịch vụ đưa đón sân bay tính phí; vui lòng đặt trước với lễ tân ít nhất 12 giờ.' },
+  { category: 'Tiện ích', question: 'Có thể gửi hành lý trước hoặc sau giờ nhận phòng không?', answer: 'Có, lễ tân nhận giữ hành lý miễn phí trước khi nhận phòng và sau khi trả phòng.' },
+  { category: 'Tiện ích', question: 'Lễ tân có làm việc 24/7 không?', answer: 'Có, lễ tân trực 24/7 và hỗ trợ báo thức, đặt taxi, tư vấn du lịch.' },
+  { category: 'Thanh toán', question: 'Khách sạn nhận thanh toán bằng hình thức nào?', answer: 'Nhận thanh toán online qua VNPay và tiền mặt tại quầy lễ tân.' },
+  { category: 'Thanh toán', question: 'Khách sạn có xuất hóa đơn VAT không?', answer: 'Có, vui lòng cung cấp thông tin xuất hóa đơn khi nhận/trả phòng.' },
+  { category: 'Thanh toán', question: 'Tôi hủy phòng đã trả tiền thì được hoàn lại không?', answer: 'Có. Hoàn 100% nếu hủy trước 48 giờ; trong 48 giờ giữ lại 1 đêm đầu. Tiền hoàn về phương thức đã thanh toán.' },
+  { category: 'Phòng', question: 'Phòng có điều hoà và nước nóng không?', answer: 'Tất cả phòng đều có điều hoà và nước nóng/lạnh.' },
+  { category: 'Phòng', question: 'Trong phòng có minibar không?', answer: 'Các hạng phòng cao cấp có minibar; đồ dùng tính phí theo bảng giá trong phòng.' },
+  { category: 'Khác', question: 'Khách sạn có hỗ trợ đặt tour, thuê xe không?', answer: 'Lễ tân hỗ trợ đặt tour, thuê xe máy/ô tô và tư vấn điểm tham quan gần khách sạn.' },
+];
+
 const HOTELS: SeedHotel[] = [
   {
     name: 'SmartStay Đà Nẵng Beach Hotel',
@@ -295,6 +325,44 @@ async function main() {
           })),
         },
       },
+    });
+
+    // FAQ = bộ chung + vài câu dựng từ DỮ LIỆU THẬT của chính khách sạn này
+    const minPrice = Math.min(...seedHotel.roomTypes.map((r) => r.basePrice));
+    await prisma.faqKnowledgeBase.createMany({
+      data: [
+        ...GENERIC_FAQS.map((f) => ({ hotelId: hotel.id, ...f })),
+        {
+          hotelId: hotel.id,
+          category: 'Tiện ích',
+          question: 'Khách sạn có những tiện nghi gì?',
+          answer: `Khách sạn có: ${seedHotel.amenities.join(', ')}.`,
+        },
+        {
+          hotelId: hotel.id,
+          category: 'Phòng',
+          question: 'Khách sạn có những loại phòng nào?',
+          answer: `Các loại phòng: ${seedHotel.roomTypes.map((r) => r.name).join(', ')}.`,
+        },
+        {
+          hotelId: hotel.id,
+          category: 'Phòng',
+          question: 'Phòng rẻ nhất giá bao nhiêu?',
+          answer: `Giá phòng thấp nhất từ ${minPrice.toLocaleString('vi-VN')}đ/đêm.`,
+        },
+        {
+          hotelId: hotel.id,
+          category: 'Vị trí',
+          question: 'Khách sạn nằm ở đâu?',
+          answer: `${seedHotel.address}, ${seedHotel.district}, ${seedHotel.city}.`,
+        },
+        {
+          hotelId: hotel.id,
+          category: 'Thông tin',
+          question: 'Khách sạn được xếp hạng mấy sao?',
+          answer: `Khách sạn đạt chuẩn ${seedHotel.starRating} sao.`,
+        },
+      ],
     });
 
     for (const seedRoomType of seedHotel.roomTypes) {

@@ -1,6 +1,6 @@
 import type { HotelBookingsParams } from '@/types/staff.types';
 
-/** Query key factory dùng chung cho cổng nhân viên (theo từng khách sạn đang trực). */
+/** Shared query key factory for the staff portal (scoped per active hotel). */
 export const staffKeys = {
   all: ['staff'] as const,
   hotels: ['staff', 'hotels'] as const,

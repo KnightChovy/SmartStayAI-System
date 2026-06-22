@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { staffService } from '@/services/staff.service';
 import { staffKeys } from './keys';
 
-/** Đánh dấu khách không đến nhận phòng (no-show). */
+/** Mark a guest as a no-show (failed to check in). */
 export function useMarkNoShow(hotelId: string | undefined) {
   const qc = useQueryClient();
   return useMutation({

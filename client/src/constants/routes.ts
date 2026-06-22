@@ -13,6 +13,17 @@ export const ROUTES = {
   blog: '/blog',
   blogDetail: (slug: string = ':slug') => `/blog/${slug}`,
 
+  // Support
+  helpCenter: '/help-center',
+  safety: '/safety',
+  cancellationOptions: '/cancellation-options',
+  reportConcern: '/report-concern',
+
+  // Company
+  about: '/about',
+  careers: '/careers',
+  press: '/press',
+
   // Auth
   login: '/login',
   register: '/register',

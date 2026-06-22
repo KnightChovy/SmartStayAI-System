@@ -32,7 +32,7 @@ interface StatusMeta {
 
 const STATUS_META: Record<RoomStatus, StatusMeta> = {
   available: {
-    label: 'Trống',
+    label: 'Available',
     icon: DoorOpen,
     dot: 'bg-emerald-500',
     tile: 'border-emerald-200 bg-emerald-50/60 hover:border-emerald-300',
@@ -40,7 +40,7 @@ const STATUS_META: Record<RoomStatus, StatusMeta> = {
     chipActive: 'bg-emerald-600 text-white',
   },
   occupied: {
-    label: 'Đang ở',
+    label: 'Occupied',
     icon: BedDouble,
     dot: 'bg-blue-500',
     tile: 'border-blue-200 bg-blue-50/60 hover:border-blue-300',
@@ -48,7 +48,7 @@ const STATUS_META: Record<RoomStatus, StatusMeta> = {
     chipActive: 'bg-blue-600 text-white',
   },
   cleaning: {
-    label: 'Đang dọn',
+    label: 'Cleaning',
     icon: Sparkles,
     dot: 'bg-amber-500',
     tile: 'border-amber-200 bg-amber-50/60 hover:border-amber-300',
@@ -56,7 +56,7 @@ const STATUS_META: Record<RoomStatus, StatusMeta> = {
     chipActive: 'bg-amber-500 text-white',
   },
   maintenance: {
-    label: 'Bảo trì',
+    label: 'Maintenance',
     icon: Wrench,
     dot: 'bg-slate-500',
     tile: 'border-slate-200 bg-slate-50 hover:border-slate-300',
@@ -93,13 +93,13 @@ export default function RoomsPage() {
     try {
       await updateStatus.mutateAsync({ roomId: room.id, status });
     } catch (err) {
-      setActionError(errorMessage(err, 'Không đổi được trạng thái phòng.'));
+      setActionError(errorMessage(err, 'Could not change room status.'));
     } finally {
       setPendingId(null);
     }
   };
 
-  // Nhóm phòng theo tầng
+  // Group rooms by floor
   const byFloor = visibleRooms.reduce<Record<number, StaffRoom[]>>((acc, room) => {
     (acc[room.floor] ??= []).push(room);
     return acc;
@@ -112,17 +112,17 @@ export default function RoomsPage() {
     <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold text-slate-900">Bản đồ phòng</h1>
+          <h1 className="text-xl font-semibold text-slate-900">Room map</h1>
           <p className="text-sm text-slate-500">
-            {allRooms.length} phòng · {hotel?.name}
+            {allRooms.length} rooms · {hotel?.name}
           </p>
         </div>
       </div>
 
-      {/* Thanh tổng quan + bộ lọc theo trạng thái */}
+      {/* Overview bar + status filters */}
       <div className="flex flex-wrap gap-2">
         <FilterChip
-          label="Tất cả"
+          label="All"
           count={allRooms.length}
           active={filter === 'all'}
           activeClass="bg-slate-900 text-white"
@@ -152,13 +152,13 @@ export default function RoomsPage() {
       {isError && (
         <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
           <AlertTriangle className="mt-0.5 size-4 shrink-0" />
-          {errorMessage(error, 'Không tải được danh sách phòng.')}
+          {errorMessage(error, 'Could not load rooms.')}
         </div>
       )}
       {isLoading && <RoomsSkeleton />}
 
       {!isLoading && !isError && floors.length === 0 && (
-        <p className="py-12 text-center text-sm text-slate-400">Không có phòng nào phù hợp.</p>
+        <p className="py-12 text-center text-sm text-slate-400">No matching rooms.</p>
       )}
 
       {!isLoading &&
@@ -166,9 +166,9 @@ export default function RoomsPage() {
         floors.map(floor => (
           <section key={floor} className="space-y-2.5">
             <div className="flex items-center gap-2">
-              <h2 className="text-sm font-semibold text-slate-700">Tầng {floor}</h2>
+              <h2 className="text-sm font-semibold text-slate-700">Floor {floor}</h2>
               <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500">
-                {byFloor[floor].length} phòng
+                {byFloor[floor].length} rooms
               </span>
             </div>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
@@ -264,7 +264,7 @@ function RoomTile({
           disabled={pending}
           className="mt-auto inline-flex h-8 w-full items-center justify-center gap-1 rounded-lg border border-slate-200 bg-white/80 text-xs font-medium text-slate-600 transition-colors hover:bg-white hover:text-slate-900 disabled:opacity-50"
         >
-          Đổi trạng thái <ChevronDown className="size-3.5" />
+          Change status <ChevronDown className="size-3.5" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-44">
           {STATUS_ORDER.map(s => {
