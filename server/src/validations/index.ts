@@ -13,3 +13,4 @@ export * as pricingRuleValidation from './pricing-rule.validation';
 export * as staffValidation from './staff.validation';
 export * as housekeepingValidation from './housekeeping.validation';
 export * as conversationValidation from './conversation.validation';
+export * as adminValidation from './admin.validation';

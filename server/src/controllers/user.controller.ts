@@ -1,4 +1,5 @@
 import httpStatus from 'http-status';
+import type { User } from '@prisma/client';
 import pick from '../utils/pick';
 import ApiError from '../utils/ApiError';
 import catchAsync from '../utils/catchAsync';
@@ -12,7 +13,7 @@ export class UserController {
   });
 
   getUsers = catchAsync(async (req: Request, res: Response): Promise<void> => {
-    const filter = pick(req.query, ['name', 'role']);
+    const filter = pick(req.query, ['name', 'role', 'status']);
     const options = pick(req.query, ['sortBy', 'limit', 'page']);
     const result = await userService.queryUsers(filter, options);
     res.send(result);
@@ -34,6 +35,18 @@ export class UserController {
   deleteUser = catchAsync(async (req: Request, res: Response): Promise<void> => {
     await userService.deleteUserById(req.params.userId as string);
     res.status(httpStatus.NO_CONTENT).send();
+  });
+
+  // [Admin] Đổi trạng thái tài khoản (suspend/active/inactive)
+  updateStatus = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const user = await userService.setUserStatus(req.params.userId as string, req.body.status, req.user as User);
+    res.send(user);
+  });
+
+  // [Admin, manageRoles] Đổi vai trò 1 user
+  updateRole = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const user = await userService.setUserRole(req.params.userId as string, req.body.role, req.user as User);
+    res.send(user);
   });
 }
 

@@ -1,4 +1,4 @@
-import type { UserRole } from '@prisma/client';
+import type { UserRole, UserStatus } from '@prisma/client';
 
 /**
  * Payload for creating a new user (used by registration / user creation).
@@ -34,6 +34,7 @@ export interface UpdateUserDto {
 export interface UserFilter {
   name?: string;
   role?: UserRole;
+  status?: UserStatus;
 }
 
 /**
