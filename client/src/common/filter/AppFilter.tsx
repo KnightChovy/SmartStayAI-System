@@ -1,9 +1,9 @@
 // components/common/AppFilter.tsx
 
-import { Search, RotateCcw } from "lucide-react";
+import { Search, RotateCcw } from 'lucide-react';
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 import {
   Select,
@@ -11,7 +11,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 
 interface FilterOption {
   label: string;
@@ -57,30 +57,26 @@ export default function AppFilter({
 }: AppFilterProps) {
   return (
     <div className="flex flex-wrap gap-3 items-center">
-
-      <div className="relative min-w-[250px]">
+      <div className="relative min-w-62.5">
         <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
 
         <Input
           value={search}
           placeholder="Search..."
           className="pl-10"
-          onChange={(e) => onSearchChange?.(e.target.value)}
+          onChange={e => onSearchChange?.(e.target.value)}
         />
       </div>
 
       {statusOptions.length > 0 && (
         <Select value={status} onValueChange={onStatusChange}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-45">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
 
           <SelectContent>
-            {statusOptions.map((option) => (
-              <SelectItem
-                key={option.value}
-                value={option.value}
-              >
+            {statusOptions.map(option => (
+              <SelectItem key={option.value} value={option.value}>
                 {option.label}
               </SelectItem>
             ))}
@@ -90,16 +86,13 @@ export default function AppFilter({
 
       {categoryOptions.length > 0 && (
         <Select value={category} onValueChange={onCategoryChange}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-45">
             <SelectValue placeholder="Category" />
           </SelectTrigger>
 
           <SelectContent>
-            {categoryOptions.map((option) => (
-              <SelectItem
-                key={option.value}
-                value={option.value}
-              >
+            {categoryOptions.map(option => (
+              <SelectItem key={option.value} value={option.value}>
                 {option.label}
               </SelectItem>
             ))}
@@ -107,19 +100,15 @@ export default function AppFilter({
         </Select>
       )}
 
-
       {sortOptions.length > 0 && (
         <Select value={sort} onValueChange={onSortChange}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-45">
             <SelectValue placeholder="Sort By" />
           </SelectTrigger>
 
           <SelectContent>
-            {sortOptions.map((option) => (
-              <SelectItem
-                key={option.value}
-                value={option.value}
-              >
+            {sortOptions.map(option => (
+              <SelectItem key={option.value} value={option.value}>
                 {option.label}
               </SelectItem>
             ))}
@@ -127,11 +116,7 @@ export default function AppFilter({
         </Select>
       )}
 
- 
-      <Button
-        variant="outline"
-        onClick={onReset}
-      >
+      <Button variant="outline" onClick={onReset}>
         <RotateCcw className="mr-2 h-4 w-4" />
         Reset
       </Button>

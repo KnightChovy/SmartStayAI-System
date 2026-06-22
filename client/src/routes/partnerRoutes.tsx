@@ -5,6 +5,8 @@ import VerifyHotelPage from '@/pages/hotel-partner/hotel-verify/VerifyHotelPage'
 import HotelsPage from '@/pages/hotel-partner/hotel-management/HotelsPage';
 import HotelDetailPage from '@/pages/hotel-partner/hotel-management/HotelDetailPage';
 import RoomInventoryPage from '@/pages/hotel-partner/room-inventory/RoomInventoryPage';
+import StaffManagementPage from '@/pages/hotel-partner/staff/StaffManagementPage';
+import BookingsPage from '@/pages/hotel-partner/bookings/BookingsPage';
 import { ProtectedRoute } from '@/routes/ProtectedRoute';
 import { UserRole } from '@/constants/roles';
 
@@ -23,6 +25,8 @@ export const partnerRoutes: RouteObject[] = [
           { path: 'hotel-management', element: <HotelsPage /> },
           { path: 'hotel-management/:hotelId', element: <HotelDetailPage /> },
           { path: 'room-inventory', element: <RoomInventoryPage /> },
+          { path: 'staff', element: <StaffManagementPage /> },
+          { path: 'bookings', element: <BookingsPage /> },
         ],
       },
     ],

@@ -49,7 +49,7 @@ export function FieldShell({
 interface TextFieldProps<T extends FieldValues> {
   name: Path<T>;
   label: string;
-  type?: 'text' | 'number' | 'date';
+  type?: 'text' | 'number' | 'date' | 'email' | 'password' | 'tel';
   placeholder?: string;
   required?: boolean;
   hint?: string;

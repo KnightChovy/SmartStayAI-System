@@ -6,6 +6,32 @@ This file tracks the accomplished tasks, resolved user requests, and visual/func
 
 ## Completed Tasks Checklist
 
+### June 22, 2026 (continued 2)
+
+- [x] **Hotel Partner — Bookings management UI + data-layer alignment to the owner Booking API spec**:
+  - **Data layer (reused the hotel-scoped staff layer, no duplication)**: aligned `types/staff.types.ts` to the spec — added `PaymentMethod` (`vnpay|sepay|stripe|cash`, with `StaffPaymentMethod` kept as a deprecated alias), `BookingSource`, a full `Invoice` interface, and `CheckOutResponse` (StaffBooking + invoice). Added `voucher: { voucherCode; usedAt } | null` to the list shape `HotelBooking` (it now matches the spec's `StaffBooking`), made assigned-room `floor` nullable, added optional `bookingId` on `BookingRoomLink`, broadened payment method + detail `invoice` to the full `Invoice`, and tightened `source` to `BookingSource`. `staff.service.checkOut` now returns `CheckOutResponse`. All additive/compatible — the existing staff front-desk pages still compile unchanged.
+  - **Validation** `validations/hotel-booking.validation.ts`: `checkInFormSchema` (optional roomId, voucherCode ≤50) and `checkOutFormSchema` (extraCharge numeric ≥0, string-based to play nicely with the RHF resolver).
+  - **Page** `pages/hotel-partner/bookings/BookingsPage.tsx`: same hotel-picker pattern as Staff/Room Inventory — `HotelDirectory` (active hotels) → workspace with `HotelSwitcher` + back, hotel persisted in `?hotelId=`.
+  - **Components** under `components/hotel-partner/bookings/`: `BookingsTab` (shared `DataTable`: code/guest, room type, dates, total, status Pill; server-side status filter + `createdAt:desc` sort + `AppPagination`; client-side search; row/Action → detail), `BookingDetailModal` (full detail — stay, customer, voucher, payments + invoice — plus front-desk actions gated by status/check-in window: check-in, check-out, collect cash, no-show), `CheckInModal` + `CheckOutModal` (RHF + `zodResolver` form modals; check-in offers room assignment via `useHotelRooms` filtered to available rooms of the booking's type, or auto-assign), and `labels.ts` (`BOOKING_STATUS_CONFIG`/`OPTIONS`, `PAYMENT_STATUS_CONFIG`, `PAYMENT_METHOD_LABELS`). Cash/no-show go through the shared `ConfirmDialog`; all actions feed `sonner` toasts via `errorMessage()` so BE messages surface.
+  - **Wiring**: registered `/partner/bookings` in `partnerRoutes.tsx` (the sidebar "Bookings" item already existed) and added `ROUTES.partnerBookings`. Actions reuse the existing `useCheckIn`/`useCheckOut`/`useRecordCashPayment`/`useMarkNoShow`/`useHotelBooking`/`useHotelBookings`/`useHotelRooms` hooks.
+  - `tsc -p tsconfig.app.json --noEmit` clean for all new/touched files; only the pre-existing unrelated errors remain (`User.name`, unused `React`, recharts formatter, `NodeJS` namespace).
+
+### June 22, 2026 (continued)
+
+- [x] **Hotel Partner — Staff management UI (built on the group-1 data layer)**:
+  - **New route + nav**: `/partner/staff` registered in `routes/partnerRoutes.tsx`, added a "Staff" item (Users icon) to the partner sidebar in `HotelPartnerLayout.tsx`, and a `ROUTES.partnerStaff` constant.
+  - **Page** `pages/hotel-partner/staff/StaffManagementPage.tsx`: mirrors `RoomInventoryPage` — picks a hotel via the shared `HotelDirectory` (filtered to `isActive` hotels), persists the choice in the query string (`?hotelId=...`), and uses `HotelSwitcher` + a back button in the workspace view. Loading / error / empty states reuse `shared/states`.
+  - **Components** under `components/hotel-partner/staff/`: `StaffTab` (list table via shared `DataTable` with name+email, phone, role Pill, account-status Pill, assigned date; client-side search + role filter via `AppFilter`; `ActionMenu` → destructive Remove behind `ConfirmDialog`), `StaffFormModal` (create+assign form via `Modal` + RHF + `zodResolver`), and `labels.ts` (`STAFF_ROLE_CONFIG`/`STAFF_ROLE_OPTIONS`/`USER_STATUS_CONFIG`).
+  - **Validation** `validations/hotel-staff.validation.ts`: `addStaffFormSchema` (name, email, password ≥8 chars with a letter + a number to match the BE custom password rule, optional phone, `assignedRole` enum). Phone submitted as `null` when blank.
+  - **Wiring**: form/remove call `useAddHotelStaff` / `useRemoveHotelStaff`; success/error feedback via `sonner` toasts using the shared `errorMessage()` helper so BE messages (e.g. "Email already taken") surface. There is intentionally **no edit** flow — the spec exposes no staff-update endpoint.
+  - **Shared tweak**: extended the shared `TextField` (`shared/form-controls.tsx`) type union with `email | password | tel` so the form can render a masked password + typed email/phone inputs.
+  - `tsc -p tsconfig.app.json --noEmit` clean for all new/touched files (the only remaining errors — `User.name` in the unrelated `components/staff/StaffLayout.tsx`, plus the pre-existing `React`/recharts/`NodeJS` ones — were already there).
+
+- [x] **Hotel Partner — Staff management data layer (group 1 of the Partner-Hotel API spec, data layer only)**:
+  - **Spec triage**: of the 16 endpoints in the "Partner-Hotel còn thiếu ở FE" spec, only **Staff management (group 1)** was actually missing — bookings (group 2), housekeeping (group 3) and quick room-status (group 5) were already wired in `services/staff.service.ts` + `hooks/staff/*`; Conversations/Inbox (group 4) was de-scoped for now.
+  - Added the data layer following the one-endpoint-per-file convention (no UI): `types/hotel-staff.types.ts` (`StaffRole`, `UserStatus`, `StaffUser`, `StaffAssignment`, `StaffAssignmentScalar`, `SanitizedUser`, `AddStaffDto`, `AddStaffResponse`; reuses `UserRole` from `@/constants/roles`), `services/hotel-staff.service.ts` (`list`/`add`/`remove` → `GET`/`POST`/`DELETE /hotels/:hotelId/staff[/:userId]`, `getManagedHotel` perm), and the `hooks/hotel-staff/` domain: `keys.ts`, `use-hotel-staff` (query), `use-add-hotel-staff` + `use-remove-hotel-staff` (mutations invalidating the list), barrel `index.ts`.
+  - `tsc -p tsconfig.app.json --noEmit` clean for all new files (pre-existing repo errors — unused `React` imports, `User.name`, recharts formatter, `NodeJS` namespace — are unrelated and untouched).
+
 ### June 19, 2026
 
 - [x] **Hotel Partner — Split "Hotels" from "Room Inventory", convert management UI from cards → tables**:
