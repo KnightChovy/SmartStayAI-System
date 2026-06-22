@@ -1,21 +1,22 @@
 import { AlertTriangle, FileClock, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { AdminPageHeader } from '@/components/admin/shared/AdminPageHeader';
 import { AdminTable } from '@/components/admin/shared/AdminTable';
-
-const logs = [
-  ['LOG-8021', 'Auth', 'Admin session refreshed', 'Low', '2 min ago'],
-  ['LOG-8022', 'Payments', 'Gateway verification retry', 'Medium', '8 min ago'],
-  ['LOG-8023', 'AI', 'Prompt template edited', 'Low', '14 min ago'],
-  ['LOG-8024', 'Security', 'Suspicious login blocked', 'High', '26 min ago'],
-];
-
-const auditTrails = [
-  ['AUD-441', 'Admin', 'Activated manager account', 'Users', 'Today'],
-  ['AUD-442', 'System', 'Updated notification template', 'Settings', 'Today'],
-  ['AUD-443', 'Finance', 'Verified pending payout', 'Payments', 'Yesterday'],
-];
+import { useAdminAuditLogs } from '@/hooks/admin';
+import { errorMessage } from '@/utils/errorMessage';
+import { formatDateShort } from '@/utils/formatDate';
 
 export function AdminSystemPage() {
+  const { data, isLoading, isError, error } = useAdminAuditLogs({ limit: 20 });
+
+  const auditRows =
+    data?.results.map(log => [
+      log.id,
+      log.user?.fullName || log.user?.email || log.userId,
+      log.action,
+      log.entityType,
+      formatDateShort(log.createdAt),
+    ]) ?? [];
+
   return (
     <div className="space-y-6">
       <AdminPageHeader
@@ -31,13 +32,17 @@ export function AdminSystemPage() {
         </div>
         <div className="rounded-2xl border bg-white p-5">
           <AlertTriangle className="size-5 text-amber-600" />
-          <p className="mt-4 text-sm text-muted-foreground">Open alerts</p>
-          <p className="text-2xl font-bold">7</p>
+          <p className="mt-4 text-sm text-muted-foreground">Tracked modules</p>
+          <p className="text-2xl font-bold">
+            {new Set(data?.results.map(log => log.entityType)).size}
+          </p>
         </div>
         <div className="rounded-2xl border bg-white p-5">
           <FileClock className="size-5 text-blue-600" />
           <p className="mt-4 text-sm text-muted-foreground">Audit events</p>
-          <p className="text-2xl font-bold">1,284</p>
+          <p className="text-2xl font-bold">
+            {data?.totalResults.toLocaleString('en-US') ?? '—'}
+          </p>
         </div>
       </section>
 
@@ -45,11 +50,19 @@ export function AdminSystemPage() {
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <ShieldAlert className="size-5 text-red-600" />
-            <h2 className="text-lg font-bold">System Logs & Security Events</h2>
+            <h2 className="text-lg font-bold">Recent Audit Events</h2>
           </div>
+          {isLoading && (
+            <p className="text-sm text-muted-foreground">Loading audit logs...</p>
+          )}
+          {isError && (
+            <p className="text-sm font-medium text-destructive">
+              {errorMessage(error, 'Could not load audit logs.')}
+            </p>
+          )}
           <AdminTable
-            headers={['ID', 'Source', 'Event', 'Severity', 'Time']}
-            rows={logs}
+            headers={['ID', 'Actor', 'Action', 'Entity', 'Date']}
+            rows={auditRows}
             renderLastColumn={row => (
               <span className="text-sm font-semibold text-slate-700">{row[4]}</span>
             )}
@@ -57,10 +70,18 @@ export function AdminSystemPage() {
         </div>
 
         <div className="space-y-3">
-          <h2 className="text-lg font-bold">Audit Trail</h2>
+          <h2 className="text-lg font-bold">Entity Trail</h2>
           <AdminTable
-            headers={['ID', 'Actor', 'Action', 'Module', 'Date']}
-            rows={auditTrails}
+            headers={['Entity ID', 'Actor', 'Action', 'Entity', 'Date']}
+            rows={
+              data?.results.map(log => [
+                log.entityId,
+                log.user?.fullName || log.user?.email || log.userId,
+                log.action,
+                log.entityType,
+                formatDateShort(log.createdAt),
+              ]) ?? []
+            }
           />
         </div>
       </section>

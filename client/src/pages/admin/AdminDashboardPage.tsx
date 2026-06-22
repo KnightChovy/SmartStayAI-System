@@ -5,21 +5,51 @@ import { AdminDashboardGrowthChart } from '@/components/admin/dashboard/AdminDas
 import { AdminDashboardQuickActions } from '@/components/admin/dashboard/AdminDashboardQuickActions';
 import { AdminDashboardStatCard } from '@/components/admin/dashboard/AdminDashboardStatCard';
 import { AdminDashboardSystemHealth } from '@/components/admin/dashboard/AdminDashboardSystemHealth';
-
-const stats = [
-  { label: 'TOTAL USERS', value: '124,500', trend: '+8.3%' },
-  { label: 'REVENUE', value: '$1,250', trend: '+12%' },
-  { label: 'BOOKINGS', value: '3,482', trend: '+9.1%' },
-  { label: 'ENGAGEMENT', value: '76.4%', trend: '+5%' },
-];
+import { useAdminOverview } from '@/hooks/admin';
+import { errorMessage } from '@/utils/errorMessage';
+import { formatCurrency } from '@/utils/formatCurrency';
 
 export function AdminDashboardPage() {
+  const { data: overview, isLoading, isError, error } = useAdminOverview();
+
+  const stats = [
+    {
+      label: 'TOTAL USERS',
+      value: overview?.users.total.toLocaleString('en-US') ?? '—',
+      trend: `${overview?.users.newThisMonth ?? 0} new this month`,
+    },
+    {
+      label: 'GMV',
+      value: formatCurrency(overview?.revenue.gmv),
+      trend: `${formatCurrency(overview?.revenue.commissionPending)} pending`,
+    },
+    {
+      label: 'BOOKINGS',
+      value: overview?.bookings.total.toLocaleString('en-US') ?? '—',
+      trend: `${overview?.bookings.thisMonth ?? 0} this month`,
+    },
+    {
+      label: 'LISTED HOTELS',
+      value: overview?.hotels.listed.toLocaleString('en-US') ?? '—',
+      trend: `${overview?.hotels.unlisted ?? 0} unlisted`,
+    },
+  ];
+
   return (
     <div className="grid gap-4 xl:grid-cols-[1fr_300px]">
       <div className="space-y-4">
         <h1 className="text-xl font-bold tracking-tight">
           Welcome back, <span className="text-blue-600">Admin</span>
         </h1>
+
+        {isLoading && (
+          <p className="text-sm text-muted-foreground">Loading overview...</p>
+        )}
+        {isError && (
+          <p className="text-sm font-medium text-destructive">
+            {errorMessage(error, 'Could not load admin overview.')}
+          </p>
+        )}
 
         <section className="grid gap-3 lg:grid-cols-2 xl:grid-cols-4 md:grid-cols-2 sm:grid-cols-2">
           {stats.map(item => (

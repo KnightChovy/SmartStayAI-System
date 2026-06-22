@@ -4,30 +4,63 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AdminPageHeader } from '@/components/admin/shared/AdminPageHeader';
 import { AdminTable } from '@/components/admin/shared/AdminTable';
-
-const transactions = [
-  ['TXN-10021', 'Sarah Nguyen', '$420.00', 'Visa ending 4242', 'Verified'],
-  ['TXN-10022', 'Marcus Lee', '$1,250.00', 'Stripe Wallet', 'Pending'],
-  ['TXN-10023', 'Elena Kovac', '$850.00', 'Mastercard ending 1188', 'Failed'],
-  ['TXN-10024', 'Hiroshi Tan', '$290.00', 'Bank transfer', 'Verified'],
-];
-
-const paymentStats = [
-  { icon: CreditCard, label: 'Processed today', value: '$48.2k' },
-  { icon: CheckCircle2, label: 'Verified payments', value: '96.8%' },
-  { icon: ShieldCheck, label: 'Risk holds', value: '12' },
-];
+import {
+  useAdminCommissions,
+  useAdminOverview,
+  useSettleAdminCommission,
+} from '@/hooks/admin';
+import { errorMessage } from '@/utils/errorMessage';
+import { formatCurrency } from '@/utils/formatCurrency';
+import { formatDateShort } from '@/utils/formatDate';
 
 export function AdminPaymentsPage() {
+  const { data: overview } = useAdminOverview();
+  const { data, isLoading, isError, error, refetch } = useAdminCommissions({
+    limit: 20,
+  });
+  const settleCommission = useSettleAdminCommission();
+
+  const paymentStats = [
+    {
+      icon: CreditCard,
+      label: 'Platform GMV',
+      value: formatCurrency(overview?.revenue.gmv),
+    },
+    {
+      icon: CheckCircle2,
+      label: 'Settled commission',
+      value: formatCurrency(overview?.revenue.commissionSettled),
+    },
+    {
+      icon: ShieldCheck,
+      label: 'Pending commission',
+      value: formatCurrency(overview?.revenue.commissionPending),
+    },
+  ];
+
+  const rows =
+    data?.results.map(commission => [
+      commission.booking?.bookingCode ?? commission.id,
+      commission.partner?.businessName ?? '—',
+      formatCurrency(commission.commissionAmount),
+      `${commission.commissionRate}%`,
+      commission.status.toUpperCase(),
+      formatDateShort(commission.createdAt),
+      commission.id,
+    ]) ?? [];
+
   return (
     <div className="space-y-6">
       <AdminPageHeader
         title="Payments"
-        description="Manage payment configurations, transaction logs, and verification statuses."
+        description="Manage platform commissions, payout status, and settlement workflow."
         actions={
-          <Button className="h-12 rounded-full bg-black px-6 text-white">
+          <Button
+            className="h-12 rounded-full bg-black px-6 text-white"
+            onClick={() => void refetch()}
+          >
             <RefreshCw className="mr-2 size-4" />
-            Sync Gateway
+            Refresh
           </Button>
         }
       />
@@ -66,15 +99,41 @@ export function AdminPaymentsPage() {
         </div>
 
         <AdminTable
-          headers={['Transaction', 'Customer', 'Amount', 'Method', 'Status']}
-          rows={transactions}
+          headers={[
+            'Booking',
+            'Partner',
+            'Commission',
+            'Rate',
+            'Status',
+            'Created',
+            'Actions',
+          ]}
+          rows={rows}
           renderLastColumn={row => (
-            <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-600">
-              {row[4]}
-            </span>
+            <Button
+              className="h-8 rounded-full px-3 text-xs"
+              disabled={row[4] === 'SETTLED' || settleCommission.isPending}
+              variant="outline"
+              onClick={() => settleCommission.mutate(row[6])}
+            >
+              {row[4] === 'SETTLED' ? 'Settled' : 'Settle'}
+            </Button>
           )}
         />
       </section>
+      {isLoading && (
+        <p className="text-sm text-muted-foreground">Loading commissions...</p>
+      )}
+      {isError && (
+        <p className="text-sm font-medium text-destructive">
+          {errorMessage(error, 'Could not load commissions.')}
+        </p>
+      )}
+      {settleCommission.isError && (
+        <p className="text-sm font-medium text-destructive">
+          {errorMessage(settleCommission.error, 'Could not settle commission.')}
+        </p>
+      )}
     </div>
   );
 }
