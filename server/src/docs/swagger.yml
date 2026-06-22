@@ -19,6 +19,8 @@ tags:
     description: Amenity catalog (list public, create admin-only)
   - name: Chatbot
     description: Per-hotel AI chatbot (LLM provider is swappable via the AiProvider switch)
+  - name: Internal
+    description: Endpoints for an external scheduler (cron). Protected by the x-cron-secret header, not user JWT.
 
 paths:
   /conversations/messages:
@@ -115,6 +117,69 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         "404":
           $ref: '#/components/responses/NotFound'
+
+  /internal/jobs/release-holds:
+    post:
+      summary: Release expired booking holds (cron)
+      description: >
+        Called by an external scheduler (e.g. cron-job.org) on a schedule (suggested every 5 minutes).
+        Cancels pending bookings whose 15-minute payment hold expired and returns their inventory.
+        Protected by the x-cron-secret header (not user JWT). Idempotent — safe to call repeatedly.
+      tags: [Internal]
+      parameters:
+        - in: header
+          name: x-cron-secret
+          required: true
+          schema:
+            type: string
+          description: Must equal the server's CRON_SECRET
+      responses:
+        "200":
+          description: Number of holds released
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  released:
+                    type: integer
+        "401":
+          description: Missing or wrong cron secret
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /internal/jobs/sweep-no-shows:
+    post:
+      summary: Mark elapsed confirmed bookings as no-show (cron)
+      description: >
+        Called by an external scheduler (suggested hourly). Marks confirmed bookings whose stay window
+        has fully elapsed without check-in as no_show. Protected by x-cron-secret. Idempotent.
+      tags: [Internal]
+      parameters:
+        - in: header
+          name: x-cron-secret
+          required: true
+          schema:
+            type: string
+          description: Must equal the server's CRON_SECRET
+      responses:
+        "200":
+          description: Number of bookings marked no-show
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  noShow:
+                    type: integer
+        "401":
+          description: Missing or wrong cron secret
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   /auth/send-otp:
     post:

@@ -12,3 +12,4 @@ export { pricingRuleController } from './pricing-rule.controller';
 export { staffController } from './staff.controller';
 export { housekeepingController } from './housekeeping.controller';
 export { conversationController } from './conversation.controller';
+export { jobController } from './job.controller';
