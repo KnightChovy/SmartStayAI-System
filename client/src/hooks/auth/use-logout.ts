@@ -1,8 +1,8 @@
 import { useMutation } from '@tanstack/react-query';
 import { useNavigate } from 'react-router';
+import { toast } from 'sonner';
 import { authService } from '@/services/auth.service';
 import { useAuthStore } from '@/stores/authStore';
-import toast from 'react-hot-toast';
 
 export function useLogout() {
   const navigate = useNavigate();

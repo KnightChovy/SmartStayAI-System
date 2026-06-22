@@ -35,6 +35,32 @@ export interface HotelSearchResult {
   minPrice: string | null;
 }
 
+/**
+ * Khách sạn của partner đang đăng nhập (`GET /hotels/mine`).
+ * Kèm ảnh primary + số lượng loại phòng / phòng để hiển thị bảng tổng quan.
+ */
+export interface PartnerHotel {
+  id: string;
+  partnerId: string;
+  name: string;
+  slug?: string | null;
+  description?: string | null;
+  address: string;
+  city: string;
+  country: string;
+  district?: string | null;
+  ward?: string | null;
+  starRating?: number | null;
+  checkInTime?: string | null;
+  checkOutTime?: string | null;
+  isActive: boolean;
+  isListed: boolean;
+  createdAt: string;
+  updatedAt: string;
+  images: HotelImage[];
+  _count: { roomTypes: number; rooms: number };
+}
+
 export interface Amenity {
   id: string;
   name: string;

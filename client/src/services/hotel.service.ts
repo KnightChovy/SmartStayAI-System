@@ -3,9 +3,11 @@ import type { Paginated } from '@/types/api.types';
 import type {
   HotelSearchParams,
   HotelSearchResult,
+  PartnerHotel,
   RoomType,
   RoomTypeParams,
 } from '@/types/hotel.types';
+import type { ManagedHotel } from '@/types/hotel-management.types';
 
 /** Bỏ các field undefined/rỗng để query string gọn gàng. */
 function cleanParams<T extends object>(params: T): Record<string, unknown> {
@@ -20,6 +22,24 @@ export const hotelService = {
     const { data } = await api.get<Paginated<HotelSearchResult>>('/hotels', {
       params: cleanParams(params),
     });
+    return data;
+  },
+
+  /**
+   * Danh sách khách sạn của partner đang đăng nhập (`GET /hotels/mine`).
+   * Backend lấy partner từ access token nên không cần truyền id.
+   */
+  async getMine(): Promise<PartnerHotel[]> {
+    const { data } = await api.get<PartnerHotel[]>('/hotels/mine');
+    return data;
+  },
+
+  /**
+   * Chi tiết khách sạn cho chủ/manager (`GET /hotels/:id/manage`).
+   * Xem được cả khi chưa listed; kèm ảnh, amenity và loại phòng.
+   */
+  async getManaged(hotelId: string): Promise<ManagedHotel> {
+    const { data } = await api.get<ManagedHotel>(`/hotels/${hotelId}/manage`);
     return data;
   },
 
