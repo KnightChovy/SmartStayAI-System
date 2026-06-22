@@ -45,6 +45,10 @@ const envVarsSchema = Joi.object()
       .description('Backend URL VNPay redirects the browser back to after payment'),
     AI_PROVIDER: Joi.string().valid('gemini', 'claude').default('gemini').description('Nhà cung cấp LLM cho chatbot'),
     GEMINI_API_KEY: Joi.string().allow('').default('').description('Google Gemini API key (free tier)'),
+    CRON_SECRET: Joi.string()
+      .allow('')
+      .default('')
+      .description('Bí mật cho cron ngoài gọi /internal/jobs (header x-cron-secret)'),
   })
   .unknown();
 
@@ -107,6 +111,11 @@ const config = {
     // Cần gạt của "công tắc": chọn nhà cung cấp LLM (gemini lúc dev, claude lúc demo)
     provider: envVars.AI_PROVIDER,
     geminiApiKey: envVars.GEMINI_API_KEY,
+  },
+  cron: {
+    // Bí mật để cron ngoài (cron-job.org) chứng minh "tôi là cron" qua header x-cron-secret.
+    // Rỗng = chưa cấu hình ⇒ middleware sẽ CHẶN hết (an toàn mặc định).
+    secret: envVars.CRON_SECRET,
   },
   vnpay: {
     tmnCode: envVars.VNP_TMN_CODE,

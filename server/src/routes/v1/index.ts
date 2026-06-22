@@ -8,6 +8,7 @@ import bookingRoute from './booking.route';
 import paymentRoute from './payment.route';
 import conversationRoute from './conversation.route';
 import amenityRoute from './amenity.route';
+import internalRoute from './internal.route';
 import docsRoute from './docs.route';
 import config from '../../config/config';
 
@@ -49,6 +50,11 @@ const defaultRoutes = [
   {
     path: '/amenities',
     route: amenityRoute,
+  },
+  {
+    // Endpoint nội bộ cho cron ngoài (bảo vệ bằng x-cron-secret, không phải JWT user)
+    path: '/internal',
+    route: internalRoute,
   },
 ];
 
