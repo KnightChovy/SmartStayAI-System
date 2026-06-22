@@ -22,6 +22,16 @@ export const getHotel = {
   }),
 };
 
+// Partner bật/tắt mở bán (publish) khách sạn của mình
+export const setHotelListing = {
+  params: Joi.object().keys({
+    hotelId: Joi.string().uuid().required(),
+  }),
+  body: Joi.object().keys({
+    isListed: Joi.boolean().required(),
+  }),
+};
+
 export const getRoomTypes = {
   params: Joi.object().keys({
     hotelId: Joi.string().uuid().required(),

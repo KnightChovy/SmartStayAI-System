@@ -369,6 +369,7 @@ model User {
   approvedPartners    HotelPartner[]         @relation("partnerApprover")
   staffAssignments    HotelStaffAssignment[]
   bookings            Booking[]              @relation("bookingCustomer")
+  reviews             Review[]               @relation("reviewCustomer")
   refunds             Refund[]               @relation("refundRequester")
   readAlerts          SmartAlert[]           @relation("alertReader")
   assignedConversations Conversation[]       @relation("conversationAssignee")
@@ -843,6 +844,7 @@ model Review {
   bookingId         String          @unique @map("booking_id") @db.Uuid
   booking           Booking         @relation(fields: [bookingId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   customerId        String          @map("customer_id") @db.Uuid
+  customer          User            @relation("reviewCustomer", fields: [customerId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   hotelId           String          @map("hotel_id") @db.Uuid
   hotel             Hotel           @relation(fields: [hotelId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   overallRating     Int             @map("overall_rating") @db.SmallInt

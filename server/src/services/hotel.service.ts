@@ -100,6 +100,28 @@ export class HotelService {
   };
 
   /**
+   * Partner tự BẬT/TẮT mở bán (publish) khách sạn của mình. Quyền kiểm qua getManagedHotel
+   * (chỉ chủ KS hoặc manageHotels). Khi BẬT (isListed=true): khách sạn phải đã được duyệt (isActive)
+   * và có ít nhất một loại phòng đang bật — tránh lên sàn khi chưa có phòng để bán. Khi TẮT: không ràng buộc.
+   */
+  setHotelListing = async (hotelId: string, isListed: boolean, currentUser: User) => {
+    const hotel = await this.getManagedHotel(hotelId, currentUser);
+    if (isListed) {
+      if (!hotel.isActive) {
+        throw new ApiError(httpStatus.BAD_REQUEST, 'Khách sạn chưa được duyệt nên chưa thể mở bán');
+      }
+      const activeRoomTypes = await prisma.roomType.count({ where: { hotelId, isActive: true } });
+      if (activeRoomTypes === 0) {
+        throw new ApiError(
+          httpStatus.BAD_REQUEST,
+          'Cần có ít nhất một loại phòng đang bật (đã điền giá) trước khi mở bán'
+        );
+      }
+    }
+    return prisma.hotel.update({ where: { id: hotelId }, data: { isListed } });
+  };
+
+  /**
    * Tìm khách sạn theo thành phố. Nếu có khoảng ngày (checkIn/checkOut) thì chỉ trả về
    * khách sạn còn ít nhất một loại phòng trống đủ sức chứa trong suốt kỳ ở.
    */

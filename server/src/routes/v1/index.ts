@@ -7,6 +7,7 @@ import hotelRoute from './hotel.route';
 import bookingRoute from './booking.route';
 import paymentRoute from './payment.route';
 import conversationRoute from './conversation.route';
+import reviewRoute from './review.route';
 import amenityRoute from './amenity.route';
 import internalRoute from './internal.route';
 import adminRoute from './admin.route';
@@ -47,6 +48,10 @@ const defaultRoutes = [
   {
     path: '/conversations',
     route: conversationRoute,
+  },
+  {
+    path: '/reviews',
+    route: reviewRoute,
   },
   {
     path: '/amenities',

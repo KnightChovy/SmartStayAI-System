@@ -59,6 +59,16 @@ export const getHotelBooking = {
   }),
 };
 
+// Staff quét QR / tra booking theo mã voucher trước khi check-in
+export const lookupBookingByVoucher = {
+  params: Joi.object().keys({
+    hotelId: Joi.string().uuid().required(),
+  }),
+  query: Joi.object().keys({
+    voucherCode: Joi.string().max(50).required(),
+  }),
+};
+
 // Check-in: gán phòng (tuỳ chọn) + đối chiếu voucher (tuỳ chọn)
 export const checkInBooking = {
   params: Joi.object().keys({

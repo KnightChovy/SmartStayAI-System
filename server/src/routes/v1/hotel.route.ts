@@ -38,6 +38,14 @@ router.get('/:hotelId', validate(hotelValidation.getHotel), hotelController.getH
 // 2 segment nên không đụng '/:hotelId' (1 segment) hay '/mine' (literal).
 router.get('/:hotelId/manage', auth(), validate(hotelValidation.getHotel), hotelController.getHotelForManage);
 
+// Partner tự bật/tắt mở bán (publish) khách sạn của mình — chủ KS hoặc quyền manageHotels (service tự kiểm)
+router.patch(
+  '/:hotelId/publish',
+  auth(),
+  validate(hotelValidation.setHotelListing),
+  hotelController.setHotelListing
+);
+
 // ----- Quản lý loại phòng (chủ khách sạn hoặc quyền manageHotels — service tự kiểm) -----
 router
   .route('/:hotelId/room-types')
@@ -109,6 +117,14 @@ router.get(
   auth(),
   validate(bookingValidation.listHotelBookings),
   bookingController.listHotelBookings
+);
+
+// Staff quét QR / nhập mã voucher để tra booking — đặt TRƯỚC '/:bookingId' để literal không bị nuốt
+router.get(
+  '/:hotelId/bookings/lookup',
+  auth(),
+  validate(bookingValidation.lookupBookingByVoucher),
+  bookingController.lookupByVoucher
 );
 
 // Chi tiết một booking của khách sạn (staff/chủ KS) — đặt sau '/bookings' để không bị nuốt
