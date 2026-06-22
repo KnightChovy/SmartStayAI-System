@@ -11,12 +11,395 @@ tags:
     description: Public hotel & room search
   - name: Bookings
     description: Booking creation, cancellation and listing
+  - name: Payments
+    description: VNPay payment — create payment URL and handle gateway callbacks
   - name: HotelManagement
-    description: Partner management of room types, rooms and pricing rules (hotel owner or manageHotels right)
+    description: Partner management of room types, rooms, pricing rules and staff (hotel owner or manageHotels right)
   - name: Amenities
     description: Amenity catalog (list public, create admin-only)
+  - name: Chatbot
+    description: Per-hotel AI chatbot (LLM provider is swappable via the AiProvider switch)
+  - name: Internal
+    description: Endpoints for an external scheduler (cron). Protected by the x-cron-secret header, not user JWT.
+  - name: Admin
+    description: Platform-wide admin dashboard & oversight (admin / platform_manager)
 
 paths:
+  /conversations/messages:
+    post:
+      summary: Send a message to a hotel's chatbot
+      description: >
+        Authenticated guest sends one message to a hotel's AI chatbot. If conversationId is omitted a
+        new conversation is created; otherwise the message continues that conversation (the full history
+        is replayed to the LLM each turn). Returns the bot reply and the conversationId to reuse next turn.
+        The assistant is agentic: besides answering FAQs and searching rooms, it can place and cancel
+        bookings on the guest's behalf via a two-step confirm-gate (it proposes a summary, then only acts
+        after the guest explicitly agrees). No extra request fields are needed — this is driven in-chat.
+      tags: [Chatbot]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - hotelId
+                - message
+              properties:
+                hotelId:
+                  type: string
+                  format: uuid
+                conversationId:
+                  type: string
+                  format: uuid
+                  description: Omit to start a new conversation
+                message:
+                  type: string
+                  maxLength: 2000
+              example:
+                hotelId: 11111111-1111-1111-1111-111111111111
+                message: Khách sạn mình có hồ bơi không?
+      responses:
+        "201":
+          description: Bot reply
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  conversationId:
+                    type: string
+                    format: uuid
+                  reply:
+                    type: string
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  /conversations/messages/stream:
+    post:
+      summary: Send a message and stream the reply (SSE)
+      description: >
+        Same body as /conversations/messages, but the reply is streamed token-by-token over
+        Server-Sent Events. Emits an "meta" event with the conversationId, then "chunk" events with
+        partial text, then a "done" event. The full reply is saved to the DB after streaming ends.
+      tags: [Chatbot]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - hotelId
+                - message
+              properties:
+                hotelId:
+                  type: string
+                  format: uuid
+                conversationId:
+                  type: string
+                  format: uuid
+                message:
+                  type: string
+                  maxLength: 2000
+      responses:
+        "200":
+          description: SSE stream (text/event-stream)
+          content:
+            text/event-stream:
+              schema:
+                type: string
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  /admin/overview:
+    get:
+      summary: Platform overview dashboard (admin)
+      description: >
+        Admin/platform_manager (viewPlatformStats) gets platform metrics computed live in one
+        consistent transaction: user counts by role, hotels listed/unlisted, bookings by status, and
+        revenue (GMV, platform commission pending/settled, total refunded). Money values are strings.
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Aggregated platform metrics
+          content:
+            application/json:
+              schema:
+                type: object
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/commissions:
+    get:
+      summary: List platform commissions (admin)
+      description: >
+        Admin/platform_manager (manageCommissions) lists platform commission records, filtered by
+        status (pending/settled/disputed) and partner. Each item includes the partner and booking.
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [pending, settled, disputed]
+        - in: query
+          name: partnerId
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        "200":
+          description: Paginated commissions
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/commissions/{commissionId}/settle:
+    patch:
+      summary: Mark a commission as settled / paid out (admin)
+      description: >
+        Sets a commission's status to settled (payout done) and stamps settledAt. Rejected if already
+        settled. Writes an audit log entry.
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: commissionId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Updated commission
+        "400":
+          description: Already settled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  /admin/hotels:
+    get:
+      summary: List all hotels platform-wide (admin)
+      description: >
+        Admin/platform_manager (manageHotels) lists ALL hotels including unlisted / suspended ones,
+        filtered by isListed, isActive and a name/city search. Each item includes the owning partner.
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: isListed
+          schema:
+            type: boolean
+        - in: query
+          name: isActive
+          schema:
+            type: boolean
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        "200":
+          description: Paginated hotels
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/hotels/{hotelId}:
+    patch:
+      summary: Toggle a hotel's listing / active flags (admin)
+      description: >
+        Admin/platform_manager (manageHotels) approves/delists (isListed) or suspends/reactivates
+        (isActive) a hotel. Send at least one flag. Writes an audit log entry.
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              minProperties: 1
+              properties:
+                isListed:
+                  type: boolean
+                isActive:
+                  type: boolean
+              example:
+                isListed: false
+      responses:
+        "200":
+          description: Updated hotel
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  /admin/audit-logs:
+    get:
+      summary: List audit logs (admin)
+      description: >
+        Admin/platform_manager (viewPlatformStats) lists audit log entries written on sensitive actions
+        (user status/role change, commission settle, hotel flag change), filtered by action, entityType
+        and actor. Each entry includes the acting user.
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: action
+          schema:
+            type: string
+        - in: query
+          name: entityType
+          schema:
+            type: string
+        - in: query
+          name: userId
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        "200":
+          description: Paginated audit logs
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+
+  /internal/jobs/release-holds:
+    post:
+      summary: Release expired booking holds (cron)
+      description: >
+        Called by an external scheduler (e.g. cron-job.org) on a schedule (suggested every 5 minutes).
+        Cancels pending bookings whose 15-minute payment hold expired and returns their inventory.
+        Protected by the x-cron-secret header (not user JWT). Idempotent — safe to call repeatedly.
+      tags: [Internal]
+      parameters:
+        - in: header
+          name: x-cron-secret
+          required: true
+          schema:
+            type: string
+          description: Must equal the server's CRON_SECRET
+      responses:
+        "200":
+          description: Number of holds released
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  released:
+                    type: integer
+        "401":
+          description: Missing or wrong cron secret
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /internal/jobs/sweep-no-shows:
+    post:
+      summary: Mark elapsed confirmed bookings as no-show (cron)
+      description: >
+        Called by an external scheduler (suggested hourly). Marks confirmed bookings whose stay window
+        has fully elapsed without check-in as no_show. Protected by x-cron-secret. Idempotent.
+      tags: [Internal]
+      parameters:
+        - in: header
+          name: x-cron-secret
+          required: true
+          schema:
+            type: string
+          description: Must equal the server's CRON_SECRET
+      responses:
+        "200":
+          description: Number of bookings marked no-show
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  noShow:
+                    type: integer
+        "401":
+          description: Missing or wrong cron secret
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /auth/send-otp:
     post:
       summary: Send OTP verification code
@@ -37,7 +420,7 @@ paths:
               example:
                 email: khiembadinh987@gmail.com
       responses:
-        "200":
+        '200':
           description: OTP Sent successfully
           content:
             application/json:
@@ -50,7 +433,7 @@ paths:
                   message:
                     type: string
                     example: Verification OTP sent successfully to khiembadinh987@gmail.com
-        "400":
+        '400':
           description: Email already taken or invalid format
           content:
             application/json:
@@ -88,7 +471,7 @@ paths:
                 email: fake@example.com
                 password: password1
       responses:
-        "201":
+        '201':
           description: Created
           content:
             application/json:
@@ -99,7 +482,7 @@ paths:
                     $ref: '#/components/schemas/User'
                   tokens:
                     $ref: '#/components/schemas/AuthTokens'
-        "400":
+        '400':
           $ref: '#/components/responses/DuplicateEmail'
 
   /auth/login:
@@ -126,7 +509,7 @@ paths:
                 email: fake@example.com
                 password: password1
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
@@ -137,7 +520,7 @@ paths:
                     $ref: '#/components/schemas/User'
                   tokens:
                     $ref: '#/components/schemas/AuthTokens'
-        "401":
+        '401':
           description: Invalid email or password
           content:
             application/json:
@@ -165,9 +548,9 @@ paths:
               example:
                 refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1ZWJhYzUzNDk1NGI1NDEzOTgwNmMxMTIiLCJpYXQiOjE1ODkyOTg0ODQsImV4cCI6MTU4OTMwMDI4NH0.m1U63blB0MLej_WfB7yC2FTMnCziif9X8yzwDEfJXAg
       responses:
-        "204":
+        '204':
           description: No content
-        "404":
+        '404':
           $ref: '#/components/responses/NotFound'
 
   /auth/refresh-tokens:
@@ -188,13 +571,13 @@ paths:
               example:
                 refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1ZWJhYzUzNDk1NGI1NDEzOTgwNmMxMTIiLCJpYXQiOjE1ODkyOTg0ODQsImV4cCI6MTU4OTMwMDI4NH0.m1U63blB0MLej_WfB7yC2FTMnCziif9X8yzwDEfJXAg
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthTokens'
-        "401":
+        '401':
           $ref: '#/components/responses/Unauthorized'
 
   /auth/forgot-password:
@@ -217,9 +600,9 @@ paths:
               example:
                 email: fake@example.com
       responses:
-        "204":
+        '204':
           description: No content
-        "404":
+        '404':
           $ref: '#/components/responses/NotFound'
 
   /auth/reset-password:
@@ -250,9 +633,9 @@ paths:
               example:
                 password: password1
       responses:
-        "204":
+        '204':
           description: No content
-        "401":
+        '401':
           description: Password reset failed
           content:
             application/json:
@@ -270,9 +653,9 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "204":
+        '204':
           description: No content
-        "401":
+        '401':
           $ref: '#/components/responses/Unauthorized'
 
   /auth/verify-email:
@@ -287,9 +670,9 @@ paths:
             type: string
           description: The verify email token
       responses:
-        "204":
+        '204':
           description: No content
-        "401":
+        '401':
           description: verify email failed
           content:
             application/json:
@@ -330,25 +713,25 @@ paths:
                   minLength: 8
                   description: At least one number and one letter
                 role:
-                   type: string
-                   enum: [user, admin]
+                  type: string
+                  enum: [user, admin]
               example:
                 name: fake name
                 email: fake@example.com
                 password: password1
                 role: user
       responses:
-        "201":
+        '201':
           description: Created
           content:
             application/json:
               schema:
-                 $ref: '#/components/schemas/User'
-        "400":
+                $ref: '#/components/schemas/User'
+        '400':
           $ref: '#/components/responses/DuplicateEmail'
-        "401":
+        '401':
           $ref: '#/components/responses/Unauthorized'
-        "403":
+        '403':
           $ref: '#/components/responses/Forbidden'
 
     get:
@@ -388,7 +771,7 @@ paths:
             default: 1
           description: Page number
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
@@ -411,9 +794,9 @@ paths:
                   totalResults:
                     type: integer
                     example: 1
-        "401":
+        '401':
           $ref: '#/components/responses/Unauthorized'
-        "403":
+        '403':
           $ref: '#/components/responses/Forbidden'
 
   /users/{id}:
@@ -431,17 +814,17 @@ paths:
             type: string
           description: User id
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                 $ref: '#/components/schemas/User'
-        "401":
+                $ref: '#/components/schemas/User'
+        '401':
           $ref: '#/components/responses/Unauthorized'
-        "403":
+        '403':
           $ref: '#/components/responses/Forbidden'
-        "404":
+        '404':
           $ref: '#/components/responses/NotFound'
 
     patch:
@@ -480,19 +863,19 @@ paths:
                 email: fake@example.com
                 password: password1
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                 $ref: '#/components/schemas/User'
-        "400":
+                $ref: '#/components/schemas/User'
+        '400':
           $ref: '#/components/responses/DuplicateEmail'
-        "401":
+        '401':
           $ref: '#/components/responses/Unauthorized'
-        "403":
+        '403':
           $ref: '#/components/responses/Forbidden'
-        "404":
+        '404':
           $ref: '#/components/responses/NotFound'
 
     delete:
@@ -509,13 +892,114 @@ paths:
             type: string
           description: User id
       responses:
-        "200":
+        '200':
           description: No content
-        "401":
+        '401':
           $ref: '#/components/responses/Unauthorized'
-        "403":
+        '403':
           $ref: '#/components/responses/Forbidden'
-        "404":
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /users/{userId}/status:
+    patch:
+      summary: Change a user's account status (admin)
+      description: >
+        Admin/platform_manager (manageUsers) sets a user's status to active, inactive or suspended.
+        Suspending takes effect immediately — both login and JWT verification reject non-active users.
+        Cannot change your own status.
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum: [active, inactive, suspended]
+              example:
+                status: suspended
+      responses:
+        '200':
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Cannot change your own status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /users/{userId}/role:
+    patch:
+      summary: Change a user's role (admin only)
+      description: >
+        Requires the manageRoles right (admin only — platform_manager does NOT have it). Cannot change
+        your own role, and cannot demote the last remaining admin.
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - role
+              properties:
+                role:
+                  type: string
+                  enum: [guest, customer, staff, marketer, hotel_partner, platform_manager, admin]
+              example:
+                role: staff
+      responses:
+        '200':
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Cannot change own role / cannot demote last admin
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
           $ref: '#/components/responses/NotFound'
 
   /uploads:
@@ -545,7 +1029,7 @@ paths:
                   type: string
                   format: binary
       responses:
-        "201":
+        '201':
           description: Uploaded
           content:
             application/json:
@@ -558,21 +1042,22 @@ paths:
                   publicId:
                     type: string
                     example: smartstay/licenses/abc
-        "400":
+        '400':
           description: No file uploaded or invalid file type/size
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-        "401":
+        '401':
           $ref: '#/components/responses/Unauthorized'
 
   /hotel-partners/registrations:
     post:
       summary: Submit a hotel partner registration
       description: >
-        Creates a HotelPartner (pending), a Hotel (not yet active), its licenses, representative,
-        images, payout account and a pending verification request — all in one transaction.
+        Reuses the user's active partner or creates one if none (a partner can own multiple hotels),
+        then creates a Hotel (not yet active), its licenses, representative, images, payout account,
+        room config and a pending verification request — all in one transaction.
         Any authenticated user can submit. File URLs must be uploaded via POST /uploads first.
       tags: [HotelPartners]
       security:
@@ -584,19 +1069,19 @@ paths:
             schema:
               $ref: '#/components/schemas/HotelRegistrationRequest'
       responses:
-        "201":
+        '201':
           description: Created
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HotelVerificationRequest'
-        "400":
+        '400':
           description: Validation error or duplicate pending/approved partner
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-        "401":
+        '401':
           $ref: '#/components/responses/Unauthorized'
     get:
       summary: List verification requests (platform manager)
@@ -613,7 +1098,7 @@ paths:
           name: sortBy
           schema:
             type: string
-          description: "field:(desc|asc) e.g. submittedAt:desc"
+          description: 'field:(desc|asc) e.g. submittedAt:desc'
         - in: query
           name: limit
           schema:
@@ -623,7 +1108,7 @@ paths:
           schema:
             type: integer
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
@@ -638,9 +1123,9 @@ paths:
                   limit: { type: integer, example: 10 }
                   totalPages: { type: integer, example: 1 }
                   totalResults: { type: integer, example: 1 }
-        "401":
+        '401':
           $ref: '#/components/responses/Unauthorized'
-        "403":
+        '403':
           $ref: '#/components/responses/Forbidden'
 
   /hotel-partners/registrations/me:
@@ -650,7 +1135,7 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
@@ -658,7 +1143,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/HotelVerificationRequest'
-        "401":
+        '401':
           $ref: '#/components/responses/Unauthorized'
 
   /hotel-partners/registrations/{requestId}:
@@ -676,17 +1161,17 @@ paths:
             type: string
             format: uuid
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HotelVerificationRequest'
-        "401":
+        '401':
           $ref: '#/components/responses/Unauthorized'
-        "403":
+        '403':
           $ref: '#/components/responses/Forbidden'
-        "404":
+        '404':
           $ref: '#/components/responses/NotFound'
 
   /hotel-partners/registrations/{requestId}/review:
@@ -724,23 +1209,23 @@ paths:
                   type: string
                   description: Required when decision is "reject"
       responses:
-        "200":
+        '200':
           description: Reviewed
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HotelVerificationRequest'
-        "400":
+        '400':
           description: Already reviewed or invalid payload
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-        "401":
+        '401':
           $ref: '#/components/responses/Unauthorized'
-        "403":
+        '403':
           $ref: '#/components/responses/Forbidden'
-        "404":
+        '404':
           $ref: '#/components/responses/NotFound'
 
   /hotel-partners/documents/{documentId}/review:
@@ -772,17 +1257,17 @@ paths:
                   type: string
                   enum: [approve, reject]
       responses:
-        "200":
+        '200':
           description: Reviewed
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HotelVerificationDocument'
-        "401":
+        '401':
           $ref: '#/components/responses/Unauthorized'
-        "403":
+        '403':
           $ref: '#/components/responses/Forbidden'
-        "404":
+        '404':
           $ref: '#/components/responses/NotFound'
 
   /hotels:
@@ -820,7 +1305,7 @@ paths:
           name: sortBy
           schema:
             type: string
-          description: "field:(desc|asc) e.g. starRating:desc"
+          description: 'field:(desc|asc) e.g. starRating:desc'
         - in: query
           name: limit
           schema:
@@ -830,14 +1315,66 @@ paths:
           schema:
             type: integer
       responses:
-        "200":
+        '200':
           description: Paginated hotel list ({ results, page, limit, totalPages, totalResults })
-        "400":
+        '400':
           description: Invalid query (e.g. checkIn without checkOut)
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+
+  /hotels/{hotelId}:
+    get:
+      summary: Get a hotel's full profile by id
+      description: >
+        Public. Returns one active & listed hotel with all images, hotel amenities and its active
+        room types (each with images, amenities and base price). Date-based availability/pricing is
+        fetched separately via GET /hotels/{hotelId}/room-types?checkIn=&checkOut=.
+      tags: [Hotels]
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: 'Hotel profile (info + images + amenities + active room types)' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /hotels/{hotelId}/manage:
+    get:
+      summary: Get a hotel's full profile for management (owner/manager)
+      description: >
+        Auth. Returns the hotel REGARDLESS of status (including unlisted/pending) for the owner
+        (or a user with the manageHotels right) — used by the partner's Hotel Management screen.
+        Includes all images, amenities and ALL room types (active + inactive), each with its room count.
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: 'Full hotel profile (any status) for management' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /hotels/mine:
+    get:
+      summary: List hotels owned by the current partner
+      description: >
+        Auth. Returns every hotel owned by the LOGGED-IN user (partner) — including unlisted/pending
+        ones (soft-deleted excluded) — for the partner's Hotel Management screen. The owner id is taken
+        from the token, NOT the URL. Each item includes the cover image and a count of room types and rooms.
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      responses:
+        '200': { description: 'Array of hotels (each with primary image + _count of roomTypes/rooms)' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
 
   /hotels/{hotelId}/room-types:
     get:
@@ -886,9 +1423,9 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: Room types with images & amenities (plus availability and total price when dates given)
-        "404":
+        '404':
           $ref: '#/components/responses/NotFound'
 
   /bookings:
@@ -898,7 +1435,9 @@ paths:
         Authenticated customers book one room of a room type for [checkInDate, checkOutDate).
         Prices are computed server-side (per-night priceOverride if set, else basePrice).
         Inventory is reserved per night inside a transaction, so concurrent bookings cannot
-        oversell. Booking is created with status "pending" (payment flow is separate).
+        oversell. paymentMethod "vnpay" (default) creates a "pending" booking held 15 min for online
+        payment; "cash" (pay at hotel) creates a "confirmed" booking with no hold plus a pending cash
+        Payment and an e-voucher — staff records the cash later via record-cash-payment.
       tags: [Bookings]
       security:
         - bearerAuth: []
@@ -933,24 +1472,30 @@ paths:
                   minimum: 1
                 specialRequests:
                   type: string
+                paymentMethod:
+                  type: string
+                  enum: [vnpay, cash]
+                  default: vnpay
+                  description: vnpay = pay online now; cash = pay at the hotel on arrival
               example:
                 hotelId: 11111111-1111-1111-1111-111111111111
                 roomTypeId: 22222222-2222-2222-2222-222222222222
-                checkInDate: "2026-07-01"
-                checkOutDate: "2026-07-03"
+                checkInDate: '2026-07-01'
+                checkOutDate: '2026-07-03'
                 numGuests: 2
+                paymentMethod: cash
       responses:
-        "201":
+        '201':
           description: Booking created (includes bookingCode, totals, hotel & roomType summary)
-        "400":
+        '400':
           description: Sold out for a night, past check-in date, or capacity exceeded
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-        "401":
+        '401':
           $ref: '#/components/responses/Unauthorized'
-        "404":
+        '404':
           $ref: '#/components/responses/NotFound'
 
   /bookings/me:
@@ -969,7 +1514,7 @@ paths:
           name: sortBy
           schema:
             type: string
-          description: "field:(desc|asc) e.g. createdAt:desc"
+          description: 'field:(desc|asc) e.g. createdAt:desc'
         - in: query
           name: limit
           schema:
@@ -979,9 +1524,9 @@ paths:
           schema:
             type: integer
       responses:
-        "200":
+        '200':
           description: Paginated booking list ({ results, page, limit, totalPages, totalResults })
-        "401":
+        '401':
           $ref: '#/components/responses/Unauthorized'
 
   /bookings/{bookingId}:
@@ -999,13 +1544,13 @@ paths:
             type: string
             format: uuid
       responses:
-        "200":
+        '200':
           description: OK
-        "401":
+        '401':
           $ref: '#/components/responses/Unauthorized'
-        "403":
+        '403':
           $ref: '#/components/responses/Forbidden'
-        "404":
+        '404':
           $ref: '#/components/responses/NotFound'
 
   /bookings/{bookingId}/cancel:
@@ -1013,7 +1558,11 @@ paths:
       summary: Cancel a booking
       description: >
         Owner (or manageBookings) cancels a pending/confirmed booking before its check-in date.
-        Reserved inventory is released for every night of the stay.
+        Reserved inventory is released for every night of the stay. If the booking was paid, a refund
+        is computed from the hotel's cancellation policy (default: full refund if cancelled ≥48h before
+        check-in, otherwise the first night is kept as a penalty): a Refund record is created, the
+        Payment is marked refunded on a full refund, and the platform commission is adjusted to the
+        amount the hotel actually keeps. The response includes a `refund` summary when applicable.
       tags: [Bookings]
       security:
         - bearerAuth: []
@@ -1034,10 +1583,605 @@ paths:
                 reason:
                   type: string
       responses:
-        "200":
+        '200':
           description: Booking cancelled
-        "400":
+        '400':
           description: Not cancellable (wrong status or check-in date reached)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /payments/bookings/{bookingId}/vnpay:
+    post:
+      summary: Create a VNPay payment URL for a booking
+      description: >
+        Owner of a pending (not yet expired) booking requests a VNPay payment URL.
+        Creates a pending Payment row and returns the gateway URL the frontend should redirect to.
+        Requires VNP_TMN_CODE / VNP_HASH_SECRET to be configured (503 otherwise).
+      tags: [Payments]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: bookingId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '201':
+          description: Payment URL created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  paymentUrl:
+                    type: string
+                    example: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html?vnp_Amount=...
+        '400':
+          description: Booking not payable (wrong status or hold expired)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '503':
+          description: VNPay not configured
+
+  /payments/vnpay/return:
+    get:
+      summary: VNPay browser return URL (public)
+      description: >
+        VNPay redirects the user's browser here after payment. The signature (vnp_SecureHash)
+        is verified server-side; on success the booking is confirmed, commission recorded and an
+        e-voucher issued. The endpoint then 302-redirects to the client payment-result page.
+      tags: [Payments]
+      parameters:
+        - in: query
+          name: vnp_TxnRef
+          schema:
+            type: string
+        - in: query
+          name: vnp_ResponseCode
+          schema:
+            type: string
+        - in: query
+          name: vnp_SecureHash
+          schema:
+            type: string
+      responses:
+        '302':
+          description: Redirect to client payment-result page
+
+  /payments/vnpay/ipn:
+    get:
+      summary: VNPay IPN endpoint (server-to-server, public)
+      description: >
+        VNPay calls this server-to-server to confirm the transaction outcome. Same verification and
+        confirmation logic as the return URL, but responds with the VNPay JSON contract
+        ({ RspCode, Message }). Idempotent on repeated calls.
+      tags: [Payments]
+      responses:
+        '200':
+          description: VNPay acknowledgement
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  RspCode:
+                    type: string
+                    example: '00'
+                  Message:
+                    type: string
+                    example: Thanh toán thành công
+
+  /hotels/{hotelId}/bookings:
+    get:
+      summary: List a hotel's bookings (staff/owner)
+      description: >
+        Owner, platform manager, or assigned staff lists bookings of the hotel, filtered by status
+        and check-in date range. Each item includes customer, assigned rooms and voucher info.
+      tags: [Bookings]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [pending, confirmed, checked_in, checked_out, cancelled, no_show]
+        - in: query
+          name: fromDate
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: toDate
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: limit
+          schema:
+            type: integer
+        - in: query
+          name: page
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Paginated bookings
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /hotels/{hotelId}/bookings/{bookingId}/check-in:
+    post:
+      summary: Check in a confirmed booking (staff)
+      description: >
+        Moves a confirmed (paid) booking to checked_in, assigns one available physical room of the
+        booking's room type (or the room given by roomId), marks the e-voucher used. Optionally
+        verifies the scanned voucherCode. Only allowed within the stay window
+        (checkInDate <= today < checkOutDate) — too early or past the stay is rejected.
+      tags: [Bookings]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: path
+          name: bookingId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                roomId:
+                  type: string
+                  format: uuid
+                  description: Optional specific physical room to assign
+                voucherCode:
+                  type: string
+                  description: Optional e-voucher code to verify at the desk
+      responses:
+        '200':
+          description: Booking checked in (with assigned room)
+        '400':
+          description: Not confirmed, voucher mismatch, or no free room
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /hotels/{hotelId}/bookings/{bookingId}/check-out:
+    post:
+      summary: Check out a staying booking and issue an invoice (staff)
+      description: >
+        Moves a checked_in booking to checked_out, frees the assigned room(s) to cleaning status,
+        and issues an Invoice (room subtotal + optional extra charge).
+      tags: [Bookings]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: path
+          name: bookingId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                extraCharge:
+                  type: number
+                  minimum: 0
+                  description: Extra charges incurred during the stay (added to the invoice total)
+      responses:
+        '200':
+          description: Booking checked out (response includes the issued invoice)
+        '400':
+          description: Booking is not currently checked in
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /hotels/{hotelId}/bookings/{bookingId}/no-show:
+    post:
+      summary: Mark a booking as no-show (staff)
+      description: >
+        Staff marks a confirmed booking whose check-in date has passed as no_show (guest never
+        arrived). Prepaid (VNPay) bookings are forfeited — no refund, commission kept. A still-pending
+        cash payment is marked failed. Inventory is not released.
+      tags: [Bookings]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: path
+          name: bookingId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Booking marked no_show
+        '400':
+          description: Not confirmed, or check-in date not reached yet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /hotels/{hotelId}/bookings/{bookingId}/record-cash-payment:
+    post:
+      summary: Record cash received for a pay-at-hotel booking (staff)
+      description: >
+        Staff marks the pending cash Payment of a "pay at hotel" booking as completed (money collected
+        at the desk) and records the platform commission at that point. Idempotent — a second call on
+        an already-collected booking is rejected.
+      tags: [Bookings]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: path
+          name: bookingId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Cash payment recorded
+        '400':
+          description: No pending cash payment, or booking cancelled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /hotels/{hotelId}/bookings/{bookingId}:
+    get:
+      summary: Get one booking of a hotel (staff)
+      description: >
+        Owner, manager, or assigned staff fetches a single booking's detail (customer, assigned rooms,
+        voucher, payments, and the invoice if already issued).
+      tags: [Bookings]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: path
+          name: bookingId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Booking detail
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /hotels/{hotelId}/rooms/{roomId}/status:
+    patch:
+      summary: Update a room's status (staff room map / housekeeping)
+      description: >
+        Assigned staff (or owner/manager) quickly changes a room's operational status
+        (available / occupied / maintenance / cleaning) — used by the room map and housekeeping.
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: path
+          name: roomId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum: [available, occupied, maintenance, cleaning]
+      responses:
+        '200':
+          description: Room status updated
+        '400':
+          description: Invalid status
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /hotels/{hotelId}/housekeeping:
+    get:
+      summary: List housekeeping tasks (staff)
+      description: >
+        Assigned staff lists the hotel's housekeeping (room cleaning) tasks, optionally filtered by
+        status. Tasks are auto-created when a booking checks out.
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [pending, in_progress, done]
+      responses:
+        '200':
+          description: Housekeeping tasks (each with its room)
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /hotels/{hotelId}/housekeeping/{taskId}/complete:
+    post:
+      summary: Complete a housekeeping task (staff, 1-tap)
+      description: >
+        Marks a cleaning task done and returns the room to "available" (only if it is still in
+        "cleaning"). Rejected if the task is already done.
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: path
+          name: taskId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Task completed, room freed
+        '400':
+          description: Task already done
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /hotels/{hotelId}/conversations:
+    get:
+      summary: List a hotel's chat conversations (staff inbox, S04)
+      description: >
+        Owner, manager, or assigned staff lists the hotel's chat conversations, filtered by status
+        (the inbox typically uses status=escalated to see chats the bot handed off). Each item includes
+        the customer, a preview of the last message, the assignee and lastMessageAt.
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [active, resolved, escalated, closed]
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        "200":
+          description: Paginated conversations
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  /hotels/{hotelId}/conversations/{conversationId}:
+    get:
+      summary: Get a conversation with all messages (staff)
+      description: >
+        Owner/manager/assigned staff views one conversation thread (all messages, oldest first) plus
+        customer info.
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: path
+          name: conversationId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Conversation with messages
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  /hotels/{hotelId}/conversations/{conversationId}/reply:
+    post:
+      summary: Staff replies to a conversation (S04)
+      description: >
+        Saves a staff reply, assigns the conversation to the replying staff, and moves its status to
+        "active" (taking it out of the escalated queue). Rejected if the conversation is closed.
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: path
+          name: conversationId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - message
+              properties:
+                message:
+                  type: string
+                  maxLength: 2000
+              example:
+                message: Chào anh/chị, em là lễ tân, em hỗ trợ mình ngay ạ.
+      responses:
+        "201":
+          description: Staff message saved
+        "400":
+          description: Conversation already closed
           content:
             application/json:
               schema:
@@ -1048,6 +2192,153 @@ paths:
           $ref: '#/components/responses/Forbidden'
         "404":
           $ref: '#/components/responses/NotFound'
+
+  /hotels/{hotelId}/conversations/{conversationId}/resolve:
+    post:
+      summary: Mark a conversation resolved (S04)
+      description: >
+        Owner/manager/assigned staff marks the conversation handled (status=resolved, resolvedAt set).
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: path
+          name: conversationId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Conversation resolved
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  /hotels/{hotelId}/staff:
+    get:
+      summary: List staff assigned to a hotel (owner)
+      description: Hotel owner or manageHotels lists active staff assignments (with user info).
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Active staff assignments
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      summary: Create a staff account and assign it to the hotel (owner)
+      description: >
+        Hotel owner or manageHotels creates an active staff user account (no OTP — the owner vouches)
+        and assigns it to the hotel. assignedRole ("staff" or "marketer") also becomes the user's
+        global role. After this the staff member can log in and operate the hotel's bookings.
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - email
+                - password
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  description: Min 8 chars, at least 1 letter and 1 number
+                phone:
+                  type: string
+                assignedRole:
+                  type: string
+                  enum: [staff, marketer]
+                  default: staff
+      responses:
+        '201':
+          description: Staff account created and assigned (user is returned without passwordHash)
+        '400':
+          description: Email already taken or invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /hotels/{hotelId}/staff/{userId}:
+    delete:
+      summary: Unassign a staff member from the hotel (owner)
+      description: >
+        Ends a staff member's assignment (sets unassignedAt) so they lose access to the hotel's
+        operations. The user account itself is not deleted.
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Staff unassigned
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: No active assignment for this staff at the hotel
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   /hotels/{hotelId}/room-types/manage:
     get:
@@ -1062,10 +2353,10 @@ paths:
           required: true
           schema: { type: string, format: uuid }
       responses:
-        "200": { description: OK }
-        "401": { $ref: '#/components/responses/Unauthorized' }
-        "403": { $ref: '#/components/responses/Forbidden' }
-        "404": { $ref: '#/components/responses/NotFound' }
+        '200': { description: OK }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
 
   /hotels/{hotelId}/room-types/create:
     post:
@@ -1104,10 +2395,10 @@ paths:
                 bedType: twin
                 viewType: city
       responses:
-        "201": { description: Created }
-        "401": { $ref: '#/components/responses/Unauthorized' }
-        "403": { $ref: '#/components/responses/Forbidden' }
-        "404": { $ref: '#/components/responses/NotFound' }
+        '201': { description: Created }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
 
   /hotels/{hotelId}/room-types/{roomTypeId}:
     put:
@@ -1141,10 +2432,10 @@ paths:
                 viewType: { type: string }
                 isActive: { type: boolean }
       responses:
-        "200": { description: Updated }
-        "401": { $ref: '#/components/responses/Unauthorized' }
-        "403": { $ref: '#/components/responses/Forbidden' }
-        "404": { $ref: '#/components/responses/NotFound' }
+        '200': { description: Updated }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
 
   /hotels/{hotelId}/room-types/{roomTypeId}/images:
     post:
@@ -1183,10 +2474,10 @@ paths:
                       isPrimary: { type: boolean }
                       sortOrder: { type: integer }
       responses:
-        "201": { description: Full image list of the room type }
-        "401": { $ref: '#/components/responses/Unauthorized' }
-        "403": { $ref: '#/components/responses/Forbidden' }
-        "404": { $ref: '#/components/responses/NotFound' }
+        '201': { description: Full image list of the room type }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
 
   /hotels/{hotelId}/room-types/{roomTypeId}/amenities:
     put:
@@ -1216,11 +2507,11 @@ paths:
                   type: array
                   items: { type: string, format: uuid }
       responses:
-        "200": { description: Room type with the new amenity set }
-        "400": { description: Some amenity ids do not exist }
-        "401": { $ref: '#/components/responses/Unauthorized' }
-        "403": { $ref: '#/components/responses/Forbidden' }
-        "404": { $ref: '#/components/responses/NotFound' }
+        '200': { description: Room type with the new amenity set }
+        '400': { description: Some amenity ids do not exist }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
 
   /hotels/{hotelId}/rooms:
     post:
@@ -1250,11 +2541,11 @@ paths:
                 status: { type: string, enum: [available, occupied, maintenance, cleaning], default: available }
                 notes: { type: string }
       responses:
-        "201": { description: Created }
-        "400": { description: Duplicate room number }
-        "401": { $ref: '#/components/responses/Unauthorized' }
-        "403": { $ref: '#/components/responses/Forbidden' }
-        "404": { $ref: '#/components/responses/NotFound' }
+        '201': { description: Created }
+        '400': { description: Duplicate room number }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
     get:
       summary: List physical rooms (filter by status, room type)
       tags: [HotelManagement]
@@ -1281,10 +2572,10 @@ paths:
           name: page
           schema: { type: integer }
       responses:
-        "200": { description: Paginated room list }
-        "401": { $ref: '#/components/responses/Unauthorized' }
-        "403": { $ref: '#/components/responses/Forbidden' }
-        "404": { $ref: '#/components/responses/NotFound' }
+        '200': { description: Paginated room list }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
 
   /hotels/{hotelId}/rooms/{roomId}:
     put:
@@ -1316,11 +2607,11 @@ paths:
                 status: maintenance
                 notes: Hỏng điều hoà, chờ linh kiện
       responses:
-        "200": { description: Updated }
-        "400": { description: Duplicate room number }
-        "401": { $ref: '#/components/responses/Unauthorized' }
-        "403": { $ref: '#/components/responses/Forbidden' }
-        "404": { $ref: '#/components/responses/NotFound' }
+        '200': { description: Updated }
+        '400': { description: Duplicate room number }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
 
   /hotels/{hotelId}/pricing-rules:
     post:
@@ -1364,17 +2655,17 @@ paths:
               example:
                 name: Phụ thu cuối tuần
                 ruleType: weekend
-                startDate: "2026-06-01"
-                endDate: "2026-08-31"
+                startDate: '2026-06-01'
+                endDate: '2026-08-31'
                 dayOfWeek: [5, 6]
                 adjustmentType: percentage
                 adjustmentValue: 20
                 priority: 10
       responses:
-        "201": { description: Created }
-        "401": { $ref: '#/components/responses/Unauthorized' }
-        "403": { $ref: '#/components/responses/Forbidden' }
-        "404": { $ref: '#/components/responses/NotFound' }
+        '201': { description: Created }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
     get:
       summary: List pricing rules of a hotel
       tags: [HotelManagement]
@@ -1392,10 +2683,10 @@ paths:
           name: isActive
           schema: { type: boolean }
       responses:
-        "200": { description: Rules ordered by priority desc }
-        "401": { $ref: '#/components/responses/Unauthorized' }
-        "403": { $ref: '#/components/responses/Forbidden' }
-        "404": { $ref: '#/components/responses/NotFound' }
+        '200': { description: Rules ordered by priority desc }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
 
   /hotels/{hotelId}/pricing-rules/{ruleId}:
     put:
@@ -1420,11 +2711,11 @@ paths:
               type: object
               description: Any subset of the create fields
       responses:
-        "200": { description: Updated }
-        "400": { description: endDate before startDate after merge }
-        "401": { $ref: '#/components/responses/Unauthorized' }
-        "403": { $ref: '#/components/responses/Forbidden' }
-        "404": { $ref: '#/components/responses/NotFound' }
+        '200': { description: Updated }
+        '400': { description: endDate before startDate after merge }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
     delete:
       summary: Delete a pricing rule
       tags: [HotelManagement]
@@ -1440,10 +2731,10 @@ paths:
           required: true
           schema: { type: string, format: uuid }
       responses:
-        "204": { description: Deleted }
-        "401": { $ref: '#/components/responses/Unauthorized' }
-        "403": { $ref: '#/components/responses/Forbidden' }
-        "404": { $ref: '#/components/responses/NotFound' }
+        '204': { description: Deleted }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
 
   /amenities:
     get:
@@ -1455,7 +2746,7 @@ paths:
           name: category
           schema: { type: string, enum: [room, hotel, service] }
       responses:
-        "200": { description: OK }
+        '200': { description: OK }
     post:
       summary: Create an amenity (admin only)
       description: Requires the manageAmenities right (admin). Name is globally unique.
@@ -1478,10 +2769,10 @@ paths:
                 icon: coffee
                 category: room
       responses:
-        "201": { description: Created }
-        "400": { description: Duplicate name }
-        "401": { $ref: '#/components/responses/Unauthorized' }
-        "403": { $ref: '#/components/responses/Forbidden' }
+        '201': { description: Created }
+        '400': { description: Duplicate name }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
 
   /hotel-partners/documents/{documentId}/replace:
     post:
@@ -1510,21 +2801,21 @@ paths:
                   type: string
                   format: uri
       responses:
-        "201":
+        '201':
           description: Replacement document created
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HotelVerificationDocument'
-        "400":
+        '400':
           description: Document is not in a rejected state
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-        "401":
+        '401':
           $ref: '#/components/responses/Unauthorized'
-        "403":
+        '403':
           $ref: '#/components/responses/Forbidden'
-        "404":
+        '404':
           $ref: '#/components/responses/NotFound'

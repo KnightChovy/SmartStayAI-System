@@ -247,6 +247,61 @@ This code is valid for 10 minutes. Do not share it with anyone.`;
 
     await this.sendEmail(to, subject, text, html);
   };
+
+  /**
+   * Gửi email xác nhận booking đã thanh toán thành công (kèm mã voucher e-voucher).
+   * @param {string} to
+   * @param {object} data - thông tin booking để hiển thị
+   * @returns {Promise<void>}
+   */
+  sendBookingConfirmationEmail = async (
+    to: string,
+    data: {
+      customerName: string;
+      bookingCode: string;
+      hotelName: string;
+      roomTypeName: string;
+      checkInDate: Date;
+      checkOutDate: Date;
+      totalAmount: number;
+      voucherCode: string;
+    }
+  ) => {
+    const subject = `Xác nhận đặt phòng ${data.bookingCode} - SmartStayAI`;
+    const fmtDate = (d: Date) => d.toISOString().slice(0, 10);
+    const fmtMoney = (n: number) => `${n.toLocaleString('vi-VN')} ₫`;
+
+    const text = `Xin chao ${data.customerName},
+Dat phong ${data.bookingCode} cua ban da duoc xac nhan.
+Khach san: ${data.hotelName} - ${data.roomTypeName}
+Nhan phong: ${fmtDate(data.checkInDate)} | Tra phong: ${fmtDate(data.checkOutDate)}
+Tong tien: ${fmtMoney(data.totalAmount)}
+Ma e-voucher (xuat trinh khi nhan phong): ${data.voucherCode}`;
+
+    const html = this.getEmailWrapperHtml(
+      'Booking confirmed',
+      `
+        <h2>Đặt phòng đã được xác nhận 🎉</h2>
+        <p>Xin chào ${data.customerName},</p>
+        <p>Cảm ơn bạn đã đặt phòng và thanh toán thành công tại SmartStayAI. Dưới đây là thông tin đặt phòng của bạn:</p>
+        <p>
+          <strong>Mã đặt phòng:</strong> ${data.bookingCode}<br/>
+          <strong>Khách sạn:</strong> ${data.hotelName}<br/>
+          <strong>Loại phòng:</strong> ${data.roomTypeName}<br/>
+          <strong>Nhận phòng:</strong> ${fmtDate(data.checkInDate)}<br/>
+          <strong>Trả phòng:</strong> ${fmtDate(data.checkOutDate)}<br/>
+          <strong>Tổng tiền:</strong> ${fmtMoney(data.totalAmount)}
+        </p>
+        <p>Mã e-voucher của bạn — vui lòng xuất trình khi nhận phòng:</p>
+        <div class="otp-box">
+          <div class="otp-code">${data.voucherCode}</div>
+        </div>
+        <p>Chúc bạn có một kỳ nghỉ tuyệt vời cùng SmartStayAI!</p>
+      `
+    );
+
+    await this.sendEmail(to, subject, text, html);
+  };
 }
 
 export const emailService = new EmailService();

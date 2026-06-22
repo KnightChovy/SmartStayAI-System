@@ -27,6 +27,7 @@ import { AdminNotesModal } from './models/note/AdminNotesModal';
 import { AdminReportModal } from './models/report/AdminReportModal';
 import { AdminSupportModal } from './models/support/AdminSupportModal';
 import { AdminTasksModal } from './models/task/AdminTasksModal';
+import { useLogout } from '@/hooks/auth';
 
 const adminNavItems = [
   { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
@@ -62,6 +63,8 @@ export function AdminLayout() {
     return () => window.clearInterval(intervalId);
   }, []);
 
+  const logoutMutation = useLogout();
+
   const closeAllModals = () => {
     setIsCalendarOpen(false);
     setIsCreateUserOpen(false);
@@ -72,6 +75,13 @@ export function AdminLayout() {
     setIsReportOpen(false);
     setIsSupportOpen(false);
     setIsTasksOpen(false);
+    logoutMutation.mutate();
+  };
+
+  const { mutate: logout } = useLogout();
+  const handleLogout = () => {
+    closeAllModals();
+    logout();
   };
 
   const handleOpenCalendar = () => {
@@ -140,7 +150,7 @@ export function AdminLayout() {
           subtitle="Admin Portal"
           navItems={adminNavItems}
           footerItems={adminFooterItems}
-          onLogout={closeAllModals}
+          onLogout={handleLogout}
         />
         <SidebarInset className="bg-[#f7f4f3] text-on-surface">
           {isCalendarOpen ? (

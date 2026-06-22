@@ -31,6 +31,75 @@ export class HotelService {
   };
 
   /**
+   * Lấy khách sạn cho thao tác VẬN HÀNH (xem booking, check-in/out): rộng hơn getManagedHotel.
+   * Cho phép CHỦ partner, người có quyền manageBookings (platform_manager/admin), HOẶC nhân viên
+   * đang được phân công vào đúng khách sạn này (hotel_staff_assignments còn hiệu lực). Vì staff cũng
+   * phải làm được check-in/out nhưng không phải chủ và không có quyền toàn cục.
+   */
+  getOperableHotel = async (hotelId: string, currentUser: User) => {
+    const hotel = await prisma.hotel.findFirst({
+      where: { id: hotelId, deletedAt: null },
+      include: { partner: { select: { ownerId: true } } },
+    });
+    if (!hotel) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy khách sạn');
+    }
+    const isOwner = hotel.partner.ownerId === currentUser.id;
+    const canManage = (roleRights.get(currentUser.role) || []).includes('manageBookings');
+    if (isOwner || canManage) {
+      return hotel;
+    }
+    const assignment = await prisma.hotelStaffAssignment.findFirst({
+      where: { hotelId, userId: currentUser.id, unassignedAt: null },
+    });
+    if (!assignment) {
+      throw new ApiError(httpStatus.FORBIDDEN, 'Forbidden');
+    }
+    return hotel;
+  };
+
+  /**
+   * Chi tiết một khách sạn cho CHỦ SỞ HỮU / manager — trả về BẤT KỂ trạng thái (kể cả chưa listed /
+   * đang chờ duyệt), khác getHotelById (public chỉ trả KS đang bán). Quyền kiểm qua getManagedHotel.
+   * Kèm toàn bộ ảnh, tiện nghi, và TẤT CẢ loại phòng (cả đã tắt) với ảnh + tiện nghi + số phòng.
+   */
+  getManagedHotelDetail = async (hotelId: string, currentUser: User) => {
+    await this.getManagedHotel(hotelId, currentUser);
+    return prisma.hotel.findUniqueOrThrow({
+      where: { id: hotelId },
+      include: {
+        images: { orderBy: [{ isPrimary: 'desc' }, { sortOrder: 'asc' }] },
+        amenities: { include: { amenity: true } },
+        roomTypes: {
+          orderBy: { basePrice: 'asc' },
+          include: {
+            images: { orderBy: { sortOrder: 'asc' } },
+            amenities: { include: { amenity: true } },
+            _count: { select: { rooms: true } },
+          },
+        },
+      },
+    });
+  };
+
+  /**
+   * Danh sách khách sạn của partner đang đăng nhập (theo ownerId = userId lấy từ token).
+   * Quyền đã chặn ở route bằng auth() — controller truyền req.user.id, nên ở đây không kiểm lại.
+   * Trả về CẢ khách sạn chưa mở bán / đang chờ duyệt (khác searchHotels public), chỉ bỏ khách sạn
+   * đã xoá mềm. Kèm ảnh cover + số loại phòng / số phòng để hiển thị danh sách.
+   */
+  getHotelsByOwner = async (userId: string) => {
+    return prisma.hotel.findMany({
+      where: { partner: { ownerId: userId }, deletedAt: null },
+      include: {
+        images: { where: { isPrimary: true }, take: 1 },
+        _count: { select: { roomTypes: true, rooms: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  };
+
+  /**
    * Tìm khách sạn theo thành phố. Nếu có khoảng ngày (checkIn/checkOut) thì chỉ trả về
    * khách sạn còn ít nhất một loại phòng trống đủ sức chứa trong suốt kỳ ở.
    */
@@ -92,6 +161,33 @@ export class HotelService {
     }));
 
     return { results, page, limit, totalPages: Math.ceil(totalResults / limit), totalResults };
+  };
+
+  /**
+   * Chi tiết một khách sạn cho trang profile của guest — public, chỉ trả khách sạn đang mở bán
+   * (isActive + isListed, chưa xoá). Kèm toàn bộ ảnh, tiện nghi khách sạn và các loại phòng đang
+   * bán (mỗi loại có ảnh + tiện nghi + giá gốc). Tồn kho/giá theo ngày lấy riêng qua getRoomTypes.
+   */
+  getHotelById = async (hotelId: string) => {
+    const hotel = await prisma.hotel.findFirst({
+      where: { id: hotelId, isActive: true, isListed: true, deletedAt: null },
+      include: {
+        images: { orderBy: [{ isPrimary: 'desc' }, { sortOrder: 'asc' }] },
+        amenities: { include: { amenity: true } },
+        roomTypes: {
+          where: { isActive: true },
+          orderBy: { basePrice: 'asc' },
+          include: {
+            images: { orderBy: { sortOrder: 'asc' } },
+            amenities: { include: { amenity: true } },
+          },
+        },
+      },
+    });
+    if (!hotel) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy khách sạn');
+    }
+    return hotel;
   };
 
   /**

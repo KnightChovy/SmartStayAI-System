@@ -6,6 +6,150 @@ This file tracks the accomplished tasks, resolved user requests, and visual/func
 
 ## Completed Tasks Checklist
 
+### June 19, 2026
+
+- [x] **Hotel Partner — Split "Hotels" from "Room Inventory", convert management UI from cards → tables**:
+  - **Backend review**: confirmed the hotel-management API surface is complete and unchanged — partner hotels come from `GET /hotels/mine` (partner resolved from the access token, **no** `:userId` param), full detail from `GET /hotels/:id/manage`; room types (`…/room-types/manage`, `POST`, `PUT`, `…/images`, `…/amenities`), rooms (`…/rooms` paginated + `POST`/`PUT`/`PATCH …/status`), pricing rules (`…/pricing-rules` CRUD), amenities (`GET /amenities`). No new endpoints needed.
+  - **Fixed broken WIP data layer** (branch didn't compile): `usePartnerHotels` called a non-existent `hotelService.getByPartner(userId)` against the wrong path with an undefined `queryKeys.hotels.byPartner`, an undefined `PartnerHotel` type, and the hook wasn't even exported from the `hooks/hotels` barrel. Added `PartnerHotel` to `types/hotel.types.ts` (hotel fields + primary image + `_count{roomTypes,rooms}`), `hotelService.getMine()` → `GET /hotels/mine`, `queryKeys.hotels.mine`, rewrote `usePartnerHotels()` (no args, token-based) and exported it from the barrel.
+  - **Separated into two routed features** (both were missing from `partnerRoutes.tsx`): `/partner/hotel-management` → **HotelsPage** (property overview only) and `/partner/room-inventory` → **RoomInventoryPage** (room types / rooms / pricing for one hotel). Hotel + active tab live in the query string (`?hotelId=…&tab=…`) so refresh/share keeps state; "Manage inventory" on a hotel row deep-links into Room Inventory. Removed the old combined `HotelManagementPage`.
+  - **Cards → tables** (senior call: this is an internal ops surface — tables win on density, scannability and consistency with Staff/Admin; cards stay for guest-facing browsing). Added shared primitives `shared/DataTable.tsx` (generic `Column<T>[]`), `shared/TablePagination.tsx`, `shared/Pill.tsx`, and a `formatAdjustment()` helper in `shared/labels.ts`. Rebuilt `HotelsTable`, `RoomTypesTab`, `PricingRulesTab` as tables and refactored the already-tabular `RoomsTab` onto the same primitives. Deleted `PartnerHotelCard`, `RoomTypeCard`, `PricingRuleCard`.
+  - **DRY**: extracted `HotelDirectory` (search + listing filter + table) shared by HotelsPage and the Room Inventory hotel-picker; `InventoryTabs` owns the tab bar + a URL-safe `isInventoryTab` guard.
+  - `tsc -p tsconfig.app.json --noEmit` clean for all touched files (pre-existing repo errors — unused `React` imports under `noUnusedLocals` and a recharts formatter type in `manager/revenue` — are unrelated and untouched).
+
+### June 16, 2026 (continued)
+
+- [x] **Hotel Verify — "Review & Fix" now prefills the wizard with the existing application**:
+  - **Bug**: clicking "Review & Fix" navigated to `?applicationId=…&step=1`; `VerifyHotelPage` fetched the application by id but never fed it into the wizard, so each step's RHF `defaultValues` (read from the Zustand `hotel-verify-draft`) showed an empty/stale form instead of the submitted data.
+  - **Fix**: added `mapApplicationToDraft(app)` + a `hydrateFromApplication` action to `stores/hotel-verify.store.ts` that maps the detail response (`hotel` + `documents[]` + `licenses[]` + `representatives[]` + `payoutAccounts[]`) back into the six step form-value shapes (cover/exterior/room images grouped by `imageCategory`, `roomConfig.types`, license metadata + current non-replaced document URLs per type, ISO dates sliced to `YYYY-MM-DD`). `VerifyHotelPage` calls it once per `applicationId` (ref-guarded) inside an effect and gates the wizard behind a `hydrated` flag so the prefill lands **before** the step forms mount.
+  - **Known limitation**: the bank **account number** is encrypted server-side and never returned, so it is left blank and must be re-entered when editing the Payment step.
+
+- [x] **Sonner toast notifications + logout feedback**:
+  - Installed `sonner`; added a shared `components/ui/sonner.tsx` Toaster wrapper (`position="top-right"`, `richColors`, `closeButton`) and mounted `<Toaster />` once at the App root (inside `TooltipProvider`, outside the route tree) so toasts persist across route changes.
+  - `useLogout` now fires `toast.success('Đăng xuất thành công')` on success and `toast.error(...)` on failure (the local session is still cleared + redirected to `/login` via `onSettled` either way). This is the project's first toast wiring — reuse the `toast` API from `sonner` for future mutations.
+- [x] **Sidebar Logout wired to the logout API across all portals**:
+  - The shared `CommonSidebar` already rendered a Logout button calling its `onLogout` prop, but the portal layouts never wired it to the real `POST /auth/logout` flow: `ManagerLayout`/`HotelPartnerLayout` passed no `onLogout` (button was a no-op) and `AdminLayout` passed `closeAllModals` (only closed modals).
+  - Wired the existing `useLogout()` hook (`hooks/auth/use-logout.ts` → `authService.logout(refreshToken)` then `clearAuth()` + redirect to `/login`) into all three layouts. `ManagerLayout` and `HotelPartnerLayout` now pass `onLogout={() => logout()}`; `AdminLayout` passes a `handleLogout` that closes any open modals first, then logs out.
+
+### June 21, 2026
+
+- [x] **Front desk: newest-first sort + "Confirmed" filter tile (FE, client-only)**:
+  - `FrontDeskPage` now sorts the booking list by `createdAt` descending so the newest bookings appear at the top (previously sorted by check-in date ascending).
+  - Added a 5th filter tile **"Confirmed"** (`CalendarCheck` icon, indigo tone) that lists every `status === 'confirmed'` booking — including upcoming arrivals not yet inside the check-in window. The existing "To check in" tile still shows only same-day actionable arrivals (`confirmed && check-in ≤ today < check-out`).
+  - Widened the tile grid to `grid-cols-2 sm:grid-cols-3 lg:grid-cols-5` and added an `indigo` entry to `TILE_TONES`. `tsc --noEmit` clean (only pre-existing `baseUrl` deprecation warning).
+
+### June 20, 2026
+
+- [x] **Admin portal connected to existing backend admin APIs — client-only**:
+  - Read server admin-capable routes: `/users` (`getUsers`/`manageUsers`), `/hotel-partners/registrations` (`manageHotelVerifications`), and hotel-scoped bookings via `/hotels/:hotelId/bookings` (`manageBookings`).
+  - Added `services/admin.service.ts` plus `types/admin.types.ts` API DTOs for users, hotel verification requests, review payloads, and admin booking rows.
+  - Added `hooks/admin/*` following one-endpoint-per-file convention: users list/create/update/delete, verification list/review, and admin booking overview.
+  - Replaced mock data in Admin Users, Properties, and Bookings pages with backend fetches, including loading/error states.
+  - Properties now shows hotel verification requests from the platform review queue; bookings build an overview from available hotels and their hotel-scoped booking lists.
+- [x] **Guest chatbot widget connected to backend hotel concierge API — client-only**:
+  - Added the 21st.dev shadcn floating chat widget dependency/component and adapted it for SmartStay guest pages instead of the registry demo agents.
+  - Kept the widget mounted only in the guest/customer `Layout`; admin, partner, and staff portals use separate layouts and do not render it.
+  - Read the backend conversation contract and connected authenticated hotel-detail chats to `POST /conversations/messages` with `{ hotelId, conversationId?, message }`, storing `conversationId` for follow-up turns.
+  - Connected the streaming endpoint `POST /conversations/messages/stream` by parsing SSE `meta`, `chunk`, and `done` events from a POST `fetch`; hotel chat now renders bot text incrementally and falls back to `/messages` if the stream cannot open.
+  - Added `types/chat.types.ts` DTO/response types, `chatService.sendHotelMessage`, and `hooks/chat/use-send-chat-message.ts` + barrel to follow the one-endpoint-per-hook convention.
+  - Added `validations/chat.validation.ts` and wired the widget input through `react-hook-form` + `zodResolver`; messages are trimmed, required, and limited to 2000 characters to match backend validation.
+  - Preserved the existing client-side fallback concierge for generic guest pages without a concrete `hotelId`.
+
+### June 19, 2026
+
+- [x] **Staff only sees hotels they're assigned to (no free hotel switching) — client-only**:
+  - Constraint: no server changes allowed. The BE has no endpoint that lists a staff member's assigned hotels, so `staffService.listMyHotels` now **discovers them client-side**: list public `GET /hotels`, then probe each `GET /hotels/:id/bookings?limit=1` (guarded by `getOperableHotel`) and keep only the hotels that don't return 403.
+  - The probes pass a `skipAuthRetry` config (`{ _retry: true }`) so the expected 403s **skip the shared axios refresh-token interceptor** in `lib/api.ts` (which otherwise escalates 401/403 into a token refresh and can log the user out / thrash `refresh-tokens`).
+  - `SelectHotelPage`: lists only operable hotels; **auto-selects when there's exactly one**; clear empty state when the staff member isn't assigned to any hotel; removed the free-text search.
+  - `RequireStaffHotel` (guard): validates the persisted hotel against the operable list, **auto-picks the single assignment**, drops a stale/unassigned selection, and **holds rendering until a valid hotel is in the store** — so the operational pages never fire a 403 (fixes the leftover Đà Nẵng selection that was 403-ing).
+  - `StaffLayout`: the **"Change" button only shows when the staff member has >1 operable hotel**.
+  - `tsc` clean (client). Server folder untouched.
+
+- [x] **Localize Staff Portal UI to English**:
+  - Translated all Vietnamese user-facing text in the staff portal to English: pages (`StaffDashboardPage`, `FrontDeskPage`, `BookingDetailPage`, `HousekeepingPage`, `RoomsPage`, `SelectHotelPage`), layout/components (`StaffLayout` nav + topbar, `StatusBadge` booking/room/task/payment labels, `RequireStaffHotel`), and all toast/feedback/error strings.
+  - Also translated the in-code comments across `hooks/staff/*`, `routes/staffRoutes.tsx`, `stores/staffHotelStore.ts`, `types/staff.types.ts`, and `services/staff.service.ts` so the whole staff module reads in English.
+  - No behavior changes — labels/copy only. `tsc -b` clean (only pre-existing `baseUrl` deprecation warnings).
+
+### June 18, 2026
+
+- [x] **Làm lại UI/UX quầy lễ tân + nối nốt API/param còn thiếu (FE)**:
+  - Rà soát route + service BE: **toàn bộ endpoint staff-operable đã được call**. Phần thiếu là _param_ chưa dùng → nối nốt: `check-in` giờ gửi được `roomId` (chọn phòng bàn giao) ngoài `voucherCode`.
+  - `BookingDetailPage`: thêm dropdown **"Gán phòng"** lấy từ `useHotelRooms` (lọc phòng `available` đúng `roomTypeId`; rỗng = để BE tự gán); cảnh báo trước cửa sổ check-in (`checkInDate > hôm nay` → disable nút + báo rõ), cảnh báo quá kỳ lưu trú; thêm card Voucher (mã + đã/chưa dùng); gộp layout 2 cột rõ ràng.
+  - `FrontDeskPage`: bỏ bảng phẳng + dải status chip, đổi sang **4 ô lọc theo việc cần làm** (Cần check-in / Trả phòng hôm nay / Đang lưu trú / Chờ thanh toán) có đếm số, + nút "Xem tất cả". Mỗi dòng có **nút thao tác nhanh inline** (Check-in tự gán phòng / Check-out) + banner feedback dùng `errorMessage` (hiện message thật từ BE). "Cần check-in" = `confirmed && ngày nhận ≤ hôm nay < ngày trả`.
+  - Thêm helper dùng chung `toUtcDateKey` / `todayUtcKey` trong `utils/formatDate.ts` (so ngày theo UTC, khớp `toUtcDate` của BE). `npx tsc --noEmit` sạch.
+  - Cũng sửa bug interceptor `lib/api.ts`: `return Promise.reject(error)` bị kẹt trong nhánh `if (401||403)` khiến lỗi 400 fall-through → axios resolve `undefined` → `const {data}=undefined` ném lỗi không có `.response` → UI luôn hiện fallback. Đã đưa reject ra ngoài; gộp điều kiện `_retry`.
+
+- [x] **Cổng nhân viên (Staff Portal) — lễ tân + housekeeping + bản đồ phòng (FE, không sửa BE)**:
+  - Đọc Swagger + route BE (`feat staff`): toàn bộ API staff nằm dưới `/hotels/:hotelId/...` và backend tự kiểm quyền qua `getOperableHotel` (chủ KS / manageBookings / staff được phân công). Nối đúng hợp đồng: `GET /hotels/:id/bookings` (lọc `status/fromDate/toDate/page/limit`, trả `{results,...}` kèm `customer`+`roomType`), `GET .../bookings/:bookingId`, `POST .../check-in` (`{roomId?,voucherCode?}`), `POST .../check-out` (`{extraCharge?}`), `POST .../record-cash-payment`, `POST .../no-show`, `GET .../housekeeping?status=`, `POST .../housekeeping/:taskId/complete`, `GET .../rooms`, `PATCH .../rooms/:roomId/status`.
+  - Tầng dữ liệu theo chuẩn dự án: `types/staff.types.ts`, `services/staff.service.ts`, `hooks/staff/*` (mỗi API một file + `keys.ts` + barrel `index.ts`: `use-hotel-bookings`, `use-hotel-booking`, `use-check-in`, `use-check-out`, `use-record-cash-payment`, `use-mark-no-show`, `use-housekeeping-tasks`, `use-complete-housekeeping`, `use-hotel-rooms`, `use-update-room-status`, `use-staff-hotels`).
+  - Vì BE **không có** endpoint trả khách sạn được phân công cho staff (login chỉ trả `user`), thêm `stores/staffHotelStore.ts` (persist) + màn `SelectHotelPage` (chọn nơi trực từ `GET /hotels`) + guard `RequireStaffHotel`. Chọn nhầm KS không được phân công → BE trả 403 và UI báo rõ.
+  - Giao diện: `components/staff/StaffLayout.tsx` (sidebar + topbar hiển thị KS đang trực + nút "Đổi" + đăng xuất), `StatusBadge` (booking/room/task/payment), các trang `StaffDashboardPage` (đếm khách đến/đi/đang ở/chờ thanh toán hôm nay), `FrontDeskPage` (bảng booking + lọc trạng thái + tìm kiếm), `BookingDetailPage` (check-in/out, thu tiền mặt, no-show + feedback), `HousekeepingPage` (1-tap hoàn thành), `RoomsPage` (đổi nhanh trạng thái theo tầng).
+  - Định tuyến: `routes/staffRoutes.tsx` (`/staff`, guard `ProtectedRoute allowedRoles={[STAFF]}`), đăng ký trong `routes/index.ts`; thêm hằng `ROUTES.staff*` và đặt landing role STAFF → `/staff/dashboard`. Thêm util chung `utils/errorMessage.ts`.
+  - Tạo tài khoản nhân viên demo qua API có sẵn (`POST /hotels/:id/staff` với token partner): `staff@gmail.com` / `Manh2432004`, gán vào "SmartStay Hà Nội Old Quarter".
+  - ⚠️ Ghi nhận bug BE (chưa sửa theo yêu cầu): `GET /hotels/:id/housekeeping` trả 500 `prisma.housekeepingTask` undefined — Prisma Client chưa generate lại sau khi thêm model housekeeping. UI đã xử lý lỗi này mềm mại (banner cảnh báo).
+
+### June 17, 2026
+
+- [x] **Làm rõ hiển thị số phòng trống trên RoomTypeCard**:
+  - Trước: "X rooms left" là chữ xám nhỏ gộp chung dòng số đêm, dễ bỏ sót.
+  - Giờ: tách thành **badge pill nổi bật** (có icon `BedDouble`) ngay dưới thông số phòng. Bình thường (`> 3` phòng) dùng tông vàng `tertiary` ("X rooms available"); sắp hết (`≤ 3` phòng) dùng tông đỏ `error` ("Only X rooms left!") tạo cảm giác cần đặt sớm. Tránh dùng màu `primary` (taupe). Dòng giá chỉ còn số đêm cho gọn.
+
+- [x] **HotelDetailPage tự điền ngày mặc định để hiện số phòng trống ngay**:
+  - BE `getRoomTypes` chỉ trả `availableRooms`/`totalPrice`/`numNights` khi có cả `checkIn`+`checkOut`; mở trang chi tiết không kèm ngày (vd bấm từ HotelCard chưa chọn ngày) thì room-types không có số phòng.
+  - Thêm `useEffect` trong `HotelDetailPage`: nếu URL thiếu `checkIn`/`checkOut` → set mặc định hôm nay → mai (và `guests` nếu thiếu) vào URL bằng `setParams(..., { replace: true })`. Nhờ ghi vào URL nên DateRangePicker, `useRoomTypes` và bước đặt phòng (`handleSelectRoom`) đều dùng chung ngày hợp lệ; link cũng shareable. Có guard `if (checkIn && checkOut) return` để không đè ngày khách đã chọn từ trang search.
+
+- [x] **Nối thanh toán VNPay vào luồng đặt phòng (FE, không sửa BE)**:
+  - Đọc kỹ hợp đồng BE: `POST /payments/bookings/:bookingId/vnpay` (auth, chủ booking, booking phải `pending` & chưa hết hạn giữ chỗ) → trả `{ paymentUrl }`; sau khi khách trả tiền, VNPay redirect về BE rồi BE chuyển khách sang `${CLIENT_URL}/booking/payment-result?status=success|failed&bookingCode=...`.
+  - Tạo tầng dữ liệu thanh toán theo đúng chuẩn `hooks/` của dự án: `types/payment.types.ts` (`CreateVnpayPaymentResponse`, `PaymentResultStatus`), `services/payment.service.ts` (`createVnpay`), `hooks/payments/use-create-vnpay-payment.ts` + barrel `index.ts`.
+  - Thêm route + trang kết quả: `ROUTES.paymentResult` = `/booking/payment-result`, đăng ký trong `guestRoutes.tsx`, trang `pages/guest/PaymentResultPage.tsx` (đọc `status`/`bookingCode` trên query, hiện thành công/thất bại, invalidate `bookings` khi thành công).
+  - Nối `BookingCheckoutPage`: bước Confirm nay **tạo booking pending một lần** (giữ id để bấm lại không tạo trùng) → gọi `useCreateVnpayPayment` → `window.location.href = paymentUrl`. Thêm helper `errorMessage()` (không dùng `any`) để hiện lỗi từ BE; nút đổi nhãn `Confirm & Pay` / `Redirecting to VNPay…` / `Retry payment`; xử lý 503 khi VNPay chưa cấu hình (giữ khách ở trang, báo lỗi rõ ràng).
+  - Verify với BE đang chạy (seed): tạo booking `BKMQI8WO17C4B983` OK; `POST .../vnpay` trả đúng 503 "VNPay chưa được cấu hình" (do `.env` thiếu `VNP_TMN_CODE`/`VNP_HASH_SECRET`) — FE bắt và hiển thị message này. Để chạy redirect thật chỉ cần thêm 2 biến VNPay vào `server/.env` (không đụng code).
+  - Ràng buộc tồn kho ("đặt hết số lượng thì không đặt tiếp") đã được BE đảm bảo sẵn: search room-types ẩn loại hết phòng, `createBooking` tăng `bookedRooms` có điều kiện `< totalRooms`; FE hiện "X rooms left" và chặn đặt khi BE trả lỗi hết phòng.
+
+### June 16, 2026 (continued)
+
+- [x] **Fix luồng đặt phòng cho khách chưa đăng nhập (login redirect đánh rơi phòng đã chọn)**:
+  - `HotelDetailPage` khi khách chưa login bấm "Book now" → điều hướng `/login` kèm `state: { from: { pathname: '/booking' }, booking: { hotel, roomType, checkIn, checkOut, guests } }`. Nhưng `LoginPage` trước đây luôn `navigate(getLandingPathForRole(role))` sau khi login, **bỏ qua `from` + `booking`** → khách bị đẩy về `/` và mất phòng đã chọn (checkout hiện "No room selected").
+  - Sửa `pages/auth/LoginPage.tsx`: đọc `location.state` (kiểu `LoginRedirectState`), sau khi login thành công quay lại `from.pathname (+ search)` kèm `state: booking`; không có `from` thì mới về cổng mặc định theo role. Xử lý cả 2 nguồn redirect: `ProtectedRoute` (gửi cả `location`) và nút Book now (gửi `{ pathname }`).
+  - Kết quả: khách chưa đăng nhập có thể search → chọn phòng → login → về thẳng `/booking` với đủ dữ liệu → tạo booking (`POST /bookings`).
+
+- [x] **Verify guest "search hotels → booking" flow khớp với BE API + fix Hero search bỏ rơi ngày**:
+  - Rà soát toàn bộ luồng client đã nối đúng hợp đồng BE: `GET /hotels` (`useSearchHotels` → `SearchResultsPage`), `GET /hotels/:id/room-types` (`useRoomTypes` → `HotelDetailPage`), `POST /bookings` (`useCreateBooking` → `BookingCheckoutPage`), `GET /bookings/me|:id`, `PATCH /bookings/:id/cancel`. Service/hook/type (`hotel.service.ts`, `booking.service.ts`, `hotel.types.ts`, `booking.types.ts`) khớp đúng response (Decimal serialize thành string, `minPrice`, `availableRooms`/`totalPrice` chỉ có khi truyền `checkIn`/`checkOut`).
+  - Sửa `components/home/Hero.tsx`: form tìm kiếm trang chủ trước đây dùng `prompt()` lưu ngày dạng free-text rồi **vứt bỏ** khi submit (chỉ gửi `city` + `guests`) → BE bỏ qua bước tính tồn kho & giá kỳ ở. Thay bằng 2 `input[type=date]` thật (check-in tự đẩy check-out +1 ngày, `min` chặn quá khứ) + stepper số khách; `onSubmit` nay gửi `checkIn`/`checkOut`/`guests` sang `/search` để BE trả đúng phòng trống + tổng giá.
+
+### June 16, 2026
+
+- [x] **Hotel Verify — Aligned the entire FE data layer to the real backend API spec (7 endpoints under `/v1/hotel-partners`)**:
+  - **Canonical types rewritten** (`hotel-verify.types.ts`): replaced the assumed/ad-hoc shapes with the real spec. `VerificationStatus` is now `'pending' | 'in_review' | 'approved' | 'rejected'` (dropped the invented `need_more_info`). Added spec enums `DocumentStatus`, `DocumentType` (incl. `tax_certificate`/`owner_id`/`property_proof`), `LicenseType`, `LicenseValidityStatus`, `StarRating`, `BusinessType`, `RepresentativeRole`. Rebuilt the detail entity `VerificationApplication` to match the GET detail response exactly: top-level `notes/createdAt/updatedAt`, nested `hotel` (with `images[]`, `roomConfig{ totalRooms, types[] }`, `representatives[]` using `dateOfBirth`, `payoutAccounts[]` **without** `accountNumber`), `partner`, `documents[]`, `licenses[]`, `reviewer`. `latitude`/`longitude` typed as `string | null` (Decimal serialised as string). Added `district?` back to `SaveBusinessInfoDto` and a `ReplaceDocumentDto`.
+  - **Manager types rewritten** (`manager.types.ts`): `PaginatedVerificationRequests.results` now uses `VerificationListItem` (the lighter list shape — nested `hotel{ cover images }` + `partner`, not flat `hotelName/ownerName`); `VerificationRequestDetail = VerificationApplication`. Removed the dead `HotelVerificationRequest*`/`HotelVerificationDocument` interfaces.
+  - **Services**: `hotel-verify.service.ts` added `replaceDocument(documentId, fileUrl)` → `POST /documents/:id/replace` (#7). `manager-verification.service.ts` retyped to the new list/detail/document shapes.
+  - **Hooks**: added `useReplaceDocument` (partner, invalidates the applications query). Manager `useReviewDocument` now returns a typed `VerificationDocument`.
+  - **Manager list page** (`VerificationRequestsPage.tsx`): reads nested `r.hotel.name`, `r.partner.businessName`, `r.hotel.city`; search filters on the nested fields.
+  - **Manager detail modal** (`VerificationDetailModal.tsx`): fully rewritten to read the real detail shape instead of the form shape. Sections: Hotel Info (`hotel` + partner contact), **Documents** (license metadata from `licenses[]` + each `documents[]` file with status badge, view link, and **per-document Approve/Reject** via `useReviewDocument` (#6)), Representatives (`hotel.representatives[]`), Property & Rooms (images grouped by `imageCategory` + `roomConfig.types`), Payment (`hotel.payoutAccounts[]`, account number shown as encrypted). Whole-request Approve/Reject (#5) reads the freshest status from the loaded detail.
+  - **Partner Verification Center** (`VerificationCenter.tsx`): status enum updated to spec (`in_review` replaces `need_more_info`; tabs now Pending Review / In Review / Approved / Rejected). Added a **Documents to Resubmit** card that lists rejected, not-yet-replaced documents and lets the partner re-upload + replace each file (`useUploadFile` → `useReplaceDocument`, #7).
+
+### June 15, 2026
+
+- [x] **Hotel Verify — Fixed blank/white screen on Verification Center after successful submit**:
+  - **Root cause**: `VerificationCenter.tsx` referenced an undefined `StepStatus` enum (never imported, never defined) plus fields that don't exist on the real `VerificationApplication` type (`overallStatus`, `createdAt`, `steps.businessInfo`). Once an application existed (i.e. right after a successful verify submit), rendering hit those references and threw `ReferenceError: StepStatus is not defined`, which unmounted the whole React tree → blank white page at `/partner/verify`.
+  - **Fix `VerificationCenter`**: rewrote the status card to use the actual `VerificationApplication` shape — `status` (`'pending' | 'approved' | 'rejected' | 'need_more_info'`) instead of `StepStatus.REJECTED`/`overallStatus`, `submittedAt` instead of `createdAt`, and `rejectionReason` instead of `steps.businessInfo`. Added proper handling for `approved` (emerald check icon, "Verification Approved", completed timeline) and `need_more_info` (treated as action-required alongside `rejected`); removed the now-unused `import React`.
+  - **Fix `VerifyHotelPage`**: corrected `const { data: isLoading } = useGetApplicationById(...)` → `const { isLoading } = ...`; the old alias assigned the loaded application object to `isLoading`, leaving the edit flow stuck on the spinner forever once data arrived.
+
+### June 11, 2026 (continued)
+
+- [x] **Hotel Verify — Moved Room Config to Step 5 (Property & Rooms), required map location, top-level `roomConfig` payload**:
+  - **Room Config relocated**: moved the room configuration (total rooms + room types) out of Step 2 (Business License) into **Step 5**, which is renamed **"Property & Rooms"** (per design decision — room/inventory data belongs with the physical-property description, not legal docs). `roomConfigSchema` moved from `propertyDetailsSchema` → `propertyImagesSchema`. `PropertyDetailsStep` reverted to license-only (removed `useFieldArray`/`watch`/`control` + the room UI). `PropertyImagesStep` (manual-state, no RHF) now holds room config via local `useState` (`totalRooms`, `roomTypes` with add/remove + live "X / Y allocated" indicator and submit-time validation: total ≥1, each type named & ≥1 room, sum must equal total); persisted on both Back and Continue.
+  - **Payload shape**: `roomConfig` is now emitted as a **top-level key** in `HotelRegistrationRequest` (removed from `SaveBusinessLicenseDto`); `buildPayload` in `ReviewSubmitStep` destructures `roomConfig` out of the property-images draft and keeps `propertyImages` as images-only. Review card 2 reverted to "Business License"; card 5 → "Property & Rooms" now shows the room summary.
+  - **Labels**: `VerificationStepper` (step 2 → "Business License", step 5 → "Property & Rooms") and `VerificationStepsCard` updated to match.
+  - **Required map location**: `businessInfoSchema.location` is now **required** (was optional) so `lat`/`lng` are always sent to the BE — `SaveBusinessInfoDto.location` made non-optional, and `BusinessInfoStep` shows a red `*`, red map border + inline error when unpinned, and validates on pin.
+
+### June 11, 2026
+
+- [x] **Hotel Verify — Hotel-only, Room Configuration, Draft Persistence, Review Navigation**:
+  - **Draft persistence across reload**: wrapped `stores/hotel-verify.store.ts` with Zustand `persist` middleware (`name: 'hotel-verify-draft'`, `localStorage` via `createJSONStorage`, `partialize` keeps only `draft`). All 6 step DTOs now survive a page reload. Exported the `HotelVerifyDraft` interface (used to type `buildPayload` in `ReviewSubmitStep`, replacing the now-broken `ReturnType<typeof useHotelVerifyStore>['draft']`).
+  - **Step 1 hotel-only**: `BusinessInfoStep` no longer offers a property-type dropdown — removed the `Select` (resort/villa/apartment), hardcoded `businessType: 'hotel'` in defaults + a `useEffect(setValue('businessType','hotel'))`, and rendered a read-only "Hotel · Hotels only" badge (`BadgeCheck` icon).
+  - **Step 2 Room Configuration** (kept Business License, added a section below it): extended `propertyDetailsSchema` with `roomConfig` (`roomConfigSchema`: `totalRooms` coerced int ≥1, `roomTypes` array of `{ name, quantity }` min 1, plus a `superRefine` that the sum of per-type quantities must equal `totalRooms`). `PropertyDetailsStep` now uses `useFieldArray` for `roomConfig.roomTypes` — add/remove room types, per-type room count, a live "X / Y rooms allocated" indicator (emerald when matched, amber otherwise). Header renamed to "Business License & Rooms"; stepper/review labels → "License & Rooms". Added `RoomTypeDto`/`RoomConfigDto` to `hotel-verify.types.ts` and `roomConfig` to `SaveBusinessLicenseDto`.
+  - **Review card navigation**: `ReviewSubmitStep` `SummaryCard` is now clickable for **every** step (not just incomplete ones) — clicking/Enter/Space jumps to that step via `onNavigateToStep`; complete cards show "Tap to edit this step", incomplete show "Tap to complete this step"; added `role="button"`, `tabIndex`, and focus-visible ring for a11y. The License & Rooms card now also summarises total rooms + room-type breakdown.
+
 ### June 5, 2026 (continued 3)
 
 - [x] **Role-based redirect after login (admin / user / hotel partner)**:
@@ -21,6 +165,13 @@ This file tracks the accomplished tasks, resolved user requests, and visual/func
 - [x] **Guest navbar user dropdown menu**:
   - Replaced the inline avatar + name + Log out button in `components/layout/Navbar.tsx` with a shadcn/Radix `DropdownMenu`: avatar+name+chevron is the trigger; the menu shows a user-info header (avatar, name, email, role badge), a role-aware `Dashboard` link (only for roles whose landing page isn't `/`, via `getLandingPathForRole`), `My Account`, and a destructive `Log out` item.
   - Added a `ROLE_LABELS` map for friendly role display; lucide icons (`LayoutDashboard`, `LogOut`, `User`, `ChevronDown`).
+- [x] **Hotel Verify Wizard — Mobile Responsive, Data Persistence, Review Navigation**:
+  - `VerificationStepper`: added `overflow-x-auto` horizontal scroll wrapper with `min-w-max` inner container; reduced circle size to `w-7 h-7 sm:w-8 sm:h-8`; hides labels on mobile except active step; compact `mb-10 sm:mb-16` spacing.
+  - `VerifyHotelPage`: reduced outer padding to `p-4 sm:p-6`; passes `onNavigateToStep={updateStep}` to `ReviewSubmitStep`.
+  - `ReviewSubmitStep`: added `onNavigateToStep?: (step: number) => void` prop; `SummaryCard` becomes clickable (amber border + cursor-pointer) when step is incomplete and `onNavigateToStep` is provided; shows "Tap to complete this step →" CTA on incomplete cards.
+  - `PropertyDetailsStep`, `AccommodationCertificateStep`, `RepresentativeVerificationStep`, `PaymentPayoutsStep`: added `getValues` from `useForm`; Back button calls `setXxx(getValues())` before navigating so partially-filled form data is saved to Zustand draft without validation.
+  - `PropertyImagesStep`: fully rewritten — uploads files immediately per zone on `onFilesChange`; URL arrays initialised from `draft.propertyImages` on mount so re-entry shows previously-uploaded counts; Back saves partial URLs to store; Continue validates URL counts (not File objects); per-zone "N images uploaded" emerald banners on re-entry.
+  - `BusinessInfoStep`: map height changed to `h-52 sm:h-72` for mobile; fixed pre-existing `useRef` missing initial-value error.
 
 ### June 5, 2026 (continued 2)
 

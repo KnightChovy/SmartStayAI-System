@@ -41,3 +41,14 @@ export function useUploadFile() {
     mutationFn: (file: File) => hotelVerifyService.uploadFile(file),
   });
 }
+
+export function useReplaceDocument() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ documentId, fileUrl }: { documentId: string; fileUrl: string }) =>
+      hotelVerifyService.replaceDocument(documentId, fileUrl),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: hotelVerifyKeys.applications() });
+    },
+  });
+}

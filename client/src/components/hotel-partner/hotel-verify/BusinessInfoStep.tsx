@@ -4,14 +4,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { ArrowRight, Loader2, MapPin, Search, X } from 'lucide-react';
+import { ArrowRight, BadgeCheck, Loader2, MapPin, Search, X } from 'lucide-react';
+import { cn } from '@/lib/cn';
 import {
   businessInfoSchema,
   type BusinessInfoFormValues,
@@ -36,7 +30,7 @@ function AddressSearch({ onSelect }: AddressSearchProps) {
   const [suggestions, setSuggestions] = useState<VietmapSuggestion[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown on outside click
@@ -148,7 +142,7 @@ export function BusinessInfoStep({ onContinue }: { onContinue?: () => void }) {
     resolver: zodResolver(businessInfoSchema),
     defaultValues: draft.businessInfo ?? {
       businessName: '',
-      businessType: '',
+      businessType: 'hotel',
       businessRegistrationNumber: '',
       taxCode: '',
       phone: '',
@@ -158,6 +152,11 @@ export function BusinessInfoStep({ onContinue }: { onContinue?: () => void }) {
       ward: '',
     },
   });
+
+  // Property type is locked to "hotel" — this platform onboards hotels only.
+  useEffect(() => {
+    setValue('businessType', 'hotel');
+  }, [setValue]);
 
   const locationValue = watch('location');
 
@@ -221,25 +220,15 @@ export function BusinessInfoStep({ onContinue }: { onContinue?: () => void }) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
             <Label>
-              Business Type <span className="text-red-500">*</span>
+              Property Type <span className="text-red-500">*</span>
             </Label>
-            <Select
-              defaultValue={draft.businessInfo?.businessType}
-              onValueChange={(val) => setValue('businessType', val, { shouldValidate: true })}
-            >
-              <SelectTrigger className="h-11 w-full border-slate-200 text-slate-700">
-                <SelectValue placeholder="Select business type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="hotel">Hotel</SelectItem>
-                <SelectItem value="resort">Resort</SelectItem>
-                <SelectItem value="villa">Villa</SelectItem>
-                <SelectItem value="apartment">Apartment</SelectItem>
-              </SelectContent>
-            </Select>
-            {errors.businessType && (
-              <span className="text-xs text-red-500">{errors.businessType.message}</span>
-            )}
+            <div className="h-11 flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 text-slate-700">
+              <BadgeCheck className="w-4 h-4 text-role-partner-primary" />
+              <span className="font-medium">Hotel</span>
+              <span className="ml-auto text-xs text-slate-400">
+                Hotels only
+              </span>
+            </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="businessRegistrationNumber">
@@ -366,9 +355,9 @@ export function BusinessInfoStep({ onContinue }: { onContinue?: () => void }) {
           <div className="flex items-center justify-between flex-wrap gap-2">
             <Label className="flex items-center gap-1.5">
               <MapPin className="w-4 h-4 text-role-partner-primary" />
-              Pin Property Location
+              Pin Property Location <span className="text-red-500">*</span>
               <span className="text-xs text-slate-500 font-normal">
-                (Optional — click on the map)
+                (click on the map)
               </span>
             </Label>
             {locationValue && (
@@ -377,13 +366,25 @@ export function BusinessInfoStep({ onContinue }: { onContinue?: () => void }) {
               </span>
             )}
           </div>
-          <div className="w-full h-72 rounded-xl overflow-hidden border border-slate-200 shadow-sm">
+          <div
+            className={cn(
+              'w-full h-52 sm:h-72 rounded-xl overflow-hidden border shadow-sm',
+              errors.location ? 'border-red-300' : 'border-slate-200',
+            )}
+          >
             <PropertyMapPicker
               value={locationValue}
-              onChange={(loc) => setValue('location', loc)}
+              onChange={(loc) =>
+                setValue('location', loc, { shouldValidate: true })
+              }
               flyTarget={mapFlyTarget}
             />
           </div>
+          {errors.location && (
+            <span className="text-xs text-red-500">
+              {errors.location.message}
+            </span>
+          )}
         </div>
 
         {/* Actions */}

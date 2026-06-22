@@ -19,7 +19,6 @@ export function PropertyDetailsStep({
   onContinue?: () => void;
 }) {
   const { setBusinessLicense, draft } = useHotelVerifyStore();
-  const [docFiles, setDocFiles] = useState<File[]>([]);
   const [docUploading, setDocUploading] = useState(false);
   const [docUploadError, setDocUploadError] = useState<string | null>(null);
 
@@ -27,6 +26,7 @@ export function PropertyDetailsStep({
     register,
     handleSubmit,
     setValue,
+    getValues,
     formState: { errors, isSubmitting },
   } = useForm<PropertyDetailsFormValues>({
     resolver: zodResolver(propertyDetailsSchema),
@@ -41,7 +41,6 @@ export function PropertyDetailsStep({
   });
 
   const handleDocumentFileChange = async (files: File[]) => {
-    setDocFiles(files);
     if (files.length === 0) {
       setValue('documentFileUrl', '', { shouldValidate: false });
       return;
@@ -177,7 +176,7 @@ export function PropertyDetailsStep({
           <Button
             type="button"
             variant="outline"
-            onClick={onBack}
+            onClick={() => { setBusinessLicense(getValues()); onBack?.(); }}
             className="h-11 px-6 bg-white border-slate-300 text-slate-700 hover:bg-slate-50 cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4 mr-2" /> Back

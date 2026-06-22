@@ -1,19 +1,32 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link, useLocation, useNavigate } from 'react-router';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
-import { useLogin} from '../../hooks/auth';
+import { useLogin } from '../../hooks/auth';
 import { getLandingPathForRole } from '@/constants/roles';
 import {
   loginSchema,
   type LoginInput,
 } from '../../validations/auth.validation';
 
+/**
+ * State đính kèm khi điều hướng tới `/login`:
+ * - `from`: trang muốn vào trước khi bị chặn (ProtectedRoute gửi cả location, còn
+ *   nút "Book now" ở trang chi tiết gửi `{ pathname }`).
+ * - `booking`: dữ liệu phòng đã chọn — chuyển tiếp sang trang checkout sau khi login.
+ */
+interface LoginRedirectState {
+  from?: { pathname?: string; search?: string };
+  booking?: unknown;
+}
+
 export default function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const redirect = (location.state as LoginRedirectState | null) ?? {};
   const {
     mutateAsync: login,
     isPending: isLoggingIn,
@@ -45,63 +58,85 @@ export default function LoginPage() {
         email: data.email,
         password: data.password,
       });
-      navigate(getLandingPathForRole(result?.user?.role), { replace: true });
+      // Quay lại trang đang muốn vào (vd /booking) kèm dữ liệu phòng đã chọn;
+      // nếu không có thì về cổng mặc định theo role.
+      const fromPath = redirect.from?.pathname
+        ? `${redirect.from.pathname}${redirect.from.search ?? ''}`
+        : getLandingPathForRole(result?.user?.role);
+      navigate(fromPath, { replace: true, state: redirect.booking });
     } catch (err) {
       console.error(err);
     }
   };
 
   return (
-    <div className="relative min-h-screen text-on-surface select-none overflow-hidden flex items-center justify-center p-gutter-mobile bg-background">
+    <div className="relative min-h-screen text-on-surface select-none overflow-hidden grid md:grid-cols-2 bg-background">
       <style>{`
-        .glass-card {
-          background: rgba(245, 242, 238, 0.85);
-          backdrop-filter: blur(20px);
-          -webkit-backdrop-filter: blur(20px);
-          box-shadow: 0 4px 20px rgba(28, 27, 27, 0.04);
-        }
         .material-symbols-outlined {
           font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
       `}</style>
 
-      {/* Background image layer */}
+      {/* Left image panel */}
       <div
-        aria-hidden="true"
-        className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
+        className="relative hidden md:flex flex-col justify-between p-10 min-h-screen bg-cover bg-center"
         style={{
           backgroundImage:
             "url('https://images.unsplash.com/photo-1611892440504-42a792e24d32?q=80&w=2070&auto=format&fit=crop')",
         }}
-      />
-      {/* Light overlay keeps the glass card and brand logo legible */}
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 z-0 bg-linear-to-b from-surface/85 via-surface/65 to-surface/85"
-      />
-
-      {/* Login Container */}
-      <main className="relative z-10 w-full max-w-120">
-        {/* Brand Logo Center */}
-        <div className="text-center mb-stack-lg">
+      >
+        {/* Dark overlay keeps the logo and tagline legible on the photo */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 bg-linear-to-t from-black/70 via-black/25 to-black/40"
+        />
+        {/* Top row: logo + back to website */}
+        <div className="relative z-10 flex items-center justify-between">
+          <h1 className="font-display-lg text-xl font-extrabold tracking-widest uppercase text-white">
+            SMART STAY AI
+          </h1>
           <Link
             to="/"
-            className="inline-block hover:opacity-90 transition-opacity"
+            className="flex items-center gap-1 px-4 py-2 rounded-full bg-white/15 backdrop-blur-sm border border-white/20 text-white font-label-sm text-label-sm hover:bg-white/25 transition-colors"
           >
-        <h1 className="font-display-lg text-3xl font-extrabold tracking-widest uppercase text-black-">
-                  SMART STAY AI
-              </h1>
+            Back to website
+            <span className="material-symbols-outlined text-[18px]">
+              arrow_forward
+            </span>
           </Link>
         </div>
+        {/* Bottom: tagline + carousel dots */}
+        <div className="relative z-10">
+          <h2 className="font-headline-lg text-headline-lg text-white max-w-xs">
+            Your Stay, Elevated by Intelligence
+          </h2>
+          <div className="mt-6 flex items-center gap-2">
+            <span className="h-1.5 w-4 rounded-full bg-white/40" />
+            <span className="h-1.5 w-4 rounded-full bg-white/40" />
+            <span className="h-1.5 w-8 rounded-full bg-white" />
+          </div>
+        </div>
+      </div>
 
-        <div className="glass-card rounded-xxl p-stack-lg md:p-12 border border-white/20">
-          <div className="text-center mb-stack-lg">
-            <h2 className="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface mb-2 font-semibold">
+      {/* Right form panel */}
+      <div className="min-h-screen flex flex-col justify-center px-margin-mobile md:px-16 lg:px-24 py-stack-lg overflow-y-auto">
+        <div className="w-full max-w-md mx-auto">
+          <div className="mb-stack-lg">
+            <h2 className="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface mb-stack-sm font-semibold">
               Welcome Back
             </h2>
-            <p className="font-body-md text-body-md text-on-surface-variant">
-              Log in to your personal concierge dashboard.
-            </p>
+            {/* Sign in / Sign up segmented toggle */}
+            <div className="flex p-1 bg-surface-container-low rounded-full">
+              <span className="flex-1 text-center py-2.5 rounded-full font-label-lg text-label-lg bg-surface text-on-surface shadow-sm">
+                Sign In
+              </span>
+              <Link
+                to="/register"
+                className="flex-1 text-center py-2.5 rounded-full font-label-lg text-label-lg text-on-surface-variant hover:text-on-surface transition-colors"
+              >
+                Sign Up
+              </Link>
+            </div>
           </div>
 
           {/* Form */}
@@ -133,7 +168,7 @@ export default function LoginPage() {
               </Label>
               <Input
                 {...register('email')}
-                className="w-full bg-surface-container-low border-none rounded-xl h-14 px-4 font-body-md text-body-md text-on-surface focus:ring-2 focus:ring-primary/20 transition-all outline-none"
+                className="w-full bg-surface-container-low border border-outline-variant/60 rounded-xl h-14 px-4 font-body-md text-body-md text-on-surface focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none"
                 id="email"
                 placeholder="name@example.com"
                 type="email"
@@ -172,22 +207,23 @@ export default function LoginPage() {
               <div className="relative">
                 <Input
                   {...register('password')}
-                  className="w-full bg-surface-container-low border-none rounded-xl h-14 pl-4 pr-12 font-body-md text-body-md text-on-surface focus:ring-2 focus:ring-primary/20 transition-all outline-none"
+                  className="w-full bg-surface-container-low border border-outline-variant/60 rounded-xl h-14 pl-4 pr-12 font-body-md text-body-md text-on-surface focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none"
                   id="password"
                   placeholder="••••••••"
                   type={showPassword ? 'text' : 'password'}
                   onFocus={() => setPasswordFocused(true)}
                   onBlur={() => setPasswordFocused(false)}
                 />
-                <Button
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant/60 hover:text-on-surface transition-colors cursor-pointer outline-none bg-transparent hover:bg-transparent border-none p-0 size-auto"
+                <button
+                  className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center justify-center text-on-surface-variant/60 hover:text-on-surface transition-colors cursor-pointer outline-none bg-transparent border-none p-0"
                   type="button"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                   onClick={togglePasswordVisibility}
                 >
                   <span className="material-symbols-outlined text-[20px]">
                     {showPassword ? 'visibility_off' : 'visibility'}
                   </span>
-                </Button>
+                </button>
               </div>
               {errors.password && (
                 <p className="text-error text-xs font-semibold mt-1.5 ml-1">
@@ -197,7 +233,7 @@ export default function LoginPage() {
             </div>
 
             <Button
-              className="w-full bg-primary text-on-primary font-label-lg text-label-lg py-4 rounded-full shadow-lg hover:bg-primary/90 active:scale-[0.98] transition-all mt-stack-md uppercase tracking-widest cursor-pointer outline-none border-none h-auto"
+              className="w-full  font-label-lg text-label-lg py-4 rounded-full shadow-lg hover:bg-primary/90 active:scale-[0.98] transition-all mt-stack-md uppercase tracking-widest cursor-pointer outline-none border-none h-auto bg-black text-white "
               type="submit"
               disabled={isLoggingIn}
             >
@@ -205,10 +241,10 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <div className="relative flex items-center py-stack-lg">
+          <div className="relative flex items-center py-stack-md">
             <div className="grow border-t border-outline-variant/30"></div>
             <span className="shrink mx-4 font-label-sm text-label-sm text-outline uppercase tracking-widest">
-              OR
+              Or login with
             </span>
             <div className="grow border-t border-outline-variant/30"></div>
           </div>
@@ -238,42 +274,39 @@ export default function LoginPage() {
             </svg>
             Login with Google
           </Button>
-
-          <div className="text-center mt-stack-lg space-y-4">
-            <p className="font-body-md text-body-md text-on-surface-variant">
-              Don't have an account?{' '}
-              <Link
-                className="text-secondary font-semibold hover:underline transition-all"
-                to="/register"
-              >
-                Register
-              </Link>
-            </p>
-            <div className="flex items-center justify-center gap-6 pt-4 border-t border-outline-variant/30">
-              <a
-                className="font-label-sm text-label-sm text-on-surface-variant uppercase hover:text-primary tracking-widest outline-none cursor-pointer"
-                href="#legal"
-                onClick={e => {
-                  e.preventDefault();
-                  alert('Legal info...');
-                }}
-              >
-                LEGAL
-              </a>
-              <a
-                className="font-label-sm text-label-sm text-on-surface-variant uppercase hover:text-primary tracking-widest outline-none cursor-pointer"
-                href="#privacy"
-                onClick={e => {
-                  e.preventDefault();
-                  alert('Privacy policy...');
-                }}
-              >
-                PRIVACY
-              </a>
-            </div>
+          <p className="font-body-md text-body-md text-on-surface-variant mt-5">
+            Don't have an account?{' '}
+            <Link
+              className="text-secondary font-semibold hover:underline transition-all"
+              to="/register"
+            >
+              Register
+            </Link>
+          </p>
+          <div className="mt-stack-md pt-4 border-t border-outline-variant/30 flex items-center justify-center gap-6">
+            <a
+              className="font-label-sm text-label-sm text-on-surface-variant uppercase hover:text-primary tracking-widest outline-none cursor-pointer"
+              href="#legal"
+              onClick={e => {
+                e.preventDefault();
+                alert('Legal info...');
+              }}
+            >
+              LEGAL
+            </a>
+            <a
+              className="font-label-sm text-label-sm text-on-surface-variant uppercase hover:text-primary tracking-widest outline-none cursor-pointer"
+              href="#privacy"
+              onClick={e => {
+                e.preventDefault();
+                alert('Privacy policy...');
+              }}
+            >
+              PRIVACY
+            </a>
           </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

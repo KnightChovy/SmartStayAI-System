@@ -55,6 +55,7 @@ export function AccommodationCertificateStep({
     register,
     handleSubmit,
     setValue,
+    getValues,
     formState: { errors, isSubmitting },
   } = useForm<AccommodationCertificateFormValues>({
     resolver: zodResolver(accommodationCertificateSchema),
@@ -303,7 +304,7 @@ export function AccommodationCertificateStep({
           <Button
             type="button"
             variant="outline"
-            onClick={onBack}
+            onClick={() => { setCertificates(getValues()); onBack?.(); }}
             className="h-11 px-6 bg-white border-slate-300 text-slate-700 hover:bg-slate-50 cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4 mr-2" /> Back

@@ -2,6 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import { authService } from '@/services/auth.service';
 import { useAuthStore } from '@/stores/authStore';
 import type { LoginPayload } from '@/types/auth.types';
+import { toast } from 'react-hot-toast';
 
 export function useLogin() {
   const setAuth = useAuthStore(state => state.setAuth);
@@ -13,6 +14,7 @@ export function useLogin() {
       if (user && tokens?.access?.token && tokens?.refresh?.token) {
         setAuth(user, tokens.access.token, tokens.refresh.token);
       }
+      toast.success('Logged in successfully', { duration: 3000 });
     },
   });
 }

@@ -4,7 +4,7 @@ import type { AdminPropertiesTableProps } from '@/types/admin.types';
 export function AdminPropertiesTable({ rows }: AdminPropertiesTableProps) {
   return (
     <AdminTable
-      headers={['Property', 'Location', 'Host', 'Status', 'Price/Night']}
+      headers={['Property', 'Location', 'Partner', 'Status', 'Submitted']}
       rows={rows}
     />
   );

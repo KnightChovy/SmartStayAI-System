@@ -1,5 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import { useNavigate } from 'react-router';
+import { toast } from 'sonner';
 import { authService } from '@/services/auth.service';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -15,9 +16,12 @@ export function useLogout() {
       }
       return Promise.resolve();
     },
+    onSuccess: () => {
+      toast.success('Logged out successfully', { duration: 3000 });
+    },
     onSettled: () => {
       clearAuth();
-      navigate('/login');
+      navigate('/');
     },
   });
 }

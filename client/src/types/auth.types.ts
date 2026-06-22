@@ -3,7 +3,7 @@ import type { UserRole } from '@/constants/roles';
 export interface User {
   id: string;
   email: string;
-  name: string;
+  fullName: string;
   role: UserRole;
   phone?: string | null;
   avatarUrl?: string | null;
