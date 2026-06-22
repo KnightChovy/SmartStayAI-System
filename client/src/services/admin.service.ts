@@ -1,9 +1,19 @@
 import { api } from '@/lib/api';
 import type { Paginated } from '@/types/api.types';
 import type {
+  AdminAuditLogsParams,
+  AdminAuditLogsResponse,
   AdminBooking,
+  AdminCommission,
+  AdminCommissionsParams,
+  AdminCommissionsResponse,
   AdminCreateUserPayload,
+  AdminHotelsParams,
+  AdminHotelsResponse,
+  AdminManagedHotel,
+  AdminOverview,
   AdminReviewVerificationPayload,
+  AdminUpdateHotelFlagsPayload,
   AdminUpdateUserPayload,
   AdminUser,
   AdminUsersParams,
@@ -23,6 +33,62 @@ function cleanParams<T extends object>(params: T): Record<string, unknown> {
 }
 
 export const adminService = {
+  // ----- Platform admin: /admin -----
+
+  async getOverview(): Promise<AdminOverview> {
+    const { data } = await api.get<AdminOverview>('/admin/overview');
+    return data;
+  },
+
+  async listCommissions(
+    params: AdminCommissionsParams = {}
+  ): Promise<AdminCommissionsResponse> {
+    const { data } = await api.get<AdminCommissionsResponse>(
+      '/admin/commissions',
+      {
+        params: cleanParams(params),
+      }
+    );
+    return data;
+  },
+
+  async settleCommission(commissionId: string): Promise<AdminCommission> {
+    const { data } = await api.patch<AdminCommission>(
+      `/admin/commissions/${commissionId}/settle`
+    );
+    return data;
+  },
+
+  async listHotels(params: AdminHotelsParams = {}): Promise<AdminHotelsResponse> {
+    const { data } = await api.get<AdminHotelsResponse>('/admin/hotels', {
+      params: cleanParams(params),
+    });
+    return data;
+  },
+
+  async updateHotelFlags(
+    hotelId: string,
+    payload: AdminUpdateHotelFlagsPayload
+  ): Promise<AdminManagedHotel> {
+    const { data } = await api.patch<AdminManagedHotel>(
+      `/admin/hotels/${hotelId}`,
+      payload
+    );
+    return data;
+  },
+
+  async listAuditLogs(
+    params: AdminAuditLogsParams = {}
+  ): Promise<AdminAuditLogsResponse> {
+    const { data } = await api.get<AdminAuditLogsResponse>(
+      '/admin/audit-logs',
+      {
+        params: cleanParams(params),
+      }
+    );
+    return data;
+  },
+
   // ----- Users: /users (getUsers/manageUsers) -----
 
   async listUsers(params: AdminUsersParams = {}): Promise<AdminUsersResponse> {
