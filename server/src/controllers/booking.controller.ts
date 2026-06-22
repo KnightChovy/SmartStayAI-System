@@ -57,6 +57,16 @@ export class BookingController {
     res.send(booking);
   });
 
+  // [M13] Staff quét QR / nhập mã voucher để tra booking trước khi check-in
+  lookupByVoucher = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const booking = await bookingService.lookupBookingByVoucher(
+      req.params.hotelId as string,
+      req.query.voucherCode as string,
+      req.user as User
+    );
+    res.send(booking);
+  });
+
   // [M13] Check-in khách
   checkIn = catchAsync(async (req: Request, res: Response): Promise<void> => {
     const booking = await bookingService.checkInBooking(

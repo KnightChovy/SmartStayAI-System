@@ -12,5 +12,6 @@ export { pricingRuleController } from './pricing-rule.controller';
 export { staffController } from './staff.controller';
 export { housekeepingController } from './housekeeping.controller';
 export { conversationController } from './conversation.controller';
+export { reviewController } from './review.controller';
 export { jobController } from './job.controller';
 export { adminController } from './admin.controller';

@@ -458,6 +458,23 @@ export class BookingService {
   };
 
   /**
+   * [M13] Staff quét QR / nhập mã voucher để TRA booking trước khi check-in. Tìm theo voucher_code
+   * (cột unique), rồi đối chiếu booking đúng khách sạn đang vận hành. Trả về booking chi tiết như màn
+   * vận hành để staff xác nhận khách trước khi bấm check-in.
+   */
+  lookupBookingByVoucher = async (hotelId: string, voucherCode: string, currentUser: User) => {
+    await hotelService.getOperableHotel(hotelId, currentUser);
+    const voucher = await prisma.bookingVoucher.findUnique({
+      where: { voucherCode },
+      include: { booking: { include: staffBookingInclude } },
+    });
+    if (!voucher || voucher.booking.hotelId !== hotelId) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy booking với mã voucher này trong khách sạn');
+    }
+    return voucher.booking;
+  };
+
+  /**
    * [M13] Check-in khách: chỉ booking đã confirmed (đã thanh toán). Trong một transaction:
    * confirmed→checked_in (có điều kiện), gán MỘT phòng vật lý trống đúng loại (giành phòng có
    * điều kiện để hai quầy check-in không gán trùng phòng), đánh dấu voucher đã dùng.
