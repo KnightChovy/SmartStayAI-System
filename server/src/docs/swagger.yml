@@ -11,6 +11,8 @@ tags:
     description: Public hotel & room search
   - name: Bookings
     description: Booking creation, cancellation and listing
+  - name: Reviews
+    description: Guest reviews — submit after checkout, public listing per hotel
   - name: Payments
     description: VNPay payment — create payment URL and handle gateway callbacks
   - name: HotelManagement
@@ -1182,7 +1184,8 @@ paths:
         the hotel is activated but NOT yet published (isListed=false), RoomType + Room records are
         seeded from the declared roomConfig (rooms inactive until the partner completes details and
         publishes in Room Inventory), and the partner receives a 'partner_approved' notification.
-        On reject - a rejectionReason is required.
+        On reject - a rejectionReason is required. In both cases an email with the result (approved /
+        rejected) is sent to the partner's registration email after the change is committed.
       tags: [HotelPartners]
       security:
         - bearerAuth: []
@@ -1358,6 +1361,42 @@ paths:
           schema: { type: string, format: uuid }
       responses:
         '200': { description: 'Full hotel profile (any status) for management' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /hotels/{hotelId}/publish:
+    patch:
+      summary: Toggle a hotel's listing on/off (partner self-publish)
+      description: >
+        Auth. The owner (or a user with manageHotels) turns the hotel's marketplace listing on or off
+        via { isListed }. Turning ON requires the hotel to be approved (isActive) and to have at least
+        one active room type (priced) — otherwise 400. Turning OFF is unconditional.
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [isListed]
+              properties:
+                isListed: { type: boolean }
+      responses:
+        '200': { description: 'Updated hotel' }
+        '400':
+          description: Not approved yet, or no active room type when turning on
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -1689,6 +1728,84 @@ paths:
                     type: string
                     example: Thanh toán thành công
 
+  /reviews:
+    post:
+      summary: Submit a review after checkout
+      description: >
+        A guest who completed a stay submits a review for their booking. Only the booking owner can
+        review, the booking must be checked_out, and each booking can be reviewed once. hotelId is taken
+        from the booking (not the client). Ratings are 1–5. Image URLs (uploaded via POST /uploads) are
+        optional. The review is published immediately (the guest's stay is a verified purchase).
+      tags: [Reviews]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateReviewRequest'
+      responses:
+        '201':
+          description: Review created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+        '400':
+          description: Not checked out yet, or already reviewed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    get:
+      summary: List a hotel's public reviews
+      description: Public, paginated list of a hotel's published reviews (newest first).
+      tags: [Reviews]
+      parameters:
+        - in: query
+          name: hotelId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: limit
+          schema:
+            type: integer
+        - in: query
+          name: page
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Paginated reviews
+
+  /reviews/{reviewId}:
+    get:
+      summary: Get one public review
+      tags: [Reviews]
+      parameters:
+        - in: path
+          name: reviewId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The review
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /hotels/{hotelId}/bookings:
     get:
       summary: List a hotel's bookings (staff/owner)
@@ -1731,6 +1848,39 @@ paths:
       responses:
         '200':
           description: Paginated bookings
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /hotels/{hotelId}/bookings/lookup:
+    get:
+      summary: Look up a booking by voucher code (staff QR scan)
+      description: >
+        Staff scans the guest QR / enters the e-voucher code to fetch the matching booking before
+        check-in. Looks up by voucher_code and confirms the booking belongs to this hotel. Returns the
+        booking with customer, assigned rooms and voucher info (same shape as the staff booking view).
+      tags: [Bookings]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: voucherCode
+          required: true
+          schema:
+            type: string
+          description: The e-voucher code from the booking QR
+      responses:
+        '200':
+          description: The matching booking
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':

@@ -34,6 +34,16 @@ export class HotelController {
     const hotel = await hotelService.getManagedHotelDetail(req.params.hotelId as string, req.user as User);
     res.send(hotel);
   });
+
+  // Partner tự bật/tắt mở bán khách sạn của mình
+  setHotelListing = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const hotel = await hotelService.setHotelListing(
+      req.params.hotelId as string,
+      req.body.isListed as boolean,
+      req.user as User
+    );
+    res.send(hotel);
+  });
 }
 
 export const hotelController = new HotelController();

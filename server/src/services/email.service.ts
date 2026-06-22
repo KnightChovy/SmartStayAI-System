@@ -302,6 +302,53 @@ Ma e-voucher (xuat trinh khi nhan phong): ${data.voucherCode}`;
 
     await this.sendEmail(to, subject, text, html);
   };
+
+  /**
+   * Gửi email báo kết quả duyệt hồ sơ đăng ký khách sạn cho partner (approve / reject).
+   * @param {string} to
+   * @param {object} data
+   * @returns {Promise<void>}
+   */
+  sendPartnerVerificationResultEmail = async (
+    to: string,
+    data: { partnerName: string; hotelName: string; approved: boolean; rejectionReason?: string | null }
+  ) => {
+    const subject = data.approved
+      ? 'Hồ sơ đăng ký khách sạn đã được duyệt - SmartStayAI'
+      : 'Hồ sơ đăng ký khách sạn bị từ chối - SmartStayAI';
+
+    const text = data.approved
+      ? `Xin chao ${data.partnerName},
+Ho so dang ky khach san "${data.hotelName}" cua ban da duoc DUYET.
+Vui long dang nhap, vao Room Inventory de hoan thien thong tin phong (gia, anh, mo ta) roi bat mo ban (publish).`
+      : `Xin chao ${data.partnerName},
+Ho so dang ky khach san "${data.hotelName}" cua ban da bi TU CHOI.
+Ly do: ${data.rejectionReason || 'Khong co'}
+Ban co the chinh sua va nop lai ho so.`;
+
+    const html = data.approved
+      ? this.getEmailWrapperHtml(
+          'Registration approved',
+          `
+            <h2>Hồ sơ đã được duyệt 🎉</h2>
+            <p>Xin chào ${data.partnerName},</p>
+            <p>Hồ sơ đăng ký khách sạn <strong>${data.hotelName}</strong> của bạn đã được <strong>DUYỆT</strong>.</p>
+            <p>Vui lòng đăng nhập và vào <strong>Room Inventory</strong> để hoàn thiện thông tin phòng (giá, ảnh, mô tả), sau đó bật <strong>mở bán (publish)</strong> để khách có thể đặt phòng.</p>
+          `
+        )
+      : this.getEmailWrapperHtml(
+          'Registration rejected',
+          `
+            <h2>Hồ sơ bị từ chối</h2>
+            <p>Xin chào ${data.partnerName},</p>
+            <p>Rất tiếc, hồ sơ đăng ký khách sạn <strong>${data.hotelName}</strong> của bạn đã bị <strong>TỪ CHỐI</strong>.</p>
+            <p><strong>Lý do:</strong> ${data.rejectionReason || 'Không có'}</p>
+            <p>Bạn có thể chỉnh sửa và nộp lại hồ sơ.</p>
+          `
+        );
+
+    await this.sendEmail(to, subject, text, html);
+  };
 }
 
 export const emailService = new EmailService();
