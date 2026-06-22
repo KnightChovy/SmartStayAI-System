@@ -142,6 +142,201 @@ paths:
         "403":
           $ref: '#/components/responses/Forbidden'
 
+  /admin/commissions:
+    get:
+      summary: List platform commissions (admin)
+      description: >
+        Admin/platform_manager (manageCommissions) lists platform commission records, filtered by
+        status (pending/settled/disputed) and partner. Each item includes the partner and booking.
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [pending, settled, disputed]
+        - in: query
+          name: partnerId
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        "200":
+          description: Paginated commissions
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/commissions/{commissionId}/settle:
+    patch:
+      summary: Mark a commission as settled / paid out (admin)
+      description: >
+        Sets a commission's status to settled (payout done) and stamps settledAt. Rejected if already
+        settled. Writes an audit log entry.
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: commissionId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Updated commission
+        "400":
+          description: Already settled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  /admin/hotels:
+    get:
+      summary: List all hotels platform-wide (admin)
+      description: >
+        Admin/platform_manager (manageHotels) lists ALL hotels including unlisted / suspended ones,
+        filtered by isListed, isActive and a name/city search. Each item includes the owning partner.
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: isListed
+          schema:
+            type: boolean
+        - in: query
+          name: isActive
+          schema:
+            type: boolean
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        "200":
+          description: Paginated hotels
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/hotels/{hotelId}:
+    patch:
+      summary: Toggle a hotel's listing / active flags (admin)
+      description: >
+        Admin/platform_manager (manageHotels) approves/delists (isListed) or suspends/reactivates
+        (isActive) a hotel. Send at least one flag. Writes an audit log entry.
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              minProperties: 1
+              properties:
+                isListed:
+                  type: boolean
+                isActive:
+                  type: boolean
+              example:
+                isListed: false
+      responses:
+        "200":
+          description: Updated hotel
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  /admin/audit-logs:
+    get:
+      summary: List audit logs (admin)
+      description: >
+        Admin/platform_manager (viewPlatformStats) lists audit log entries written on sensitive actions
+        (user status/role change, commission settle, hotel flag change), filtered by action, entityType
+        and actor. Each entry includes the acting user.
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: action
+          schema:
+            type: string
+        - in: query
+          name: entityType
+          schema:
+            type: string
+        - in: query
+          name: userId
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        "200":
+          description: Paginated audit logs
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+
   /internal/jobs/release-holds:
     post:
       summary: Release expired booking holds (cron)

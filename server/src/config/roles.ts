@@ -11,6 +11,7 @@ const allRoles = {
     'manageBookings',
     'manageHotels',
     'viewPlatformStats',
+    'manageCommissions',
   ],
   admin: [
     'getUsers',
@@ -21,6 +22,7 @@ const allRoles = {
     'manageHotels',
     'manageAmenities',
     'viewPlatformStats',
+    'manageCommissions',
   ],
 };
 

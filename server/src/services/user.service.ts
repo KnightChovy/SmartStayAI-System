@@ -5,6 +5,7 @@ import prisma from '../config/prisma';
 import config from '../config/config';
 import ApiError from '../utils/ApiError';
 import type { CreateUserDto, UpdateUserDto, UserFilter, UserQueryOptions } from '../dto/user.dto';
+import { auditService } from './audit.service';
 
 export class UserService {
   /**
@@ -162,7 +163,16 @@ export class UserService {
     if (!user) {
       throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
     }
-    return prisma.user.update({ where: { id: userId }, data: { status } });
+    const updated = await prisma.user.update({ where: { id: userId }, data: { status } });
+    await auditService.log({
+      userId: currentUser.id,
+      action: 'user.set_status',
+      entityType: 'user',
+      entityId: userId,
+      oldValue: { status: user.status },
+      newValue: { status },
+    });
+    return updated;
   };
 
   /**
@@ -183,7 +193,16 @@ export class UserService {
         throw new ApiError(httpStatus.BAD_REQUEST, 'Không thể hạ cấp admin cuối cùng của hệ thống');
       }
     }
-    return prisma.user.update({ where: { id: userId }, data: { role } });
+    const updated = await prisma.user.update({ where: { id: userId }, data: { role } });
+    await auditService.log({
+      userId: currentUser.id,
+      action: 'user.set_role',
+      entityType: 'user',
+      entityId: userId,
+      oldValue: { role: user.role },
+      newValue: { role },
+    });
+    return updated;
   };
 
   /**
