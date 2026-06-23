@@ -61,6 +61,39 @@ export interface PartnerHotel {
   _count: { roomTypes: number; rooms: number };
 }
 
+/** Body cho `PATCH /hotels/:id/publish` — bật/tắt mở bán khách sạn. */
+export interface SetHotelListingRequest {
+  isListed: boolean;
+}
+
+/** Khách sạn (raw) trả về sau khi đổi trạng thái mở bán (`PATCH /hotels/:id/publish`). */
+export interface Hotel {
+  id: string;
+  partnerId: string;
+  name: string;
+  slug: string | null;
+  description: string | null;
+  address: string;
+  city: string;
+  country: string;
+  businessType: string | null;
+  businessRegistrationNumber: string | null;
+  taxCode: string | null;
+  district: string | null;
+  ward: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  starRating: number | null;
+  checkInTime: string | null;
+  checkOutTime: string | null;
+  isActive: boolean;
+  isListed: boolean;
+  settings: Record<string, unknown> | null;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+}
+
 export interface Amenity {
   id: string;
   name: string;

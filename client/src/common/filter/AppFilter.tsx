@@ -57,13 +57,13 @@ export default function AppFilter({
 }: AppFilterProps) {
   return (
     <div className="flex flex-wrap gap-3 items-center">
-      <div className="relative min-w-62.5">
-        <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+      <div className="relative min-w-62.5 flex-1">
+        <Search className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 
         <Input
-          value={search}
+          value={search ?? ''}
           placeholder="Search..."
-          className="pl-10"
+          className="pl-8.5"
           onChange={e => onSearchChange?.(e.target.value)}
         />
       </div>
@@ -117,7 +117,7 @@ export default function AppFilter({
       )}
 
       <Button variant="outline" onClick={onReset}>
-        <RotateCcw className="mr-2 h-4 w-4" />
+        <RotateCcw className="h-4 w-4" />
         Reset
       </Button>
     </div>

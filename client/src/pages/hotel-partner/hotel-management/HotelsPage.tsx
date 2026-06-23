@@ -52,7 +52,12 @@ export default function HotelsPage() {
           }
         />
       ) : (
-        <HotelDirectory hotels={hotels} onManage={goToDetail} actionLabel="View details" />
+        <HotelDirectory
+          hotels={hotels}
+          onManage={goToDetail}
+          actionLabel="View details"
+          showPublishToggle
+        />
       )}
     </div>
   );

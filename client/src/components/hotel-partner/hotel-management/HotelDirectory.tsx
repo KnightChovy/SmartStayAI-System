@@ -17,13 +17,20 @@ interface HotelDirectoryProps {
   hotels: PartnerHotel[];
   onManage: (hotel: PartnerHotel) => void;
   actionLabel?: string;
+  /** Hiện công tắc mở bán ở cột Status của bảng (trang Hotels). */
+  showPublishToggle?: boolean;
 }
 
 /**
  * Thanh tìm kiếm + lọc trạng thái listing trên danh sách khách sạn, kèm bảng kết quả.
  * Dùng chung cho Hotels page và bước chọn khách sạn của Room Inventory.
  */
-export function HotelDirectory({ hotels, onManage, actionLabel }: HotelDirectoryProps) {
+export function HotelDirectory({
+  hotels,
+  onManage,
+  actionLabel,
+  showPublishToggle,
+}: HotelDirectoryProps) {
   const [search, setSearch] = useState('');
   const [listing, setListing] = useState<ListingFilter>('all');
 
@@ -64,7 +71,12 @@ export function HotelDirectory({ hotels, onManage, actionLabel }: HotelDirectory
           description="Try adjusting your search keyword or listing filter."
         />
       ) : (
-        <HotelsTable hotels={filtered} onManage={onManage} actionLabel={actionLabel} />
+        <HotelsTable
+          hotels={filtered}
+          onManage={onManage}
+          actionLabel={actionLabel}
+          showPublishToggle={showPublishToggle}
+        />
       )}
     </div>
   );

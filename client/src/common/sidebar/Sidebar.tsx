@@ -37,13 +37,24 @@ export default function CommonSidebar({
   subtitle,
   navItems,
   footerItems,
- 
+
   onLogout,
 }: CommonSidebarProps) {
   const location = useLocation();
 
+  const activeHref = [...navItems, ...(footerItems ?? [])]
+    .filter(
+      item =>
+        location.pathname === item.href ||
+        location.pathname.startsWith(`${item.href}/`)
+    )
+    .sort((a, b) => b.href.length - a.href.length)[0]?.href;
+
   return (
-    <Sidebar collapsible="icon" className="border-r border-outline-variant/40 bg-white">
+    <Sidebar
+      collapsible="icon"
+      className="border-r border-outline-variant/40 bg-white"
+    >
       {/* Header */}
       <SidebarHeader className="p-4 py-5 mb-2 group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:py-5">
         <div className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center">
@@ -51,7 +62,9 @@ export default function CommonSidebar({
             {logoChar || title.charAt(0)}
           </div>
           <div className="flex flex-col group-data-[collapsible=icon]:hidden overflow-hidden">
-            <p className="text-lg font-semibold leading-tight truncate">{title}</p>
+            <p className="text-lg font-semibold leading-tight truncate">
+              {title}
+            </p>
             {subtitle && (
               <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider mt-0.5 truncate">
                 {subtitle}
@@ -66,25 +79,27 @@ export default function CommonSidebar({
         <SidebarGroup className="p-0">
           <SidebarGroupContent>
             <SidebarMenu className="space-y-1.5">
-              {navItems.map((item) => {
-                const isActive = location.pathname === item.href;
+              {navItems.map(item => {
+                const isActive = item.href === activeHref;
                 return (
                   <SidebarMenuItem key={item.name}>
-                    <SidebarMenuButton 
-                      asChild 
-                      isActive={isActive} 
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive}
                       tooltip={item.name}
                       className={cn(
-                        "flex items-center gap-2.5 rounded-full px-3 py-2 text-sm font-medium transition-colors h-auto w-full",
-                        "group-data-[collapsible=icon]:rounded-md group-data-[collapsible=icon]:justify-center",
-                        isActive 
-                          ? "bg-blue-50 text-blue-600 hover:bg-blue-50 hover:text-blue-600" 
-                          : "text-slate-600 hover:bg-surface-container-low"
+                        'flex items-center gap-2.5 rounded-full px-3 py-2 text-sm font-medium transition-colors h-auto w-full',
+                        'group-data-[collapsible=icon]:rounded-md group-data-[collapsible=icon]:justify-center',
+                        isActive
+                          ? 'bg-blue-50 text-blue-600 hover:bg-blue-50 hover:text-blue-600'
+                          : 'text-slate-600 hover:bg-surface-container-low'
                       )}
                     >
                       <Link to={item.href}>
                         <item.icon className="size-4 shrink-0" />
-                        <span className="group-data-[collapsible=icon]:hidden">{item.name}</span>
+                        <span className="group-data-[collapsible=icon]:hidden">
+                          {item.name}
+                        </span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -99,25 +114,27 @@ export default function CommonSidebar({
       <SidebarFooter className="mt-auto border-t border-outline-variant/40 p-4 pt-4 space-y-4 group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:pt-4">
         {footerItems && footerItems.length > 0 && (
           <SidebarMenu className="space-y-1.5">
-            {footerItems.map((item) => {
-              const isActive = location.pathname === item.href;
+            {footerItems.map(item => {
+              const isActive = item.href === activeHref;
               return (
                 <SidebarMenuItem key={item.name}>
-                  <SidebarMenuButton 
-                    asChild 
-                    isActive={isActive} 
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive}
                     tooltip={item.name}
                     className={cn(
-                      "flex items-center gap-2.5 rounded-full px-3 py-2 text-sm font-medium transition-colors h-auto w-full",
-                      "group-data-[collapsible=icon]:rounded-md group-data-[collapsible=icon]:justify-center",
-                      isActive 
-                        ? "bg-blue-50 text-blue-600 hover:bg-blue-50 hover:text-blue-600" 
-                        : "text-slate-600 hover:bg-surface-container-low"
+                      'flex items-center gap-2.5 rounded-full px-3 py-2 text-sm font-medium transition-colors h-auto w-full',
+                      'group-data-[collapsible=icon]:rounded-md group-data-[collapsible=icon]:justify-center',
+                      isActive
+                        ? 'bg-blue-50 text-blue-600 hover:bg-blue-50 hover:text-blue-600'
+                        : 'text-slate-600 hover:bg-surface-container-low'
                     )}
                   >
                     <Link to={item.href}>
                       <item.icon className="size-4 shrink-0" />
-                      <span className="group-data-[collapsible=icon]:hidden">{item.name}</span>
+                      <span className="group-data-[collapsible=icon]:hidden">
+                        {item.name}
+                      </span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -127,7 +144,6 @@ export default function CommonSidebar({
         )}
 
         <div className="space-y-2">
-
           <button
             className="flex cursor-pointer items-center gap-2 px-2 text-sm text-slate-700 w-full text-left hover:text-slate-900 transition-colors group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
             type="button"

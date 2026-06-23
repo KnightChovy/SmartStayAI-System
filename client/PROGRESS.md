@@ -6,6 +6,25 @@ This file tracks the accomplished tasks, resolved user requests, and visual/func
 
 ## Completed Tasks Checklist
 
+### June 23, 2026
+
+- [x] **Hotel Partner — wire `PATCH /hotels/:id/publish` (partner self-publish / unpublish)**:
+  - **Types** `types/hotel.types.ts`: added `SetHotelListingRequest` (`{ isListed }`) and the raw `Hotel` response interface (full hotel shape returned by the endpoint).
+  - **Service** `services/hotel.service.ts`: `hotelService.setListing(hotelId, isListed)` → `PATCH /hotels/:id/publish`, returns the updated `Hotel`.
+  - **Hook** `hooks/hotels/use-set-hotel-listing.ts` (one-endpoint-per-file): `useSetHotelListing` mutation invalidating `queryKeys.hotels.mine` + `queryKeys.hotels.managed(hotelId)`; exported from the `hooks/hotels` barrel.
+  - **UI** `components/hotel-partner/hotel-management/PublishToggle.tsx`: a switch in the Hotels table Status column. Enabling is blocked client-side when `!isActive` (with a `title` hint + toast, mirroring the BE rule "Khách sạn chưa được duyệt nên chưa thể mở bán"); disabling always allowed. Success/error feed `sonner` toasts via `errorMessage()` so the BE 400 reasons ("Cần có ít nhất một loại phòng đang bật…") surface verbatim.
+  - **Wiring**: `HotelsTable` gained `showPublishToggle?` (renders `PublishToggle` instead of the static Listed/Unlisted pill); threaded through `HotelDirectory` and enabled only on `HotelsPage` (`/partner/hotel-management`) — the Room Inventory hotel-picker keeps the static pill. `tsc -p tsconfig.app.json --noEmit` clean for all new/touched files (only the same pre-existing unrelated errors remain).
+
+- [x] **Fix shared search/filter (`AppFilter`) UI + reliable in-app viewing of verify documents/images (Cloudinary PDF fix)**:
+  - **`common/filter/AppFilter.tsx` (used by Hotels directory, Staff, Room Inventory, Bookings)**: the search magnifier was pinned at `top-3` inside an `h-8` (32px) `Input`, so it sat ~4px below center; changed to `top-1/2 -translate-y-1/2` (+ `pointer-events-none`, `left-2.5`, `pl-8.5`) for true vertical centering. Made the input safely controlled (`value={search ?? ''}`) to avoid the controlled/uncontrolled warning, let the search box grow (`flex-1`), and removed the Reset icon's stray `mr-2` (the button already supplies `gap`).
+  - **Root cause of "manager ấn View → link Cloudinary không xem được"**: backend uploads with `resource_type: 'auto'`, so PDFs land as Cloudinary `image` resources at `/image/upload/.../x.pdf`, and Cloudinary **blocks raw PDF/ZIP delivery by default** (401 "restricted access"). The old "View" was a plain `<a href={fileUrl}>` to that blocked URL.
+  - **`utils/cloudinary.ts` (new)**: `isPdfUrl`, `isCloudinaryUrl`, `cloudinaryPdfPreview` (rasterizes a Cloudinary PDF's first page to a deliverable JPG via the `pg_1,f_jpg,q_auto` transformation — a derived image is **not** subject to the PDF-delivery block, so it renders even with the restriction on), and `cloudinaryDownloadUrl` (`fl_attachment`).
+  - **`components/shared/FilePreviewModal.tsx` (new)**: an in-app lightbox (Esc / backdrop / X to close, `z-60` above the `z-50` detail modal) that previews images inline and PDFs via the rasterized first-page JPG, always with "Open original ↗" + "Download" and a graceful "Preview unavailable" fallback on image error.
+  - **`components/manager/VerificationDetailModal.tsx`**: lifted a `preview` state to the modal root and render one `FilePreviewModal`; documents now open in the lightbox (button, not an `<a>` to the blocked URL), and property images + representative ID images open there too. Removed the now-unused `ExternalLink` import.
+  - **`components/hotel-partner/hotel-verify/VerificationCenter.tsx`**: added a **Submitted Files** card on the partner's application status view (current-version documents with status pills → View, plus cover/exterior/room image thumbnails → lightbox). Data comes from the BE application, so it stays intact across reloads.
+  - `tsc -p tsconfig.app.json --noEmit` clean for every touched/new file; only the pre-existing unrelated errors remain (unused `React` imports, `User.name`, recharts formatter, `NodeJS` namespace).
+  - ⚠️ To also view/download the **original multi-page PDF** (not just the rasterized first page), enable **Settings → Security → "Allow delivery of PDF and ZIP files"** in the Cloudinary console — it's an account setting, not code.
+
 ### June 22, 2026 (continued 2)
 
 - [x] **Hotel Partner — Bookings management UI + data-layer alignment to the owner Booking API spec**:
