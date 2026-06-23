@@ -258,7 +258,7 @@ export function AdminLayout() {
             }
           />
 
-          <main className="flex-1 px-4 py-4 sm:px-5 sm:py-5 lg:px-6 lg:py-6">
+          <main className="flex-1 min-w-0 px-4 py-4 sm:px-5 sm:py-5 lg:px-6 lg:py-6">
             <div className="mx-auto w-full max-w-280">
               <Outlet />
             </div>

@@ -27,6 +27,7 @@ export function PropertyDetailsStep({
     handleSubmit,
     setValue,
     getValues,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<PropertyDetailsFormValues>({
     resolver: zodResolver(propertyDetailsSchema),
@@ -40,22 +41,28 @@ export function PropertyDetailsStep({
     },
   });
 
+  // URL tài liệu đã upload (giữ trong draft) — hiển thị lại sau reload.
+  const documentFileUrl = watch('documentFileUrl');
+
   const handleDocumentFileChange = async (files: File[]) => {
-    if (files.length === 0) {
-      setValue('documentFileUrl', '', { shouldValidate: false });
-      return;
-    }
+    if (files.length === 0) return;
     setDocUploading(true);
     setDocUploadError(null);
     try {
       const url = await hotelVerifyService.uploadFile(files[0]);
       setValue('documentFileUrl', url, { shouldValidate: true });
+      // Lưu ngay vào draft để reload không mất, kể cả khi chưa bấm Continue.
+      setBusinessLicense(getValues());
     } catch {
       setDocUploadError('Upload failed. Please try again.');
-      setValue('documentFileUrl', '', { shouldValidate: true });
     } finally {
       setDocUploading(false);
     }
+  };
+
+  const handleRemoveDocument = () => {
+    setValue('documentFileUrl', '', { shouldValidate: true });
+    setBusinessLicense(getValues());
   };
 
   const onSubmit = (data: PropertyDetailsFormValues) => {
@@ -163,12 +170,15 @@ export function PropertyDetailsStep({
 
         <div className="mt-4">
           <FileUploadDropzone
+            key={documentFileUrl || 'empty'}
             label="Business License Document"
             helperText="SVG, PNG, JPG or PDF (max. 5MB)"
             accept=".pdf,.jpg,.jpeg,.png"
             onFilesChange={handleDocumentFileChange}
             isUploading={docUploading}
             error={docUploadError ?? errors.documentFileUrl?.message}
+            existingUrls={documentFileUrl ? [documentFileUrl] : []}
+            onRemoveExisting={handleRemoveDocument}
           />
         </div>
 

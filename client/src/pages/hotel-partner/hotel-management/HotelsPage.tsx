@@ -3,7 +3,11 @@ import { Hotel, ShieldCheck } from 'lucide-react';
 import { usePartnerHotels } from '@/hooks/hotels';
 import { Button } from '@/components/ui/button';
 import { HotelDirectory } from '@/components/hotel-partner/hotel-management/HotelDirectory';
-import { LoadingState, ErrorState, EmptyState } from '@/components/hotel-partner/shared/states';
+import {
+  LoadingState,
+  ErrorState,
+  EmptyState,
+} from '@/components/hotel-partner/shared/states';
 import type { PartnerHotel } from '@/types/hotel.types';
 
 /**
@@ -25,9 +29,12 @@ export default function HotelsPage() {
           <Hotel className="h-6 w-6 text-role-partner-primary" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Hotels</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+            Hotels Management
+          </h1>
           <p className="mt-0.5 text-sm text-slate-500">
-            Your properties at a glance. Open a hotel to manage its room inventory and pricing.
+            Your properties at a glance. Open a hotel to manage its room
+            inventory and pricing.
           </p>
         </div>
       </div>
@@ -52,7 +59,12 @@ export default function HotelsPage() {
           }
         />
       ) : (
-        <HotelDirectory hotels={hotels} onManage={goToDetail} actionLabel="View details" />
+        <HotelDirectory
+          hotels={hotels}
+          onManage={goToDetail}
+          actionLabel="View details"
+          showPublishToggle
+        />
       )}
     </div>
   );

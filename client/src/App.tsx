@@ -8,7 +8,19 @@ function App() {
   return (
     <TooltipProvider>
       {element}
-      <Toaster richColors theme="light" position="top-right" />
+      <Toaster
+        richColors
+        theme="light"
+        position="top-right"
+        closeButton={false}
+        toastOptions={{
+          style: {
+            background: '#ffffff',
+            color: '#10120C',
+            border: '1px solid #E5E7EB',
+          },
+        }}
+      />
     </TooltipProvider>
   );
 }

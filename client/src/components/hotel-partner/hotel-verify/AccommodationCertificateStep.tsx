@@ -19,27 +19,30 @@ type UploadState = { uploading: boolean; error: string | null };
 function useUploadZone(
   fieldPath: string,
   setValue: (path: string, val: string, opts?: object) => void,
+  persist: () => void,
 ) {
   const [state, setState] = useState<UploadState>({ uploading: false, error: null });
 
   const handleChange = async (files: File[]) => {
-    if (files.length === 0) {
-      setValue(fieldPath, '', { shouldValidate: false });
-      setState({ uploading: false, error: null });
-      return;
-    }
+    if (files.length === 0) return;
     setState({ uploading: true, error: null });
     try {
       const url = await hotelVerifyService.uploadFile(files[0]);
       setValue(fieldPath, url, { shouldValidate: true });
       setState({ uploading: false, error: null });
+      // Lưu ngay vào draft để reload không mất file.
+      persist();
     } catch {
-      setValue(fieldPath, '', { shouldValidate: true });
       setState({ uploading: false, error: 'Upload failed. Please try again.' });
     }
   };
 
-  return { ...state, handleChange };
+  const remove = () => {
+    setValue(fieldPath, '', { shouldValidate: true });
+    persist();
+  };
+
+  return { ...state, handleChange, remove };
 }
 
 export function AccommodationCertificateStep({
@@ -56,6 +59,7 @@ export function AccommodationCertificateStep({
     handleSubmit,
     setValue,
     getValues,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<AccommodationCertificateFormValues>({
     resolver: zodResolver(accommodationCertificateSchema),
@@ -71,10 +75,19 @@ export function AccommodationCertificateStep({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     setValue(path as any, val, opts);
 
-  const opLic = useUploadZone('operatingLicense.documentFileUrl', setVal);
-  const fire = useUploadZone('fireSafety.documentFileUrl', setVal);
-  const security = useUploadZone('securityOrder.documentFileUrl', setVal);
-  const classification = useUploadZone('classification.ratingCertificateFileUrl', setVal);
+  // Lưu toàn bộ form hiện tại vào draft để reload không mất các URL đã upload.
+  const persist = () => setCertificates(getValues());
+
+  const opLic = useUploadZone('operatingLicense.documentFileUrl', setVal, persist);
+  const fire = useUploadZone('fireSafety.documentFileUrl', setVal, persist);
+  const security = useUploadZone('securityOrder.documentFileUrl', setVal, persist);
+  const classification = useUploadZone('classification.ratingCertificateFileUrl', setVal, persist);
+
+  // URL đã upload (giữ trong draft) — hiển thị lại sau reload.
+  const opLicUrl = watch('operatingLicense.documentFileUrl');
+  const fireUrl = watch('fireSafety.documentFileUrl');
+  const securityUrl = watch('securityOrder.documentFileUrl');
+  const classificationUrl = watch('classification.ratingCertificateFileUrl');
 
   const onSubmit = (data: AccommodationCertificateFormValues) => {
     const so = data.securityOrder;
@@ -165,11 +178,14 @@ export function AccommodationCertificateStep({
             </div>
           </div>
           <FileUploadDropzone
+            key={opLicUrl || 'op-empty'}
             label="Upload Document"
             accept=".pdf,.jpg,.jpeg,.png"
             onFilesChange={opLic.handleChange}
             isUploading={opLic.uploading}
             error={opLic.error ?? errors.operatingLicense?.documentFileUrl?.message}
+            existingUrls={opLicUrl ? [opLicUrl] : []}
+            onRemoveExisting={opLic.remove}
           />
         </div>
 
@@ -213,11 +229,14 @@ export function AccommodationCertificateStep({
             </div>
           </div>
           <FileUploadDropzone
+            key={fireUrl || 'fire-empty'}
             label="Upload Document"
             accept=".pdf,.jpg,.jpeg,.png"
             onFilesChange={fire.handleChange}
             isUploading={fire.uploading}
             error={fire.error ?? errors.fireSafety?.documentFileUrl?.message}
+            existingUrls={fireUrl ? [fireUrl] : []}
+            onRemoveExisting={fire.remove}
           />
         </div>
 
@@ -250,11 +269,14 @@ export function AccommodationCertificateStep({
             </div>
           </div>
           <FileUploadDropzone
+            key={securityUrl || 'security-empty'}
             label="Upload Document"
             accept=".pdf,.jpg,.jpeg,.png"
             onFilesChange={security.handleChange}
             isUploading={security.uploading}
             error={security.error ?? undefined}
+            existingUrls={securityUrl ? [securityUrl] : []}
+            onRemoveExisting={security.remove}
           />
         </div>
 
@@ -292,11 +314,14 @@ export function AccommodationCertificateStep({
             </div>
           </div>
           <FileUploadDropzone
+            key={classificationUrl || 'classification-empty'}
             label="Rating Certificate"
             accept=".pdf,.jpg,.jpeg,.png"
             onFilesChange={classification.handleChange}
             isUploading={classification.uploading}
             error={classification.error ?? undefined}
+            existingUrls={classificationUrl ? [classificationUrl] : []}
+            onRemoveExisting={classification.remove}
           />
         </div>
 

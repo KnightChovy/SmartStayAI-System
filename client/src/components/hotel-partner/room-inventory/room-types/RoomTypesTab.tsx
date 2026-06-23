@@ -162,7 +162,7 @@ export function RoomTypesTab({ hotelId }: RoomTypesTabProps) {
           }
         />
       ) : (
-        <DataTable columns={columns} rows={roomTypes} rowKey={rt => rt.id} minWidthClass="min-w-[720px]" />
+        <DataTable columns={columns} rows={roomTypes} rowKey={rt => rt.id} minWidthClass="min-w-[640px]" />
       )}
 
       <RoomTypeFormModal

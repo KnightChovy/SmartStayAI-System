@@ -14,6 +14,7 @@ import GuestSelector from '@/components/shared/GuestSelector';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { toDateInputValue } from '@/utils/formatDate';
+import { formatAddress } from '@/utils/formatAddress';
 import type { HotelSearchResult, RoomType } from '@/types/hotel.types';
 
 const FALLBACK =
@@ -134,7 +135,7 @@ export default function HotelDetailPage() {
             {hotel && (
               <span className="flex items-center gap-1.5">
                 <MapPin className="size-4" />
-                {[hotel.address, hotel.district, hotel.city, hotel.country].filter(Boolean).join(', ')}
+                {formatAddress(hotel.address, hotel.district, hotel.city, hotel.country)}
               </span>
             )}
             {hotel?.checkInTime && (

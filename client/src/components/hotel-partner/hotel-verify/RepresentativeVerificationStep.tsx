@@ -29,6 +29,7 @@ export function RepresentativeVerificationStep({
     handleSubmit,
     setValue,
     getValues,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<RepresentativeFormValues>({
     resolver: zodResolver(representativeSchema),
@@ -44,40 +45,48 @@ export function RepresentativeVerificationStep({
     },
   });
 
+  // URL ảnh CMND/CCCD đã upload (giữ trong draft) — hiển thị lại sau reload.
+  const idFrontImageUrl = watch('idFrontImageUrl');
+  const idBackImageUrl = watch('idBackImageUrl');
+
   const handleFrontImageChange = async (files: File[]) => {
-    if (files.length === 0) {
-      setValue('idFrontImageUrl', '', { shouldValidate: false });
-      return;
-    }
+    if (files.length === 0) return;
     setFrontUploading(true);
     setFrontError(null);
     try {
       const url = await hotelVerifyService.uploadFile(files[0]);
       setValue('idFrontImageUrl', url, { shouldValidate: true });
+      setRepresentative(getValues());
     } catch {
       setFrontError('Upload failed. Please try again.');
-      setValue('idFrontImageUrl', '', { shouldValidate: true });
     } finally {
       setFrontUploading(false);
     }
   };
 
   const handleBackImageChange = async (files: File[]) => {
-    if (files.length === 0) {
-      setValue('idBackImageUrl', '', { shouldValidate: false });
-      return;
-    }
+    if (files.length === 0) return;
     setBackUploading(true);
     setBackError(null);
     try {
       const url = await hotelVerifyService.uploadFile(files[0]);
       setValue('idBackImageUrl', url, { shouldValidate: true });
+      setRepresentative(getValues());
     } catch {
       setBackError('Upload failed. Please try again.');
-      setValue('idBackImageUrl', '', { shouldValidate: true });
     } finally {
       setBackUploading(false);
     }
+  };
+
+  const handleRemoveFront = () => {
+    setValue('idFrontImageUrl', '', { shouldValidate: true });
+    setRepresentative(getValues());
+  };
+
+  const handleRemoveBack = () => {
+    setValue('idBackImageUrl', '', { shouldValidate: true });
+    setRepresentative(getValues());
   };
 
   const onSubmit = (data: RepresentativeFormValues) => {
@@ -227,20 +236,26 @@ export function RepresentativeVerificationStep({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <FileUploadDropzone
+                key={idFrontImageUrl || 'front-empty'}
                 label="Image Front Side"
                 accept=".jpg,.jpeg,.png"
                 onFilesChange={handleFrontImageChange}
                 isUploading={frontUploading}
                 error={frontError ?? errors.idFrontImageUrl?.message}
+                existingUrls={idFrontImageUrl ? [idFrontImageUrl] : []}
+                onRemoveExisting={handleRemoveFront}
               />
             </div>
             <div>
               <FileUploadDropzone
+                key={idBackImageUrl || 'back-empty'}
                 label="Image Back Side"
                 accept=".jpg,.jpeg,.png"
                 onFilesChange={handleBackImageChange}
                 isUploading={backUploading}
                 error={backError ?? errors.idBackImageUrl?.message}
+                existingUrls={idBackImageUrl ? [idBackImageUrl] : []}
+                onRemoveExisting={handleRemoveBack}
               />
             </div>
           </div>

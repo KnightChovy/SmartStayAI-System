@@ -1,6 +1,7 @@
 import { api } from '@/lib/api';
 import type { Paginated } from '@/types/api.types';
 import type {
+  Hotel,
   HotelSearchParams,
   HotelSearchResult,
   PartnerHotel,
@@ -40,6 +41,16 @@ export const hotelService = {
    */
   async getManaged(hotelId: string): Promise<ManagedHotel> {
     const { data } = await api.get<ManagedHotel>(`/hotels/${hotelId}/manage`);
+    return data;
+  },
+
+  /**
+   * Bật/tắt mở bán khách sạn của partner (`PATCH /hotels/:id/publish`).
+   * Trả về Hotel (raw) sau cập nhật. Bật bán yêu cầu KS đã duyệt (`isActive`)
+   * và có ít nhất một loại phòng đang bật — BE trả 400 nếu chưa đạt; tắt bán luôn được.
+   */
+  async setListing(hotelId: string, isListed: boolean): Promise<Hotel> {
+    const { data } = await api.patch<Hotel>(`/hotels/${hotelId}/publish`, { isListed });
     return data;
   },
 

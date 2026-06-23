@@ -15,7 +15,6 @@ import {
   Mail,
   Hash,
   Calendar,
-  ExternalLink,
   Star,
   BedDouble,
   User,
@@ -24,6 +23,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/button';
+import { FilePreviewModal, type PreviewFile } from '@/components/shared/FilePreviewModal';
 import {
   useGetRegistrationDetail,
   useReviewRegistration,
@@ -133,7 +133,13 @@ function HotelInfoSection({ detail }: { detail: VerificationApplication }) {
   );
 }
 
-function DocumentsSection({ detail }: { detail: VerificationApplication }) {
+function DocumentsSection({
+  detail,
+  onPreview,
+}: {
+  detail: VerificationApplication;
+  onPreview: (file: PreviewFile) => void;
+}) {
   const { mutateAsync, isPending, variables } = useReviewDocument();
   const [pendingId, setPendingId] = useState<string | null>(null);
 
@@ -205,15 +211,18 @@ function DocumentsSection({ detail }: { detail: VerificationApplication }) {
                         </p>
                       )}
                     </div>
-                    <a
-                      href={doc.fileUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 text-xs font-medium text-role-manager-primary bg-role-manager-light px-3 py-1.5 rounded-lg hover:bg-role-manager-primary/10 transition-colors shrink-0"
+                    <button
+                      type="button"
+                      onClick={() =>
+                        onPreview({
+                          url: doc.fileUrl,
+                          name: DOCUMENT_TYPE_LABELS[doc.documentType] ?? doc.documentType,
+                        })
+                      }
+                      className="inline-flex items-center gap-1.5 text-xs font-medium text-role-manager-primary bg-role-manager-light px-3 py-1.5 rounded-lg hover:bg-role-manager-primary/10 transition-colors shrink-0 cursor-pointer"
                     >
                       <FileText className="w-3.5 h-3.5" /> View
-                      <ExternalLink className="w-3 h-3 opacity-60" />
-                    </a>
+                    </button>
                   </div>
 
                   {doc.status === 'pending' && !replaced && (
@@ -249,7 +258,13 @@ function DocumentsSection({ detail }: { detail: VerificationApplication }) {
   );
 }
 
-function RepresentativeSection({ detail }: { detail: VerificationApplication }) {
+function RepresentativeSection({
+  detail,
+  onPreview,
+}: {
+  detail: VerificationApplication;
+  onPreview: (file: PreviewFile) => void;
+}) {
   const reps = detail.hotel.representatives;
   if (!reps?.length) return <p className="text-sm text-slate-400">No representatives</p>;
   return (
@@ -273,9 +288,9 @@ function RepresentativeSection({ detail }: { detail: VerificationApplication }) 
                 <div key={item.label}>
                   <p className="text-xs text-slate-500 mb-2">{item.label}</p>
                   {item.url ? (
-                    <a href={item.url} target="_blank" rel="noopener noreferrer" className="block aspect-[3/2] bg-slate-100 rounded-xl overflow-hidden hover:opacity-80 transition-opacity border border-slate-200">
+                    <button type="button" onClick={() => onPreview({ url: item.url!, name: item.label })} className="block w-full aspect-[3/2] bg-slate-100 rounded-xl overflow-hidden hover:opacity-80 transition-opacity border border-slate-200 cursor-pointer">
                       <img src={item.url} alt={item.label} className="w-full h-full object-cover" />
-                    </a>
+                    </button>
                   ) : (
                     <div className="aspect-[3/2] bg-slate-100 rounded-xl flex items-center justify-center text-slate-400 text-xs border border-dashed border-slate-300">
                       Not uploaded
@@ -291,7 +306,13 @@ function RepresentativeSection({ detail }: { detail: VerificationApplication }) 
   );
 }
 
-function PropertySection({ detail }: { detail: VerificationApplication }) {
+function PropertySection({
+  detail,
+  onPreview,
+}: {
+  detail: VerificationApplication;
+  onPreview: (file: PreviewFile) => void;
+}) {
   const { images, roomConfig } = detail.hotel;
   const byCategory = (cat: string) => images.filter(img => img.imageCategory === cat);
   const groups = [
@@ -314,9 +335,9 @@ function PropertySection({ detail }: { detail: VerificationApplication }) {
                 <p className="text-xs text-slate-500 mb-2">{g.label} ({g.urls.length})</p>
                 <div className="grid grid-cols-3 gap-2">
                   {g.urls.map(img => (
-                    <a key={img.id} href={img.url} target="_blank" rel="noopener noreferrer" className="block aspect-video bg-slate-100 rounded-lg overflow-hidden hover:opacity-80 transition-opacity">
+                    <button key={img.id} type="button" onClick={() => onPreview({ url: img.url, name: img.caption ?? g.label })} className="block w-full aspect-video bg-slate-100 rounded-lg overflow-hidden hover:opacity-80 transition-opacity cursor-pointer">
                       <img src={img.url} alt={img.caption ?? g.label} className="w-full h-full object-cover" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                    </a>
+                    </button>
                   ))}
                 </div>
               </div>
@@ -396,6 +417,7 @@ export function VerificationDetailModal({ summary, onClose }: Props) {
   const [activeSection, setActiveSection] = useState<SectionId>('hotel');
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
+  const [preview, setPreview] = useState<PreviewFile | null>(null);
 
   const { data: detail, isLoading, isError } = useGetRegistrationDetail(summary.id);
   const { mutateAsync, isPending } = useReviewRegistration();
@@ -432,9 +454,9 @@ export function VerificationDetailModal({ summary, onClose }: Props) {
     }
     switch (activeSection) {
       case 'hotel': return <HotelInfoSection detail={detail} />;
-      case 'documents': return <DocumentsSection detail={detail} />;
-      case 'representatives': return <RepresentativeSection detail={detail} />;
-      case 'property': return <PropertySection detail={detail} />;
+      case 'documents': return <DocumentsSection detail={detail} onPreview={setPreview} />;
+      case 'representatives': return <RepresentativeSection detail={detail} onPreview={setPreview} />;
+      case 'property': return <PropertySection detail={detail} onPreview={setPreview} />;
       case 'payment': return <PaymentSection detail={detail} />;
     }
   };
@@ -565,6 +587,8 @@ export function VerificationDetailModal({ summary, onClose }: Props) {
           </div>
         )}
       </div>
+
+      <FilePreviewModal file={preview} onClose={() => setPreview(null)} />
     </div>
   );
 }

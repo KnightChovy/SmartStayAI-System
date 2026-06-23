@@ -4,6 +4,7 @@ import type { Paginated } from '@/types/api.types';
 import type {
   CheckInPayload,
   CheckOutPayload,
+  CheckOutResponse,
   HotelBooking,
   HotelBookingDetail,
   HotelBookingsParams,
@@ -94,13 +95,13 @@ export const staffService = {
     return data;
   },
 
-  /** Check out a guest (`POST .../check-out`). */
+  /** Check out a guest (`POST .../check-out`) — trả về booking kèm hoá đơn vừa xuất. */
   async checkOut(
     hotelId: string,
     bookingId: string,
     payload: CheckOutPayload = {}
-  ): Promise<HotelBooking> {
-    const { data } = await api.post<HotelBooking>(
+  ): Promise<CheckOutResponse> {
+    const { data } = await api.post<CheckOutResponse>(
       `/hotels/${hotelId}/bookings/${bookingId}/check-out`,
       cleanParams(payload)
     );
