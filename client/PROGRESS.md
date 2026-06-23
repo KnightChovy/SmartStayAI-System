@@ -6,6 +6,16 @@ This file tracks the accomplished tasks, resolved user requests, and visual/func
 
 ## Completed Tasks Checklist
 
+### June 24, 2026
+
+- [x] **Admin users/properties polish + single Sonner toast system**:
+  - **Fixed admin dashboard shortcut logout bug**: `AdminLayout.closeAllModals()` no longer calls the logout mutation, so dashboard app shortcuts / quick actions open their modals instead of logging the admin out. Added explicit `type="button"` to dashboard quick-action buttons.
+  - **Admin Properties actions**: changed row actions from inline `List/Unlist` and `Enable/Disable` buttons into a compact shadcn `DropdownMenu` action trigger. Removed the `Add Property` header button because admins should not create hotels directly.
+  - **Admin Users add modal**: the existing Create User modal is now a real controlled form calling `useCreateAdminUser()` / `POST /users` with name, email, temporary password, and role. Success/error feedback uses Sonner toasts and the admin users query is invalidated by the existing hook.
+  - **Admin Users filters**: wired the header `Filters` button to a filter panel for name, role, and status. The selected values now feed `useAdminUsers({ name, role, status, sortBy, limit })`, and a Reset action clears active filters. `AdminUsersParams` now includes `status`.
+  - **Toast consolidation**: removed the duplicate `react-hot-toast` root toaster from `main.tsx`, switched auth login/register hooks to `sonner`, and uninstalled `react-hot-toast` from `package.json` / `package-lock.json`. The app now uses only the shadcn Sonner wrapper mounted in `App.tsx`.
+  - Verification note: `npm run build` still fails only on pre-existing unrelated TypeScript issues (`React` unused imports, `User.name`, `NodeJS` namespace, Recharts formatter); no new errors were reported from the changed admin/toast files.
+
 ### June 23, 2026
 
 - [x] **Narrower hotel-partner tables + verify-form uploads now visible & persistent on reload (removed "Submitted Files")**:
