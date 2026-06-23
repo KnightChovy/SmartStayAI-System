@@ -2,7 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import { authService } from '@/services/auth.service';
 import { useAuthStore } from '@/stores/authStore';
 import type { RegisterPayload } from '@/types/auth.types';
-import { toast } from 'react-hot-toast';
+import { toast } from 'sonner';
 
 export function useRegister() {
   const setAuth = useAuthStore(state => state.setAuth);
