@@ -8,6 +8,13 @@ This file tracks the accomplished tasks, resolved user requests, and visual/func
 
 ### June 23, 2026
 
+- [x] **Fixed 4 reported bugs (partner dead routes / table overflow / mojibake / duplicated address)**:
+  - **Bug 1 — sidebar links 404 + lost layout**: `routes/partnerRoutes.tsx` declared no routes for `revenue / analytics / reviews / settings`, so those sidebar links fell through to the guest catch-all `*` → `NotFoundPage` rendered **outside** `HotelPartnerLayout` (sidebar gone). Added placeholder routes pointing at a new `pages/ComingSoonPage.tsx` (titled per feature) plus a `{ path: '*', element: <NotFoundPage /> }` **inside** the PartnerLayout branch so a mistyped `/partner/*` URL keeps the sidebar.
+  - **Bug 2 — hotel tables overflow the whole page (Bookings/Hotels/Room Inventory/Staff)**: classic flexbox `min-width: auto` — the `SidebarInset` (`<main>`, the row flex item) and the per-layout content `<main className="flex-1 …">` wouldn't shrink below their content, so a `min-w-[720px]` table widened the entire layout and defeated the table's own `overflow-x-auto`. Added `min-w-0` to `SidebarInset` (`components/ui/sidebar.tsx` — fixes every portal at once) and to the `<main>` of all three layouts (partner/manager/admin). Now only the table scrolls; header/filters/sidebar stay put.
+  - **Bug 3 — `â€¢` mojibake in dashboard Recent Activities**: a double-encoded bullet (`U+00E2 U+20AC U+00A2` = UTF-8 bytes of `•` re-read as Windows-1252) was a literal in `RecentActivities.tsx`. Replaced with a clean `{'•'}` JSX literal.
+  - **Bug 4 — duplicated hotel address** ("…, Phường 10, …, Tỉnh Lâm Đồng, **Phường 10, Tỉnh Lâm Đồng**, Vietnam"): the DB `address` already contains ward/city/province, but `HotelDetailPage` re-appended `district`/`city`/`country`. Added `utils/formatAddress.ts` — joins parts, drops empties, and skips any segment already contained in (or equal to, case-insensitively) an earlier one — and used it in the guest `HotelDetailPage` header.
+  - `tsc -p tsconfig.app.json --noEmit` clean for all new/touched files (same 32 pre-existing unrelated errors remain — unused `React`, `User.name`, recharts formatter, `NodeJS`).
+
 - [x] **Hotel Partner — wire `PATCH /hotels/:id/publish` (partner self-publish / unpublish)**:
   - **Types** `types/hotel.types.ts`: added `SetHotelListingRequest` (`{ isListed }`) and the raw `Hotel` response interface (full hotel shape returned by the endpoint).
   - **Service** `services/hotel.service.ts`: `hotelService.setListing(hotelId, isListed)` → `PATCH /hotels/:id/publish`, returns the updated `Hotel`.

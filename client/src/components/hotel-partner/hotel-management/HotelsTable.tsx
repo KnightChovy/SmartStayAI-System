@@ -33,7 +33,7 @@ function HotelNameCell({ hotel }: { hotel: PartnerHotel }) {
           </div>
         )}
       </div>
-      <div className="min-w-0">
+      <div className="min-w-0 max-w-45 sm:max-w-55 lg:max-w-70">
         <p className="truncate font-semibold text-slate-900">{hotel.name}</p>
         <p className="truncate text-xs text-slate-400">{hotel.address}</p>
       </div>
@@ -144,7 +144,7 @@ export function HotelsTable({
       columns={columns}
       rows={hotels}
       rowKey={hotel => hotel.id}
-      minWidthClass="min-w-[720px]"
+      minWidthClass="min-w-[600px]"
       onRowClick={onManage}
     />
   );

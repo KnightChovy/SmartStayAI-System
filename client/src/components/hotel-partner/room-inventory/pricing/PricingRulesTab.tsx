@@ -143,7 +143,7 @@ export function PricingRulesTab({ hotelId }: PricingRulesTabProps) {
           }
         />
       ) : (
-        <DataTable columns={columns} rows={rules} rowKey={rule => rule.id} minWidthClass="min-w-[760px]" />
+        <DataTable columns={columns} rows={rules} rowKey={rule => rule.id} minWidthClass="min-w-[680px]" />
       )}
 
       <PricingRuleFormModal

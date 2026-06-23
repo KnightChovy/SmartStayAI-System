@@ -204,7 +204,7 @@ export function BookingsTab({ hotelId }: BookingsTabProps) {
             columns={columns}
             rows={rows}
             rowKey={b => b.id}
-            minWidthClass="min-w-[760px]"
+            minWidthClass="min-w-[680px]"
             onRowClick={b => setDetailId(b.id)}
           />
           <div className="mt-4">

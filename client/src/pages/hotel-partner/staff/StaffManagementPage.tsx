@@ -6,7 +6,11 @@ import { Button } from '@/components/ui/button';
 import { HotelDirectory } from '@/components/hotel-partner/hotel-management/HotelDirectory';
 import { HotelSwitcher } from '@/components/hotel-partner/room-inventory/HotelSwitcher';
 import { StaffTab } from '@/components/hotel-partner/staff/StaffTab';
-import { LoadingState, ErrorState, EmptyState } from '@/components/hotel-partner/shared/states';
+import {
+  LoadingState,
+  ErrorState,
+  EmptyState,
+} from '@/components/hotel-partner/shared/states';
 import type { PartnerHotel } from '@/types/hotel.types';
 
 /**
@@ -22,7 +26,10 @@ export default function StaffManagementPage() {
   const { data: hotels, isLoading, isError } = usePartnerHotels();
 
   // Chỉ khách sạn đã duyệt (active) mới có nhân sự vận hành.
-  const activeHotels = useMemo(() => (hotels ?? []).filter(h => h.isActive), [hotels]);
+  const activeHotels = useMemo(
+    () => (hotels ?? []).filter(h => h.isActive),
+    [hotels]
+  );
   const currentHotel = activeHotels.find(h => h.id === hotelId) ?? null;
 
   const selectHotel = (hotel: PartnerHotel) => {
@@ -32,10 +39,18 @@ export default function StaffManagementPage() {
   // ─── Loading / error / empty ────────────────────────────────────────────────
 
   if (isLoading) {
-    return <Shell><LoadingState label="Loading your hotels..." /></Shell>;
+    return (
+      <Shell>
+        <LoadingState label="Loading your hotels..." />
+      </Shell>
+    );
   }
   if (isError) {
-    return <Shell><ErrorState label="Failed to load your hotels." /></Shell>;
+    return (
+      <Shell>
+        <ErrorState label="Failed to load your hotels." />
+      </Shell>
+    );
   }
   if (activeHotels.length === 0) {
     return (
@@ -64,10 +79,14 @@ export default function StaffManagementPage() {
     return (
       <Shell>
         <Header
-          title="Staff"
+          title="Staff Management"
           subtitle="Select a hotel to manage its front desk & housekeeping staff."
         />
-        <HotelDirectory hotels={activeHotels} onManage={selectHotel} actionLabel="Manage staff" />
+        <HotelDirectory
+          hotels={activeHotels}
+          onManage={selectHotel}
+          actionLabel="Manage staff"
+        />
       </Shell>
     );
   }
@@ -87,11 +106,17 @@ export default function StaffManagementPage() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">Staff</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+              Staff
+            </h1>
             <p className="mt-0.5 text-sm text-slate-500">{currentHotel.name}</p>
           </div>
         </div>
-        <HotelSwitcher hotels={activeHotels} current={currentHotel} onSelect={selectHotel} />
+        <HotelSwitcher
+          hotels={activeHotels}
+          current={currentHotel}
+          onSelect={selectHotel}
+        />
       </div>
 
       <StaffTab hotelId={currentHotel.id} hotelName={currentHotel.name} />
@@ -114,7 +139,9 @@ function Header({ title, subtitle }: { title: string; subtitle: string }) {
         <Users className="h-6 w-6 text-role-partner-primary" />
       </div>
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">{title}</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+          {title}
+        </h1>
         <p className="mt-0.5 text-sm text-slate-500">{subtitle}</p>
       </div>
     </div>

@@ -14,8 +14,15 @@ import {
 } from 'lucide-react';
 import { useManagedHotel } from '@/hooks/hotels';
 import { Button } from '@/components/ui/button';
-import { LoadingState, ErrorState, EmptyState } from '@/components/hotel-partner/shared/states';
-import { DataTable, type Column } from '@/components/hotel-partner/shared/DataTable';
+import {
+  LoadingState,
+  ErrorState,
+  EmptyState,
+} from '@/components/hotel-partner/shared/states';
+import {
+  DataTable,
+  type Column,
+} from '@/components/hotel-partner/shared/DataTable';
 import { Pill } from '@/components/hotel-partner/shared/Pill';
 import { formatCurrency } from '@/utils/formatCurrency';
 import type { ManagedRoomType } from '@/types/hotel-management.types';
@@ -26,7 +33,11 @@ export default function HotelDetailPage() {
   const { data: hotel, isLoading, isError } = useManagedHotel(hotelId);
 
   if (isLoading) {
-    return <Shell onBack={() => navigate('/partner/hotel-management')}><LoadingState label="Loading hotel..." /></Shell>;
+    return (
+      <Shell onBack={() => navigate('/partner/hotel-management')}>
+        <LoadingState label="Loading hotel..." />
+      </Shell>
+    );
   }
   if (isError || !hotel) {
     return (
@@ -36,14 +47,32 @@ export default function HotelDetailPage() {
     );
   }
 
-  const cover = hotel.images.find(img => img.isPrimary)?.url ?? hotel.images[0]?.url ?? null;
-  const location = [hotel.address, hotel.ward, hotel.district, hotel.city, hotel.country]
+  const cover =
+    hotel.images.find(img => img.isPrimary)?.url ??
+    hotel.images[0]?.url ??
+    null;
+  const location = [
+    hotel.address,
+    hotel.ward,
+    hotel.district,
+    hotel.city,
+    hotel.country,
+  ]
     .filter(Boolean)
     .join(', ');
-  const roomsCount = hotel.roomTypes.reduce((sum, rt) => sum + rt._count.rooms, 0);
+  const roomsCount = hotel.roomTypes.reduce(
+    (sum, rt) => sum + rt._count.rooms,
+    0
+  );
 
   const roomTypeColumns: Column<ManagedRoomType>[] = [
-    { id: 'name', header: 'Room type', cell: rt => <span className="font-semibold text-slate-900">{rt.name}</span> },
+    {
+      id: 'name',
+      header: 'Room type',
+      cell: rt => (
+        <span className="font-semibold text-slate-900">{rt.name}</span>
+      ),
+    },
     {
       id: 'occupancy',
       header: 'Max guests',
@@ -54,7 +83,11 @@ export default function HotelDetailPage() {
     {
       id: 'price',
       header: 'Base price',
-      cell: rt => <span className="font-semibold text-slate-900">{formatCurrency(rt.basePrice)}</span>,
+      cell: rt => (
+        <span className="font-semibold text-slate-900">
+          {formatCurrency(rt.basePrice)}
+        </span>
+      ),
     },
     {
       id: 'rooms',
@@ -65,7 +98,11 @@ export default function HotelDetailPage() {
     {
       id: 'status',
       header: 'Status',
-      cell: rt => <Pill tone={rt.isActive ? 'emerald' : 'slate'}>{rt.isActive ? 'Active' : 'Inactive'}</Pill>,
+      cell: rt => (
+        <Pill tone={rt.isActive ? 'emerald' : 'slate'}>
+          {rt.isActive ? 'Active' : 'Inactive'}
+        </Pill>
+      ),
     },
   ];
 
@@ -76,7 +113,11 @@ export default function HotelDetailPage() {
         <div className="flex gap-4">
           <div className="h-24 w-32 shrink-0 overflow-hidden rounded-xl bg-slate-100">
             {cover ? (
-              <img src={cover} alt={hotel.name} className="h-full w-full object-cover" />
+              <img
+                src={cover}
+                alt={hotel.name}
+                className="h-full w-full object-cover"
+              />
             ) : (
               <div className="flex h-full w-full items-center justify-center text-slate-300">
                 <Hotel className="h-8 w-8" />
@@ -84,7 +125,9 @@ export default function HotelDetailPage() {
             )}
           </div>
           <div className="min-w-0">
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">{hotel.name}</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+              {hotel.name}
+            </h1>
             <p className="mt-1 flex items-center gap-1 text-sm text-slate-500">
               <MapPin className="h-4 w-4 shrink-0" />
               {location || '—'}
@@ -97,7 +140,11 @@ export default function HotelDetailPage() {
                 </Pill>
               )}
               <Pill tone={hotel.isListed ? 'emerald' : 'slate'}>
-                {hotel.isListed ? <CheckCircle2 className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
+                {hotel.isListed ? (
+                  <CheckCircle2 className="h-3 w-3" />
+                ) : (
+                  <EyeOff className="h-3 w-3" />
+                )}
                 {hotel.isListed ? 'Listed' : 'Unlisted'}
               </Pill>
               {!hotel.isActive && <Pill tone="red">Inactive</Pill>}
@@ -106,9 +153,15 @@ export default function HotelDetailPage() {
         </div>
 
         <Button
-          onClick={() => navigate(`/partner/room-inventory?hotelId=${hotel.id}`)}
+          onClick={() =>
+            navigate(`/partner/room-inventory?hotelId=${hotel.id}`)
+          }
           disabled={!hotel.isActive}
-          title={hotel.isActive ? undefined : 'Hotel must be active to manage inventory'}
+          title={
+            hotel.isActive
+              ? undefined
+              : 'Hotel must be active to manage inventory'
+          }
           className="shrink-0 bg-role-partner-primary text-white hover:bg-role-partner-secondary"
         >
           <Archive className="mr-1.5 h-4 w-4" />
@@ -118,9 +171,17 @@ export default function HotelDetailPage() {
 
       {/* Stat tiles */}
       <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatTile icon={Layers} label="Room types" value={hotel.roomTypes.length} />
+        <StatTile
+          icon={Layers}
+          label="Room types"
+          value={hotel.roomTypes.length}
+        />
         <StatTile icon={BedDouble} label="Rooms" value={roomsCount} />
-        <StatTile icon={Sparkles} label="Amenities" value={hotel.amenities.length} />
+        <StatTile
+          icon={Sparkles}
+          label="Amenities"
+          value={hotel.amenities.length}
+        />
         <StatTile
           icon={Clock}
           label="Check-in / out"
@@ -167,14 +228,6 @@ export default function HotelDetailPage() {
       <div className="mt-6">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-lg font-bold text-slate-900">Room types</h2>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={!hotel.isActive}
-            onClick={() => navigate(`/partner/room-inventory?hotelId=${hotel.id}`)}
-          >
-            Manage in inventory
-          </Button>
         </div>
         {hotel.roomTypes.length === 0 ? (
           <EmptyState
@@ -195,7 +248,13 @@ export default function HotelDetailPage() {
   );
 }
 
-function Shell({ children, onBack }: { children: React.ReactNode; onBack: () => void }) {
+function Shell({
+  children,
+  onBack,
+}: {
+  children: React.ReactNode;
+  onBack: () => void;
+}) {
   return (
     <div className="mx-auto w-full max-w-[1400px] rounded-xl border border-slate-200 bg-white p-6">
       <Button variant="outline" size="sm" onClick={onBack} className="mb-5">
@@ -226,10 +285,18 @@ function StatTile({
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="rounded-xl border border-slate-200 p-4">
-      <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-slate-500">{title}</h3>
+      <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-slate-500">
+        {title}
+      </h3>
       {children}
     </div>
   );

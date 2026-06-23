@@ -9,13 +9,8 @@ import {
   AlertCircle,
   Upload,
   FileText,
-  ImageIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
-import {
-  FilePreviewModal,
-  type PreviewFile,
-} from '@/components/shared/FilePreviewModal';
 import { useGetApplications } from '@/hooks/hotel-verify';
 import { useNavigate } from 'react-router';
 import type {
@@ -133,111 +128,6 @@ function RejectedDocumentsCard({
           <RejectedDocumentRow key={doc.id} doc={doc} />
         ))}
       </div>
-    </div>
-  );
-}
-
-const DOC_STATUS_STYLE: Record<string, string> = {
-  pending: 'bg-amber-100 text-amber-700',
-  approved: 'bg-emerald-100 text-emerald-700',
-  rejected: 'bg-red-100 text-red-700',
-};
-
-// Hiển thị các tài liệu & hình ảnh đã nộp; bấm để xem ngay trong app (lightbox).
-// Dữ liệu lấy từ BE nên reload trang vẫn còn đầy đủ.
-function SubmittedFilesCard({
-  application,
-}: {
-  application: VerificationApplication;
-}) {
-  const [preview, setPreview] = useState<PreviewFile | null>(null);
-
-  // Chỉ lấy phiên bản hiện hành của mỗi tài liệu (bỏ bản đã bị thay thế).
-  const documents = application.documents.filter(d => !d.replacedById);
-  const images = application.hotel?.images ?? [];
-
-  const imageGroups = [
-    { label: 'Cover', urls: images.filter(i => i.imageCategory === 'cover') },
-    { label: 'Exterior', urls: images.filter(i => i.imageCategory === 'exterior') },
-    { label: 'Rooms', urls: images.filter(i => i.imageCategory === 'room') },
-  ].filter(g => g.urls.length > 0);
-
-  if (documents.length === 0 && images.length === 0) return null;
-
-  return (
-    <div className="mt-5 border border-slate-200 rounded-xl p-5 bg-white max-w-3xl">
-      <div className="flex items-center gap-2 mb-4">
-        <FileText className="w-4 h-4 text-slate-500" />
-        <h3 className="text-sm font-bold text-slate-700">Submitted Files</h3>
-      </div>
-
-      {documents.length > 0 && (
-        <div className="space-y-2 mb-5">
-          {documents.map(doc => (
-            <div
-              key={doc.id}
-              className="flex items-center justify-between gap-3 rounded-lg border border-slate-100 bg-slate-50/60 p-3"
-            >
-              <div className="flex items-center gap-2 min-w-0">
-                <FileText className="w-4 h-4 text-slate-400 shrink-0" />
-                <span className="text-sm font-medium text-slate-800 truncate">
-                  {DOCUMENT_TYPE_LABELS[doc.documentType] ?? doc.documentType}
-                </span>
-                <span
-                  className={cn(
-                    'text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0',
-                    DOC_STATUS_STYLE[doc.status] ?? 'bg-slate-100 text-slate-600'
-                  )}
-                >
-                  {doc.status}
-                </span>
-              </div>
-              <Button
-                size="sm"
-                variant="outline"
-                className="shrink-0"
-                onClick={() =>
-                  setPreview({
-                    url: doc.fileUrl,
-                    name: DOCUMENT_TYPE_LABELS[doc.documentType] ?? doc.documentType,
-                  })
-                }
-              >
-                <Search className="w-3.5 h-3.5 mr-1.5" /> View
-              </Button>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {imageGroups.map(group => (
-        <div key={group.label} className="mb-4 last:mb-0">
-          <p className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 mb-2">
-            <ImageIcon className="w-3.5 h-3.5" /> {group.label} ({group.urls.length})
-          </p>
-          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-            {group.urls.map(img => (
-              <button
-                key={img.id}
-                type="button"
-                onClick={() => setPreview({ url: img.url, name: img.caption ?? group.label })}
-                className="block w-full aspect-video bg-slate-100 rounded-lg overflow-hidden hover:opacity-80 transition-opacity cursor-pointer"
-              >
-                <img
-                  src={img.url}
-                  alt={img.caption ?? group.label}
-                  className="w-full h-full object-cover"
-                  onError={e => {
-                    (e.target as HTMLImageElement).style.display = 'none';
-                  }}
-                />
-              </button>
-            ))}
-          </div>
-        </div>
-      ))}
-
-      <FilePreviewModal file={preview} onClose={() => setPreview(null)} />
     </div>
   );
 }
@@ -532,9 +422,6 @@ export function VerificationCenter({ onVerifyNew }: VerificationCenterProps) {
               </div>
             </div>
           </div>
-
-          {/* Submitted documents & images (view in-app, persists across reload) */}
-          <SubmittedFilesCard application={displayApp} />
 
           {/* Resubmit rejected documents (API #7) */}
           <RejectedDocumentsCard application={displayApp} />
