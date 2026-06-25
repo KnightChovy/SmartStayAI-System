@@ -63,8 +63,6 @@ export function AdminLayout() {
     return () => window.clearInterval(intervalId);
   }, []);
 
-  const logoutMutation = useLogout();
-
   const closeAllModals = () => {
     setIsCalendarOpen(false);
     setIsCreateUserOpen(false);
@@ -75,7 +73,6 @@ export function AdminLayout() {
     setIsReportOpen(false);
     setIsSupportOpen(false);
     setIsTasksOpen(false);
-    logoutMutation.mutate();
   };
 
   const { mutate: logout } = useLogout();

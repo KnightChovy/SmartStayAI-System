@@ -1,7 +1,11 @@
-import { useEffect } from 'react';
-import { Mail, Shield, UserPlus, X } from 'lucide-react';
+import { useEffect, useState, type FormEvent } from 'react';
+import { Lock, Mail, UserPlus, X } from 'lucide-react';
+import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { UserRole } from '@/constants/roles';
+import { useCreateAdminUser } from '@/hooks/admin';
+import { errorMessage } from '@/utils/errorMessage';
 import { formatDate, formatTime } from '@/utils/formatDate';
 
 interface AdminCreateUserModalProps {
@@ -9,10 +13,25 @@ interface AdminCreateUserModalProps {
   onClose: () => void;
 }
 
+type CreateUserFormState = {
+  name: string;
+  email: string;
+  password: string;
+  role: UserRole;
+};
+
 export function AdminCreateUserModal({
   currentTime,
   onClose,
 }: AdminCreateUserModalProps) {
+  const createUser = useCreateAdminUser();
+  const [form, setForm] = useState<CreateUserFormState>({
+    name: '',
+    email: '',
+    password: '',
+    role: UserRole.PLATFORM_MANAGER,
+  });
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -24,6 +43,35 @@ export function AdminCreateUserModal({
 
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
+
+  const updateField = (
+    field: keyof CreateUserFormState,
+    value: string | UserRole
+  ) => {
+    setForm(current => ({ ...current, [field]: value }));
+  };
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    createUser.mutate(
+      {
+        name: form.name.trim(),
+        email: form.email.trim(),
+        password: form.password,
+        role: form.role,
+      },
+      {
+        onSuccess: () => {
+          toast.success('User created');
+          onClose();
+        },
+        onError: err => {
+          toast.error(errorMessage(err, 'Could not create user.'));
+        },
+      }
+    );
+  };
 
   return (
     <div
@@ -61,22 +109,37 @@ export function AdminCreateUserModal({
           </button>
         </header>
 
-        <div className="space-y-4 p-4 sm:p-6">
+        <form className="space-y-4 p-4 sm:p-6" onSubmit={handleSubmit}>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="admin-user-name">Full name</Label>
-              <Input id="admin-user-name" placeholder="Sarah Nguyen" />
+              <Input
+                id="admin-user-name"
+                onChange={event => updateField('name', event.target.value)}
+                placeholder="Sarah Nguyen"
+                required
+                value={form.name}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="admin-user-role">Role</Label>
               <select
                 className="h-9 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-ring focus:ring-3 focus:ring-ring/50"
                 id="admin-user-role"
+                onChange={event =>
+                  updateField('role', event.target.value as UserRole)
+                }
+                value={form.role}
               >
-                <option>Admin</option>
-                <option>Manager</option>
-                <option>Staff</option>
-                <option>Guest</option>
+                <option value={UserRole.PLATFORM_MANAGER}>
+                  Platform manager
+                </option>
+                <option value={UserRole.ADMIN}>Admin</option>
+                <option value={UserRole.HOTEL_PARTNER}>Hotel partner</option>
+                <option value={UserRole.STAFF}>Staff</option>
+                <option value={UserRole.MARKETER}>Marketer</option>
+                <option value={UserRole.CUSTOMER}>Customer</option>
+                <option value={UserRole.GUEST}>Guest</option>
               </select>
             </div>
           </div>
@@ -88,33 +151,40 @@ export function AdminCreateUserModal({
               <Input
                 className="pl-9"
                 id="admin-user-email"
+                onChange={event => updateField('email', event.target.value)}
                 placeholder="user@smartstay.ai"
+                required
                 type="email"
+                value={form.email}
               />
             </div>
           </div>
 
-          <label className="flex items-start gap-3 rounded-2xl bg-slate-50 p-4">
-            <input className="mt-1 size-4 accent-blue-600" defaultChecked type="checkbox" />
-            <span>
-              <span className="flex items-center gap-2 text-sm font-bold text-slate-950">
-                <Shield className="size-4 text-blue-600" />
-                Send invite and require first login verification
-              </span>
-              <span className="mt-1 block text-xs leading-5 text-muted-foreground">
-                The user receives an invitation email and must verify identity
-                before accessing the admin portal.
-              </span>
-            </span>
-          </label>
+          <div className="space-y-2">
+            <Label htmlFor="admin-user-password">Temporary password</Label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                className="pl-9"
+                id="admin-user-password"
+                minLength={8}
+                onChange={event => updateField('password', event.target.value)}
+                placeholder="At least 8 chars, letters and numbers"
+                required
+                type="password"
+                value={form.password}
+              />
+            </div>
+          </div>
 
           <button
-            className="inline-flex h-11 w-full items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white hover:bg-blue-700"
-            type="button"
+            className="inline-flex h-11 w-full items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={createUser.isPending}
+            type="submit"
           >
-            Create User
+            {createUser.isPending ? 'Creating...' : 'Create User'}
           </button>
-        </div>
+        </form>
       </section>
     </div>
   );
