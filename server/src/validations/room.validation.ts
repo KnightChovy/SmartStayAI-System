@@ -43,6 +43,14 @@ export const listRooms = {
   }),
 };
 
+// Xoá phòng vật lý
+export const deleteRoom = {
+  params: Joi.object().keys({
+    hotelId: Joi.string().uuid().required(),
+    roomId: Joi.string().uuid().required(),
+  }),
+};
+
 // Staff đổi nhanh trạng thái phòng (bản đồ phòng / housekeeping 1-tap)
 export const updateRoomStatus = {
   params: Joi.object().keys({

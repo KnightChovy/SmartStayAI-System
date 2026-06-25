@@ -1343,6 +1343,47 @@ paths:
       responses:
         '200': { description: 'Hotel profile (info + images + amenities + active room types)' }
         '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      summary: Update a hotel's profile (partner)
+      description: >
+        Auth. The owner (or manageHotels) updates editable profile fields (name, description, address,
+        city/district/ward, country, coordinates, star rating, check-in/out times, business type).
+        Locked here: isActive/isListed (dedicated flows) and legal fields (taxCode,
+        businessRegistrationNumber). All fields optional; at least one required.
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              minProperties: 1
+              properties:
+                name: { type: string }
+                description: { type: string, nullable: true }
+                address: { type: string }
+                city: { type: string }
+                country: { type: string }
+                district: { type: string, nullable: true }
+                ward: { type: string, nullable: true }
+                latitude: { type: number, nullable: true }
+                longitude: { type: number, nullable: true }
+                starRating: { type: integer, minimum: 1, maximum: 5, nullable: true }
+                checkInTime: { type: string, example: '14:00' }
+                checkOutTime: { type: string, example: '12:00' }
+                businessType: { type: string, enum: [hotel, resort, villa, apartment] }
+      responses:
+        '200': { description: Updated hotel }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
 
   /hotels/{hotelId}/manage:
     get:
@@ -1414,6 +1455,87 @@ paths:
       responses:
         '200': { description: 'Array of hotels (each with primary image + _count of roomTypes/rooms)' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /hotels/{hotelId}/images:
+    post:
+      summary: Add hotel images (partner)
+      description: URLs must be uploaded via POST /uploads first. If any image has isPrimary=true, the previous primary is cleared.
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [images]
+              properties:
+                images:
+                  type: array
+                  minItems: 1
+                  items:
+                    type: object
+                    required: [url, imageCategory]
+                    properties:
+                      url: { type: string, format: uri }
+                      imageCategory: { type: string, enum: [cover, exterior, room] }
+                      caption: { type: string }
+                      isPrimary: { type: boolean }
+                      sortOrder: { type: integer }
+      responses:
+        '201': { description: Hotel images after insert }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /hotels/{hotelId}/images/{imageId}:
+    delete:
+      summary: Delete a hotel image (partner)
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: path
+          name: imageId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204': { description: Deleted }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /hotels/{hotelId}/images/{imageId}/primary:
+    patch:
+      summary: Set a hotel image as primary (partner)
+      description: Marks this image isPrimary=true and clears the flag on the hotel's other images.
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: path
+          name: imageId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: The updated primary image }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
 
   /hotels/{hotelId}/room-types:
     get:
@@ -2586,6 +2708,34 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      summary: Delete a room type (only if unused)
+      description: >
+        Hotel owner or manageHotels. Allowed only when the room type has no rooms and no bookings;
+        otherwise 400 — disable it via PUT with isActive=false instead.
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: path
+          name: roomTypeId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204': { description: Deleted }
+        '400':
+          description: Room type has rooms or bookings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
 
   /hotels/{hotelId}/room-types/{roomTypeId}/images:
     post:
@@ -2759,6 +2909,34 @@ paths:
       responses:
         '200': { description: Updated }
         '400': { description: Duplicate room number }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      summary: Delete a room (only if never booked)
+      description: >
+        Hotel owner or manageHotels. Allowed only when the room has no booking history; otherwise 400 —
+        set status=maintenance instead. Future inventory (room_availability.totalRooms) is decremented.
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: path
+          name: roomId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204': { description: Deleted }
+        '400':
+          description: Room has booking history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }

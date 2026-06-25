@@ -38,6 +38,12 @@ export class RoomController {
     );
     res.send(room);
   });
+
+  // Xoá phòng vật lý (chỉ khi chưa từng được đặt)
+  deleteRoom = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    await roomService.deleteRoom(req.params.hotelId as string, req.params.roomId as string, req.user as User);
+    res.status(httpStatus.NO_CONTENT).send();
+  });
 }
 
 export const roomController = new RoomController();
