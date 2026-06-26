@@ -44,6 +44,16 @@ export class RoomTypeController {
     );
     res.send(roomType);
   });
+
+  // Xoá loại phòng (chỉ khi chưa có phòng/booking)
+  deleteRoomType = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    await roomTypeService.deleteRoomType(
+      req.params.hotelId as string,
+      req.params.roomTypeId as string,
+      req.user as User
+    );
+    res.status(httpStatus.NO_CONTENT).send();
+  });
 }
 
 export const roomTypeController = new RoomTypeController();

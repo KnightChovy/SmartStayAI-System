@@ -32,6 +32,62 @@ export const setHotelListing = {
   }),
 };
 
+// Giờ nhận/trả phòng định dạng HH:mm (24h)
+const timePattern = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+// Partner cập nhật hồ sơ khách sạn (partial). KHÔNG nhận isActive/isListed/taxCode/businessRegistrationNumber.
+export const updateHotel = {
+  params: Joi.object().keys({
+    hotelId: Joi.string().uuid().required(),
+  }),
+  body: Joi.object()
+    .keys({
+      name: Joi.string().max(255),
+      description: Joi.string().max(5000).allow('', null),
+      address: Joi.string().max(500),
+      city: Joi.string().max(255),
+      country: Joi.string().max(255),
+      district: Joi.string().max(255).allow('', null),
+      ward: Joi.string().max(255).allow('', null),
+      latitude: Joi.number().min(-90).max(90).allow(null),
+      longitude: Joi.number().min(-180).max(180).allow(null),
+      starRating: Joi.number().integer().min(1).max(5).allow(null),
+      checkInTime: Joi.string().pattern(timePattern).allow(null),
+      checkOutTime: Joi.string().pattern(timePattern).allow(null),
+      businessType: Joi.string().valid('hotel', 'resort', 'villa', 'apartment'),
+    })
+    .min(1),
+};
+
+// Thêm ảnh khách sạn (URL đã upload qua POST /v1/uploads)
+export const addHotelImages = {
+  params: Joi.object().keys({
+    hotelId: Joi.string().uuid().required(),
+  }),
+  body: Joi.object().keys({
+    images: Joi.array()
+      .items(
+        Joi.object().keys({
+          url: Joi.string().uri().required(),
+          imageCategory: Joi.string().valid('cover', 'exterior', 'room').required(),
+          caption: Joi.string().max(500).allow('', null),
+          isPrimary: Joi.boolean(),
+          sortOrder: Joi.number().integer().min(0),
+        })
+      )
+      .min(1)
+      .required(),
+  }),
+};
+
+// Xoá / đặt ảnh chính cho một ảnh khách sạn (dùng chung params)
+export const hotelImageId = {
+  params: Joi.object().keys({
+    hotelId: Joi.string().uuid().required(),
+    imageId: Joi.string().uuid().required(),
+  }),
+};
+
 export const getRoomTypes = {
   params: Joi.object().keys({
     hotelId: Joi.string().uuid().required(),

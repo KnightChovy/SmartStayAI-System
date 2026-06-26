@@ -35,6 +35,10 @@ export const updateRoomType = {
   body: Joi.object().keys(roomTypeFields).min(1),
 };
 
+export const deleteRoomType = {
+  params: roomTypeParams,
+};
+
 export const listRoomTypes = {
   params: hotelParams,
 };

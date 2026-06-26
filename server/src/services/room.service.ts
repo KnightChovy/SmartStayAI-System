@@ -84,6 +84,35 @@ export class RoomService {
     });
   };
 
+  /**
+   * Xoá phòng vật lý. CHỈ cho xoá khi phòng CHƯA từng được gán cho booking nào (không có booking_rooms)
+   * — để không phá lịch sử lưu trú. Đã từng dùng thì nên đổi trạng thái sang maintenance thay vì xoá.
+   * Khi xoá, trừ tồn kho các đêm tương lai tương ứng (ngược với lúc createRoom tăng totalRooms).
+   */
+  deleteRoom = async (hotelId: string, roomId: string, currentUser: User) => {
+    await hotelService.getManagedHotel(hotelId, currentUser);
+    const room = await prisma.room.findFirst({ where: { id: roomId, hotelId } });
+    if (!room) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy phòng trong khách sạn này');
+    }
+    const usedCount = await prisma.bookingRoom.count({ where: { roomId } });
+    if (usedCount > 0) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        'Phòng đã có lịch sử đặt, không thể xoá — hãy đổi trạng thái sang maintenance để ngừng dùng'
+      );
+    }
+
+    const today = toUtcDate(new Date());
+    await prisma.$transaction(async (tx) => {
+      await tx.room.delete({ where: { id: roomId } });
+      await tx.roomAvailability.updateMany({
+        where: { roomTypeId: room.roomTypeId, date: { gte: today }, totalRooms: { gt: 0 } },
+        data: { totalRooms: { decrement: 1 } },
+      });
+    });
+  };
+
   /** Liệt kê phòng của khách sạn (cho bản đồ phòng), lọc theo trạng thái / loại phòng + phân trang. */
   listRooms = async (hotelId: string, currentUser: User, filter: RoomFilter, options: RoomQueryOptions) => {
     await hotelService.getOperableHotel(hotelId, currentUser);

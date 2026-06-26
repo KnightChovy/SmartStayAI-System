@@ -40,6 +40,28 @@ export class RoomTypeService {
     });
   };
 
+  /**
+   * Xoá loại phòng. CHỈ cho xoá khi loại phòng CHƯA có phòng vật lý nào VÀ chưa từng có booking
+   * — để bảo toàn dữ liệu. Đã có phòng/booking thì nên TẮT bằng updateRoomType { isActive: false }
+   * (ngừng bán) thay vì xoá.
+   */
+  deleteRoomType = async (hotelId: string, roomTypeId: string, currentUser: User) => {
+    await hotelService.getManagedHotel(hotelId, currentUser);
+    await this.getOwnedRoomType(hotelId, roomTypeId);
+
+    const [roomCount, bookingCount] = await Promise.all([
+      prisma.room.count({ where: { roomTypeId } }),
+      prisma.booking.count({ where: { roomTypeId } }),
+    ]);
+    if (roomCount > 0 || bookingCount > 0) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        'Loại phòng đã có phòng hoặc lịch sử đặt, không thể xoá — hãy tắt bằng isActive=false để ngừng bán'
+      );
+    }
+    await prisma.roomType.delete({ where: { id: roomTypeId } });
+  };
+
   /** Danh sách loại phòng cho partner quản lý — gồm cả loại đã tắt (isActive=false). */
   listRoomTypes = async (hotelId: string, currentUser: User) => {
     await hotelService.getManagedHotel(hotelId, currentUser);
