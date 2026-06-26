@@ -3,15 +3,14 @@ module.exports = function (api) {
 
   return {
     presets: [['babel-preset-expo'], 'nativewind/babel'],
-
     plugins: [
       [
         'module-resolver',
         {
-          root: ['./'],
-
           alias: {
-            '@': './',
+            '^@/components/(.+)$': './components/\\1',
+            '^@/assets/(.+)$': './assets/\\1',
+            '^@/(.+)$': './src/\\1',
             'tailwind.config': './tailwind.config.js',
           },
         },

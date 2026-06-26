@@ -27,3 +27,8 @@ This file tracks the accomplished tasks, resolved user requests, and structural/
 ---
 
 _Last Updated: 2026-06-24_
+
+### June 26, 2026
+
+- [x] Implemented guest mobile introduction, authentication, Home/Search/Bookings/Profile tabs, API service layer, React Query hooks, and search history.
+- [x] Refactored API hooks so each implemented endpoint has its own TanStack Query hook file and domain barrel export (auth, hotels, bookings, profile).
