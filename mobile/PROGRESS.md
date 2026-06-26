@@ -26,6 +26,16 @@ This file tracks the accomplished tasks, resolved user requests, and structural/
 
 ### June 26, 2026
 
+- [x] **Tầng API hoàn chỉnh (services + hooks + types) nối backend `/v1`**:
+  - **Hạ tầng**: `lib/api.ts` (axios instance, baseURL `EXPO_PUBLIC_API_BASE_URL` mặc định `http://localhost:5000/v1`, interceptor gắn `Authorization` + tự refresh token khi 401/403 với hàng đợi chống refresh trùng); `stores/authStore.ts` (Zustand giữ user + access/refresh token, chưa persist — TODO `expo-secure-store`); `constants/queryKeys.ts` (key factory); `utils/cleanParams.ts`; `types/api.type.ts` (`Paginated<T>`).
+  - **Types** (`types/*.type.ts`): auth, amenities, hotels, bookings, payments, reviews, chatbot, users — model theo response thật của backend (Decimal → string).
+  - **Services** (`services/*.service.ts`, có đủ get/post/put/patch/delete tuỳ domain): `auth` (send-otp, register, login, logout, refresh, forgot/reset password, verify email), `hotels` (search, detail, room-types), `amenities` (list), `bookings` (create, getMine, getById, cancel), `payments` (VNPay create), `reviews` (create, by-hotel, detail), `chatbot` (sendMessage + sendMessageStream qua `expo/fetch` SSE), `users` (getProfile, updateProfile, deleteAccount — self-access).
+  - **Auth phủ đủ 9 route** user dùng: send-otp, register, login, logout, forgot/reset password, verify-email, send-verification-email (refresh-tokens nằm trong interceptor của `lib/api.ts`).
+  - **Users self-access**: middleware `auth` cho phép user thường thao tác trên `/users/:userId` khi `:userId === user.id` → các hook tự lấy `userId` từ `authStore` (get/update/delete chính mình). Các route admin (status/role, list user) không thuộc phạm vi guest nên bỏ qua.
+  - **Hooks** (mỗi endpoint = 1 file, có barrel `index.ts` mỗi domain): auth (8), hotels (3), amenities (1), bookings (4), payments (1), reviews (3), chatbot (2), users (3) — dùng `useQuery`/`useMutation`, mutation invalidate cache liên quan; login/register/updateProfile đồng bộ `authStore`, logout/deleteAccount clear session.
+  - **`.env.example`**: sửa base URL `/api` → `/v1` cho khớp mount thật của server.
+  - `npx tsc --noEmit`: các file mới sạch lỗi (lỗi còn lại là của scaffolding `components/ui` gluestack, không liên quan).
+
 - [x] **TanStack Query provider (`src/providers/query.tsx`)**:
   - `createQueryClient()` với `defaultOptions` hợp lý cho mobile (`staleTime` 1', `gcTime` 5', `retry` 2, `refetchOnReconnect`).
   - `QueryProvider` giữ `QueryClient` ổn định qua `useState`, bọc `QueryClientProvider`.
