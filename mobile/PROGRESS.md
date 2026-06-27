@@ -55,6 +55,32 @@ This file tracks the accomplished tasks, resolved user requests, and structural/
   - `chatbot` + `profile` + `(auth)/index` chuyển nốt chuỗi UI sang tiếng Anh.
   - `npx tsc --noEmit`: không có lỗi mới ở `app/` hay component mới (39 lỗi còn lại đều thuộc scaffolding `components/ui/*` gluestack, có sẵn từ trước).
 
+### June 28, 2026
+
+- [x] **Luồng đặt phòng đầy đủ trên mobile (room detail → chọn ngày/khách → xác nhận → thanh toán) + sửa hồ sơ + điểm đến trang chủ**:
+  - **Nghiệp vụ tham chiếu từ client (không sửa client/server)**: đọc kỹ `client` guest flow — `POST /bookings` (server tự tính giá, client chỉ gửi `{hotelId, roomTypeId, checkInDate, checkOutDate, numGuests, specialRequests?}`), booking tạo ở trạng thái `pending` (giữ phòng) rồi thanh toán `POST /payments/bookings/:id/vnpay` → `paymentUrl`; room-types chỉ trả `availableRooms`/`totalPrice`/`numNights` khi có `checkIn`+`checkOut` (nên mặc định hôm nay→mai); `PATCH /bookings/:id/cancel`; profile self-access `PATCH /users/:userId` (`name`/`email`/`password`). Toàn bộ hook/service mobile cho các API này đã có sẵn.
+  - **Util mới** `utils/formatDate.ts`: `toDateKey`/`todayKey`/`addDays`/`formatDateShort`/`formatDateLong`/`nightsBetween` (group thủ công vì Hermes thiếu Intl).
+  - **Component dùng chung mới** (mỗi cái 1 thư mục + barrel, NativeWind, học UI/UX từ các trang mobile sẵn có):
+    - `shared/BookingStatusBadge/` — gộp `STATUS_STYLE` vốn nằm trong `(tabs)/bookings.tsx` thành pill trạng thái tái dùng (list + detail + success), export cả `BOOKING_STATUS_STYLE`.
+    - `shared/PriceSummary/` — bảng dòng giá + tổng (VND), dùng ở room detail / checkout / booking detail.
+    - `shared/QuantityStepper/` — bộ +/- số khách.
+    - `shared/StayPickerSheet/` — bottom-sheet chọn **range ngày** (lịch nhiều tháng tự dựng, chặn ngày quá khứ) + số khách; trả `{checkIn, checkOut, guests}` dạng `YYYY-MM-DD`.
+    - `shared/RoomTypeCard/` — thẻ loại phòng (tách từ `hotel/[id]`), badge "ONLY X LEFT"/"Sold out", bấm để mở chi tiết phòng.
+  - **Màn hình mới (Expo Router)**:
+    - `app/room/[id].tsx` — **chi tiết phòng**: carousel ảnh, thông số (m²/giường/view/sức chứa), card "Your stay" mở `StayPickerSheet`, badge số phòng trống, mô tả, tiện nghi, bảng giá; sticky "Book now" → checkout (truyền hotelId/roomTypeId/ngày/khách/giá).
+    - `app/booking/checkout.tsx` — **xác nhận booking** 2 bước (Guest details có validate name/email/phone + special requests → Review) + tóm tắt kỳ ở + `PriceSummary`; "Confirm booking" gọi `useCreateBooking` rồi `replace` sang success; lỗi BE hiện inline.
+    - `app/booking/success.tsx` — màn xác nhận: mã booking + QR giả + trạng thái (`BookingStatusBadge`) + tổng tiền; nếu `pending` có "Pay now with VNPay" (mở `paymentUrl` qua `expo-web-browser` rồi refetch); nút View booking / My bookings.
+    - `app/booking/[id].tsx` — **chi tiết booking** (từ tab Bookings): đầy đủ thông tin kỳ ở + giá, `RefreshControl`, **Cancel** (Alert xác nhận → `useCancelBooking`) và **Pay now** (VNPay) theo trạng thái.
+    - `app/profile/edit.tsx` — **sửa hồ sơ**: name/email/new password (validate), chỉ gửi field đổi (`useUpdateProfile` self-access), Alert khi lưu xong.
+  - **Wire màn cũ**: `hotel/[id].tsx` thêm card chọn ngày/khách (`StayPickerSheet`, mặc định hôm nay→mai để có số phòng trống) + dùng `RoomTypeCard`, bấm phòng → room detail, "Book now" → phòng rẻ nhất; `(tabs)/bookings.tsx` mỗi thẻ bấm → booking detail + dùng `BookingStatusBadge`; `(tabs)/profile.tsx` nút Edit/Update → `profile/edit`, quick action Bookings → tab bookings.
+  - **Trang chủ**: thêm `constants/destinations.ts` (6 điểm đến kèm ảnh Unsplash + `city` khớp `?city=`); `(tabs)/index.tsx` render điểm đến bằng ảnh thật (`expo-image`) thay khối màu, bấm vào lọc Search đúng thành phố.
+  - `npx tsc --noEmit`: sạch ở mọi file mới/sửa (chỉ còn lỗi cũ trong scaffolding `components/ui/*`). `npm run lint`: không phát sinh lỗi/warning mới ở file mới (các lỗi `no-unescaped-entities` còn lại là pattern có sẵn ở file cũ).
+
+- [x] **Theo yêu cầu: bỏ "Book now" ở chi tiết hotel + thêm search theo ngày ở trang chủ (như client)**:
+  - `hotel/[id].tsx`: **xoá thanh sticky "Book now"** ở đáy (cùng `cheapest`/`displayPrice`/`formatVnd` không còn dùng) — luồng đặt phòng đi qua: bấm thẻ phòng → chi tiết phòng → Book now. `hotel/[id]` giờ cũng nhận `checkIn`/`checkOut`/`guests` từ Search để hiển thị đúng phòng trống theo ngày đã chọn.
+  - `(tabs)/index.tsx`: thay 2 ô ngày/khách tĩnh ("Mon, Aug 21", "2 guests, 1 room") bằng ô **chọn ngày + số khách thật** mở `StayPickerSheet` (mặc định hôm nay→mai); nút Search truyền `city` + `checkIn` + `checkOut` + `guests` sang Search — khớp hành vi Hero bên client.
+  - `(tabs)/search.tsx`: đọc `checkIn`/`checkOut`/`guests` từ params và truyền vào `useGetHotels` (để BE tính tồn kho + giá kỳ ở); khi mở 1 khách sạn cũng chuyển kèm ngày để chi tiết dùng chung.
+
 ---
 
-_Last Updated: 2026-06-27_
+_Last Updated: 2026-06-28_

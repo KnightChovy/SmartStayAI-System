@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { View, Pressable, FlatList, ScrollView, TextInput, ActivityIndicator } from 'react-native';
+import { Image } from 'expo-image';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,17 +9,12 @@ import { Text } from '@/components/ui/text';
 import { Heading } from '@/components/ui/heading';
 import { Button, ButtonText } from '@/components/ui/button';
 import { HotelCard } from '@/components/shared/HotelCard';
+import { StayPickerSheet } from '@/components/shared/StayPickerSheet';
 import { useGetHotels } from '@/hooks/hotels';
 import { useAuthStore } from '@/stores/authStore';
 import { getInitials } from '@/utils/hotel';
-
-const DESTINATIONS = [
-  { id: '1', name: 'Đà Nẵng', hotels: 340, color: '#1D4ED8' },
-  { id: '2', name: 'Hạ Long', hotels: 215, color: '#0891B2' },
-  { id: '3', name: 'Hội An', hotels: 180, color: '#B45309' },
-  { id: '4', name: 'Huế', hotels: 120, color: '#7C3AED' },
-  { id: '5', name: 'Phú Quốc', hotels: 290, color: '#059669' },
-];
+import { formatDateShort, todayKey, toDateKey, addDays } from '@/utils/formatDate';
+import { DESTINATIONS } from '@/constants/destinations';
 
 const PROPERTY_TYPES = [
   { id: '1', label: 'Hotels', icon: 'bed-outline' as const },
@@ -30,6 +26,10 @@ export default function HomeScreen() {
   const router = useRouter();
   const [destination, setDestination] = useState('');
   const [activeType, setActiveType] = useState('1');
+  const [checkIn, setCheckIn] = useState(todayKey());
+  const [checkOut, setCheckOut] = useState(toDateKey(addDays(todayKey(), 1)));
+  const [guests, setGuests] = useState(2);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const { top, bottom } = useSafeAreaInsets();
 
   const { user } = useAuthStore();
@@ -41,7 +41,12 @@ export default function HomeScreen() {
   function goToSearch() {
     router.push({
       pathname: '/(tabs)/search',
-      params: destination.trim() ? { city: destination.trim() } : {},
+      params: {
+        ...(destination.trim() ? { city: destination.trim() } : {}),
+        checkIn,
+        checkOut,
+        guests: String(guests),
+      },
     });
   }
 
@@ -98,17 +103,29 @@ export default function HomeScreen() {
               />
             </View>
 
-            {/* Date + Guests */}
-            <View className="flex-row gap-2 mb-3">
-              <Pressable className="flex-1 flex-row items-center gap-2 border border-gray-200 rounded-xl px-3 py-2.5">
-                <Ionicons name="calendar-outline" size={16} color="#6B7280" />
-                <Text size="sm" className="text-navy font-medium">Mon, Aug 21</Text>
-              </Pressable>
-              <Pressable className="flex-1 flex-row items-center gap-2 border border-gray-200 rounded-xl px-3 py-2.5">
-                <Ionicons name="people-outline" size={16} color="#6B7280" />
-                <Text size="sm" className="text-navy font-medium">2 guests, 1 room</Text>
-              </Pressable>
-            </View>
+            {/* Dates */}
+            <Pressable
+              onPress={() => setPickerOpen(true)}
+              className="flex-row items-center border border-gray-200 rounded-xl px-3 py-2.5 mb-3"
+            >
+              <Ionicons name="calendar-outline" size={16} color="#6B7280" />
+              <Text size="sm" className="text-navy font-medium ml-2 flex-1" numberOfLines={1}>
+                {formatDateShort(checkIn)} → {formatDateShort(checkOut)}
+              </Text>
+              <Ionicons name="chevron-down" size={14} color="#9CA3AF" />
+            </Pressable>
+
+            {/* Guests */}
+            <Pressable
+              onPress={() => setPickerOpen(true)}
+              className="flex-row items-center border border-gray-200 rounded-xl px-3 py-2.5 mb-3"
+            >
+              <Ionicons name="people-outline" size={16} color="#6B7280" />
+              <Text size="sm" className="text-navy font-medium ml-2 flex-1">
+                {guests} guest{guests > 1 ? 's' : ''}
+              </Text>
+              <Ionicons name="chevron-down" size={14} color="#9CA3AF" />
+            </Pressable>
 
             {/* Search button */}
             <Button className="bg-gold rounded-xl" onPress={goToSearch}>
@@ -177,15 +194,13 @@ export default function HomeScreen() {
             contentContainerStyle={{ gap: 10, paddingBottom: 4, marginBottom: 24 }}
             renderItem={({ item }) => (
               <Pressable
-                onPress={() => router.push({ pathname: '/(tabs)/search', params: { city: item.name } })}
-                style={{ width: 130, height: 160, borderRadius: 16, backgroundColor: item.color, overflow: 'hidden', justifyContent: 'flex-end' }}
+                onPress={() => router.push({ pathname: '/(tabs)/search', params: { city: item.city } })}
+                style={{ width: 130, height: 160, borderRadius: 16, overflow: 'hidden', justifyContent: 'flex-end', backgroundColor: '#1D4ED8' }}
               >
-                <View className="absolute inset-0 items-center justify-center">
-                  <Ionicons name="location-outline" size={40} color="rgba(255,255,255,0.3)" />
-                </View>
-                <View style={{ padding: 10, backgroundColor: 'rgba(0,0,0,0.35)' }}>
+                <Image source={{ uri: item.image }} style={{ position: 'absolute', width: '100%', height: '100%' }} contentFit="cover" transition={200} />
+                <View style={{ padding: 10, backgroundColor: 'rgba(0,0,0,0.4)' }}>
                   <Text bold className="text-white text-base">{item.name}</Text>
-                  <Text size="xs" className="text-white/80">{item.hotels} hotels</Text>
+                  <Text size="xs" className="text-white/80">{item.tagline}</Text>
                 </View>
               </Pressable>
             )}
@@ -213,6 +228,20 @@ export default function HomeScreen() {
           )}
         </View>
       </ScrollView>
+
+      <StayPickerSheet
+        visible={pickerOpen}
+        initialCheckIn={checkIn}
+        initialCheckOut={checkOut}
+        initialGuests={guests}
+        onClose={() => setPickerOpen(false)}
+        onApply={({ checkIn: ci, checkOut: co, guests: g }) => {
+          setCheckIn(ci);
+          setCheckOut(co);
+          setGuests(g);
+          setPickerOpen(false);
+        }}
+      />
     </View>
   );
 }
