@@ -11,12 +11,12 @@ module.exports = function (api) {
           root: ['./'],
 
           alias: {
-            '@': './',
+            '@': ['./src', './'],
             'tailwind.config': './tailwind.config.js',
           },
         },
       ],
-      'react-native-worklets/plugin',
+      'react-native-reanimated/plugin',
     ],
   };
 };
