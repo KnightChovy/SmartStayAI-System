@@ -1,8 +1,9 @@
 /** Type cho AI Booking Chatbot — model theo backend (`/v1/conversations/*`). */
 
-/** Body gửi tới `POST /conversations/messages` và `.../messages/stream`. */
+/** Body gửi tới `POST /conversations/messages` và `.../messages/stream`.
+ *  `hotelId`/`conversationId` chỉ gửi khi có giá trị — backend không cho phép chuỗi rỗng. */
 export interface SendChatMessageDto {
-  hotelId: string;
+  hotelId?: string;
   conversationId?: string;
   message: string;
 }

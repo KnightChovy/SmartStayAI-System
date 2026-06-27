@@ -19,6 +19,8 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        navy: '#0B1D45',
+        gold: '#F5A623',
         primary: {
           0: 'rgb(var(--color-primary-0)/<alpha-value>)',
           50: 'rgb(var(--color-primary-50)/<alpha-value>)',

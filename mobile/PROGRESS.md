@@ -42,6 +42,19 @@ This file tracks the accomplished tasks, resolved user requests, and structural/
   - Tích hợp `focusManager` + `AppState` để refetch khi app trở lại foreground (tương đương refetch-on-window-focus của web, bỏ qua trên web).
   - Wire vào `src/app/_layout.tsx` (bọc ngoài `GluestackUIProvider`). Xoá file `query.ts` rỗng.
 
+### June 27, 2026
+
+- [x] **Tách component lẫn trong page + chuẩn hoá NativeWind toàn bộ UI**:
+  - **Component dùng chung mới** (mỗi cái 1 thư mục + barrel `index.ts`):
+    - `components/shared/StarRating/` — gộp `StarRow` vốn bị lặp ở `hotel/[id].tsx` và `(tabs)/search.tsx` (props `count`/`total`/`size`/`color`).
+    - `components/shared/SectionHeader/` + `components/shared/MenuList/` — tách từ `(tabs)/profile.tsx` (`SectionHeader`, `MenuCard` → `MenuList` với `MenuListItem`).
+    - `components/shared/PageDots/` — tách `PageDots` từ `(auth)/index.tsx`.
+    - `components/chat/` — tách `TypingDots`, `MessageBubble`, `ChatEmptyState` từ `(tabs)/chatbot.tsx` (`MessageBubble` import type `ChatMessage` từ `@/hooks/chat`).
+  - **Chuyển inline `style={{}}` → NativeWind `className`** (dùng token `navy`/`gold`, `shadow-hard-5`, giữ `style` chỉ cho giá trị động: màu từ data, border active, width %): `components/shared/HotelCard/HotelCard.tsx`, `app/hotel/[id].tsx`, `app/(auth)/index.tsx`, và 4 màn auth `login`/`register`/`forget-password`/`verify-otp` (chuyển song song; OTP boxes giữ nguyên ref/focus/timer, chỉ màu border động còn là `style`).
+  - **Text/Heading**: thay RN `Text` bằng Gluestack `Text`/`Heading` ở các màn đã refactor.
+  - `chatbot` + `profile` + `(auth)/index` chuyển nốt chuỗi UI sang tiếng Anh.
+  - `npx tsc --noEmit`: không có lỗi mới ở `app/` hay component mới (39 lỗi còn lại đều thuộc scaffolding `components/ui/*` gluestack, có sẵn từ trước).
+
 ---
 
-_Last Updated: 2026-06-26_
+_Last Updated: 2026-06-27_

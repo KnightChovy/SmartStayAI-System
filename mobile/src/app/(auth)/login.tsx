@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import {
   View,
-  Text,
   TextInput,
   Pressable,
   ScrollView,
@@ -13,13 +12,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { Text } from '@/components/ui/text';
+import { Heading } from '@/components/ui/heading';
 import { useLogin } from '@/hooks/auth';
 
-const NAVY = '#0B1D45';
-const GOLD = '#F5A623';
-const BORDER = '#E5E7EB';
 const PLACEHOLDER = '#9CA3AF';
-const BG = '#FFFFFF';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -45,31 +42,31 @@ export default function LoginScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: BG }}>
+    <SafeAreaView className="flex-1 bg-white">
       <KeyboardAvoidingView
-        style={{ flex: 1 }}
+        className="flex-1"
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <ScrollView
-          contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 32 }}
+          contentContainerClassName="grow justify-center px-6 py-8"
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
           {/* Logo */}
-          <View style={{ alignItems: 'center', marginBottom: 32 }}>
-            <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: '#EFF6FF', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
-              <Text style={{ fontSize: 30 }}>🏨</Text>
+          <View className="items-center mb-8">
+            <View className="w-16 h-16 rounded-full bg-blue-50 items-center justify-center mb-3">
+              <Text className="text-3xl">🏨</Text>
             </View>
-            <Text style={{ fontSize: 26, fontWeight: '800', color: NAVY }}>SmartStay AI</Text>
-            <Text style={{ fontSize: 16, fontWeight: '500', color: '#6B7280', marginTop: 4 }}>Welcome back</Text>
+            <Heading className="text-navy text-2xl font-extrabold">SmartStay AI</Heading>
+            <Text className="text-base font-medium text-gray-500 mt-1">Welcome back</Text>
           </View>
 
           {/* Email */}
-          <Text style={{ fontSize: 14, fontWeight: '600', color: NAVY, marginBottom: 6 }}>Email</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: BORDER, borderRadius: 12, paddingHorizontal: 14, marginBottom: 16, backgroundColor: '#F9FAFB' }}>
-            <Text style={{ fontSize: 18, marginRight: 10 }}>✉️</Text>
+          <Text size="sm" bold className="text-navy mb-1.5">Email</Text>
+          <View className="flex-row items-center border border-gray-200 rounded-xl px-3.5 mb-4 bg-gray-50">
+            <Text className="text-lg mr-2.5">✉️</Text>
             <TextInput
-              style={{ flex: 1, height: 50, fontSize: 15, color: NAVY }}
+              className="flex-1 h-[50px] text-[15px] text-navy"
               placeholder="Enter your email"
               placeholderTextColor={PLACEHOLDER}
               value={email}
@@ -81,11 +78,11 @@ export default function LoginScreen() {
           </View>
 
           {/* Password */}
-          <Text style={{ fontSize: 14, fontWeight: '600', color: NAVY, marginBottom: 6 }}>Password</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: BORDER, borderRadius: 12, paddingHorizontal: 14, marginBottom: 8, backgroundColor: '#F9FAFB' }}>
-            <Text style={{ fontSize: 18, marginRight: 10 }}>🔒</Text>
+          <Text size="sm" bold className="text-navy mb-1.5">Password</Text>
+          <View className="flex-row items-center border border-gray-200 rounded-xl px-3.5 mb-2 bg-gray-50">
+            <Text className="text-lg mr-2.5">🔒</Text>
             <TextInput
-              style={{ flex: 1, height: 50, fontSize: 15, color: NAVY }}
+              className="flex-1 h-[50px] text-[15px] text-navy"
               placeholder="Enter your password"
               placeholderTextColor={PLACEHOLDER}
               value={password}
@@ -101,21 +98,21 @@ export default function LoginScreen() {
           {/* Forgot password */}
           <Pressable
             onPress={() => router.push('/(auth)/forget-password')}
-            style={{ alignSelf: 'flex-end', marginBottom: 24 }}
+            className="self-end mb-6"
           >
-            <Text style={{ color: GOLD, fontWeight: '600', fontSize: 14 }}>Forgot password?</Text>
+            <Text size="sm" bold className="text-gold">Forgot password?</Text>
           </Pressable>
 
           {/* Sign In button */}
           <Pressable
             onPress={handleLogin}
             disabled={isPending}
-            style={{ backgroundColor: NAVY, borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginBottom: 24 }}
+            className="bg-navy rounded-2xl py-4 items-center mb-6"
           >
             {isPending ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={{ color: '#fff', fontWeight: '700', fontSize: 16 }}>Sign In</Text>
+              <Text bold className="text-white text-base">Sign In</Text>
             )}
           </Pressable>
 
@@ -139,10 +136,10 @@ export default function LoginScreen() {
           </View> */}
 
           {/* Sign up */}
-          <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
-            <Text style={{ color: '#6B7280', fontSize: 14 }}>Don't have an account? </Text>
+          <View className="flex-row justify-center">
+            <Text className="text-gray-500 text-sm">Don't have an account? </Text>
             <Pressable onPress={() => router.push('/(auth)/register')}>
-              <Text style={{ color: GOLD, fontWeight: '700', fontSize: 14 }}>Sign up</Text>
+              <Text bold className="text-gold text-sm">Sign up</Text>
             </Pressable>
           </View>
         </ScrollView>

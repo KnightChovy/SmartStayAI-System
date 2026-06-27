@@ -1,5 +1,6 @@
 // `expo/fetch` (WinterCG) hỗ trợ streaming body trên RN — fetch mặc định của RN thì KHÔNG.
 import { fetch as expoFetch } from 'expo/fetch';
+import axios from 'axios';
 import { api, API_BASE_URL } from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
 import type {
@@ -54,16 +55,43 @@ export const chatbotService = {
     payload: SendChatMessageDto,
     handlers: SendChatMessageStreamHandlers = {}
   ): Promise<SendChatMessageResponse> {
-    const token = useAuthStore.getState().accessToken;
-    const response = await expoFetch(`${API_BASE_URL}/conversations/messages/stream`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'text/event-stream',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      body: JSON.stringify(payload),
-    });
+    const makeRequest = (token: string | null) =>
+      expoFetch(`${API_BASE_URL}/conversations/messages/stream`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'text/event-stream',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(payload),
+      });
+
+    let token = useAuthStore.getState().accessToken;
+    let response = await makeRequest(token);
+
+    // expoFetch bypasses axios interceptors — handle 401 manually with token refresh.
+    if (response.status === 401) {
+      const { refreshToken, setTokens, clearAuth } = useAuthStore.getState();
+      if (!refreshToken) {
+        clearAuth();
+        throw new Error('Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.');
+      }
+      try {
+        const { data } = await axios.post<{ access: { token: string }; refresh: { token: string } }>(
+          `${API_BASE_URL}/auth/refresh-tokens`,
+          { refreshToken },
+        );
+        const newAccess = data.access?.token;
+        const newRefresh = data.refresh?.token;
+        if (!newAccess || !newRefresh) throw new Error('Invalid refresh response');
+        setTokens(newAccess, newRefresh);
+        token = newAccess;
+        response = await makeRequest(newAccess);
+      } catch {
+        clearAuth();
+        throw new Error('Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.');
+      }
+    }
 
     if (!response.ok) {
       throw new Error((await response.text()) || 'Không kết nối được chatbot stream.');
