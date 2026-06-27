@@ -1,20 +1,13 @@
 import { useRef, useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  Pressable,
-  Alert,
-  ActivityIndicator,
-} from 'react-native';
+import { View, TextInput, Pressable, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { Text } from '@/components/ui/text';
+import { Heading } from '@/components/ui/heading';
 import { useRegister, useSendOtp } from '@/hooks/auth';
 
 const NAVY = '#0B1D45';
 const GOLD = '#F5A623';
-const BORDER = '#E5E7EB';
-const BG = '#FFFFFF';
 
 const OTP_LENGTH = 6;
 const RESEND_SECONDS = 60;
@@ -95,44 +88,39 @@ export default function VerifyOtpScreen() {
     ? email.replace(/(.{2}).+(@.+)/, (_, a, b) => `${a}****${b}`)
     : '';
 
+  const isComplete = digits.join('').length >= OTP_LENGTH;
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: BG }}>
-      <View style={{ flex: 1, paddingHorizontal: 24, paddingTop: 16 }}>
+    <SafeAreaView className="flex-1 bg-white">
+      <View className="flex-1 px-6 pt-4">
         {/* Back */}
         <Pressable
           onPress={() => router.back()}
-          style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center', marginBottom: 32 }}
+          className="w-10 h-10 items-center justify-center mb-8"
         >
-          <Text style={{ fontSize: 22, color: NAVY }}>←</Text>
+          <Text className="text-navy" style={{ fontSize: 22 }}>←</Text>
         </Pressable>
 
         {/* Icon */}
-        <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: '#EFF6FF', alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}>
+        <View className="w-[72px] h-[72px] rounded-full bg-blue-50 items-center justify-center mb-6">
           <Text style={{ fontSize: 34 }}>📬</Text>
         </View>
 
-        <Text style={{ fontSize: 26, fontWeight: '800', color: NAVY, marginBottom: 10 }}>Check your email</Text>
-        <Text style={{ fontSize: 14, color: '#6B7280', lineHeight: 22, marginBottom: 36 }}>
+        <Heading size="2xl" className="text-navy mb-2.5">Check your email</Heading>
+        <Text size="sm" className="text-gray-500 leading-[22px] mb-9">
           We sent a 6-digit verification code to{'\n'}
-          <Text style={{ color: NAVY, fontWeight: '600' }}>{maskedEmail}</Text>
+          <Text size="sm" bold className="text-navy">{maskedEmail}</Text>
         </Text>
 
         {/* OTP boxes */}
-        <View style={{ flexDirection: 'row', gap: 10, justifyContent: 'center', marginBottom: 36 }}>
+        <View className="flex-row gap-2.5 justify-center mb-9">
           {digits.map((digit, i) => (
             <TextInput
               key={i}
               ref={(el) => { inputRefs.current[i] = el; }}
+              className="w-12 h-14 border-2 rounded-xl text-center text-navy text-[22px] font-bold"
               style={{
-                width: 48,
-                height: 56,
-                borderWidth: 2,
-                borderColor: digit ? NAVY : BORDER,
-                borderRadius: 12,
-                textAlign: 'center',
-                fontSize: 22,
-                fontWeight: '700',
-                color: NAVY,
+                borderColor: digit ? NAVY : '#E5E7EB',
                 backgroundColor: digit ? '#EFF6FF' : '#F9FAFB',
               }}
               value={digit}
@@ -148,27 +136,21 @@ export default function VerifyOtpScreen() {
         {/* Verify button */}
         <Pressable
           onPress={handleVerify}
-          disabled={isRegistering || digits.join('').length < OTP_LENGTH}
-          style={{
-            backgroundColor: digits.join('').length < OTP_LENGTH ? '#93A3B8' : NAVY,
-            borderRadius: 14,
-            paddingVertical: 16,
-            alignItems: 'center',
-            marginBottom: 24,
-          }}
+          disabled={isRegistering || !isComplete}
+          className={`rounded-2xl py-4 items-center mb-6 ${isComplete ? 'bg-navy' : 'bg-slate-400'}`}
         >
           {isRegistering ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={{ color: '#fff', fontWeight: '700', fontSize: 16 }}>Verify & Create Account</Text>
+            <Text bold className="text-white text-base">Verify & Create Account</Text>
           )}
         </Pressable>
 
         {/* Resend */}
-        <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ color: '#6B7280', fontSize: 14 }}>Didn't receive the code? </Text>
+        <View className="flex-row justify-center items-center">
+          <Text size="sm" className="text-gray-500">Didn't receive the code? </Text>
           {countdown > 0 ? (
-            <Text style={{ color: PLACEHOLDER, fontSize: 14, fontWeight: '600' }}>
+            <Text size="sm" bold className="text-gray-400">
               Resend in {countdown}s
             </Text>
           ) : (
@@ -176,7 +158,7 @@ export default function VerifyOtpScreen() {
               {isSendingOtp ? (
                 <ActivityIndicator size="small" color={GOLD} />
               ) : (
-                <Text style={{ color: GOLD, fontWeight: '700', fontSize: 14 }}>Resend</Text>
+                <Text size="sm" bold className="text-gold">Resend</Text>
               )}
             </Pressable>
           )}

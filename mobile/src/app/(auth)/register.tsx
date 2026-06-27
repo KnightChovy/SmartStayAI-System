@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import {
   View,
-  Text,
   TextInput,
   Pressable,
   ScrollView,
@@ -13,13 +12,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { Text } from '@/components/ui/text';
+import { Heading } from '@/components/ui/heading';
 import { useRegister, useSendOtp } from '@/hooks/auth';
 
 const NAVY = '#0B1D45';
 const GOLD = '#F5A623';
-const BORDER = '#E5E7EB';
 const PLACEHOLDER = '#9CA3AF';
-const BG = '#FFFFFF';
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -78,9 +77,9 @@ export default function RegisterScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: BG }}>
+    <SafeAreaView className="flex-1 bg-white">
       <KeyboardAvoidingView
-        style={{ flex: 1 }}
+        className="flex-1"
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <ScrollView
@@ -89,30 +88,30 @@ export default function RegisterScreen() {
           keyboardShouldPersistTaps="handled"
         >
           {/* Header row */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
+          <View className="flex-row items-center justify-between mb-7">
             <Pressable
               onPress={() => router.back()}
-              style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center' }}
+              className="w-10 h-10 items-center justify-center"
             >
-              <Text style={{ fontSize: 22, color: NAVY }}>←</Text>
+              <Text className="text-[22px] text-navy">←</Text>
             </Pressable>
-            <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: NAVY, alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={{ fontSize: 18 }}>✨</Text>
+            <View className="w-10 h-10 rounded-full bg-navy items-center justify-center">
+              <Text className="text-lg">✨</Text>
             </View>
           </View>
 
           {/* Title */}
-          <Text style={{ fontSize: 26, fontWeight: '800', color: NAVY, marginBottom: 8 }}>Create an account</Text>
-          <Text style={{ fontSize: 14, color: '#6B7280', lineHeight: 22, marginBottom: 28 }}>
+          <Heading className="text-2xl text-navy mb-2">Create an account</Heading>
+          <Text size="sm" className="text-gray-500 leading-[22px] mb-7">
             Join SmartStay AI to manage your bookings and preferences seamlessly.
           </Text>
 
           {/* Full Name */}
-          <Text style={{ fontSize: 14, fontWeight: '600', color: NAVY, marginBottom: 6 }}>Full Name</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: BORDER, borderRadius: 12, paddingHorizontal: 14, marginBottom: 16, backgroundColor: '#F9FAFB' }}>
+          <Text size="sm" bold className="text-navy mb-1.5">Full Name</Text>
+          <View className="flex-row items-center border border-gray-200 rounded-xl px-3.5 mb-4 bg-gray-50">
             <Ionicons name="person-outline" size={20} color="#9CA3AF" style={{ marginRight: 10 }} />
             <TextInput
-              style={{ flex: 1, height: 50, fontSize: 15, color: NAVY }}
+              className="flex-1 h-[50px] text-[15px] text-navy"
               placeholder="John Doe"
               placeholderTextColor={PLACEHOLDER}
               value={name}
@@ -122,12 +121,12 @@ export default function RegisterScreen() {
           </View>
 
           {/* Email + Send OTP */}
-          <Text style={{ fontSize: 14, fontWeight: '600', color: NAVY, marginBottom: 6 }}>Email address</Text>
-          <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
-            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: BORDER, borderRadius: 12, paddingHorizontal: 14, backgroundColor: '#F9FAFB' }}>
+          <Text size="sm" bold className="text-navy mb-1.5">Email address</Text>
+          <View className="flex-row gap-2 mb-4">
+            <View className="flex-1 flex-row items-center border border-gray-200 rounded-xl px-3.5 bg-gray-50">
               <Ionicons name="mail-outline" size={20} color="#9CA3AF" style={{ marginRight: 10 }} />
               <TextInput
-                style={{ flex: 1, height: 50, fontSize: 15, color: NAVY }}
+                className="flex-1 h-[50px] text-[15px] text-navy"
                 placeholder="name@example.com"
                 placeholderTextColor={PLACEHOLDER}
                 value={email}
@@ -140,27 +139,24 @@ export default function RegisterScreen() {
             <Pressable
               onPress={handleSendOtp}
               disabled={isSendingOtp}
-              style={{ backgroundColor: otpSent ? '#22C55E' : NAVY, borderRadius: 12, paddingHorizontal: 14, alignItems: 'center', justifyContent: 'center' }}
+              className={`rounded-xl px-3.5 items-center justify-center ${otpSent ? 'bg-green-500' : 'bg-navy'}`}
             >
               {isSendingOtp ? (
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
-                <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12 }}>{otpSent ? '✓ Sent' : 'Send\nOTP'}</Text>
+                <Text size="xs" bold className="text-white">{otpSent ? '✓ Sent' : 'Send\nOTP'}</Text>
               )}
             </Pressable>
           </View>
 
           {/* OTP input — luôn hiển thị */}
-          <Text style={{ fontSize: 14, fontWeight: '600', color: NAVY, marginBottom: 6 }}>Verification Code</Text>
-          <View style={{
-            flexDirection: 'row', alignItems: 'center', borderWidth: 1,
-            borderColor: otpSent ? GOLD : BORDER,
-            borderRadius: 12, paddingHorizontal: 14, marginBottom: 16,
-            backgroundColor: otpSent ? '#FFFBEB' : '#F9FAFB',
-          }}>
+          <Text size="sm" bold className="text-navy mb-1.5">Verification Code</Text>
+          <View
+            className={`flex-row items-center border rounded-xl px-3.5 mb-4 ${otpSent ? 'border-gold bg-amber-50' : 'border-gray-200 bg-gray-50'}`}
+          >
             <Ionicons name="key-outline" size={20} color={otpSent ? GOLD : '#9CA3AF'} style={{ marginRight: 10 }} />
             <TextInput
-              style={{ flex: 1, height: 50, fontSize: 20, color: NAVY, letterSpacing: 6, fontWeight: '700' }}
+              className="flex-1 h-[50px] text-xl text-navy font-bold tracking-[6px]"
               placeholder="------"
               placeholderTextColor={PLACEHOLDER}
               value={otp}
@@ -174,11 +170,11 @@ export default function RegisterScreen() {
           </View>
 
           {/* Password */}
-          <Text style={{ fontSize: 14, fontWeight: '600', color: NAVY, marginBottom: 6 }}>Password</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: BORDER, borderRadius: 12, paddingHorizontal: 14, marginBottom: 16, backgroundColor: '#F9FAFB' }}>
+          <Text size="sm" bold className="text-navy mb-1.5">Password</Text>
+          <View className="flex-row items-center border border-gray-200 rounded-xl px-3.5 mb-4 bg-gray-50">
             <Ionicons name="lock-closed-outline" size={20} color="#9CA3AF" style={{ marginRight: 10 }} />
             <TextInput
-              style={{ flex: 1, height: 50, fontSize: 15, color: NAVY }}
+              className="flex-1 h-[50px] text-[15px] text-navy"
               placeholder="••••••••"
               placeholderTextColor={PLACEHOLDER}
               value={password}
@@ -192,15 +188,13 @@ export default function RegisterScreen() {
           </View>
 
           {/* Confirm Password */}
-          <Text style={{ fontSize: 14, fontWeight: '600', color: NAVY, marginBottom: 6 }}>Confirm Password</Text>
-          <View style={{
-            flexDirection: 'row', alignItems: 'center', borderWidth: 1,
-            borderColor: confirmPassword && confirmPassword !== password ? '#EF4444' : BORDER,
-            borderRadius: 12, paddingHorizontal: 14, marginBottom: 4, backgroundColor: '#F9FAFB',
-          }}>
+          <Text size="sm" bold className="text-navy mb-1.5">Confirm Password</Text>
+          <View
+            className={`flex-row items-center border rounded-xl px-3.5 mb-1 bg-gray-50 ${confirmPassword && confirmPassword !== password ? 'border-red-500' : 'border-gray-200'}`}
+          >
             <Ionicons name="lock-closed-outline" size={20} color="#9CA3AF" style={{ marginRight: 10 }} />
             <TextInput
-              style={{ flex: 1, height: 50, fontSize: 15, color: NAVY }}
+              className="flex-1 h-[50px] text-[15px] text-navy"
               placeholder="••••••••"
               placeholderTextColor={PLACEHOLDER}
               value={confirmPassword}
@@ -213,31 +207,28 @@ export default function RegisterScreen() {
             </Pressable>
           </View>
           {confirmPassword !== '' && confirmPassword !== password && (
-            <Text style={{ color: '#EF4444', fontSize: 12, marginBottom: 12 }}>Passwords do not match</Text>
+            <Text size="xs" className="text-red-500 mb-3">Passwords do not match</Text>
           )}
           {confirmPassword !== '' && confirmPassword === password && (
-            <Text style={{ color: '#22C55E', fontSize: 12, marginBottom: 12 }}>✓ Passwords match</Text>
+            <Text size="xs" className="text-green-500 mb-3">✓ Passwords match</Text>
           )}
-          <View style={{ marginBottom: 8 }} />
+          <View className="mb-2" />
 
           {/* Terms */}
           <Pressable
             onPress={() => setAgreedToTerms((v) => !v)}
-            style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 24 }}
+            className="flex-row items-start gap-2.5 mb-6"
           >
-            <View style={{
-              width: 20, height: 20, borderRadius: 4, borderWidth: 2,
-              borderColor: agreedToTerms ? NAVY : BORDER,
-              backgroundColor: agreedToTerms ? NAVY : BG,
-              alignItems: 'center', justifyContent: 'center', marginTop: 2,
-            }}>
-              {agreedToTerms && <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>✓</Text>}
+            <View
+              className={`w-5 h-5 rounded border-2 items-center justify-center mt-0.5 ${agreedToTerms ? 'border-navy bg-navy' : 'border-gray-200 bg-white'}`}
+            >
+              {agreedToTerms && <Text size="xs" bold className="text-white">✓</Text>}
             </View>
-            <Text style={{ flex: 1, fontSize: 13, color: '#6B7280', lineHeight: 20 }}>
+            <Text size="sm" className="flex-1 text-gray-500 leading-5">
               I agree to the{' '}
-              <Text style={{ color: NAVY, fontWeight: '700' }}>Terms of Service</Text>
+              <Text size="sm" bold className="text-navy">Terms of Service</Text>
               {' '}and{' '}
-              <Text style={{ color: NAVY, fontWeight: '700' }}>Privacy Policy</Text>.
+              <Text size="sm" bold className="text-navy">Privacy Policy</Text>.
             </Text>
           </Pressable>
 
@@ -245,20 +236,20 @@ export default function RegisterScreen() {
           <Pressable
             onPress={handleRegister}
             disabled={isRegistering || password !== confirmPassword}
-            style={{ backgroundColor: isRegistering || password !== confirmPassword ? '#93A3B8' : NAVY, borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginBottom: 20 }}
+            className={`rounded-2xl py-4 items-center mb-5 ${isRegistering || password !== confirmPassword ? 'bg-slate-400' : 'bg-navy'}`}
           >
             {isRegistering ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={{ color: '#fff', fontWeight: '700', fontSize: 16 }}>Create account</Text>
+              <Text bold className="text-white text-base">Create account</Text>
             )}
           </Pressable>
 
           {/* Login link */}
-          <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
-            <Text style={{ color: '#6B7280', fontSize: 14 }}>Already have an account? </Text>
+          <View className="flex-row justify-center">
+            <Text size="sm" className="text-gray-500">Already have an account? </Text>
             <Pressable onPress={() => router.push('/(auth)/login')}>
-              <Text style={{ color: NAVY, fontWeight: '700', fontSize: 14 }}>Log in</Text>
+              <Text size="sm" bold className="text-navy">Log in</Text>
             </Pressable>
           </View>
         </ScrollView>

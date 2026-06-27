@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import {
   View,
-  Text,
   TextInput,
   Pressable,
   Alert,
@@ -11,13 +10,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { Text } from '@/components/ui/text';
+import { Heading } from '@/components/ui/heading';
 import { useForgotPassword } from '@/hooks/auth';
 
-const NAVY = '#0B1D45';
-const GOLD = '#F5A623';
-const BORDER = '#E5E7EB';
 const PLACEHOLDER = '#9CA3AF';
-const BG = '#FFFFFF';
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
@@ -42,38 +39,38 @@ export default function ForgotPasswordScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: BG }}>
+    <SafeAreaView className="flex-1 bg-white">
       <KeyboardAvoidingView
-        style={{ flex: 1 }}
+        className="flex-1"
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <View style={{ flex: 1, paddingHorizontal: 24, paddingTop: 16, paddingBottom: 32 }}>
+        <View className="flex-1 px-6 pt-4 pb-8">
           {/* Back */}
           <Pressable
             onPress={() => router.back()}
-            style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center', marginBottom: 32 }}
+            className="w-10 h-10 items-center justify-center mb-8"
           >
-            <Text style={{ fontSize: 22, color: NAVY }}>←</Text>
+            <Text size="xl" className="text-navy">←</Text>
           </Pressable>
 
           {!sent ? (
             <>
               {/* Icon */}
-              <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: '#EFF6FF', alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}>
-                <Text style={{ fontSize: 34 }}>🔑</Text>
+              <View className="w-[72px] h-[72px] rounded-full bg-blue-50 items-center justify-center mb-6">
+                <Text size="3xl">🔑</Text>
               </View>
 
-              <Text style={{ fontSize: 26, fontWeight: '800', color: NAVY, marginBottom: 10 }}>Forgot password?</Text>
-              <Text style={{ fontSize: 14, color: '#6B7280', lineHeight: 22, marginBottom: 32 }}>
+              <Heading size="2xl" className="text-navy mb-2.5">Forgot password?</Heading>
+              <Text size="sm" className="text-gray-500 leading-6 mb-8">
                 No worries! Enter your email address and we'll send you a link to reset your password.
               </Text>
 
               {/* Email */}
-              <Text style={{ fontSize: 14, fontWeight: '600', color: NAVY, marginBottom: 6 }}>Email address</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: BORDER, borderRadius: 12, paddingHorizontal: 14, marginBottom: 24, backgroundColor: '#F9FAFB' }}>
-                <Text style={{ fontSize: 18, marginRight: 10 }}>✉️</Text>
+              <Text size="sm" bold className="text-navy mb-1.5">Email address</Text>
+              <View className="flex-row items-center border border-gray-200 rounded-xl px-3.5 mb-6 bg-gray-50">
+                <Text size="lg" className="mr-2.5">✉️</Text>
                 <TextInput
-                  style={{ flex: 1, height: 50, fontSize: 15, color: NAVY }}
+                  className="flex-1 h-[50px] text-[15px] text-navy"
                   placeholder="Enter your email"
                   placeholderTextColor={PLACEHOLDER}
                   value={email}
@@ -88,42 +85,42 @@ export default function ForgotPasswordScreen() {
               <Pressable
                 onPress={handleSend}
                 disabled={isPending}
-                style={{ backgroundColor: NAVY, borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginBottom: 20 }}
+                className="bg-navy rounded-2xl py-4 items-center mb-5"
               >
                 {isPending ? (
                   <ActivityIndicator color="#fff" />
                 ) : (
-                  <Text style={{ color: '#fff', fontWeight: '700', fontSize: 16 }}>Send reset link</Text>
+                  <Text bold className="text-white text-base">Send reset link</Text>
                 )}
               </Pressable>
 
               {/* Back to login */}
-              <Pressable onPress={() => router.back()} style={{ alignItems: 'center' }}>
-                <Text style={{ color: '#6B7280', fontSize: 14 }}>
+              <Pressable onPress={() => router.back()} className="items-center">
+                <Text size="sm" className="text-gray-500">
                   Remember your password?{' '}
-                  <Text style={{ color: NAVY, fontWeight: '700' }}>Sign in</Text>
+                  <Text size="sm" bold className="text-navy">Sign in</Text>
                 </Text>
               </Pressable>
             </>
           ) : (
             /* Success state */
-            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-              <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: '#F0FDF4', alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}>
-                <Text style={{ fontSize: 40 }}>📧</Text>
+            <View className="flex-1 items-center justify-center">
+              <View className="w-20 h-20 rounded-full bg-green-50 items-center justify-center mb-6">
+                <Text size="4xl">📧</Text>
               </View>
-              <Text style={{ fontSize: 24, fontWeight: '800', color: NAVY, marginBottom: 10, textAlign: 'center' }}>Check your email</Text>
-              <Text style={{ fontSize: 14, color: '#6B7280', lineHeight: 22, textAlign: 'center', marginBottom: 32 }}>
+              <Heading size="xl" className="text-navy mb-2.5 text-center">Check your email</Heading>
+              <Text size="sm" className="text-gray-500 leading-6 text-center mb-8">
                 We've sent a password reset link to{'\n'}
-                <Text style={{ color: NAVY, fontWeight: '600' }}>{email}</Text>
+                <Text size="sm" className="text-navy font-semibold">{email}</Text>
               </Text>
               <Pressable
                 onPress={() => router.push('/(auth)/login')}
-                style={{ backgroundColor: NAVY, borderRadius: 14, paddingVertical: 16, paddingHorizontal: 48, alignItems: 'center', marginBottom: 16 }}
+                className="bg-navy rounded-2xl py-4 px-12 items-center mb-4"
               >
-                <Text style={{ color: '#fff', fontWeight: '700', fontSize: 16 }}>Back to Sign In</Text>
+                <Text bold className="text-white text-base">Back to Sign In</Text>
               </Pressable>
               <Pressable onPress={handleSend}>
-                <Text style={{ color: GOLD, fontWeight: '600', fontSize: 14 }}>Resend email</Text>
+                <Text size="sm" className="text-gold font-semibold">Resend email</Text>
               </Pressable>
             </View>
           )}
