@@ -4,18 +4,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Text } from '@/components/ui/text';
 import { Heading } from '@/components/ui/heading';
+import { BookingStatusBadge } from '@/components/shared/BookingStatusBadge';
 import { useGetMyBookings } from '@/hooks/bookings';
 import { formatVnd } from '@/utils/formatCurrency';
-import type { BookingStatus } from '@/types/bookings.type';
-
-const STATUS_STYLE: Record<BookingStatus, { label: string; bg: string; text: string }> = {
-  pending: { label: 'Pending', bg: '#FEF3C7', text: '#B45309' },
-  confirmed: { label: 'Confirmed', bg: '#DBEAFE', text: '#1D4ED8' },
-  checked_in: { label: 'Checked in', bg: '#DCFCE7', text: '#16A34A' },
-  checked_out: { label: 'Completed', bg: '#F3F4F6', text: '#6B7280' },
-  cancelled: { label: 'Cancelled', bg: '#FEE2E2', text: '#DC2626' },
-  no_show: { label: 'No show', bg: '#F3F4F6', text: '#6B7280' },
-};
 
 export default function BookingsScreen() {
   const router = useRouter();
@@ -59,9 +50,11 @@ export default function BookingsScreen() {
             </View>
           }
           renderItem={({ item }) => {
-            const status = STATUS_STYLE[item.status];
             return (
-              <View className="bg-white rounded-2xl p-4 border border-gray-100">
+              <Pressable
+                onPress={() => router.push({ pathname: '/booking/[id]', params: { id: item.id } })}
+                className="bg-white rounded-2xl p-4 border border-gray-100"
+              >
                 <View className="flex-row items-start justify-between mb-2">
                   <View className="flex-1 pr-2">
                     <Text bold className="text-navy text-base" numberOfLines={1}>
@@ -69,9 +62,7 @@ export default function BookingsScreen() {
                     </Text>
                     <Text size="xs" className="text-gray-400 mt-0.5">#{item.bookingCode}</Text>
                   </View>
-                  <View className="rounded-full px-2.5 py-1" style={{ backgroundColor: status.bg }}>
-                    <Text size="2xs" bold style={{ color: status.text }}>{status.label}</Text>
-                  </View>
+                  <BookingStatusBadge status={item.status} />
                 </View>
 
                 {item.roomType?.name && (
@@ -95,9 +86,12 @@ export default function BookingsScreen() {
 
                 <View className="flex-row items-center justify-between border-t border-gray-100 pt-3">
                   <Text size="xs" className="text-gray-400">Total</Text>
-                  <Text bold className="text-navy text-lg">{formatVnd(item.totalAmount)}</Text>
+                  <View className="flex-row items-center gap-1">
+                    <Text bold className="text-navy text-lg">{formatVnd(item.totalAmount)}</Text>
+                    <Ionicons name="chevron-forward" size={16} color="#D1D5DB" />
+                  </View>
                 </View>
-              </View>
+              </Pressable>
             );
           }}
         />

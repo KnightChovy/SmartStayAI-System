@@ -8,16 +8,15 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Text } from '@/components/ui/text';
 import { Heading } from '@/components/ui/heading';
 import { StarRating } from '@/components/shared/StarRating';
+import { RoomTypeCard } from '@/components/shared/RoomTypeCard';
+import { StayPickerSheet } from '@/components/shared/StayPickerSheet';
 import { useGetHotel, useGetRoomTypes } from '@/hooks/hotels';
 import { useGetReviews } from '@/hooks/reviews';
-import { getPrimaryImageUrl, getHotelLocation, getInitials } from '@/utils/hotel';
-import { formatVnd } from '@/utils/formatCurrency';
+import { getHotelLocation, getInitials } from '@/utils/hotel';
+import { formatDateShort, todayKey, toDateKey, addDays } from '@/utils/formatDate';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 const CAROUSEL_H = 280;
-const ROOM_IMG_H = 150;
-// Bề rộng ảnh phòng = màn hình - padding ngoài (p-4 = 16*2) - viền card (border-2 = 2*2).
-const ROOM_IMG_W = SCREEN_W - 36;
 const GOLD = '#F5A623';
 
 const AVATAR_COLORS = ['#0D9488', '#B45309', '#1D4ED8', '#7C3AED', '#DC2626', '#059669'];
@@ -27,20 +26,24 @@ function avatarColor(seed: string): string {
   return AVATAR_COLORS[sum % AVATAR_COLORS.length];
 }
 
-function roomDetails(room: { areaSqm?: string | null; bedType?: string | null; viewType?: string | null }): string {
-  return [room.areaSqm ? `${room.areaSqm}m²` : null, room.bedType, room.viewType].filter(Boolean).join(' • ');
-}
-
 export default function HotelDetailScreen() {
   const router = useRouter();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const params = useLocalSearchParams<{
+    id: string; checkIn?: string; checkOut?: string; guests?: string;
+  }>();
+  const id = params.id;
   const insets = useSafeAreaInsets();
   const [imageIndex, setImageIndex] = useState(0);
   const [saved, setSaved] = useState(false);
-  const [selectedRoom, setSelectedRoom] = useState<string | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  // Nhận ngày từ Search nếu có; mặc định hôm nay → mai để backend trả availableRooms/totalPrice ngay.
+  const [checkIn, setCheckIn] = useState(params.checkIn ?? todayKey());
+  const [checkOut, setCheckOut] = useState(params.checkOut ?? toDateKey(addDays(todayKey(), 1)));
+  const [guests, setGuests] = useState(params.guests ? Number(params.guests) : 2);
 
   const { data: hotel, isLoading } = useGetHotel(id);
-  const { data: roomTypes } = useGetRoomTypes(id);
+  const { data: roomTypes } = useGetRoomTypes(id, { checkIn, checkOut, guests });
   const { data: reviewsData } = useGetReviews({ hotelId: id, limit: 5 });
 
   const rooms = roomTypes ?? [];
@@ -55,8 +58,12 @@ export default function HotelDetailScreen() {
     new Set(rooms.flatMap((rt) => rt.amenities.map((a) => a.amenity.name))),
   ).slice(0, 8);
 
-  const selected = rooms.find((r) => r.id === selectedRoom) ?? rooms[0];
-  const displayPrice = selected?.basePrice ?? hotel?.minPrice ?? null;
+  function openRoom(roomTypeId: string) {
+    router.push({
+      pathname: '/room/[id]',
+      params: { id: roomTypeId, hotelId: id, checkIn, checkOut, guests: String(guests) },
+    });
+  }
 
   function handleCarouselScroll(e: NativeSyntheticEvent<NativeScrollEvent>) {
     const next = Math.round(e.nativeEvent.contentOffset.x / SCREEN_W);
@@ -88,7 +95,7 @@ export default function HotelDetailScreen() {
   return (
     <View className="flex-1 bg-gray-100">
       <StatusBar style="light" />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 56 + insets.bottom }}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}>
         {/* ── Image Carousel ── */}
         <View style={{ height: CAROUSEL_H }}>
           {images.length > 0 ? (
@@ -114,7 +121,7 @@ export default function HotelDetailScreen() {
             </View>
           )}
 
-          {/* Top bar overlay (theo safe-area) */}
+          {/* Top bar overlay */}
           <View className="absolute left-0 right-0 flex-row items-center justify-between px-4" style={{ top: insets.top + 6 }}>
             <Pressable onPress={() => router.back()} className="w-9 h-9 rounded-full bg-black/30 items-center justify-center">
               <Ionicons name="arrow-back" size={20} color="#fff" />
@@ -184,53 +191,36 @@ export default function HotelDetailScreen() {
             )}
           </View>
 
+          {/* ── Your stay (date/guest picker) ── */}
+          <Pressable onPress={() => setPickerOpen(true)} className="bg-white rounded-2xl p-4 mb-3.5 flex-row items-center">
+            <View className="flex-1 flex-row items-center gap-4">
+              <View>
+                <Text size="2xs" className="text-gray-400 uppercase">Check-in</Text>
+                <Text bold className="text-navy text-sm">{formatDateShort(checkIn)}</Text>
+              </View>
+              <Ionicons name="arrow-forward" size={16} color="#9CA3AF" />
+              <View>
+                <Text size="2xs" className="text-gray-400 uppercase">Check-out</Text>
+                <Text bold className="text-navy text-sm">{formatDateShort(checkOut)}</Text>
+              </View>
+              <View className="border-l border-gray-100 pl-4">
+                <Text size="2xs" className="text-gray-400 uppercase">Guests</Text>
+                <Text bold className="text-navy text-sm">{guests}</Text>
+              </View>
+            </View>
+            <View className="w-9 h-9 rounded-full bg-blue-50 items-center justify-center">
+              <Ionicons name="create-outline" size={18} color="#0B1D45" />
+            </View>
+          </Pressable>
+
           {/* ── Select Room ── */}
           <Heading size="lg" className="text-navy mb-3">Select Room</Heading>
           {rooms.length === 0 ? (
             <View className="bg-white rounded-2xl p-6 items-center mb-3">
-              <Text size="sm" className="text-gray-400">No rooms available</Text>
+              <Text size="sm" className="text-gray-400">No rooms available for these dates</Text>
             </View>
           ) : (
-            rooms.map((r) => {
-              const roomImg = getPrimaryImageUrl(r.images);
-              return (
-                <Pressable
-                  key={r.id}
-                  onPress={() => setSelectedRoom(r.id)}
-                  className="bg-white rounded-2xl mb-3 overflow-hidden border-2 shadow-hard-5"
-                  style={{ borderColor: selectedRoom === r.id ? GOLD : 'transparent' }}
-                >
-                  {/* Room image */}
-                  <View className="bg-gray-200 items-center justify-center overflow-hidden" style={{ height: ROOM_IMG_H }}>
-                    {roomImg ? (
-                      <Image source={{ uri: roomImg }} style={{ width: ROOM_IMG_W, height: ROOM_IMG_H }} contentFit="cover" transition={200} />
-                    ) : (
-                      <Ionicons name="bed-outline" size={44} color="rgba(0,0,0,0.15)" />
-                    )}
-                    {typeof r.availableRooms === 'number' && r.availableRooms > 0 && r.availableRooms <= 3 && (
-                      <View className="absolute top-2.5 left-2.5 bg-red-500 rounded-md px-2 py-0.5">
-                        <Text size="2xs" bold className="text-white">ONLY {r.availableRooms} LEFT!</Text>
-                      </View>
-                    )}
-                  </View>
-
-                  {/* Room details */}
-                  <View className="p-3.5">
-                    <Text bold className="text-navy text-[15px] mb-1">{r.name}</Text>
-                    <Text size="xs" className="text-gray-500 mb-2.5">{roomDetails(r) || `Up to ${r.maxOccupancy} guests`}</Text>
-                    <View className="flex-row items-center justify-between">
-                      <View>
-                        <Text bold className="text-navy text-lg">{formatVnd(r.basePrice)}</Text>
-                        <Text size="2xs" className="text-gray-400">/ night</Text>
-                      </View>
-                      <Pressable onPress={() => setSelectedRoom(r.id)} className="bg-navy rounded-xl px-5 py-2.5">
-                        <Text size="sm" bold className="text-white">Select</Text>
-                      </Pressable>
-                    </View>
-                  </View>
-                </Pressable>
-              );
-            })
+            rooms.map((r) => <RoomTypeCard key={r.id} room={r} onPress={() => openRoom(r.id)} />)
           )}
 
           {/* ── Guest Reviews ── */}
@@ -283,16 +273,19 @@ export default function HotelDetailScreen() {
         </View>
       </ScrollView>
 
-      {/* ── Sticky bottom bar ── */}
-      <View className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-100 flex-row items-center justify-between px-5 pt-3 pb-6">
-        <View>
-          <Text bold className="text-navy text-xl">{displayPrice ? formatVnd(displayPrice) : '—'}</Text>
-          <Text size="2xs" className="text-gray-400">Price for 1 night (incl. taxes)</Text>
-        </View>
-        <Pressable className="bg-gold rounded-2xl px-4 py-3.5">
-          <Text bold className="text-navy text-[15px]">Book now</Text>
-        </Pressable>
-      </View>
+      <StayPickerSheet
+        visible={pickerOpen}
+        initialCheckIn={checkIn}
+        initialCheckOut={checkOut}
+        initialGuests={guests}
+        onClose={() => setPickerOpen(false)}
+        onApply={({ checkIn: ci, checkOut: co, guests: g }) => {
+          setCheckIn(ci);
+          setCheckOut(co);
+          setGuests(g);
+          setPickerOpen(false);
+        }}
+      />
     </View>
   );
 }

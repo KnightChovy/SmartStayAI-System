@@ -94,15 +94,15 @@ export default function ProfileScreen() {
               <Text size="sm" className="text-white/70 mt-0.5">
                 {user?.email ?? ''}
               </Text>
-              <Pressable className="mt-1.5 self-start bg-white/15 rounded-full px-3 py-1">
+              <Pressable onPress={() => router.push('/profile/edit')} className="mt-1.5 self-start bg-white/15 rounded-full px-3 py-1">
                 <Text size="xs" bold className="text-white">
-                  Add occupation/position
+                  Edit profile
                 </Text>
               </Pressable>
             </View>
 
             {/* Edit */}
-            <Pressable className="w-9 h-9 rounded-full bg-white/10 items-center justify-center">
+            <Pressable onPress={() => router.push('/profile/edit')} className="w-9 h-9 rounded-full bg-white/10 items-center justify-center">
               <Ionicons name="pencil-outline" size={16} color="#fff" />
             </Pressable>
           </View>
@@ -138,7 +138,7 @@ export default function ProfileScreen() {
                   Add more details to unlock offers tailored just for you.
                 </Text>
               </View>
-              <Pressable className="bg-white rounded-xl px-3 py-2">
+              <Pressable onPress={() => router.push('/profile/edit')} className="bg-white rounded-xl px-3 py-2">
                 <Text bold className="text-navy text-xs">
                   Update
                 </Text>
@@ -150,7 +150,7 @@ export default function ProfileScreen() {
         <View className="px-4">
           {/* Quick actions */}
           <View className="flex-row gap-3 mt-4">
-            <Pressable className="flex-1 bg-white rounded-2xl p-4 items-start gap-2">
+            <Pressable onPress={() => router.push('/(tabs)/bookings')} className="flex-1 bg-white rounded-2xl p-4 items-start gap-2">
               <View className="w-10 h-10 rounded-xl bg-blue-50 items-center justify-center">
                 <Ionicons name="calendar-outline" size={20} color={NAVY} />
               </View>

@@ -43,7 +43,9 @@ function sortHotels(list: HotelSearchResult[], sort: SortOption): HotelSearchRes
 
 export default function SearchScreen() {
   const router = useRouter();
-  const { city } = useLocalSearchParams<{ city?: string }>();
+  const { city, checkIn, checkOut, guests } = useLocalSearchParams<{
+    city?: string; checkIn?: string; checkOut?: string; guests?: string;
+  }>();
   const { bottom } = useSafeAreaInsets();
   const [sort, setSort] = useState<SortOption>('Recommended');
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
@@ -51,7 +53,12 @@ export default function SearchScreen() {
   const [query, setQuery] = useState('');
   const debouncedQuery = useDebounce(query, 400);
 
-  const { data, isLoading, isError, refetch, isRefetching } = useGetHotels({ city });
+  const { data, isLoading, isError, refetch, isRefetching } = useGetHotels({
+    city,
+    checkIn,
+    checkOut,
+    guests: guests ? Number(guests) : undefined,
+  });
   const results = data?.results ?? [];
 
   function toggleFilter(id: string) {
@@ -172,7 +179,7 @@ export default function SearchScreen() {
             const imageUrl = getPrimaryImageUrl(item.images);
             return (
               <Pressable
-                onPress={() => router.push({ pathname: '/hotel/[id]', params: { id: item.id } })}
+                onPress={() => router.push({ pathname: '/hotel/[id]', params: { id: item.id, ...(checkIn ? { checkIn } : {}), ...(checkOut ? { checkOut } : {}), ...(guests ? { guests } : {}) } })}
                 className="bg-white rounded-3xl overflow-hidden shadow-hard-5"
               >
                 {/* Image */}
@@ -225,7 +232,7 @@ export default function SearchScreen() {
                       )}
                     </View>
                     <Pressable
-                      onPress={() => router.push({ pathname: '/hotel/[id]', params: { id: item.id } })}
+                      onPress={() => router.push({ pathname: '/hotel/[id]', params: { id: item.id, ...(checkIn ? { checkIn } : {}), ...(checkOut ? { checkOut } : {}), ...(guests ? { guests } : {}) } })}
                       className="bg-gold rounded-xl px-4 py-2.5"
                     >
                       <Text bold className="text-navy text-sm">View room</Text>
