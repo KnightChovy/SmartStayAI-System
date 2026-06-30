@@ -1,0 +1,291 @@
+import { useState } from 'react';
+import { View, ScrollView, Pressable, FlatList, ActivityIndicator, Dimensions, type NativeSyntheticEvent, type NativeScrollEvent } from 'react-native';
+import { Image } from 'expo-image';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { Text } from '@/components/ui/text';
+import { Heading } from '@/components/ui/heading';
+import { StarRating } from '@/components/shared/StarRating';
+import { RoomTypeCard } from '@/components/shared/RoomTypeCard';
+import { StayPickerSheet } from '@/components/shared/StayPickerSheet';
+import { useGetHotel, useGetRoomTypes } from '@/hooks/hotels';
+import { useGetReviews } from '@/hooks/reviews';
+import { getHotelLocation, getInitials } from '@/utils/hotel';
+import { formatDateShort, todayKey, toDateKey, addDays } from '@/utils/formatDate';
+
+const { width: SCREEN_W } = Dimensions.get('window');
+const CAROUSEL_H = 280;
+const GOLD = '#F5A623';
+
+const AVATAR_COLORS = ['#0D9488', '#B45309', '#1D4ED8', '#7C3AED', '#DC2626', '#059669'];
+function avatarColor(seed: string): string {
+  let sum = 0;
+  for (const ch of seed) sum += ch.charCodeAt(0);
+  return AVATAR_COLORS[sum % AVATAR_COLORS.length];
+}
+
+export default function HotelDetailScreen() {
+  const router = useRouter();
+  const params = useLocalSearchParams<{
+    id: string; checkIn?: string; checkOut?: string; guests?: string;
+  }>();
+  const id = params.id;
+  const insets = useSafeAreaInsets();
+  const [imageIndex, setImageIndex] = useState(0);
+  const [saved, setSaved] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  // Nhận ngày từ Search nếu có; mặc định hôm nay → mai để backend trả availableRooms/totalPrice ngay.
+  const [checkIn, setCheckIn] = useState(params.checkIn ?? todayKey());
+  const [checkOut, setCheckOut] = useState(params.checkOut ?? toDateKey(addDays(todayKey(), 1)));
+  const [guests, setGuests] = useState(params.guests ? Number(params.guests) : 2);
+
+  const { data: hotel, isLoading } = useGetHotel(id);
+  const { data: roomTypes } = useGetRoomTypes(id, { checkIn, checkOut, guests });
+  const { data: reviewsData } = useGetReviews({ hotelId: id, limit: 5 });
+
+  const rooms = roomTypes ?? [];
+  const reviews = reviewsData?.results ?? [];
+  const reviewCount = reviewsData?.totalResults ?? reviews.length;
+  const reviewAvg = reviews.length
+    ? reviews.reduce((s, r) => s + r.overallRating, 0) / reviews.length
+    : null;
+
+  const images = hotel?.images ?? [];
+  const amenities = Array.from(
+    new Set(rooms.flatMap((rt) => rt.amenities.map((a) => a.amenity.name))),
+  ).slice(0, 8);
+
+  function openRoom(roomTypeId: string) {
+    router.push({
+      pathname: '/room/[id]',
+      params: { id: roomTypeId, hotelId: id, checkIn, checkOut, guests: String(guests) },
+    });
+  }
+
+  function handleCarouselScroll(e: NativeSyntheticEvent<NativeScrollEvent>) {
+    const next = Math.round(e.nativeEvent.contentOffset.x / SCREEN_W);
+    if (next !== imageIndex) setImageIndex(next);
+  }
+
+  if (isLoading) {
+    return (
+      <View className="flex-1 bg-gray-100 items-center justify-center">
+        <StatusBar style="dark" />
+        <ActivityIndicator size="large" color="#0B1D45" />
+      </View>
+    );
+  }
+
+  if (!hotel) {
+    return (
+      <View className="flex-1 bg-gray-100 items-center justify-center gap-3 px-8" style={{ paddingTop: insets.top }}>
+        <StatusBar style="dark" />
+        <Ionicons name="alert-circle-outline" size={48} color="#D1D5DB" />
+        <Text className="text-gray-400 text-center">Hotel not found.</Text>
+        <Pressable onPress={() => router.back()} className="bg-navy rounded-xl px-5 py-2.5">
+          <Text bold className="text-white">Go back</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  return (
+    <View className="flex-1 bg-gray-100">
+      <StatusBar style="light" />
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}>
+        {/* ── Image Carousel ── */}
+        <View style={{ height: CAROUSEL_H }}>
+          {images.length > 0 ? (
+            <FlatList
+              data={images}
+              keyExtractor={(img) => img.id}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onMomentumScrollEnd={handleCarouselScroll}
+              renderItem={({ item }) => (
+                <Image
+                  source={{ uri: item.url }}
+                  style={{ width: SCREEN_W, height: CAROUSEL_H }}
+                  contentFit="cover"
+                  transition={200}
+                />
+              )}
+            />
+          ) : (
+            <View className="items-center justify-center bg-gray-300" style={{ width: SCREEN_W, height: CAROUSEL_H }}>
+              <Ionicons name="image-outline" size={52} color="rgba(0,0,0,0.2)" />
+            </View>
+          )}
+
+          {/* Top bar overlay */}
+          <View className="absolute left-0 right-0 flex-row items-center justify-between px-4" style={{ top: insets.top + 6 }}>
+            <Pressable onPress={() => router.back()} className="w-9 h-9 rounded-full bg-black/30 items-center justify-center">
+              <Ionicons name="arrow-back" size={20} color="#fff" />
+            </Pressable>
+            <View className="flex-row gap-2">
+              <Pressable className="w-9 h-9 rounded-full bg-black/30 items-center justify-center">
+                <Ionicons name="share-outline" size={18} color="#fff" />
+              </Pressable>
+              <Pressable onPress={() => setSaved((v) => !v)} className="w-9 h-9 rounded-full bg-black/30 items-center justify-center">
+                <Ionicons name={saved ? 'heart' : 'heart-outline'} size={18} color={saved ? '#EF4444' : '#fff'} />
+              </Pressable>
+            </View>
+          </View>
+
+          {/* Counter + dots */}
+          {images.length > 1 && (
+            <>
+              <View className="absolute bottom-3.5 right-3.5 bg-black/50 rounded-full px-2.5 py-1">
+                <Text size="xs" bold className="text-white">{imageIndex + 1}/{images.length}</Text>
+              </View>
+              <View className="absolute bottom-4 left-0 right-0 flex-row justify-center gap-1.5">
+                {images.map((img, i) => (
+                  <View key={img.id} className={`h-1.5 rounded-full ${i === imageIndex ? 'w-5 bg-white' : 'w-1.5 bg-white/50'}`} />
+                ))}
+              </View>
+            </>
+          )}
+        </View>
+
+        <View className="p-4">
+          {/* ── Hotel Info ── */}
+          <View className="bg-white rounded-2xl p-4 mb-3.5">
+            {hotel.starRating ? (
+              <View className="flex-row items-center gap-1.5">
+                <StarRating count={hotel.starRating} size={13} />
+                <Text size="xs" className="text-gray-500">{hotel.starRating}-star Hotel</Text>
+              </View>
+            ) : null}
+            <Heading size="xl" className="text-navy mt-1.5 mb-2">{hotel.name}</Heading>
+
+            <View className="flex-row items-center justify-between">
+              <View className="flex-row items-center gap-1 flex-1 pr-2">
+                <Ionicons name="location-outline" size={14} color="#6B7280" />
+                <Text size="sm" className="text-gray-500 flex-1" numberOfLines={1}>{hotel.address}, {getHotelLocation(hotel)}</Text>
+              </View>
+              {reviewAvg !== null && (
+                <View className="bg-blue-100 rounded-lg px-2.5 py-1">
+                  <Text size="sm" bold className="text-blue-700">{reviewAvg.toFixed(1)} ★</Text>
+                </View>
+              )}
+            </View>
+
+            <Text size="xs" className="text-gray-400 mt-1">{reviewCount} reviews</Text>
+
+            {/* Amenities */}
+            {amenities.length > 0 && (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mt-3">
+                <View className="flex-row gap-2">
+                  {amenities.map((a) => (
+                    <View key={a} className="flex-row items-center gap-1.5 border border-gray-200 rounded-full px-2 py-1.5">
+                      <Ionicons name="checkmark-circle-outline" size={13} color={GOLD} />
+                      <Text size="xs" className="text-navy font-medium">{a}</Text>
+                    </View>
+                  ))}
+                </View>
+              </ScrollView>
+            )}
+          </View>
+
+          {/* ── Your stay (date/guest picker) ── */}
+          <Pressable onPress={() => setPickerOpen(true)} className="bg-white rounded-2xl p-4 mb-3.5 flex-row items-center">
+            <View className="flex-1 flex-row items-center gap-4">
+              <View>
+                <Text size="2xs" className="text-gray-400 uppercase">Check-in</Text>
+                <Text bold className="text-navy text-sm">{formatDateShort(checkIn)}</Text>
+              </View>
+              <Ionicons name="arrow-forward" size={16} color="#9CA3AF" />
+              <View>
+                <Text size="2xs" className="text-gray-400 uppercase">Check-out</Text>
+                <Text bold className="text-navy text-sm">{formatDateShort(checkOut)}</Text>
+              </View>
+              <View className="border-l border-gray-100 pl-4">
+                <Text size="2xs" className="text-gray-400 uppercase">Guests</Text>
+                <Text bold className="text-navy text-sm">{guests}</Text>
+              </View>
+            </View>
+            <View className="w-9 h-9 rounded-full bg-blue-50 items-center justify-center">
+              <Ionicons name="create-outline" size={18} color="#0B1D45" />
+            </View>
+          </Pressable>
+
+          {/* ── Select Room ── */}
+          <Heading size="lg" className="text-navy mb-3">Select Room</Heading>
+          {rooms.length === 0 ? (
+            <View className="bg-white rounded-2xl p-6 items-center mb-3">
+              <Text size="sm" className="text-gray-400">No rooms available for these dates</Text>
+            </View>
+          ) : (
+            rooms.map((r) => <RoomTypeCard key={r.id} room={r} onPress={() => openRoom(r.id)} />)
+          )}
+
+          {/* ── Guest Reviews ── */}
+          {reviews.length > 0 && (
+            <>
+              <View className="flex-row items-center justify-between mt-2 mb-3">
+                <Heading size="lg" className="text-navy">Guest Reviews</Heading>
+                <Pressable>
+                  <Text size="sm" bold className="text-gold">View all →</Text>
+                </Pressable>
+              </View>
+
+              {reviews.map((review) => {
+                const name = review.customer?.fullName ?? 'Guest';
+                return (
+                  <View key={review.id} className="bg-white rounded-2xl p-3.5 mb-3">
+                    <View className="flex-row items-center justify-between mb-2.5">
+                      <View className="flex-row items-center gap-2.5">
+                        <View className="w-[38px] h-[38px] rounded-full items-center justify-center" style={{ backgroundColor: avatarColor(name) }}>
+                          <Text size="sm" bold className="text-white">{getInitials(name)}</Text>
+                        </View>
+                        <View>
+                          <Text bold className="text-navy text-sm">{name}</Text>
+                          <Text size="xs" className="text-gray-400">{review.createdAt.slice(0, 10)}</Text>
+                        </View>
+                      </View>
+                      <View className="bg-navy rounded-lg px-2 py-1">
+                        <Text size="sm" bold className="text-white">{review.overallRating}</Text>
+                      </View>
+                    </View>
+                    {review.title ? <Text bold className="text-navy text-sm mb-1">{review.title}</Text> : null}
+                    <Text size="sm" className="text-gray-700 leading-5">{review.content}</Text>
+                  </View>
+                );
+              })}
+            </>
+          )}
+
+          {/* ── Location ── */}
+          <Heading size="lg" className="text-navy mb-3">Location</Heading>
+          <View className="bg-white rounded-2xl overflow-hidden mb-4">
+            <View className="h-[140px] bg-blue-200 items-center justify-center">
+              <Ionicons name="map" size={48} color="#3B82F6" />
+            </View>
+            <View className="p-3.5 flex-row items-center gap-2">
+              <Ionicons name="location" size={16} color={GOLD} />
+              <Text size="sm" className="text-gray-700 font-medium flex-1">{hotel.address}, {getHotelLocation(hotel)}</Text>
+            </View>
+          </View>
+        </View>
+      </ScrollView>
+
+      <StayPickerSheet
+        visible={pickerOpen}
+        initialCheckIn={checkIn}
+        initialCheckOut={checkOut}
+        initialGuests={guests}
+        onClose={() => setPickerOpen(false)}
+        onApply={({ checkIn: ci, checkOut: co, guests: g }) => {
+          setCheckIn(ci);
+          setCheckOut(co);
+          setGuests(g);
+          setPickerOpen(false);
+        }}
+      />
+    </View>
+  );
+}

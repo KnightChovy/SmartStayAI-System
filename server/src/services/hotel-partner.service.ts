@@ -2,9 +2,11 @@ import httpStatus from 'http-status';
 import type { Prisma, User, LicenseType, LicenseStarRating, VerificationDocumentType } from '@prisma/client';
 import prisma from '../config/prisma';
 import config from '../config/config';
+import logger from '../config/logger';
 import ApiError from '../utils/ApiError';
 import { encrypt } from '../utils/encryption';
 import { roleRights } from '../config/roles';
+import { emailService } from './email.service';
 import type {
   RegisterHotelDto,
   ReviewRequestDto,
@@ -471,7 +473,10 @@ export class HotelPartnerService {
   reviewRequest = async (requestId: string, reviewerId: string, body: ReviewRequestDto) => {
     const request = await prisma.hotelVerificationRequest.findUnique({
       where: { id: requestId },
-      include: { partner: true },
+      include: {
+        partner: { include: { ownerUser: { select: { email: true, fullName: true } } } },
+        hotel: { select: { name: true } },
+      },
     });
     if (!request) {
       throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy hồ sơ đăng ký');
@@ -482,8 +487,26 @@ export class HotelPartnerService {
 
     const reviewedAt = new Date();
 
+    // Người nhận email kết quả: email đăng ký của partner, fallback email tài khoản chủ
+    const recipientEmail = request.partner.contactEmail || request.partner.ownerUser.email;
+    const partnerName = request.partner.businessName || request.partner.ownerUser.fullName;
+    const hotelName = request.hotel.name;
+    // Gửi email báo kết quả SAU khi transaction commit; lỗi gửi mail KHÔNG được làm hỏng kết quả đã lưu
+    const notifyByEmail = async () => {
+      try {
+        await emailService.sendPartnerVerificationResultEmail(recipientEmail, {
+          partnerName,
+          hotelName,
+          approved: body.decision === 'approve',
+          rejectionReason: body.rejectionReason,
+        });
+      } catch (err) {
+        logger.warn(`Không gửi được email kết quả duyệt cho ${recipientEmail}: ${(err as Error).message}`);
+      }
+    };
+
     if (body.decision === 'approve') {
-      return prisma.$transaction(async (tx) => {
+      const result = await prisma.$transaction(async (tx) => {
         // Duyệt nốt các giấy tờ chưa bị từ chối và gắn license -> document hiện hành
         const pendingDocs = await tx.hotelVerificationDocument.findMany({
           where: { verificationRequestId: requestId, status: { not: 'rejected' } },
@@ -569,10 +592,12 @@ export class HotelPartnerService {
 
         return tx.hotelVerificationRequest.findUniqueOrThrow({ where: { id: requestId }, include: requestInclude });
       });
+      await notifyByEmail();
+      return result;
     }
 
     // decision === 'reject'
-    return prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       await tx.hotelVerificationRequest.update({
         where: { id: requestId },
         data: { status: 'rejected', reviewedBy: reviewerId, reviewedAt, rejectionReason: body.rejectionReason || null },
@@ -583,6 +608,8 @@ export class HotelPartnerService {
       });
       return tx.hotelVerificationRequest.findUniqueOrThrow({ where: { id: requestId }, include: requestInclude });
     });
+    await notifyByEmail();
+    return result;
   };
 }
 

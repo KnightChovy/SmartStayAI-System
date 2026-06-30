@@ -19,7 +19,7 @@ export function RecentActivities() {
           <div className="bg-role-partner-light/60 rounded-lg p-3 flex justify-between items-center mt-2 border border-role-partner-light">
             <div>
               <p className="text-sm font-bold text-slate-900">John Smith</p>
-              <p className="text-xs text-slate-500 font-medium mt-0.5">Oct 12 - Oct 15 â€¢ 3 Nights</p>
+              <p className="text-xs text-slate-500 font-medium mt-0.5">Oct 12 - Oct 15 {'•'} 3 Nights</p>
             </div>
             <span className="text-sm font-bold text-role-partner-primary">$850</span>
           </div>

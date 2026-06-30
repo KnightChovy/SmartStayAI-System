@@ -9,7 +9,6 @@ import {
   BedDouble,
   CheckCircle2,
   Hotel,
-  Images,
   Loader2,
   Plus,
   Trash2,
@@ -90,29 +89,6 @@ export function PropertyImagesStep({
     general?: string;
   }>({});
 
-  const uploadZone = async (
-    files: File[],
-    zone: UploadZone,
-    setUrls: (urls: string[]) => void,
-  ) => {
-    if (files.length === 0) {
-      setUrls([]);
-      return;
-    }
-    setUploading(prev => ({ ...prev, [zone]: true }));
-    setErrors(prev => ({ ...prev, [zone]: undefined }));
-    try {
-      const urls = await Promise.all(files.map(f => hotelVerifyService.uploadFile(f)));
-      setUrls(urls);
-    } catch {
-      setErrors(prev => ({ ...prev, [zone]: 'Upload failed. Please try again.' }));
-    } finally {
-      setUploading(prev => ({ ...prev, [zone]: false }));
-    }
-  };
-
-  const isAnyUploading = uploading.cover || uploading.exterior || uploading.room;
-
   const buildRoomConfig = () => ({
     totalRooms: Number(totalRooms) || 0,
     roomTypes: roomTypes.map(t => ({
@@ -120,6 +96,47 @@ export function PropertyImagesStep({
       quantity: Number(t.quantity) || 0,
     })),
   });
+
+  // Cập nhật cả 3 mảng ảnh + lưu ngay vào draft để reload không mất file.
+  const commitImages = (cover: string[], exterior: string[], room: string[]) => {
+    setCoverUrls(cover);
+    setExteriorUrls(exterior);
+    setRoomUrls(room);
+    setPropertyImages({
+      coverImages: cover,
+      exteriorImages: exterior,
+      roomImages: room,
+      roomConfig: buildRoomConfig(),
+    });
+  };
+
+  const uploadZone = async (files: File[], zone: UploadZone) => {
+    if (files.length === 0) return;
+    setUploading(prev => ({ ...prev, [zone]: true }));
+    setErrors(prev => ({ ...prev, [zone]: undefined }));
+    try {
+      const urls = await Promise.all(files.map(f => hotelVerifyService.uploadFile(f)));
+      commitImages(
+        zone === 'cover' ? [...coverUrls, ...urls] : coverUrls,
+        zone === 'exterior' ? [...exteriorUrls, ...urls] : exteriorUrls,
+        zone === 'room' ? [...roomUrls, ...urls] : roomUrls,
+      );
+    } catch {
+      setErrors(prev => ({ ...prev, [zone]: 'Upload failed. Please try again.' }));
+    } finally {
+      setUploading(prev => ({ ...prev, [zone]: false }));
+    }
+  };
+
+  const removeImage = (zone: UploadZone, index: number) => {
+    commitImages(
+      zone === 'cover' ? coverUrls.filter((_, i) => i !== index) : coverUrls,
+      zone === 'exterior' ? exteriorUrls.filter((_, i) => i !== index) : exteriorUrls,
+      zone === 'room' ? roomUrls.filter((_, i) => i !== index) : roomUrls,
+    );
+  };
+
+  const isAnyUploading = uploading.cover || uploading.exterior || uploading.room;
 
   const handleBack = () => {
     // Persist whatever has been entered so far
@@ -210,22 +227,19 @@ export function PropertyImagesStep({
           <p className="text-sm text-slate-500">
             This is the first image guests will see. Choose a stunning exterior or interior shot.
           </p>
-          {coverUrls.length > 0 && (
-            <div className="flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
-              <Images className="w-4 h-4 shrink-0" />
-              {coverUrls.length} cover image{coverUrls.length > 1 ? 's' : ''} uploaded. Select new files to replace.
-            </div>
-          )}
           <FileUploadDropzone
+            key={`cover-${coverUrls.length}`}
             label="Cover Image"
             isLarge
             helperText="JPG or PNG (max. 10MB)"
             accept=".jpg,.jpeg,.png"
             multiple
             minFiles={1}
-            onFilesChange={files => uploadZone(files, 'cover', setCoverUrls)}
+            onFilesChange={files => uploadZone(files, 'cover')}
             isUploading={uploading.cover}
             error={errors.cover}
+            existingUrls={coverUrls}
+            onRemoveExisting={i => removeImage('cover', i)}
           />
         </div>
 
@@ -237,21 +251,18 @@ export function PropertyImagesStep({
           <p className="text-sm text-slate-500">
             Show the outside of the building or the main entrance.
           </p>
-          {exteriorUrls.length > 0 && (
-            <div className="flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
-              <Images className="w-4 h-4 shrink-0" />
-              {exteriorUrls.length} exterior image{exteriorUrls.length > 1 ? 's' : ''} uploaded. Select new files to replace.
-            </div>
-          )}
           <FileUploadDropzone
+            key={`exterior-${exteriorUrls.length}`}
             label="Exterior Image"
             helperText="JPG or PNG (max. 10MB)"
             accept=".jpg,.jpeg,.png"
             multiple
             minFiles={1}
-            onFilesChange={files => uploadZone(files, 'exterior', setExteriorUrls)}
+            onFilesChange={files => uploadZone(files, 'exterior')}
             isUploading={uploading.exterior}
             error={errors.exterior}
+            existingUrls={exteriorUrls}
+            onRemoveExisting={i => removeImage('exterior', i)}
           />
         </div>
 
@@ -263,21 +274,18 @@ export function PropertyImagesStep({
           <p className="text-sm text-slate-500">
             Provide clear photos of the bedrooms, bathrooms, and living areas (minimum 3 images).
           </p>
-          {roomUrls.length > 0 && (
-            <div className="flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
-              <Images className="w-4 h-4 shrink-0" />
-              {roomUrls.length} room image{roomUrls.length > 1 ? 's' : ''} uploaded. Select new files to replace.
-            </div>
-          )}
           <FileUploadDropzone
+            key={`room-${roomUrls.length}`}
             label="Room Images"
             helperText="Bedroom, Bathroom, etc."
             accept=".jpg,.jpeg,.png"
             multiple
             minFiles={3}
-            onFilesChange={files => uploadZone(files, 'room', setRoomUrls)}
+            onFilesChange={files => uploadZone(files, 'room')}
             isUploading={uploading.room}
             error={errors.room}
+            existingUrls={roomUrls}
+            onRemoveExisting={i => removeImage('room', i)}
           />
         </div>
 

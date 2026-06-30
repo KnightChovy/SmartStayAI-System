@@ -8,6 +8,7 @@ import {
   ShieldCheck,
   Hotel,
   Archive,
+  Users,
   CalendarDays,
   Banknote,
   BarChart2,
@@ -20,6 +21,7 @@ const navItems = [
   { name: 'Verification', href: '/partner/verify', icon: ShieldCheck },
   { name: 'Hotels', href: '/partner/hotel-management', icon: Hotel },
   { name: 'Room Inventory', href: '/partner/room-inventory', icon: Archive },
+  { name: 'Staff', href: '/partner/staff', icon: Users },
   { name: 'Bookings', href: '/partner/bookings', icon: CalendarDays },
   { name: 'Revenue', href: '/partner/revenue', icon: Banknote },
   { name: 'Analytics', href: '/partner/analytics', icon: BarChart2 },
@@ -43,7 +45,7 @@ export function HotelPartnerLayout() {
       />
       <SidebarInset>
         <CommonNavbar />
-        <main className="flex-1 p-4 md:p-6 overflow-y-auto bg-gray-50">
+        <main className="flex-1 min-w-0 p-4 md:p-6 overflow-y-auto bg-gray-50">
           <div className="mx-auto w-full max-w-7xl">
             <Outlet />
           </div>

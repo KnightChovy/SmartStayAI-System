@@ -1,3 +1,4 @@
+import httpStatus from 'http-status';
 import { Request, Response } from 'express';
 import type { User } from '@prisma/client';
 import pick from '../utils/pick';
@@ -33,6 +34,44 @@ export class HotelController {
   getHotelForManage = catchAsync(async (req: Request, res: Response): Promise<void> => {
     const hotel = await hotelService.getManagedHotelDetail(req.params.hotelId as string, req.user as User);
     res.send(hotel);
+  });
+
+  // Partner tự bật/tắt mở bán khách sạn của mình
+  setHotelListing = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const hotel = await hotelService.setHotelListing(
+      req.params.hotelId as string,
+      req.body.isListed as boolean,
+      req.user as User
+    );
+    res.send(hotel);
+  });
+
+  // Partner cập nhật hồ sơ khách sạn của mình
+  updateHotel = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const hotel = await hotelService.updateHotel(req.params.hotelId as string, req.body, req.user as User);
+    res.send(hotel);
+  });
+
+  // Thêm ảnh khách sạn
+  addHotelImages = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const images = await hotelService.addHotelImages(req.params.hotelId as string, req.body.images, req.user as User);
+    res.status(httpStatus.CREATED).send(images);
+  });
+
+  // Xoá một ảnh khách sạn
+  deleteHotelImage = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    await hotelService.deleteHotelImage(req.params.hotelId as string, req.params.imageId as string, req.user as User);
+    res.status(httpStatus.NO_CONTENT).send();
+  });
+
+  // Đặt ảnh chính cho khách sạn
+  setPrimaryHotelImage = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const image = await hotelService.setPrimaryHotelImage(
+      req.params.hotelId as string,
+      req.params.imageId as string,
+      req.user as User
+    );
+    res.send(image);
   });
 }
 

@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { UploadCloud, X, File, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { Label } from '@/components/ui/label';
+import { isPdfUrl, cloudinaryPdfPreview } from '@/utils/cloudinary';
 
 interface FileUploadDropzoneProps {
   label: string;
@@ -13,6 +14,20 @@ interface FileUploadDropzoneProps {
   onFilesChange?: (files: File[]) => void;
   error?: string;
   isUploading?: boolean;
+  /** URL các file đã upload trước đó (khôi phục từ draft) — hiển thị lại sau khi reload. */
+  existingUrls?: string[];
+  /** Xoá một file đã upload trước đó (index trong `existingUrls`). */
+  onRemoveExisting?: (index: number) => void;
+}
+
+/** Lấy tên file gọn từ URL để hiển thị. */
+function fileNameFromUrl(url: string): string {
+  try {
+    const path = url.split('?')[0];
+    return decodeURIComponent(path.substring(path.lastIndexOf('/') + 1)) || 'Uploaded file';
+  } catch {
+    return 'Uploaded file';
+  }
 }
 
 export function FileUploadDropzone({
@@ -25,9 +40,12 @@ export function FileUploadDropzone({
   onFilesChange,
   error,
   isUploading = false,
+  existingUrls = [],
+  onRemoveExisting,
 }: FileUploadDropzoneProps) {
   const [files, setFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const uploadedCount = existingUrls.length + files.length;
 
   const updateFiles = useCallback(
     (newFiles: File[]) => {
@@ -81,9 +99,9 @@ export function FileUploadDropzone({
     <div className="space-y-3">
       <div className="flex justify-between items-center">
         <Label className="text-sm font-semibold text-slate-900">{label}</Label>
-        {minFiles && files.length < minFiles && (
+        {minFiles && uploadedCount < minFiles && (
           <span className="text-xs text-amber-600 font-medium bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-            Min {minFiles} required ({files.length}/{minFiles})
+            Min {minFiles} required ({uploadedCount}/{minFiles})
           </span>
         )}
       </div>
@@ -129,6 +147,44 @@ export function FileUploadDropzone({
       </div>
 
       {error && <p className="text-xs text-red-500">{error}</p>}
+
+      {existingUrls.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+          {existingUrls.map((url, idx) => (
+            <div
+              key={url + idx}
+              className="flex items-center gap-3 p-2 bg-white border border-emerald-200 rounded-lg shadow-sm relative pr-8 group"
+            >
+              <div className="w-10 h-10 shrink-0 bg-slate-100 rounded flex items-center justify-center overflow-hidden">
+                <img
+                  src={isPdfUrl(url) ? cloudinaryPdfPreview(url) : url}
+                  alt="uploaded"
+                  className="w-full h-full object-cover"
+                  onError={e => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
+                />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold text-slate-900 truncate">
+                  {fileNameFromUrl(url)}
+                </p>
+                <p className="text-[10px] font-medium text-emerald-600">Uploaded</p>
+              </div>
+              {onRemoveExisting && (
+                <button
+                  type="button"
+                  onClick={() => onRemoveExisting(idx)}
+                  aria-label="Remove uploaded file"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors opacity-0 group-hover:opacity-100"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       {files.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">

@@ -1,7 +1,7 @@
 # AGENTS.md — SmartStay AI · Frontend
 
 > **SmartStay AI** — AI-Powered Hotel Booking and Customer Engagement Platform  
-> Stack: **Vite + React 18 + TypeScript**
+> Stack: **Vite + React 19 + TypeScript**
 
 ---
 

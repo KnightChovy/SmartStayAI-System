@@ -6,7 +6,13 @@ import ApiError from '../utils/ApiError';
 import { roleRights } from '../config/roles';
 import { eachNightOfStay } from '../utils/dates';
 import { availabilityService } from './availability.service';
-import type { HotelSearchFilter, RoomTypeSearchFilter, HotelQueryOptions } from '../dto/hotel.dto';
+import type {
+  HotelSearchFilter,
+  RoomTypeSearchFilter,
+  HotelQueryOptions,
+  UpdateHotelDto,
+  HotelImageInput,
+} from '../dto/hotel.dto';
 
 export class HotelService {
   /**
@@ -96,6 +102,85 @@ export class HotelService {
         _count: { select: { roomTypes: true, rooms: true } },
       },
       orderBy: { createdAt: 'desc' },
+    });
+  };
+
+  /**
+   * Partner tự BẬT/TẮT mở bán (publish) khách sạn của mình. Quyền kiểm qua getManagedHotel
+   * (chỉ chủ KS hoặc manageHotels). Khi BẬT (isListed=true): khách sạn phải đã được duyệt (isActive)
+   * và có ít nhất một loại phòng đang bật — tránh lên sàn khi chưa có phòng để bán. Khi TẮT: không ràng buộc.
+   */
+  setHotelListing = async (hotelId: string, isListed: boolean, currentUser: User) => {
+    const hotel = await this.getManagedHotel(hotelId, currentUser);
+    if (isListed) {
+      if (!hotel.isActive) {
+        throw new ApiError(httpStatus.BAD_REQUEST, 'Khách sạn chưa được duyệt nên chưa thể mở bán');
+      }
+      const activeRoomTypes = await prisma.roomType.count({ where: { hotelId, isActive: true } });
+      if (activeRoomTypes === 0) {
+        throw new ApiError(
+          httpStatus.BAD_REQUEST,
+          'Cần có ít nhất một loại phòng đang bật (đã điền giá) trước khi mở bán'
+        );
+      }
+    }
+    return prisma.hotel.update({ where: { id: hotelId }, data: { isListed } });
+  };
+
+  /**
+   * Partner cập nhật hồ sơ khách sạn của mình (name, mô tả, địa chỉ, toạ độ, sao, giờ nhận/trả...).
+   * Quyền qua getManagedHotel. Joi ở routing đã chặn các trường khoá (isActive/isListed/pháp lý).
+   */
+  updateHotel = async (hotelId: string, payload: UpdateHotelDto, currentUser: User) => {
+    await this.getManagedHotel(hotelId, currentUser);
+    return prisma.hotel.update({ where: { id: hotelId }, data: payload });
+  };
+
+  /**
+   * Thêm ảnh khách sạn (URL đã upload qua POST /v1/uploads). Nếu batch có ảnh isPrimary thì bỏ cờ
+   * primary của các ảnh cũ để luôn chỉ có 1 ảnh chính.
+   */
+  addHotelImages = async (hotelId: string, images: HotelImageInput[], currentUser: User) => {
+    await this.getManagedHotel(hotelId, currentUser);
+    const hasNewPrimary = images.some((image) => image.isPrimary);
+    return prisma.$transaction(async (tx) => {
+      if (hasNewPrimary) {
+        await tx.hotelImage.updateMany({ where: { hotelId }, data: { isPrimary: false } });
+      }
+      await tx.hotelImage.createMany({
+        data: images.map((image, index) => ({
+          hotelId,
+          url: image.url,
+          imageCategory: image.imageCategory,
+          caption: image.caption ?? null,
+          isPrimary: image.isPrimary ?? false,
+          sortOrder: image.sortOrder ?? index,
+        })),
+      });
+      return tx.hotelImage.findMany({ where: { hotelId }, orderBy: [{ isPrimary: 'desc' }, { sortOrder: 'asc' }] });
+    });
+  };
+
+  /** Xoá một ảnh khách sạn (kiểm ảnh thuộc đúng khách sạn của partner). */
+  deleteHotelImage = async (hotelId: string, imageId: string, currentUser: User) => {
+    await this.getManagedHotel(hotelId, currentUser);
+    const image = await prisma.hotelImage.findFirst({ where: { id: imageId, hotelId } });
+    if (!image) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy ảnh trong khách sạn này');
+    }
+    await prisma.hotelImage.delete({ where: { id: imageId } });
+  };
+
+  /** Đặt một ảnh làm ảnh chính (bật isPrimary ảnh này, tắt isPrimary các ảnh còn lại). */
+  setPrimaryHotelImage = async (hotelId: string, imageId: string, currentUser: User) => {
+    await this.getManagedHotel(hotelId, currentUser);
+    const image = await prisma.hotelImage.findFirst({ where: { id: imageId, hotelId } });
+    if (!image) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy ảnh trong khách sạn này');
+    }
+    return prisma.$transaction(async (tx) => {
+      await tx.hotelImage.updateMany({ where: { hotelId }, data: { isPrimary: false } });
+      return tx.hotelImage.update({ where: { id: imageId }, data: { isPrimary: true } });
     });
   };
 

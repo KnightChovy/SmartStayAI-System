@@ -5,6 +5,10 @@ import VerifyHotelPage from '@/pages/hotel-partner/hotel-verify/VerifyHotelPage'
 import HotelsPage from '@/pages/hotel-partner/hotel-management/HotelsPage';
 import HotelDetailPage from '@/pages/hotel-partner/hotel-management/HotelDetailPage';
 import RoomInventoryPage from '@/pages/hotel-partner/room-inventory/RoomInventoryPage';
+import StaffManagementPage from '@/pages/hotel-partner/staff/StaffManagementPage';
+import BookingsPage from '@/pages/hotel-partner/bookings/BookingsPage';
+import ComingSoonPage from '@/pages/ComingSoonPage';
+import NotFoundPage from '@/pages/NotFoundPage';
 import { ProtectedRoute } from '@/routes/ProtectedRoute';
 import { UserRole } from '@/constants/roles';
 
@@ -23,6 +27,15 @@ export const partnerRoutes: RouteObject[] = [
           { path: 'hotel-management', element: <HotelsPage /> },
           { path: 'hotel-management/:hotelId', element: <HotelDetailPage /> },
           { path: 'room-inventory', element: <RoomInventoryPage /> },
+          { path: 'staff', element: <StaffManagementPage /> },
+          { path: 'bookings', element: <BookingsPage /> },
+          // Đã có trong sidebar nhưng chưa triển khai — tạm dùng "Coming soon" để tránh link chết.
+          { path: 'revenue', element: <ComingSoonPage title="Revenue" /> },
+          { path: 'analytics', element: <ComingSoonPage title="Analytics" /> },
+          { path: 'reviews', element: <ComingSoonPage title="Reviews" /> },
+          { path: 'settings', element: <ComingSoonPage title="Settings" /> },
+          // Catch-all trong PartnerLayout: URL sai vẫn giữ sidebar thay vì rớt về layout guest.
+          { path: '*', element: <NotFoundPage /> },
         ],
       },
     ],

@@ -10,6 +10,7 @@ export function AdminDashboardQuickActions() {
       <Button
         className="h-9 w-full rounded-none bg-black text-sm text-white"
         onClick={openCreateUser}
+        type="button"
       >
         Create New User
       </Button>
@@ -17,6 +18,7 @@ export function AdminDashboardQuickActions() {
         variant="secondary"
         className="h-9 w-full rounded-none text-sm"
         onClick={openReport}
+        type="button"
       >
         Generate Report
       </Button>
@@ -24,6 +26,7 @@ export function AdminDashboardQuickActions() {
         variant="outline"
         className="h-9 w-full rounded-none text-sm"
         onClick={openMaintenance}
+        type="button"
       >
         Schedule Maintenance
       </Button>

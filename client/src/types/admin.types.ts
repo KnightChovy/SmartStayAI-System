@@ -77,6 +77,7 @@ export interface AdminUser {
 export interface AdminUsersParams {
   name?: string;
   role?: UserRole;
+  status?: AdminUserStatus;
   sortBy?: string;
   limit?: number;
   page?: number;

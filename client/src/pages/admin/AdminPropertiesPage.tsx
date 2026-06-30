@@ -1,6 +1,15 @@
+import { MoreHorizontal } from 'lucide-react';
 import { AdminPropertiesHeader } from '@/components/admin/properties/AdminPropertiesHeader';
 import { AdminTable } from '@/components/admin/shared/AdminTable';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useAdminHotels, useUpdateAdminHotelFlags } from '@/hooks/admin';
 import { errorMessage } from '@/utils/errorMessage';
 import { formatDateShort } from '@/utils/formatDate';
@@ -43,34 +52,47 @@ export function AdminPropertiesPage() {
             if (!hotel) return null;
 
             return (
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  className="h-8 rounded-full px-3 text-xs"
-                  disabled={updateFlags.isPending}
-                  variant="outline"
-                  onClick={() =>
-                    updateFlags.mutate({
-                      hotelId: hotel.id,
-                      payload: { isListed: !hotel.isListed },
-                    })
-                  }
-                >
-                  {hotel.isListed ? 'Unlist' : 'List'}
-                </Button>
-                <Button
-                  className="h-8 rounded-full px-3 text-xs"
-                  disabled={updateFlags.isPending}
-                  variant="outline"
-                  onClick={() =>
-                    updateFlags.mutate({
-                      hotelId: hotel.id,
-                      payload: { isActive: !hotel.isActive },
-                    })
-                  }
-                >
-                  {hotel.isActive ? 'Disable' : 'Enable'}
-                </Button>
-              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    aria-label="Open property actions"
+                    className="rounded-full"
+                    disabled={updateFlags.isPending}
+                    size="icon-sm"
+                    type="button"
+                    variant="outline"
+                  >
+                    <MoreHorizontal className="size-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuLabel>Property actions</DropdownMenuLabel>
+                  <DropdownMenuItem
+                    disabled={updateFlags.isPending}
+                    onSelect={() =>
+                      updateFlags.mutate({
+                        hotelId: hotel.id,
+                        payload: { isListed: !hotel.isListed },
+                      })
+                    }
+                  >
+                    {hotel.isListed ? 'Unlist property' : 'List property'}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    disabled={updateFlags.isPending}
+                    onSelect={() =>
+                      updateFlags.mutate({
+                        hotelId: hotel.id,
+                        payload: { isActive: !hotel.isActive },
+                      })
+                    }
+                    variant={hotel.isActive ? 'destructive' : 'default'}
+                  >
+                    {hotel.isActive ? 'Disable property' : 'Enable property'}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             );
           }}
         />

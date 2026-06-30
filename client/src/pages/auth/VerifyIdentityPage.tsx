@@ -269,7 +269,7 @@ export default function VerifyIdentityPage() {
             </div>
 
             <Button
-              className="w-full py-4 text-white font-label-lg text-label-lg rounded-full ambient-shadow hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer outline-none border-none h-auto bg-on-background hover:bg-on-background/90"
+              className="w-full py-4  font-label-lg text-label-lg rounded-full ambient-shadow hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer outline-none border-none h-auto bg-on-background hover:bg-on-background/90 text-white"
               type="submit"
               disabled={isRegistering}
             >

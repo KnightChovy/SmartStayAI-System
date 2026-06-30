@@ -38,6 +38,39 @@ router.get('/:hotelId', validate(hotelValidation.getHotel), hotelController.getH
 // 2 segment nên không đụng '/:hotelId' (1 segment) hay '/mine' (literal).
 router.get('/:hotelId/manage', auth(), validate(hotelValidation.getHotel), hotelController.getHotelForManage);
 
+// Partner tự bật/tắt mở bán (publish) khách sạn của mình — chủ KS hoặc quyền manageHotels (service tự kiểm)
+router.patch(
+  '/:hotelId/publish',
+  auth(),
+  validate(hotelValidation.setHotelListing),
+  hotelController.setHotelListing
+);
+
+// Partner cập nhật hồ sơ khách sạn (PATCH /:hotelId khác method với GET /:hotelId public)
+router.patch('/:hotelId', auth(), validate(hotelValidation.updateHotel), hotelController.updateHotel);
+
+// ----- Quản lý ảnh khách sạn (chủ KS / manageHotels) -----
+router.post(
+  '/:hotelId/images',
+  auth(),
+  validate(hotelValidation.addHotelImages),
+  hotelController.addHotelImages
+);
+
+router.delete(
+  '/:hotelId/images/:imageId',
+  auth(),
+  validate(hotelValidation.hotelImageId),
+  hotelController.deleteHotelImage
+);
+
+router.patch(
+  '/:hotelId/images/:imageId/primary',
+  auth(),
+  validate(hotelValidation.hotelImageId),
+  hotelController.setPrimaryHotelImage
+);
+
 // ----- Quản lý loại phòng (chủ khách sạn hoặc quyền manageHotels — service tự kiểm) -----
 router
   .route('/:hotelId/room-types')
@@ -58,6 +91,14 @@ router.put(
   auth(),
   validate(roomTypeValidation.updateRoomType),
   roomTypeController.updateRoomType
+);
+
+// Xoá loại phòng — chỉ khi chưa có phòng/booking (đã dùng thì tắt bằng isActive=false)
+router.delete(
+  '/:hotelId/room-types/:roomTypeId',
+  auth(),
+  validate(roomTypeValidation.deleteRoomType),
+  roomTypeController.deleteRoomType
 );
 
 // Thêm ảnh (URL đã upload qua POST /v1/uploads trước)
@@ -84,6 +125,9 @@ router
 
 router.put('/:hotelId/rooms/:roomId', auth(), validate(roomValidation.updateRoom), roomController.updateRoom);
 
+// Xoá phòng vật lý — chỉ khi phòng chưa từng được đặt
+router.delete('/:hotelId/rooms/:roomId', auth(), validate(roomValidation.deleteRoom), roomController.deleteRoom);
+
 // Staff đổi nhanh trạng thái phòng (bản đồ phòng S20 / housekeeping 1-tap)
 router.patch(
   '/:hotelId/rooms/:roomId/status',
@@ -109,6 +153,14 @@ router.get(
   auth(),
   validate(bookingValidation.listHotelBookings),
   bookingController.listHotelBookings
+);
+
+// Staff quét QR / nhập mã voucher để tra booking — đặt TRƯỚC '/:bookingId' để literal không bị nuốt
+router.get(
+  '/:hotelId/bookings/lookup',
+  auth(),
+  validate(bookingValidation.lookupBookingByVoucher),
+  bookingController.lookupByVoucher
 );
 
 // Chi tiết một booking của khách sạn (staff/chủ KS) — đặt sau '/bookings' để không bị nuốt

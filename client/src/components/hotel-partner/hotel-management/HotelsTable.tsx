@@ -2,12 +2,15 @@ import { Hotel, MapPin, Star, Layers, BedDouble, ArrowRight, CheckCircle2, EyeOf
 import { Button } from '@/components/ui/button';
 import { DataTable, type Column } from '@/components/hotel-partner/shared/DataTable';
 import { Pill } from '@/components/hotel-partner/shared/Pill';
+import { PublishToggle } from './PublishToggle';
 import type { PartnerHotel } from '@/types/hotel.types';
 
 interface HotelsTableProps {
   hotels: PartnerHotel[];
   onManage: (hotel: PartnerHotel) => void;
   actionLabel?: string;
+  /** Hiện công tắc mở bán ở cột Status (chỉ dùng ở trang Hotels, không dùng ở picker). */
+  showPublishToggle?: boolean;
 }
 
 function HotelNameCell({ hotel }: { hotel: PartnerHotel }) {
@@ -30,7 +33,7 @@ function HotelNameCell({ hotel }: { hotel: PartnerHotel }) {
           </div>
         )}
       </div>
-      <div className="min-w-0">
+      <div className="min-w-0 max-w-45 sm:max-w-55 lg:max-w-70">
         <p className="truncate font-semibold text-slate-900">{hotel.name}</p>
         <p className="truncate text-xs text-slate-400">{hotel.address}</p>
       </div>
@@ -39,7 +42,12 @@ function HotelNameCell({ hotel }: { hotel: PartnerHotel }) {
 }
 
 /** Bảng tổng quan các khách sạn của partner — dùng ở Hotels page và picker của Room Inventory. */
-export function HotelsTable({ hotels, onManage, actionLabel = 'Manage inventory' }: HotelsTableProps) {
+export function HotelsTable({
+  hotels,
+  onManage,
+  actionLabel = 'Manage inventory',
+  showPublishToggle = false,
+}: HotelsTableProps) {
   const columns: Column<PartnerHotel>[] = [
     {
       id: 'hotel',
@@ -74,11 +82,15 @@ export function HotelsTable({ hotels, onManage, actionLabel = 'Manage inventory'
       id: 'status',
       header: 'Status',
       cell: hotel => (
-        <div className="flex flex-wrap gap-1.5">
-          <Pill tone={hotel.isListed ? 'emerald' : 'slate'}>
-            {hotel.isListed ? <CheckCircle2 className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
-            {hotel.isListed ? 'Listed' : 'Unlisted'}
-          </Pill>
+        <div className="flex flex-wrap items-center gap-1.5">
+          {showPublishToggle ? (
+            <PublishToggle hotel={hotel} />
+          ) : (
+            <Pill tone={hotel.isListed ? 'emerald' : 'slate'}>
+              {hotel.isListed ? <CheckCircle2 className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
+              {hotel.isListed ? 'Listed' : 'Unlisted'}
+            </Pill>
+          )}
           {!hotel.isActive && <Pill tone="red">Inactive</Pill>}
         </div>
       ),
@@ -132,7 +144,7 @@ export function HotelsTable({ hotels, onManage, actionLabel = 'Manage inventory'
       columns={columns}
       rows={hotels}
       rowKey={hotel => hotel.id}
-      minWidthClass="min-w-[720px]"
+      minWidthClass="min-w-[600px]"
       onRowClick={onManage}
     />
   );

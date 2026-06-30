@@ -38,6 +38,10 @@ export const ROUTES = {
   // Trang VNPay redirect khách về sau thanh toán (status + bookingCode trên query)
   paymentResult: '/booking/payment-result',
 
+  // Cổng Hotel Partner
+  partnerStaff: '/partner/staff',
+  partnerBookings: '/partner/bookings',
+
   // Cổng nhân viên (staff — lễ tân / housekeeping)
   staffSelectHotel: '/staff/select-hotel',
   staffDashboard: '/staff/dashboard',

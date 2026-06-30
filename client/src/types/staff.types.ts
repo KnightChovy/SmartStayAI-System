@@ -18,7 +18,12 @@ export type HousekeepingTaskStatus = 'pending' | 'in_progress' | 'done';
 
 export type PaymentStatus = 'pending' | 'completed' | 'failed' | 'refunded';
 
-export type StaffPaymentMethod = 'vnpay' | 'cash';
+export type PaymentMethod = 'vnpay' | 'sepay' | 'stripe' | 'cash';
+
+/** @deprecated dùng `PaymentMethod` — giữ alias để không vỡ code cũ. */
+export type StaffPaymentMethod = PaymentMethod;
+
+export type BookingSource = 'website' | 'mobile_app' | 'chatbot' | 'walk_in' | 'staff';
 
 // ============================================================
 // Hotel the staff member is working at (from GET /hotels — public list)
@@ -54,17 +59,27 @@ export interface BookingRoomTypeSummary {
 export interface AssignedRoomSummary {
   id: string;
   roomNumber: string;
-  floor: number;
+  floor: number | null;
 }
 
 export interface BookingRoomLink {
   id: string;
+  bookingId?: string;
   roomId: string;
   assignedAt: string;
   room?: AssignedRoomSummary;
 }
 
-/** A single booking row in the front desk list. */
+/** Voucher rút gọn kèm trong booking ở màn list (StaffBooking.voucher). */
+export interface BookingListVoucher {
+  voucherCode: string;
+  usedAt: string | null;
+}
+
+/**
+ * A single booking row in the hotel operations list (BE `staffBookingInclude`).
+ * Tương ứng `StaffBooking` trong spec — kèm `customer`, `roomType`, `bookingRooms`, `voucher`.
+ */
 export interface HotelBooking {
   id: string;
   bookingCode: string;
@@ -80,7 +95,7 @@ export interface HotelBooking {
   discountAmount: string;
   totalAmount: string;
   status: BookingStatus;
-  source: string;
+  source: BookingSource;
   specialRequests: string | null;
   holdExpiresAt: string | null;
   cancellationReason: string | null;
@@ -92,6 +107,7 @@ export interface HotelBooking {
   customer: BookingCustomerSummary;
   roomType: BookingRoomTypeSummary;
   bookingRooms: BookingRoomLink[];
+  voucher: BookingListVoucher | null;
 }
 
 export interface BookingVoucherSummary {
@@ -103,23 +119,35 @@ export interface BookingVoucherSummary {
 
 export interface BookingPaymentSummary {
   id: string;
-  paymentMethod: StaffPaymentMethod;
+  paymentMethod: PaymentMethod;
   amount: string;
   status: PaymentStatus;
   paidAt: string | null;
 }
 
-export interface BookingInvoiceSummary {
+/** Hoá đơn xuất khi check-out (GET detail + CheckOutResponse). */
+export interface Invoice {
   id: string;
-  invoiceNumber?: string;
-  totalAmount?: string;
+  bookingId: string;
+  invoiceNumber: string;
+  issuedAt: string;
+  pdfUrl: string | null;
+  subtotal: string;
+  taxAmount: string;
+  totalAmount: string;
+  createdAt: string;
 }
 
 /** Booking detail for the front desk (GET /hotels/:hotelId/bookings/:bookingId). */
 export interface HotelBookingDetail extends HotelBooking {
   voucher: BookingVoucherSummary | null;
   payments: BookingPaymentSummary[];
-  invoice: BookingInvoiceSummary | null;
+  invoice: Invoice | null;
+}
+
+/** Response của POST .../check-out — StaffBooking kèm hoá đơn vừa xuất. */
+export interface CheckOutResponse extends HotelBooking {
+  invoice: Invoice;
 }
 
 export type HotelBookingsResponse = Paginated<HotelBooking>;
