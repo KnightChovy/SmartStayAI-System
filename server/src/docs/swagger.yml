@@ -981,7 +981,7 @@ paths:
               properties:
                 role:
                   type: string
-                  enum: [guest, customer, staff, marketer, hotel_partner, platform_manager, admin]
+                  enum: [guest, customer, staff, hotel_partner, platform_manager, admin]
               example:
                 role: staff
       responses:
@@ -2523,8 +2523,8 @@ paths:
       summary: Create a staff account and assign it to the hotel (owner)
       description: >
         Hotel owner or manageHotels creates an active staff user account (no OTP — the owner vouches)
-        and assigns it to the hotel. assignedRole ("staff" or "marketer") also becomes the user's
-        global role. After this the staff member can log in and operate the hotel's bookings.
+        and assigns it to the hotel. assignedRole ("staff") also becomes the user's global role.
+        After this the staff member can log in and operate the hotel's bookings.
       tags: [HotelManagement]
       security:
         - bearerAuth: []
@@ -2558,7 +2558,7 @@ paths:
                   type: string
                 assignedRole:
                   type: string
-                  enum: [staff, marketer]
+                  enum: [staff]
                   default: staff
       responses:
         '201':

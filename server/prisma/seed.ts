@@ -25,7 +25,6 @@ const seedAccounts: { fullName: string; email: string; role: UserRole }[] = [
   { fullName: 'Platform Manager', email: 'manager@smartstay.ai', role: 'platform_manager' },
   { fullName: 'Hotel Partner', email: 'partner@smartstay.ai', role: 'hotel_partner' },
   { fullName: 'Hotel Staff', email: 'staff@smartstay.ai', role: 'staff' },
-  { fullName: 'Marketing Staff', email: 'marketer@smartstay.ai', role: 'marketer' },
   { fullName: 'Regular Customer', email: 'customer@smartstay.ai', role: 'customer' },
   { fullName: 'Guest User', email: 'guest@smartstay.ai', role: 'guest' },
   // Extra applicants for repeatable hotel-registration testing
@@ -492,11 +491,129 @@ async function main() {
     });
   }
 
+  // ===== Bổ sung data để test ĐẦY ĐỦ các feature (voucher, check-in, review, detail Pha 1, payout) =====
+  if (sampleRoomType) {
+    const firstHotelId = sampleRoomType.hotelId;
+    const twoNights = sampleRoomType.basePrice * 2;
+
+    // (1) Voucher cho booking mẫu BKSEED001 — để test QR lookup theo voucher_code
+    const booking1 = await prisma.booking.findUnique({ where: { bookingCode: 'BKSEED001' } });
+    if (booking1) {
+      await prisma.bookingVoucher.create({
+        data: { bookingId: booking1.id, voucherCode: 'VCSEED001', qrData: 'SMARTSTAY|VCSEED001|BKSEED001', expiresAt: booking1.checkOutDate },
+      });
+    }
+
+    // (2) Booking sẵn sàng CHECK-IN HÔM NAY (+ voucher) — test chuỗi check-in → check-out → housekeeping → QR
+    const checkInToday = daysFromNow(0);
+    const checkOut2 = daysFromNow(2);
+    for (const night of eachNightOfStay(checkInToday, checkOut2)) {
+      await prisma.roomAvailability.upsert({
+        where: { roomTypeId_date: { roomTypeId: sampleRoomType.id, date: night } },
+        create: { roomTypeId: sampleRoomType.id, hotelId: firstHotelId, date: night, totalRooms: sampleRoomType.roomCount, bookedRooms: 1 },
+        update: { bookedRooms: { increment: 1 } },
+      });
+    }
+    const booking2 = await prisma.booking.create({
+      data: {
+        bookingCode: 'BKSEED002', customerId: customer.id, hotelId: firstHotelId, roomTypeId: sampleRoomType.id,
+        checkInDate: checkInToday, checkOutDate: checkOut2, numNights: 2, numGuests: 2,
+        basePricePerNight: sampleRoomType.basePrice, subtotal: twoNights, discountAmount: 0, totalAmount: twoNights,
+        status: 'confirmed', source: 'website',
+      },
+    });
+    await prisma.bookingVoucher.create({
+      data: { bookingId: booking2.id, voucherCode: 'VCSEED002', qrData: 'SMARTSTAY|VCSEED002|BKSEED002', expiresAt: checkOut2 },
+    });
+
+    // (3) Booking ĐÃ TRẢ PHÒNG, CHƯA review — test POST /reviews. Gán 1 phòng vào lịch sử → cũng test "không xoá được phòng đã dùng"
+    const someRoom = await prisma.room.findFirst({ where: { roomTypeId: sampleRoomType.id } });
+    const booking3 = await prisma.booking.create({
+      data: {
+        bookingCode: 'BKSEED003', customerId: customer.id, hotelId: firstHotelId, roomTypeId: sampleRoomType.id,
+        checkInDate: daysFromNow(-3), checkOutDate: daysFromNow(-1), numNights: 2, numGuests: 2,
+        basePricePerNight: sampleRoomType.basePrice, subtotal: twoNights, discountAmount: 0, totalAmount: twoNights,
+        status: 'checked_out', source: 'website', checkedInAt: daysFromNow(-3), checkedOutAt: daysFromNow(-1),
+      },
+    });
+    if (someRoom) {
+      await prisma.bookingRoom.create({ data: { bookingId: booking3.id, roomId: someRoom.id, assignedAt: daysFromNow(-3) } });
+    }
+
+    // (4) Booking ĐÃ TRẢ PHÒNG + đã có Review (published) — test GET /reviews?hotelId có sẵn dữ liệu
+    const booking4 = await prisma.booking.create({
+      data: {
+        bookingCode: 'BKSEED004', customerId: customer.id, hotelId: firstHotelId, roomTypeId: sampleRoomType.id,
+        checkInDate: daysFromNow(-10), checkOutDate: daysFromNow(-8), numNights: 2, numGuests: 2,
+        basePricePerNight: sampleRoomType.basePrice, subtotal: twoNights, discountAmount: 0, totalAmount: twoNights,
+        status: 'checked_out', source: 'website', checkedInAt: daysFromNow(-10), checkedOutAt: daysFromNow(-8),
+      },
+    });
+    await prisma.review.create({
+      data: {
+        bookingId: booking4.id, customerId: customer.id, hotelId: firstHotelId,
+        overallRating: 5, cleanlinessRating: 5, serviceRating: 4, locationRating: 5, valueRating: 4,
+        title: 'Kỳ nghỉ tuyệt vời', content: 'Phòng sạch, nhân viên thân thiện, vị trí gần biển.', status: 'published',
+        images: { create: [{ url: 'https://picsum.photos/seed/review-seed/800/600' }] },
+      },
+    });
+
+    // (5) Chi tiết Pha 1 (booking.com detail) cho khách sạn đầu tiên + cấu hình giường loại phòng đầu tiên
+    await prisma.hotel.update({
+      where: { id: firstHotelId },
+      data: {
+        phone: '0236 3888 999', email: 'danang-beach@smartstay.ai', postalCode: '550000',
+        totalFloors: 12, builtYear: 2018, isSmokingAllowed: false, petsPolicy: 'on_request',
+        minGuestAge: 0, languagesSpoken: ['vi', 'en', 'ko'], maxLengthOfStay: 30,
+        contacts: {
+          create: [
+            { contactType: 'general', name: 'Lễ tân', phone: '0236 3888 999', phoneType: 'voice' },
+            { contactType: 'invoices', email: 'invoice-danang@smartstay.ai' },
+          ],
+        },
+        policies: {
+          create: [
+            { policyType: 'cancellation', description: 'Huỷ miễn phí trước 48 giờ so với giờ nhận phòng.' },
+            { policyType: 'deposit', description: 'Đặt cọc minibar khi nhận phòng, hoàn lại lúc trả phòng.', amount: 200_000, isPercentage: false, chargeFrequency: 'per_stay' },
+          ],
+        },
+        nearbyPlaces: {
+          create: [
+            { name: 'Biển Mỹ Khê', category: 'beach', distance: 0.2, distanceUnit: 'km', transportType: 'walk', journeyMinutes: 3 },
+            { name: 'Sân bay quốc tế Đà Nẵng', category: 'airport', distance: 6, distanceUnit: 'km', transportType: 'car', journeyMinutes: 15 },
+          ],
+        },
+      },
+    });
+    await prisma.roomBed.create({ data: { roomTypeId: sampleRoomType.id, bedType: 'double', quantity: 1 } });
+
+    // (6) Payout mẫu — PHẢI tạo HotelPayoutAccount trước (FK). Số TK để PLAIN cho seed (app sẽ mã hoá khi tạo qua API).
+    const payoutAccount = await prisma.hotelPayoutAccount.create({
+      data: {
+        hotelId: firstHotelId, partnerId: partner.id,
+        accountHolder: 'SmartStay Hospitality Group', bankName: 'Vietcombank',
+        accountNumber: 'SEED-0011001234567', bankBranch: 'CN Đà Nẵng', isPrimary: true,
+      },
+    });
+    await prisma.payout.create({
+      data: {
+        hotelId: firstHotelId, partnerId: partner.id, payoutAccountId: payoutAccount.id,
+        amount: 5_000_000, currency: 'VND', status: 'paid',
+        periodStart: daysFromNow(-30), periodEnd: daysFromNow(-1),
+        payoutTransactionId: 'PAYOUTSEED001', processedAt: daysFromNow(-1),
+      },
+    });
+  }
+
   console.log('Seed completed successfully!');
   console.log('Data: 3 hotels (2 Đà Nẵng, 1 Hà Nội), 7 room types, 26 rooms,');
   console.log('      weekend pricing rule +20% for "Phòng Deluxe Hướng Biển" (Fri/Sat nights),');
-  console.log('      1 holiday priceOverride (2.5M, in 10 days) for the same room type,');
-  console.log('      1 sample booking BKSEED001 (confirmed, check-in in 7 days).');
+  console.log('      1 holiday priceOverride (2.5M, in 10 days) for the same room type.');
+  console.log('Bookings: BKSEED001 (confirmed, +7d, +voucher VCSEED001),');
+  console.log('          BKSEED002 (confirmed, check-in TODAY, +voucher VCSEED002 → test check-in/out/QR),');
+  console.log('          BKSEED003 (checked_out, chưa review → test POST /reviews),');
+  console.log('          BKSEED004 (checked_out, đã có 1 review published → test GET /reviews).');
+  console.log('Detail: hotel #1 có contacts/policies/nearby_places + cột mới + room_beds; 1 payout mẫu (PAYOUTSEED001).');
 }
 
 main()

@@ -2,7 +2,6 @@ const allRoles = {
   guest: [],
   customer: [],
   staff: [],
-  marketer: [],
   hotel_partner: [],
   platform_manager: [
     'getUsers',
