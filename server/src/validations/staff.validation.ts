@@ -11,7 +11,7 @@ export const addStaff = {
     email: Joi.string().email().required(),
     password: Joi.string().required().custom(password),
     phone: Joi.string().allow('', null),
-    assignedRole: Joi.string().valid('staff', 'marketer').default('staff'),
+    assignedRole: Joi.string().valid('staff').default('staff'),
   }),
 };
 

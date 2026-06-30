@@ -6,7 +6,7 @@ export const createUser = {
     email: Joi.string().required().email(),
     password: Joi.string().required().custom(password),
     name: Joi.string().required(),
-    role: Joi.string().required().valid('guest', 'customer', 'staff', 'marketer', 'hotel_partner', 'platform_manager', 'admin'),
+    role: Joi.string().required().valid('guest', 'customer', 'staff', 'hotel_partner', 'platform_manager', 'admin'),
   }),
 };
 
@@ -64,6 +64,6 @@ export const updateUserRole = {
   body: Joi.object().keys({
     role: Joi.string()
       .required()
-      .valid('guest', 'customer', 'staff', 'marketer', 'hotel_partner', 'platform_manager', 'admin'),
+      .valid('guest', 'customer', 'staff', 'hotel_partner', 'platform_manager', 'admin'),
   }),
 };
