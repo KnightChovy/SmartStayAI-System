@@ -13,6 +13,8 @@ export interface ChatRecommendation {
 }
 
 export interface Message {
+  /** Id ổn định để cập nhật đúng bong bóng khi stream (tránh ghi nhầm vào tin của user). */
+  id?: string;
   sender: 'user' | 'ai';
   text: string;
   time: string;
