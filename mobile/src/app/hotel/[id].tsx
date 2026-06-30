@@ -10,8 +10,10 @@ import { Heading } from '@/components/ui/heading';
 import { StarRating } from '@/components/shared/StarRating';
 import { RoomTypeCard } from '@/components/shared/RoomTypeCard';
 import { StayPickerSheet } from '@/components/shared/StayPickerSheet';
+import { HotelMap } from '@/components/shared/HotelMap';
 import { useGetHotel, useGetRoomTypes } from '@/hooks/hotels';
 import { useGetReviews } from '@/hooks/reviews';
+import { useGeocode } from '@/hooks/geo';
 import { getHotelLocation, getInitials } from '@/utils/hotel';
 import { formatDateShort, todayKey, toDateKey, addDays } from '@/utils/formatDate';
 
@@ -45,6 +47,13 @@ export default function HotelDetailScreen() {
   const { data: hotel, isLoading } = useGetHotel(id);
   const { data: roomTypes } = useGetRoomTypes(id, { checkIn, checkOut, guests });
   const { data: reviewsData } = useGetReviews({ hotelId: id, limit: 5 });
+
+  // Toạ độ map: ưu tiên DB; nếu seed chưa có lat/lng thì geocode từ địa chỉ (VietMap).
+  const fullAddress = hotel ? `${hotel.address}, ${getHotelLocation(hotel)}` : '';
+  const hasDbCoords = Boolean(hotel?.latitude && hotel?.longitude);
+  const { data: geocoded } = useGeocode(fullAddress, Boolean(hotel) && !hasDbCoords);
+  const mapLat = hotel?.latitude ?? geocoded?.lat ?? null;
+  const mapLng = hotel?.longitude ?? geocoded?.lng ?? null;
 
   const rooms = roomTypes ?? [];
   const reviews = reviewsData?.results ?? [];
@@ -261,15 +270,12 @@ export default function HotelDetailScreen() {
 
           {/* ── Location ── */}
           <Heading size="lg" className="text-navy mb-3">Location</Heading>
-          <View className="bg-white rounded-2xl overflow-hidden mb-4">
-            <View className="h-[140px] bg-blue-200 items-center justify-center">
-              <Ionicons name="map" size={48} color="#3B82F6" />
-            </View>
-            <View className="p-3.5 flex-row items-center gap-2">
-              <Ionicons name="location" size={16} color={GOLD} />
-              <Text size="sm" className="text-gray-700 font-medium flex-1">{hotel.address}, {getHotelLocation(hotel)}</Text>
-            </View>
-          </View>
+          <HotelMap
+            latitude={mapLat}
+            longitude={mapLng}
+            name={hotel.name}
+            address={fullAddress}
+          />
         </View>
       </ScrollView>
 
