@@ -47,6 +47,15 @@ components:
         message:
           type: string
 
+    AmenityAssignment:
+      type: object
+      description: One amenity assigned to a hotel or room type (replace-all payload item).
+      required: [amenityId]
+      properties:
+        amenityId: { type: string, format: uuid }
+        isFree: { type: boolean, default: true, description: Free vs paid amenity }
+        quantity: { type: integer, minimum: 0, nullable: true, description: Optional count (e.g. parking spots) }
+
     ReviewImage:
       type: object
       properties:
@@ -382,7 +391,506 @@ components:
             businessName: { type: string }
             status: { type: string, enum: [pending, approved, suspended, rejected] }
 
+    # ===== Phân trang dùng chung ({ results, page, limit, totalPages, totalResults }) =====
+    Pagination:
+      type: object
+      properties:
+        page: { type: integer, example: 1 }
+        limit: { type: integer, example: 20 }
+        totalPages: { type: integer, example: 5 }
+        totalResults: { type: integer, example: 92 }
+
+    # ===== Tiện nghi =====
+    Amenity:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        icon: { type: string, nullable: true }
+        category: { type: string, enum: [room, hotel, service] }
+        createdAt: { type: string, format: date-time }
+
+    HotelAmenity:
+      type: object
+      description: One amenity assigned to a hotel (catalog amenity + isFree/quantity).
+      properties:
+        hotelId: { type: string, format: uuid }
+        amenityId: { type: string, format: uuid }
+        isFree: { type: boolean }
+        quantity: { type: integer, nullable: true }
+        createdAt: { type: string, format: date-time }
+        amenity: { $ref: '#/components/schemas/Amenity' }
+
+    RoomTypeAmenity:
+      type: object
+      properties:
+        roomTypeId: { type: string, format: uuid }
+        amenityId: { type: string, format: uuid }
+        isFree: { type: boolean }
+        quantity: { type: integer, nullable: true }
+        amenity: { $ref: '#/components/schemas/Amenity' }
+
+    # ===== Loại phòng / phòng =====
+    RoomTypeImage:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        roomTypeId: { type: string, format: uuid }
+        url: { type: string, format: uri }
+        isPrimary: { type: boolean, nullable: true }
+        sortOrder: { type: integer, nullable: true }
+
+    RoomType:
+      type: object
+      description: A room type with its images, amenities and (on management endpoints) physical room count.
+      properties:
+        id: { type: string, format: uuid }
+        hotelId: { type: string, format: uuid }
+        name: { type: string }
+        description: { type: string, nullable: true }
+        maxOccupancy: { type: integer }
+        basePrice: { type: string, description: Decimal as string }
+        areaSqm: { type: string, nullable: true }
+        bedType: { type: string, nullable: true }
+        viewType: { type: string, nullable: true }
+        isActive: { type: boolean }
+        maxAdults: { type: integer, nullable: true }
+        maxChildren: { type: integer, nullable: true }
+        sizeUnit: { type: string, enum: [sqm, sqft], nullable: true }
+        isNonSmoking: { type: boolean }
+        hasPrivateBathroom: { type: boolean }
+        hasBalcony: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        images:
+          type: array
+          items: { $ref: '#/components/schemas/RoomTypeImage' }
+        amenities:
+          type: array
+          items: { $ref: '#/components/schemas/RoomTypeAmenity' }
+        _count:
+          type: object
+          description: Present on management endpoints only.
+          properties:
+            rooms: { type: integer }
+
+    Room:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        hotelId: { type: string, format: uuid }
+        roomTypeId: { type: string, format: uuid }
+        roomNumber: { type: string }
+        floor: { type: integer, nullable: true }
+        status: { type: string, enum: [available, occupied, maintenance, cleaning, blocked] }
+        notes: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        roomType:
+          type: object
+          properties:
+            id: { type: string, format: uuid }
+            name: { type: string }
+
+    # ===== Khách sạn (chi tiết + tóm tắt) =====
+    Hotel:
+      type: object
+      description: Full hotel profile (public detail / management detail) with images, hotel amenities and room types.
+      properties:
+        id: { type: string, format: uuid }
+        partnerId: { type: string, format: uuid }
+        name: { type: string }
+        slug: { type: string, nullable: true }
+        description: { type: string, nullable: true }
+        address: { type: string }
+        city: { type: string }
+        country: { type: string }
+        businessType: { type: string, enum: [hotel, resort, villa, apartment], nullable: true }
+        district: { type: string, nullable: true }
+        ward: { type: string, nullable: true }
+        latitude: { type: string, nullable: true }
+        longitude: { type: string, nullable: true }
+        starRating: { type: integer, nullable: true }
+        checkInTime: { type: string, nullable: true }
+        checkOutTime: { type: string, nullable: true }
+        isActive: { type: boolean }
+        isListed: { type: boolean }
+        postalCode: { type: string, nullable: true }
+        phone: { type: string, nullable: true }
+        email: { type: string, nullable: true }
+        totalFloors: { type: integer, nullable: true }
+        builtYear: { type: integer, nullable: true }
+        petsPolicy: { type: string, enum: [not_allowed, allowed, allowed_on_request], nullable: true }
+        cancellationPolicy: { type: string, nullable: true }
+        childrenPolicy: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        images:
+          type: array
+          items: { $ref: '#/components/schemas/HotelImage' }
+        amenities:
+          type: array
+          items: { $ref: '#/components/schemas/HotelAmenity' }
+        roomTypes:
+          type: array
+          items: { $ref: '#/components/schemas/RoomType' }
+
+    HotelSummary:
+      type: object
+      description: Hotel list item from search — scalar fields + cover image + "from" price (minPrice).
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        city: { type: string }
+        country: { type: string }
+        address: { type: string }
+        starRating: { type: integer, nullable: true }
+        isActive: { type: boolean }
+        isListed: { type: boolean }
+        minPrice: { type: string, nullable: true, description: Lowest matching room base price (Decimal as string) }
+        images:
+          type: array
+          description: Cover image only
+          items: { $ref: '#/components/schemas/HotelImage' }
+
+    AdminHotelSummary:
+      type: object
+      description: Hotel list item for platform admin/manager oversight.
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        city: { type: string }
+        starRating: { type: integer, nullable: true }
+        isActive: { type: boolean }
+        isListed: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        partner:
+          type: object
+          properties:
+            id: { type: string, format: uuid }
+            businessName: { type: string }
+
+    # ===== Pricing rule =====
+    PricingRule:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        hotelId: { type: string, format: uuid }
+        roomTypeId: { type: string, format: uuid, nullable: true }
+        name: { type: string }
+        ruleType: { type: string, enum: [seasonal, day_of_week, occupancy_based, last_minute, early_bird] }
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date }
+        dayOfWeek: { type: array, items: { type: integer } }
+        occupancyThreshold: { type: integer, nullable: true }
+        adjustmentType: { type: string, enum: [percentage, fixed_amount] }
+        adjustmentValue: { type: string, description: Decimal as string }
+        priority: { type: integer }
+        isActive: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    # ===== Booking =====
+    BookingVoucher:
+      type: object
+      properties:
+        voucherCode: { type: string }
+        usedAt: { type: string, format: date-time, nullable: true }
+
+    Booking:
+      type: object
+      description: Booking for the guest portal (with summarized hotel + room type).
+      properties:
+        id: { type: string, format: uuid }
+        bookingCode: { type: string }
+        customerId: { type: string, format: uuid }
+        hotelId: { type: string, format: uuid }
+        roomTypeId: { type: string, format: uuid }
+        checkInDate: { type: string, format: date }
+        checkOutDate: { type: string, format: date }
+        numNights: { type: integer }
+        numGuests: { type: integer }
+        basePricePerNight: { type: string, description: Decimal as string }
+        subtotal: { type: string }
+        discountAmount: { type: string }
+        totalAmount: { type: string }
+        status: { type: string, enum: [pending, confirmed, checked_in, checked_out, cancelled, no_show] }
+        source: { type: string, enum: [website, mobile_app, walk_in, ota] }
+        specialRequests: { type: string, nullable: true }
+        holdExpiresAt: { type: string, format: date-time, nullable: true }
+        checkedInAt: { type: string, format: date-time, nullable: true }
+        checkedOutAt: { type: string, format: date-time, nullable: true }
+        cancelledAt: { type: string, format: date-time, nullable: true }
+        createdAt: { type: string, format: date-time }
+        hotel:
+          type: object
+          properties:
+            id: { type: string, format: uuid }
+            name: { type: string }
+            address: { type: string }
+            city: { type: string }
+            checkInTime: { type: string, nullable: true }
+            checkOutTime: { type: string, nullable: true }
+        roomType:
+          type: object
+          properties:
+            id: { type: string, format: uuid }
+            name: { type: string }
+            bedType: { type: string, nullable: true }
+            viewType: { type: string, nullable: true }
+            maxOccupancy: { type: integer }
+
+    StaffBooking:
+      type: object
+      description: Booking for the staff/owner operations screen (guest + assigned rooms + voucher).
+      properties:
+        id: { type: string, format: uuid }
+        bookingCode: { type: string }
+        hotelId: { type: string, format: uuid }
+        roomTypeId: { type: string, format: uuid }
+        checkInDate: { type: string, format: date }
+        checkOutDate: { type: string, format: date }
+        numNights: { type: integer }
+        numGuests: { type: integer }
+        totalAmount: { type: string }
+        status: { type: string, enum: [pending, confirmed, checked_in, checked_out, cancelled, no_show] }
+        checkedInAt: { type: string, format: date-time, nullable: true }
+        checkedOutAt: { type: string, format: date-time, nullable: true }
+        createdAt: { type: string, format: date-time }
+        customer:
+          type: object
+          properties:
+            id: { type: string, format: uuid }
+            fullName: { type: string }
+            email: { type: string, format: email }
+            phone: { type: string, nullable: true }
+        roomType:
+          type: object
+          properties:
+            id: { type: string, format: uuid }
+            name: { type: string }
+        bookingRooms:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string, format: uuid }
+              assignedAt: { type: string, format: date-time }
+              room:
+                type: object
+                properties:
+                  id: { type: string, format: uuid }
+                  roomNumber: { type: string }
+                  floor: { type: integer, nullable: true }
+        voucher:
+          allOf:
+            - $ref: '#/components/schemas/BookingVoucher'
+          nullable: true
+
+    # ===== Hoa hồng / payout =====
+    Commission:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        bookingId: { type: string, format: uuid }
+        partnerId: { type: string, format: uuid }
+        paymentId: { type: string, format: uuid }
+        commissionRate: { type: string }
+        commissionAmount: { type: string }
+        status: { type: string, enum: [pending, settled] }
+        payoutId: { type: string, format: uuid, nullable: true }
+        settledAt: { type: string, format: date-time, nullable: true }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        partner:
+          type: object
+          properties:
+            id: { type: string, format: uuid }
+            businessName: { type: string }
+        booking:
+          type: object
+          properties:
+            bookingCode: { type: string }
+            totalAmount: { type: string }
+
+    # ===== Hội thoại =====
+    Message:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        conversationId: { type: string, format: uuid }
+        senderType: { type: string, enum: [guest, staff, ai, system] }
+        senderId: { type: string, format: uuid, nullable: true }
+        content: { type: string }
+        messageType: { type: string, enum: [text, image, file, system_event] }
+        isAiSuggested: { type: boolean }
+        isApproved: { type: boolean }
+        createdAt: { type: string, format: date-time }
+
+    Conversation:
+      type: object
+      description: Conversation detail with full ordered message thread.
+      properties:
+        id: { type: string, format: uuid }
+        hotelId: { type: string, format: uuid }
+        userId: { type: string, format: uuid, nullable: true }
+        bookingId: { type: string, format: uuid, nullable: true }
+        channel: { type: string, enum: [web, mobile, email, whatsapp] }
+        status: { type: string, enum: [open, pending, escalated, resolved, closed] }
+        assignedTo: { type: string, format: uuid, nullable: true }
+        subject: { type: string, nullable: true }
+        startedAt: { type: string, format: date-time }
+        resolvedAt: { type: string, format: date-time, nullable: true }
+        lastMessageAt: { type: string, format: date-time, nullable: true }
+        messages:
+          type: array
+          items: { $ref: '#/components/schemas/Message' }
+
+    ConversationSummary:
+      type: object
+      description: Conversation list item with last-message preview and joined customer.
+      properties:
+        id: { type: string, format: uuid }
+        status: { type: string, enum: [open, pending, escalated, resolved, closed] }
+        subject: { type: string, nullable: true }
+        channel: { type: string, enum: [web, mobile, email, whatsapp] }
+        assignedTo: { type: string, format: uuid, nullable: true }
+        lastMessageAt: { type: string, format: date-time, nullable: true }
+        lastMessage: { type: string, nullable: true }
+        customer:
+          type: object
+          nullable: true
+          properties:
+            id: { type: string, format: uuid }
+            fullName: { type: string }
+            email: { type: string, format: email }
+
+    # ===== Nhân viên / housekeeping / audit =====
+    StaffAssignment:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        hotelId: { type: string, format: uuid }
+        userId: { type: string, format: uuid }
+        assignedRole: { type: string, enum: [staff] }
+        assignedAt: { type: string, format: date-time }
+        unassignedAt: { type: string, format: date-time, nullable: true }
+        user:
+          type: object
+          properties:
+            id: { type: string, format: uuid }
+            fullName: { type: string }
+            email: { type: string, format: email }
+            phone: { type: string, nullable: true }
+            status: { type: string }
+
+    HousekeepingTask:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        hotelId: { type: string, format: uuid }
+        roomId: { type: string, format: uuid }
+        bookingId: { type: string, format: uuid, nullable: true }
+        status: { type: string, enum: [pending, in_progress, done] }
+        note: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+        completedAt: { type: string, format: date-time, nullable: true }
+        room:
+          type: object
+          properties:
+            id: { type: string, format: uuid }
+            roomNumber: { type: string }
+            floor: { type: integer, nullable: true }
+            status: { type: string }
+
+    AuditLog:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        userId: { type: string, format: uuid }
+        action: { type: string }
+        entityType: { type: string }
+        entityId: { type: string, format: uuid }
+        oldValue: { type: object, nullable: true }
+        newValue: { type: object, nullable: true }
+        ipAddress: { type: string, nullable: true }
+        userAgent: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+
+    # ===== Bao phân trang theo từng entity (allOf Pagination + results) =====
+    PaginatedHotels:
+      allOf:
+        - $ref: '#/components/schemas/Pagination'
+        - type: object
+          properties:
+            results: { type: array, items: { $ref: '#/components/schemas/HotelSummary' } }
+
+    PaginatedAdminHotels:
+      allOf:
+        - $ref: '#/components/schemas/Pagination'
+        - type: object
+          properties:
+            results: { type: array, items: { $ref: '#/components/schemas/AdminHotelSummary' } }
+
+    PaginatedCommissions:
+      allOf:
+        - $ref: '#/components/schemas/Pagination'
+        - type: object
+          properties:
+            results: { type: array, items: { $ref: '#/components/schemas/Commission' } }
+
+    PaginatedAuditLogs:
+      allOf:
+        - $ref: '#/components/schemas/Pagination'
+        - type: object
+          properties:
+            results: { type: array, items: { $ref: '#/components/schemas/AuditLog' } }
+
+    PaginatedBookings:
+      allOf:
+        - $ref: '#/components/schemas/Pagination'
+        - type: object
+          properties:
+            results: { type: array, items: { $ref: '#/components/schemas/Booking' } }
+
+    PaginatedStaffBookings:
+      allOf:
+        - $ref: '#/components/schemas/Pagination'
+        - type: object
+          properties:
+            results: { type: array, items: { $ref: '#/components/schemas/StaffBooking' } }
+
+    PaginatedReviews:
+      allOf:
+        - $ref: '#/components/schemas/Pagination'
+        - type: object
+          properties:
+            results: { type: array, items: { $ref: '#/components/schemas/Review' } }
+
+    PaginatedConversations:
+      allOf:
+        - $ref: '#/components/schemas/Pagination'
+        - type: object
+          properties:
+            results: { type: array, items: { $ref: '#/components/schemas/ConversationSummary' } }
+
+    PaginatedRooms:
+      allOf:
+        - $ref: '#/components/schemas/Pagination'
+        - type: object
+          properties:
+            results: { type: array, items: { $ref: '#/components/schemas/Room' } }
+
   responses:
+    BadRequest:
+      description: Validation error or business rule violated
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: 400
+            message: Invalid request
     DuplicateEmail:
       description: Email already taken
       content:

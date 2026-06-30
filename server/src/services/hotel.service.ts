@@ -13,6 +13,7 @@ import type {
   UpdateHotelDto,
   HotelImageInput,
 } from '../dto/hotel.dto';
+import type { AmenityAssignmentInput } from '../dto/amenity.dto';
 
 export class HotelService {
   /**
@@ -181,6 +182,51 @@ export class HotelService {
     return prisma.$transaction(async (tx) => {
       await tx.hotelImage.updateMany({ where: { hotelId }, data: { isPrimary: false } });
       return tx.hotelImage.update({ where: { id: imageId }, data: { isPrimary: true } });
+    });
+  };
+
+  /** Danh sách tiện nghi đã gán cho khách sạn (kèm thông tin catalog). Quyền qua getManagedHotel. */
+  getHotelAmenities = async (hotelId: string, currentUser: User) => {
+    await this.getManagedHotel(hotelId, currentUser);
+    return prisma.hotelAmenity.findMany({
+      where: { hotelId },
+      include: { amenity: true },
+      orderBy: { amenity: { name: 'asc' } },
+    });
+  };
+
+  /**
+   * Gán lại TOÀN BỘ tiện nghi của khách sạn (thay thế, không cộng thêm) — client gửi danh sách cuối cùng,
+   * mảng rỗng = bỏ hết. Mỗi dòng có thể kèm isFree/quantity. Kiểm mọi amenityId tồn tại trong catalog.
+   */
+  setHotelAmenities = async (hotelId: string, currentUser: User, amenities: AmenityAssignmentInput[]) => {
+    await this.getManagedHotel(hotelId, currentUser);
+
+    const amenityIds = amenities.map((item) => item.amenityId);
+    if (amenityIds.length > 0) {
+      const existingCount = await prisma.amenity.count({ where: { id: { in: amenityIds } } });
+      if (existingCount !== amenityIds.length) {
+        throw new ApiError(httpStatus.BAD_REQUEST, 'Có tiện nghi không tồn tại trong danh sách gửi lên');
+      }
+    }
+
+    return prisma.$transaction(async (tx) => {
+      await tx.hotelAmenity.deleteMany({ where: { hotelId } });
+      if (amenities.length > 0) {
+        await tx.hotelAmenity.createMany({
+          data: amenities.map((item) => ({
+            hotelId,
+            amenityId: item.amenityId,
+            isFree: item.isFree ?? true,
+            quantity: item.quantity ?? null,
+          })),
+        });
+      }
+      return tx.hotelAmenity.findMany({
+        where: { hotelId },
+        include: { amenity: true },
+        orderBy: { amenity: { name: 'asc' } },
+      });
     });
   };
 

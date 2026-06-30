@@ -73,6 +73,22 @@ export class HotelController {
     );
     res.send(image);
   });
+
+  // Danh sách tiện nghi đã gán cho khách sạn (cho màn hình quản trị)
+  getHotelAmenities = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const amenities = await hotelService.getHotelAmenities(req.params.hotelId as string, req.user as User);
+    res.send(amenities);
+  });
+
+  // Gán lại toàn bộ tiện nghi của khách sạn
+  setHotelAmenities = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const amenities = await hotelService.setHotelAmenities(
+      req.params.hotelId as string,
+      req.user as User,
+      req.body.amenities
+    );
+    res.send(amenities);
+  });
 }
 
 export const hotelController = new HotelController();

@@ -62,7 +62,16 @@ export const addImages = {
 export const setAmenities = {
   params: roomTypeParams,
   body: Joi.object().keys({
-    // Danh sách THAY THẾ toàn bộ tiện nghi hiện có; mảng rỗng = bỏ hết
-    amenityIds: Joi.array().items(Joi.string().uuid()).unique().required(),
+    // Danh sách THAY THẾ toàn bộ tiện nghi hiện có; mảng rỗng = bỏ hết. Mỗi dòng kèm isFree/quantity.
+    amenities: Joi.array()
+      .items(
+        Joi.object().keys({
+          amenityId: Joi.string().uuid().required(),
+          isFree: Joi.boolean(),
+          quantity: Joi.number().integer().min(0).allow(null),
+        })
+      )
+      .unique('amenityId')
+      .required(),
   }),
 };
