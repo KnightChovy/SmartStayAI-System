@@ -12,6 +12,8 @@
 */
 -- AlterEnum
 BEGIN;
+-- Data migration: rewrite legacy 'marketer' -> 'staff' before casting (else the USING cast fails on existing rows)
+UPDATE "hotel_staff_assignments" SET "assigned_role" = 'staff' WHERE "assigned_role"::text = 'marketer';
 CREATE TYPE "StaffRole_new" AS ENUM ('staff');
 ALTER TABLE "hotel_staff_assignments" ALTER COLUMN "assigned_role" TYPE "StaffRole_new" USING ("assigned_role"::text::"StaffRole_new");
 ALTER TYPE "StaffRole" RENAME TO "StaffRole_old";
@@ -21,6 +23,8 @@ COMMIT;
 
 -- AlterEnum
 BEGIN;
+-- Data migration: drop legacy 'marketing_content' templates before casting (else the USING cast fails on existing rows)
+DELETE FROM "ai_prompt_templates" WHERE "template_type"::text = 'marketing_content';
 CREATE TYPE "TemplateType_new" AS ENUM ('chatbot_system', 'review_response');
 ALTER TABLE "ai_prompt_templates" ALTER COLUMN "template_type" TYPE "TemplateType_new" USING ("template_type"::text::"TemplateType_new");
 ALTER TYPE "TemplateType" RENAME TO "TemplateType_old";
@@ -30,6 +34,9 @@ COMMIT;
 
 -- AlterEnum
 BEGIN;
+-- Data migration: rewrite legacy 'marketer' -> 'staff' before casting (else the USING cast fails on existing rows)
+UPDATE "users" SET "role" = 'staff' WHERE "role"::text = 'marketer';
+UPDATE "smart_alerts" SET "target_role" = 'staff' WHERE "target_role"::text = 'marketer';
 CREATE TYPE "UserRole_new" AS ENUM ('guest', 'customer', 'staff', 'hotel_partner', 'platform_manager', 'admin');
 ALTER TABLE "users" ALTER COLUMN "role" TYPE "UserRole_new" USING ("role"::text::"UserRole_new");
 ALTER TABLE "smart_alerts" ALTER COLUMN "target_role" TYPE "UserRole_new" USING ("target_role"::text::"UserRole_new");
