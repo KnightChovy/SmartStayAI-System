@@ -88,6 +88,25 @@ export const hotelImageId = {
   }),
 };
 
+// Gán lại TOÀN BỘ tiện nghi của khách sạn (thay thế; mảng rỗng = bỏ hết). Mỗi dòng kèm isFree/quantity.
+export const setHotelAmenities = {
+  params: Joi.object().keys({
+    hotelId: Joi.string().uuid().required(),
+  }),
+  body: Joi.object().keys({
+    amenities: Joi.array()
+      .items(
+        Joi.object().keys({
+          amenityId: Joi.string().uuid().required(),
+          isFree: Joi.boolean(),
+          quantity: Joi.number().integer().min(0).allow(null),
+        })
+      )
+      .unique('amenityId')
+      .required(),
+  }),
+};
+
 export const getRoomTypes = {
   params: Joi.object().keys({
     hotelId: Joi.string().uuid().required(),

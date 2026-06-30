@@ -40,7 +40,7 @@ export class RoomTypeController {
       req.params.hotelId as string,
       req.params.roomTypeId as string,
       req.user as User,
-      req.body.amenityIds
+      req.body.amenities
     );
     res.send(roomType);
   });

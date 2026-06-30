@@ -71,6 +71,14 @@ router.patch(
   hotelController.setPrimaryHotelImage
 );
 
+// ----- Quản lý tiện nghi khách sạn (chủ KS / manageHotels) -----
+router
+  .route('/:hotelId/amenities')
+  // Danh sách tiện nghi đã gán cho KS (màn quản trị) — chỉ kiểm params
+  .get(auth(), validate(hotelValidation.getHotel), hotelController.getHotelAmenities)
+  // Gán lại toàn bộ tiện nghi của KS (replace, kèm isFree/quantity)
+  .put(auth(), validate(hotelValidation.setHotelAmenities), hotelController.setHotelAmenities);
+
 // ----- Quản lý loại phòng (chủ khách sạn hoặc quyền manageHotels — service tự kiểm) -----
 router
   .route('/:hotelId/room-types')

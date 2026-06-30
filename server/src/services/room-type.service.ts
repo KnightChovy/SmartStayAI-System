@@ -4,6 +4,7 @@ import prisma from '../config/prisma';
 import ApiError from '../utils/ApiError';
 import { hotelService } from './hotel.service';
 import type { CreateRoomTypeDto, UpdateRoomTypeDto, RoomTypeImageInput } from '../dto/room-type.dto';
+import type { AmenityAssignmentInput } from '../dto/amenity.dto';
 
 // Quan hệ kèm theo khi trả loại phòng cho màn quản trị
 const roomTypeInclude = {
@@ -101,18 +102,35 @@ export class RoomTypeService {
    * Gán lại TOÀN BỘ tiện nghi của loại phòng (thay thế, không cộng thêm) — client gửi danh sách
    * cuối cùng, mảng rỗng = bỏ hết. Cách này tránh phải làm API thêm/xoá từng tiện nghi.
    */
-  setAmenities = async (hotelId: string, roomTypeId: string, currentUser: User, amenityIds: string[]) => {
+  setAmenities = async (
+    hotelId: string,
+    roomTypeId: string,
+    currentUser: User,
+    amenities: AmenityAssignmentInput[]
+  ) => {
     await hotelService.getManagedHotel(hotelId, currentUser);
     await this.getOwnedRoomType(hotelId, roomTypeId);
 
-    const existingCount = await prisma.amenity.count({ where: { id: { in: amenityIds } } });
-    if (existingCount !== amenityIds.length) {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Có tiện nghi không tồn tại trong danh sách gửi lên');
+    const amenityIds = amenities.map((item) => item.amenityId);
+    if (amenityIds.length > 0) {
+      const existingCount = await prisma.amenity.count({ where: { id: { in: amenityIds } } });
+      if (existingCount !== amenityIds.length) {
+        throw new ApiError(httpStatus.BAD_REQUEST, 'Có tiện nghi không tồn tại trong danh sách gửi lên');
+      }
     }
 
     return prisma.$transaction(async (tx) => {
       await tx.roomTypeAmenity.deleteMany({ where: { roomTypeId } });
-      await tx.roomTypeAmenity.createMany({ data: amenityIds.map((amenityId) => ({ roomTypeId, amenityId })) });
+      if (amenities.length > 0) {
+        await tx.roomTypeAmenity.createMany({
+          data: amenities.map((item) => ({
+            roomTypeId,
+            amenityId: item.amenityId,
+            isFree: item.isFree ?? true,
+            quantity: item.quantity ?? null,
+          })),
+        });
+      }
       return tx.roomType.findUniqueOrThrow({ where: { id: roomTypeId }, include: roomTypeInclude });
     });
   };

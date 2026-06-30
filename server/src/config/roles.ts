@@ -2,7 +2,8 @@ const allRoles = {
   guest: [],
   customer: [],
   staff: [],
-  hotel_partner: [],
+  // Partner (chủ khách sạn) tự tạo tiện nghi vào catalog dùng chung + gán cho KS/loại phòng của mình.
+  hotel_partner: ['manageAmenities'],
   platform_manager: [
     'getUsers',
     'manageUsers',
