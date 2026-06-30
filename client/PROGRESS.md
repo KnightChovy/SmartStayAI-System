@@ -6,6 +6,15 @@ This file tracks the accomplished tasks, resolved user requests, and visual/func
 
 ## Completed Tasks Checklist
 
+### June 30, 2026
+
+- [x] **Guest Hotel Detail — bản đồ luôn hiện kể cả khi DB chưa có toạ độ (geocode địa chỉ)**:
+  - **Vấn đề**: `HotelDetailPage` đã render `<HotelMap>` nhưng bọc điều kiện `hotel.latitude && hotel.longitude`; seed hotel không có toạ độ → map không bao giờ hiện.
+  - **Service**: thêm `geocodeAddress(text)` vào `services/vietnam-geo.service.ts` — tái dùng `autocompleteAddress` (lấy gợi ý đầu) và fallback `getPlaceDetail` theo `ref_id` để ra `{ lat, lng }` (qua proxy `/api/vietmap`, key `VITE_API_SEARCH_KEY`).
+  - **Hook**: `hooks/geo/use-geocode.ts` (+ barrel) — `useGeocode(address, enabled)` cache `Infinity`; thêm `queryKeys.geo.geocode`.
+  - **Page**: `HotelDetailPage` ưu tiên lat/lng từ DB, nếu thiếu thì geocode `formatAddress(...)` rồi render `HotelMap` với toạ độ đã suy ra (`mapLat/mapLng`). Map hiện khi có toạ độ từ một trong hai nguồn.
+  - `tsc -p tsconfig.app.json --noEmit`: không phát sinh lỗi mới ở file đã đụng (tổng lỗi vẫn là các lỗi cũ không liên quan).
+
 ### June 24, 2026
 
 - [x] **Admin users/properties polish + single Sonner toast system**:

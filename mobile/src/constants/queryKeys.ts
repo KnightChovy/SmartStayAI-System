@@ -42,4 +42,8 @@ export const queryKeys = {
     byHotel: (params: HotelReviewsParams) => ['reviews', 'hotel', params] as const,
     detail: (reviewId: string) => ['reviews', 'detail', reviewId] as const,
   },
+  geo: {
+    all: () => ['geo'] as const,
+    geocode: (query: string) => ['geo', 'geocode', query] as const,
+  },
 } as const;

@@ -34,4 +34,7 @@ export const queryKeys = {
   notifications: {
     all: ['notifications'] as const,
   },
+  geo: {
+    geocode: (query: string) => ['geo', 'geocode', query] as const,
+  },
 } as const;

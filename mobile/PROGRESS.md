@@ -81,6 +81,17 @@ This file tracks the accomplished tasks, resolved user requests, and structural/
   - `(tabs)/index.tsx`: thay 2 ô ngày/khách tĩnh ("Mon, Aug 21", "2 guests, 1 room") bằng ô **chọn ngày + số khách thật** mở `StayPickerSheet` (mặc định hôm nay→mai); nút Search truyền `city` + `checkIn` + `checkOut` + `guests` sang Search — khớp hành vi Hero bên client.
   - `(tabs)/search.tsx`: đọc `checkIn`/`checkOut`/`guests` từ params và truyền vào `useGetHotels` (để BE tính tồn kho + giá kỳ ở); khi mở 1 khách sạn cũng chuyển kèm ngày để chi tiết dùng chung.
 
+- [x] **Bản đồ vị trí khách sạn (maplibre-gl) ở `hotel/[id].tsx`**:
+  - **Bối cảnh**: `maplibre-gl` là thư viện WebGL chạy trên DOM → **không** render thẳng trên native (thiếu `window`/canvas). Giải pháp chuẩn Expo: nhúng qua WebView trên native, dùng trực tiếp trên web.
+  - Cài thêm `react-native-webview` (qua `npx expo install`) để host map trên thiết bị.
+  - **Component mới** `shared/HotelMap/` (platform-split):
+    - `HotelMap.tsx` (native): `WebView` nạp HTML có maplibre-gl (CDN, pin đúng version 5.24.0) + **raster tile VietMap** (`EXPO_PUBLIC_MAP_TILE_URL`), center + marker tại `latitude`/`longitude` của khách sạn, có nút zoom.
+    - `HotelMap.web.tsx` (web/react-native-web): khởi tạo `maplibregl.Map` trực tiếp trên `<div>` (CSS maplibre chèn qua CDN để tránh Metro xử lý CSS).
+    - Cả hai có fallback (toạ độ trống/thiếu tile key → panel xanh icon map) và hàng địa chỉ bấm để **mở app bản đồ thiết bị / Google Maps** (Directions) qua `Linking`.
+  - `hotel/[id].tsx`: thay placeholder map tĩnh trong mục **Location** bằng `<HotelMap latitude longitude name address />`.
+  - **Fix "map không hiện"**: seed (`server/prisma/seed.ts`) **không có** `latitude/longitude` → API trả null → map rơi vào fallback. Vì không sửa server, thêm **geocoding từ địa chỉ** (VietMap, giống client): `types/geo.type.ts`, `services/geo.service.ts` (`geocode` gọi `autocomplete/v4` → nếu thiếu toạ độ thì `place/v3` theo `ref_id`, key `EXPO_PUBLIC_API_SEARCH_KEY`, native không vướng CORS), `hooks/geo/use-geocode.ts` (cache `Infinity`), thêm `queryKeys.geo`. `hotel/[id].tsx` ưu tiên lat/lng từ DB, thiếu thì geocode địa chỉ rồi truyền vào `HotelMap`.
+  - `npx tsc --noEmit` sạch (ngoài `components/ui/*`); `npm run lint` không lỗi mới ở file map/geo.
+
 ---
 
 _Last Updated: 2026-06-28_

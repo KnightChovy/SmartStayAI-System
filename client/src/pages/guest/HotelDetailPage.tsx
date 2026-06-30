@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams, useSearchParams } from 'react-rout
 import { ArrowLeft, Clock, MapPin } from 'lucide-react';
 import { useHotel } from '@/hooks/hotels/use-hotel';
 import { useRoomTypes } from '@/hooks/hotels/use-room-types';
+import { useGeocode } from '@/hooks/geo';
 import { useAuthStore } from '@/stores/authStore';
 import { ROUTES } from '@/constants/routes';
 import StarRating from '@/components/shared/StarRating';
@@ -74,6 +75,15 @@ export default function HotelDetailPage() {
     ];
     return imgs.length ? [...new Set(imgs)] : [FALLBACK];
   }, [hotel, roomTypes]);
+
+  // Toạ độ map: ưu tiên DB; nếu seed chưa có lat/lng thì geocode từ địa chỉ (VietMap).
+  const fullAddress = hotel
+    ? formatAddress(hotel.address, hotel.district, hotel.city, hotel.country)
+    : '';
+  const hasDbCoords = Boolean(hotel?.latitude && hotel?.longitude);
+  const { data: geocoded } = useGeocode(fullAddress, Boolean(hotel) && !hasDbCoords);
+  const mapLat = hotel?.latitude != null ? Number(hotel.latitude) : geocoded?.lat ?? null;
+  const mapLng = hotel?.longitude != null ? Number(hotel.longitude) : geocoded?.lng ?? null;
 
   const handleSelectRoom = (roomType: RoomType) => {
     if (!checkIn || !checkOut) {
@@ -150,14 +160,14 @@ export default function HotelDetailPage() {
           )}
         </div>
 
-        {/* Map — chỉ hiện khi khách sạn có toạ độ thật trong DB */}
-        {hotel?.latitude && hotel?.longitude && (
+        {/* Map — toạ độ từ DB, hoặc geocode từ địa chỉ khi DB chưa có lat/lng */}
+        {mapLat != null && mapLng != null && (
           <div className="mt-6">
             <h2 className="mb-3 font-be-vietnam text-xl font-bold text-on-surface">Location</h2>
             <HotelMap
-              latitude={Number(hotel.latitude)}
-              longitude={Number(hotel.longitude)}
-              label={hotel.name}
+              latitude={mapLat}
+              longitude={mapLng}
+              label={hotel?.name}
               className="h-72 w-full overflow-hidden rounded-2xl border border-outline-variant/30"
             />
           </div>
