@@ -1,4 +1,4 @@
-import { isStaff, STAFF_HOME } from '@/constants/roles';
+import { CUSTOMER_HOME, isStaff } from '@/constants/roles';
 import { useAuthStore } from '@/stores/authStore';
 import { Ionicons } from '@expo/vector-icons';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
@@ -11,22 +11,33 @@ const GRAY = '#9CA3AF';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
+/** `center: true` → render nút nổi cao ở giữa (Check-in quét mã). */
 const TAB_CONFIG: Record<
   string,
-  { active: IoniconsName; inactive: IoniconsName; label: string }
+  {
+    active: IoniconsName;
+    inactive: IoniconsName;
+    label: string;
+    center?: boolean;
+  }
 > = {
-  index: { active: 'home', inactive: 'home-outline', label: 'Home' },
-  search: { active: 'search', inactive: 'search-outline', label: 'Search' },
   bookings: {
     active: 'calendar',
     inactive: 'calendar-outline',
     label: 'Bookings',
   },
-  chatbot: {
-    active: 'chatbubble',
-    inactive: 'chatbubble-outline',
-    label: 'Chat',
+  inbox: {
+    active: 'chatbubbles',
+    inactive: 'chatbubbles-outline',
+    label: 'Inbox',
   },
+  scan: {
+    active: 'qr-code',
+    inactive: 'qr-code',
+    label: 'Check-in',
+    center: true,
+  },
+  refunds: { active: 'cash', inactive: 'cash-outline', label: 'Refunds' },
   profile: { active: 'person', inactive: 'person-outline', label: 'Account' },
 };
 
@@ -58,6 +69,52 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
           });
           if (!focused && !event.defaultPrevented)
             navigation.navigate(route.name);
+        }
+
+        // Nút Check-in (scan) — nổi cao ở giữa cho dễ thao tác nhất.
+        if (config.center) {
+          return (
+            <Pressable
+              key={route.key}
+              onPress={onPress}
+              style={{
+                flex: 1,
+                alignItems: 'center',
+                justifyContent: 'flex-start',
+              }}
+            >
+              <View
+                style={{
+                  width: 58,
+                  height: 58,
+                  borderRadius: 29,
+                  backgroundColor: NAVY,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginTop: -24,
+                  borderWidth: 4,
+                  borderColor: '#FFFFFF',
+                  shadowColor: '#000',
+                  shadowOpacity: 0.2,
+                  shadowRadius: 8,
+                  shadowOffset: { width: 0, height: 4 },
+                  elevation: 6,
+                }}
+              >
+                <Ionicons name="qr-code" size={26} color="#FFFFFF" />
+              </View>
+              <Text
+                style={{
+                  fontSize: 11,
+                  fontWeight: focused ? '700' : '500',
+                  color: focused ? NAVY : GRAY,
+                  marginTop: 4,
+                }}
+              >
+                {config.label}
+              </Text>
+            </Pressable>
+          );
         }
 
         return (
@@ -104,15 +161,15 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   );
 }
 
-export default function TabsLayout() {
+export default function StaffTabsLayout() {
   const { isAuthenticated, _hasHydrated, user } = useAuthStore();
 
   if (_hasHydrated && !isAuthenticated) {
     return <Redirect href="/(auth)/login" />;
   }
 
-  if (_hasHydrated && isStaff(user?.role)) {
-    return <Redirect href={STAFF_HOME} />;
+  if (_hasHydrated && !isStaff(user?.role)) {
+    return <Redirect href={CUSTOMER_HOME} />;
   }
 
   return (
@@ -120,10 +177,10 @@ export default function TabsLayout() {
       tabBar={(props) => <CustomTabBar {...props} />}
       screenOptions={{ headerShown: false }}
     >
-      <Tabs.Screen name="index" />
-      <Tabs.Screen name="search" />
       <Tabs.Screen name="bookings" />
-      <Tabs.Screen name="chatbot" />
+      <Tabs.Screen name="inbox" />
+      <Tabs.Screen name="scan" />
+      <Tabs.Screen name="refunds" />
       <Tabs.Screen name="profile" />
     </Tabs>
   );

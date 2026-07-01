@@ -15,6 +15,7 @@ import { useRouter } from 'expo-router';
 import { Text } from '@/components/ui/text';
 import { Heading } from '@/components/ui/heading';
 import { useLogin } from '@/hooks/auth';
+import { homeRouteForRole } from '@/constants/roles';
 
 const PLACEHOLDER = '#9CA3AF';
 
@@ -34,7 +35,7 @@ export default function LoginScreen() {
     login(
       { email: email.trim(), password },
       {
-        onSuccess: () => router.replace('/(tabs)'),
+        onSuccess: ({ user }) => router.replace(homeRouteForRole(user.role)),
         onError: (err: any) =>
           Alert.alert('Đăng nhập thất bại', err?.response?.data?.message ?? 'Vui lòng thử lại.'),
       },
