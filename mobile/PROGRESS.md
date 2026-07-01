@@ -126,6 +126,13 @@ This file tracks the accomplished tasks, resolved user requests, and structural/
   - ⚠️ **Cần BE bổ sung `GET /hotels/me/assignments`** (auth): đọc `hotel_staff_assignments` theo `user.id` trong token (`unassignedAt = null`, bỏ KS soft-deleted), trả `HotelSummary[]` giống `/hotels/mine`. Khi endpoint sẵn sàng, luồng chạy tự động, không phải sửa mobile.
   - Camera QR ở tab Scan vẫn là khung giữ chỗ (cần `expo-camera`).
 
+- [x] **Thêm mã QR check-in thật cho booking (đồng bộ với web)**:
+  - Web dùng `QRVoucher` (client) render `<img>` trỏ dịch vụ ảnh QR công khai `api.qrserver.com`, mã hoá `booking.bookingCode` — không cần thư viện QR. Áp dụng y hệt cho mobile để không phải thêm dependency native mới.
+  - Component mới `components/shared/QRVoucher/` (`expo-image` + barrel), nhận `data`/`label`/`size`.
+  - `booking/success.tsx`: thay khối "Faux QR" (icon giữ chỗ) bằng `<QRVoucher data={booking.bookingCode} />` thật.
+  - `booking/[id].tsx`: thêm QR check-in ngay trong card mã booking, ẩn khi `status === 'cancelled'` (giống `BookingDetailPage` bên web).
+  - `npx tsc --noEmit`: sạch ở các file mới/sửa.
+
 ---
 
 _Last Updated: 2026-07-01_
