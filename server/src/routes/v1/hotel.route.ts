@@ -10,6 +10,7 @@ import {
   staffValidation,
   housekeepingValidation,
   conversationValidation,
+  reviewValidation,
 } from '../../validations';
 import {
   hotelController,
@@ -20,6 +21,7 @@ import {
   staffController,
   housekeepingController,
   conversationController,
+  reviewController,
 } from '../../controllers';
 
 const router = express.Router();
@@ -260,11 +262,29 @@ router
   .get(auth(), validate(staffValidation.listStaff), staffController.listStaff)
   .post(auth(), validate(staffValidation.addStaff), staffController.addStaff);
 
+// Chi tiết một nhân viên của khách sạn (chủ KS / manageHotels)
+router.get('/:hotelId/staff/:userId', auth(), validate(staffValidation.getStaff), staffController.getStaff);
+
 router.delete(
   '/:hotelId/staff/:userId',
   auth(),
   validate(staffValidation.removeStaff),
   staffController.removeStaff
+);
+
+// ----- Đánh giá của khách sạn (partner xem review KS mình + thống kê) -----
+// '/reviews/stats' (literal) đặt TRƯỚC '/reviews' cho rõ ràng; cả hai chỉ GET, chủ KS / manageHotels.
+router.get(
+  '/:hotelId/reviews/stats',
+  auth(),
+  validate(reviewValidation.getHotelReviewStats),
+  reviewController.getHotelReviewStats
+);
+router.get(
+  '/:hotelId/reviews',
+  auth(),
+  validate(reviewValidation.getHotelReviewsForPartner),
+  reviewController.getHotelReviewsForPartner
 );
 
 export default router;

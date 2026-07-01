@@ -819,6 +819,52 @@ components:
             phone: { type: string, nullable: true }
             status: { type: string }
 
+    StaffAssignmentDetail:
+      type: object
+      description: A staff assignment with fuller user info — partner "view staff detail" screen.
+      properties:
+        id: { type: string, format: uuid }
+        hotelId: { type: string, format: uuid }
+        userId: { type: string, format: uuid }
+        assignedRole: { type: string, enum: [staff] }
+        assignedAt: { type: string, format: date-time }
+        unassignedAt: { type: string, format: date-time, nullable: true }
+        user:
+          type: object
+          properties:
+            id: { type: string, format: uuid }
+            fullName: { type: string }
+            email: { type: string, format: email }
+            phone: { type: string, nullable: true }
+            avatarUrl: { type: string, nullable: true }
+            status: { type: string, enum: [active, inactive, suspended] }
+            role: { type: string, enum: [guest, customer, staff, hotel_partner, platform_manager, admin] }
+            lastLoginAt: { type: string, format: date-time, nullable: true }
+            createdAt: { type: string, format: date-time }
+
+    ReviewStats:
+      type: object
+      description: Aggregate review stats for a hotel, computed over published reviews.
+      properties:
+        total: { type: integer }
+        average:
+          type: object
+          properties:
+            overall: { type: number, nullable: true }
+            cleanliness: { type: number, nullable: true }
+            service: { type: number, nullable: true }
+            location: { type: number, nullable: true }
+            value: { type: number, nullable: true }
+        countByStar:
+          type: object
+          description: Number of published reviews per overall star (1..5)
+          properties:
+            '1': { type: integer }
+            '2': { type: integer }
+            '3': { type: integer }
+            '4': { type: integer }
+            '5': { type: integer }
+
     HousekeepingTask:
       type: object
       properties:

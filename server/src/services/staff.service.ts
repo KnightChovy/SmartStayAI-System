@@ -48,6 +48,33 @@ export class StaffService {
     });
   };
 
+  /** Chi tiết một nhân viên đang làm việc tại khách sạn (cho màn quản lý của chủ KS). */
+  getStaffDetail = async (hotelId: string, userId: string, currentUser: User) => {
+    await hotelService.getManagedHotel(hotelId, currentUser);
+    const assignment = await prisma.hotelStaffAssignment.findFirst({
+      where: { hotelId, userId, unassignedAt: null },
+      include: {
+        user: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+            phone: true,
+            avatarUrl: true,
+            status: true,
+            role: true,
+            lastLoginAt: true,
+            createdAt: true,
+          },
+        },
+      },
+    });
+    if (!assignment) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'Nhân viên này không đang làm việc tại khách sạn');
+    }
+    return assignment;
+  };
+
   /** Bỏ gán một nhân viên khỏi khách sạn (không xoá tài khoản, chỉ kết thúc phân công). */
   removeStaff = async (hotelId: string, userId: string, currentUser: User) => {
     await hotelService.getManagedHotel(hotelId, currentUser);

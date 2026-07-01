@@ -20,6 +20,25 @@ export class ReviewController {
     res.send(result);
   });
 
+  // [Partner] Đánh giá của chính khách sạn mình (mọi trạng thái)
+  getHotelReviewsForPartner = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const filter = pick(req.query, ['status']);
+    const options = pick(req.query, ['sortBy', 'limit', 'page']);
+    const result = await reviewService.getHotelReviewsForPartner(
+      req.params.hotelId as string,
+      req.user as User,
+      filter,
+      options
+    );
+    res.send(result);
+  });
+
+  // [Partner] Thống kê đánh giá của khách sạn
+  getHotelReviewStats = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const stats = await reviewService.getHotelReviewStats(req.params.hotelId as string, req.user as User);
+    res.send(stats);
+  });
+
   // Chi tiết một đánh giá
   getReview = catchAsync(async (req: Request, res: Response): Promise<void> => {
     const review = await reviewService.getReviewById(req.params.reviewId as string);

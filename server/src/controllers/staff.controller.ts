@@ -17,6 +17,16 @@ export class StaffController {
     res.send(result);
   });
 
+  // Chi tiết một nhân viên của khách sạn
+  getStaff = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const result = await staffService.getStaffDetail(
+      req.params.hotelId as string,
+      req.params.userId as string,
+      req.user as User
+    );
+    res.send(result);
+  });
+
   // Bỏ gán một nhân viên khỏi khách sạn
   removeStaff = catchAsync(async (req: Request, res: Response): Promise<void> => {
     const result = await staffService.removeStaff(
