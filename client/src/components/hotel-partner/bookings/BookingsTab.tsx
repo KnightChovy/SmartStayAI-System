@@ -4,13 +4,14 @@ import AppFilter from '@/common/filter/AppFilter';
 import AppPagination from '@/common/pagination/AppPagination';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { LoadingState, ErrorState, EmptyState } from '@/components/hotel-partner/shared/states';
+import { ErrorState, EmptyState } from '@/components/hotel-partner/shared/states';
+import { TableSkeleton } from '@/components/shared/skeletons';
 import { DataTable, type Column } from '@/components/hotel-partner/shared/DataTable';
 import { ActionMenu } from '@/components/hotel-partner/shared/ActionMenu';
 import { Pill } from '@/components/hotel-partner/shared/Pill';
 import { useHotelBookings } from '@/hooks/staff';
 import { formatCurrency } from '@/utils/formatCurrency';
-import { formatDateShort } from '@/utils/formatDate';
+import { formatDate } from '@/utils/formatDate';
 import type { BookingStatus, HotelBooking, HotelBookingsParams } from '@/types/staff.types';
 import { BOOKING_STATUS_CONFIG, BOOKING_STATUS_OPTIONS } from './labels';
 import { BookingDetailModal } from './BookingDetailModal';
@@ -93,7 +94,7 @@ export function BookingsTab({ hotelId }: BookingsTabProps) {
       className: 'hidden sm:table-cell',
       cell: b => (
         <span className="text-slate-600">
-          {formatDateShort(b.checkInDate)} → {formatDateShort(b.checkOutDate)}
+          {formatDate(b.checkInDate)} → {formatDate(b.checkOutDate)}
         </span>
       ),
     },
@@ -179,7 +180,7 @@ export function BookingsTab({ hotelId }: BookingsTabProps) {
       </div>
 
       {isLoading ? (
-        <LoadingState label="Loading bookings..." />
+        <TableSkeleton columns={6} />
       ) : isError ? (
         <ErrorState label="Failed to load the booking list." />
       ) : bookings.length === 0 ? (

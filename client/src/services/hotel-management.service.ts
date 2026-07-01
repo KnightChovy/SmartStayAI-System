@@ -56,6 +56,11 @@ export const hotelManagementService = {
     return data;
   },
 
+  /** #3b DELETE /:hotelId/room-types/:roomTypeId — xoá loại phòng (chỉ khi chưa có phòng/booking). */
+  async deleteRoomType(hotelId: string, roomTypeId: string): Promise<void> {
+    await api.delete(`/hotels/${hotelId}/room-types/${roomTypeId}`);
+  },
+
   /** #4 POST /:hotelId/room-types/:roomTypeId/images — thêm ảnh (trả về toàn bộ ảnh). */
   async addRoomTypeImages(
     hotelId: string,
@@ -102,6 +107,11 @@ export const hotelManagementService = {
   async updateRoom(hotelId: string, roomId: string, dto: UpdateRoomDto): Promise<PhysicalRoom> {
     const { data } = await api.put<PhysicalRoom>(`/hotels/${hotelId}/rooms/${roomId}`, dto);
     return data;
+  },
+
+  /** #8b DELETE /:hotelId/rooms/:roomId — xoá phòng vật lý (chỉ khi phòng chưa từng được đặt). */
+  async deleteRoom(hotelId: string, roomId: string): Promise<void> {
+    await api.delete(`/hotels/${hotelId}/rooms/${roomId}`);
   },
 
   // ─── Pricing rules ────────────────────────────────────────────────────────────

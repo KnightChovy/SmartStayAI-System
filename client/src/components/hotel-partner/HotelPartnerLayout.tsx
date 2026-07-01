@@ -14,6 +14,7 @@ import {
   BarChart2,
   MessageSquareShare,
   Settings,
+  Sparkles,
 } from 'lucide-react';
 
 const navItems = [
@@ -21,6 +22,7 @@ const navItems = [
   { name: 'Verification', href: '/partner/verify', icon: ShieldCheck },
   { name: 'Hotels', href: '/partner/hotel-management', icon: Hotel },
   { name: 'Room Inventory', href: '/partner/room-inventory', icon: Archive },
+  { name: 'Amenities', href: '/partner/amenities', icon: Sparkles },
   { name: 'Staff', href: '/partner/staff', icon: Users },
   { name: 'Bookings', href: '/partner/bookings', icon: CalendarDays },
   { name: 'Revenue', href: '/partner/revenue', icon: Banknote },

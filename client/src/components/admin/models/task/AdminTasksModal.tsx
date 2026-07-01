@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Edit3, X } from 'lucide-react';
 import { cn } from '@/lib/cn';
-import { formatDate, formatTime } from '@/utils/formatDate';
+import { formatDateLong, formatTime } from '@/utils/formatDate';
 
 interface AdminTasksModalProps {
   currentTime: Date;
@@ -63,7 +63,10 @@ function getPriorityClass(priority: string) {
   return 'bg-blue-100 text-blue-700';
 }
 
-export function AdminTasksModal({ currentTime, onClose }: AdminTasksModalProps) {
+export function AdminTasksModal({
+  currentTime,
+  onClose,
+}: AdminTasksModalProps) {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -99,8 +102,8 @@ export function AdminTasksModal({ currentTime, onClose }: AdminTasksModalProps) 
               </h2>
             </div>
             <p className="mt-1 text-xs font-medium text-muted-foreground">
-              Mobile Project / Layout Design / Tasks - {formatDate(currentTime)} |{' '}
-              {formatTime(currentTime)}
+              Mobile Project / Layout Design / Tasks -{' '}
+              {formatDateLong(currentTime)} | {formatTime(currentTime)}
             </p>
           </div>
           <button
@@ -169,7 +172,9 @@ export function AdminTasksModal({ currentTime, onClose }: AdminTasksModalProps) 
                     </div>
                   </td>
                   <td className="px-5 py-4 text-xs font-semibold text-blue-600">
-                    {task.due === 'Now + 1' ? formatTime(currentTime) : task.due}
+                    {task.due === 'Now + 1'
+                      ? formatTime(currentTime)
+                      : task.due}
                   </td>
                 </tr>
               ))}

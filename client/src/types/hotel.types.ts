@@ -101,6 +101,54 @@ export interface Amenity {
   category: 'room' | 'hotel' | 'service';
 }
 
+/** Body cho `POST /amenities` — tạo tiện nghi vào catalog (quyền manageAmenities). */
+export interface CreateAmenityDto {
+  name: string;
+  icon?: string | null;
+  category: 'room' | 'hotel' | 'service';
+}
+
+/** Body cho `PATCH /amenities/:id` — cập nhật tiện nghi (partial, tối thiểu 1 field). */
+export interface UpdateAmenityDto {
+  name?: string;
+  icon?: string | null;
+  category?: 'room' | 'hotel' | 'service';
+}
+
+/**
+ * Body cho `PATCH /hotels/:id` — cập nhật hồ sơ khách sạn (partial, tối thiểu 1 field).
+ * KHÔNG gồm isActive/isListed (dùng flow publish) và taxCode/businessRegistrationNumber (khoá).
+ */
+export interface UpdateHotelDto {
+  name?: string;
+  description?: string | null;
+  address?: string;
+  city?: string;
+  country?: string;
+  district?: string | null;
+  ward?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  starRating?: number | null;
+  checkInTime?: string | null;
+  checkOutTime?: string | null;
+  businessType?: 'hotel' | 'resort' | 'villa' | 'apartment';
+}
+
+/** Một ảnh khách sạn cần thêm (URL phải upload qua `POST /uploads` trước). */
+export interface HotelImageInput {
+  url: string;
+  imageCategory: 'cover' | 'exterior' | 'room';
+  caption?: string | null;
+  isPrimary?: boolean;
+  sortOrder?: number;
+}
+
+/** Body cho `POST /hotels/:id/images`. */
+export interface AddHotelImagesDto {
+  images: HotelImageInput[];
+}
+
 export interface RoomTypeImage {
   id: string;
   roomTypeId: string;

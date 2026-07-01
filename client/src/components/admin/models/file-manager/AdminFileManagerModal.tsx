@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/cn';
-import { formatDate, formatTime } from '@/utils/formatDate';
+import { formatDateLong, formatTime } from '@/utils/formatDate';
 
 interface AdminFileManagerModalProps {
   currentTime: Date;
@@ -123,9 +123,7 @@ export function AdminFileManagerModal({
         <div className="flex min-w-0 flex-col">
           <header className="flex flex-wrap items-center justify-between gap-3 border-b border-outline-variant/40 px-4 py-4 sm:px-5">
             <div className="flex min-w-0 items-center gap-2">
-              <h2 className="text-xl font-bold text-slate-950">
-                File Manager
-              </h2>
+              <h2 className="text-xl font-bold text-slate-950">File Manager</h2>
               <span className="hidden text-xs font-bold text-slate-400 sm:inline">
                 Home
               </span>
@@ -231,7 +229,7 @@ export function AdminFileManagerModal({
                           </td>
                           <td className="px-4 py-4 text-xs font-semibold text-slate-500">
                             {file.name === 'invoice_oct.pdf'
-                              ? `${formatDate(currentTime)} | ${formatTime(currentTime)}`
+                              ? `${formatDateLong(currentTime)} | ${formatTime(currentTime)}`
                               : file.modified}
                           </td>
                           <td className="py-4 pl-4 text-right">

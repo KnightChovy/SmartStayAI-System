@@ -41,6 +41,7 @@ export const ROUTES = {
   // Cổng Hotel Partner
   partnerStaff: '/partner/staff',
   partnerBookings: '/partner/bookings',
+  partnerAmenities: '/partner/amenities',
 
   // Cổng nhân viên (staff — lễ tân / housekeeping)
   staffSelectHotel: '/staff/select-hotel',

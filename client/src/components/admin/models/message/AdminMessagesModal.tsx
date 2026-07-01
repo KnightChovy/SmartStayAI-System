@@ -1,8 +1,15 @@
 import { useEffect } from 'react';
-import { MoreHorizontal, Paperclip, Search, Send, Smile, X } from 'lucide-react';
+import {
+  MoreHorizontal,
+  Paperclip,
+  Search,
+  Send,
+  Smile,
+  X,
+} from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/cn';
-import { formatDate, formatTime } from '@/utils/formatDate';
+import { formatDateLong, formatTime } from '@/utils/formatDate';
 
 interface AdminMessagesModalProps {
   currentTime: Date;
@@ -86,7 +93,7 @@ export function AdminMessagesModal({
             <div>
               <h2 className="text-lg font-bold text-slate-950">Messages</h2>
               <p className="mt-0.5 text-[11px] font-semibold text-muted-foreground">
-                Live {formatDate(currentTime)} | {formatTime(currentTime)}
+                Live {formatDateLong(currentTime)} | {formatTime(currentTime)}
               </p>
             </div>
             <button
@@ -126,7 +133,9 @@ export function AdminMessagesModal({
                       {conversation.name}
                     </span>
                     <span className="text-[10px] font-semibold text-muted-foreground">
-                      {index === 0 ? formatTime(currentTime) : conversation.time}
+                      {index === 0
+                        ? formatTime(currentTime)
+                        : conversation.time}
                     </span>
                   </span>
                   <span className="mt-1 block truncate text-xs text-muted-foreground">

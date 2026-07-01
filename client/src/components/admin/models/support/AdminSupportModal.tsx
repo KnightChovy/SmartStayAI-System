@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Headphones, MessageCircle, Phone, ShieldCheck, X } from 'lucide-react';
-import { formatDate, formatTime } from '@/utils/formatDate';
+import { formatDateLong, formatTime } from '@/utils/formatDate';
 
 interface AdminSupportModalProps {
   currentTime: Date;
@@ -67,7 +67,8 @@ export function AdminSupportModal({
               </h2>
             </div>
             <p className="mt-1 text-xs font-semibold text-muted-foreground">
-              Live status {formatDate(currentTime)} | {formatTime(currentTime)}
+              Live status {formatDateLong(currentTime)} |{' '}
+              {formatTime(currentTime)}
             </p>
           </div>
           <button

@@ -1,14 +1,21 @@
 import { api } from '@/lib/api';
 import type { Paginated } from '@/types/api.types';
 import type {
+  AddHotelImagesDto,
   Hotel,
+  HotelImage,
   HotelSearchParams,
   HotelSearchResult,
   PartnerHotel,
   RoomType,
   RoomTypeParams,
+  UpdateHotelDto,
 } from '@/types/hotel.types';
-import type { ManagedHotel } from '@/types/hotel-management.types';
+import type {
+  HotelAmenity,
+  ManagedHotel,
+  SetHotelAmenitiesDto,
+} from '@/types/hotel-management.types';
 
 /** Bỏ các field undefined/rỗng để query string gọn gàng. */
 function cleanParams<T extends object>(params: T): Record<string, unknown> {
@@ -51,6 +58,41 @@ export const hotelService = {
    */
   async setListing(hotelId: string, isListed: boolean): Promise<Hotel> {
     const { data } = await api.patch<Hotel>(`/hotels/${hotelId}/publish`, { isListed });
+    return data;
+  },
+
+  /** Cập nhật hồ sơ khách sạn của partner (`PATCH /hotels/:id`). */
+  async update(hotelId: string, dto: UpdateHotelDto): Promise<Hotel> {
+    const { data } = await api.patch<Hotel>(`/hotels/${hotelId}`, dto);
+    return data;
+  },
+
+  /** Thêm ảnh khách sạn (`POST /hotels/:id/images`) — trả về toàn bộ ảnh sau khi thêm. */
+  async addImages(hotelId: string, dto: AddHotelImagesDto): Promise<HotelImage[]> {
+    const { data } = await api.post<HotelImage[]>(`/hotels/${hotelId}/images`, dto);
+    return data;
+  },
+
+  /** Xoá một ảnh khách sạn (`DELETE /hotels/:id/images/:imageId`). */
+  async deleteImage(hotelId: string, imageId: string): Promise<void> {
+    await api.delete(`/hotels/${hotelId}/images/${imageId}`);
+  },
+
+  /** Đặt một ảnh làm ảnh chính (`PATCH /hotels/:id/images/:imageId/primary`). */
+  async setPrimaryImage(hotelId: string, imageId: string): Promise<HotelImage> {
+    const { data } = await api.patch<HotelImage>(`/hotels/${hotelId}/images/${imageId}/primary`);
+    return data;
+  },
+
+  /** Tiện nghi đã gán cho khách sạn (`GET /hotels/:id/amenities`). */
+  async getAmenities(hotelId: string): Promise<HotelAmenity[]> {
+    const { data } = await api.get<HotelAmenity[]>(`/hotels/${hotelId}/amenities`);
+    return data;
+  },
+
+  /** Gán lại toàn bộ tiện nghi khách sạn (`PUT /hotels/:id/amenities`). */
+  async setAmenities(hotelId: string, dto: SetHotelAmenitiesDto): Promise<HotelAmenity[]> {
+    const { data } = await api.put<HotelAmenity[]>(`/hotels/${hotelId}/amenities`, dto);
     return data;
   },
 

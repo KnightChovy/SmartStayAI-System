@@ -63,6 +63,28 @@ export interface HotelAmenityLink {
   amenity: Amenity;
 }
 
+/** Tiện nghi đã gán cho khách sạn (`GET /hotels/:id/amenities`) — kèm isFree/quantity + catalog. */
+export interface HotelAmenity {
+  hotelId: string;
+  amenityId: string;
+  isFree: boolean;
+  quantity: number | null;
+  createdAt?: string;
+  amenity: Amenity;
+}
+
+/** Một dòng gán tiện nghi khi lưu (mặc định isFree=true, quantity=null). */
+export interface AmenityAssignment {
+  amenityId: string;
+  isFree?: boolean;
+  quantity?: number | null;
+}
+
+/** Body cho `PUT /hotels/:id/amenities` — thay thế TOÀN BỘ tiện nghi ([] = bỏ hết). */
+export interface SetHotelAmenitiesDto {
+  amenities: AmenityAssignment[];
+}
+
 /**
  * Chi tiết khách sạn cho chủ/manager (`GET /hotels/:id/manage`) — xem được cả
  * khi chưa listed. Gồm toàn bộ ảnh, amenity và danh sách loại phòng.

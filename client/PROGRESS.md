@@ -6,6 +6,50 @@ This file tracks the accomplished tasks, resolved user requests, and visual/func
 
 ## Completed Tasks Checklist
 
+### July 1, 2026
+
+- [x] **Hotel Partner + Manager — đổi toàn bộ loading content từ spinner sang skeleton**:
+  - **Bộ skeleton dùng chung** `components/shared/skeletons.tsx` (build trên shadcn `Skeleton`, màu neutral): `TableSkeleton` (header + rows khớp `DataTable`), `ToolbarSkeleton`, `DirectorySkeleton` (toolbar + table cho trang chọn KS), `CardGridSkeleton`, `ListSkeleton` (list dạng dòng), `DetailSkeleton` (header + N section).
+  - **Hotel Partner**: thay `LoadingState`/spinner ở content-loading bằng skeleton đúng ngữ cảnh — tables `RoomsTab`/`RoomTypesTab`/`PricingRulesTab`/`BookingsTab`/`StaffTab`/`AmenitiesPage` → `TableSkeleton`; pages chọn KS `HotelsPage`/`RoomInventoryPage`/`BookingsPage`/`StaffManagementPage` → `DirectorySkeleton`; `HotelDetailPage` + `BookingDetailModal` + `VerificationCenter` → `DetailSkeleton`; `HotelAmenitiesModal` + `RoomTypeAmenitiesModal` → `ListSkeleton`. Mỗi file bỏ `LoadingState` khỏi import (giữ `ErrorState`/`EmptyState`).
+  - **Manager**: `VerificationRequestsPage` (bảng) → `TableSkeleton` (border-0 vì nằm trong card có sẵn border); `VerificationDetailModal` → `DetailSkeleton`.
+  - **Giữ nguyên spinner** ở nút submit mutation (`isPending` trên các FormModal) và dropzone `RoomTypeImagesModal` lúc upload — đây là feedback thao tác chủ động, skeleton không hợp. `LoadingState` gốc trong `hotel-partner/shared/states.tsx` vẫn giữ (portal khác còn dùng).
+  - `npx tsc -p tsconfig.app.json --noEmit`: sạch cho mọi file mới/đụng tới; chỉ còn lỗi pre-existing không liên quan (unused `React`, recharts formatter).
+
+- [x] **Hotel Verify — Address Search tự điền Full Address (prefill nguyên `s.display` khi ô đang trống)**:
+  - `services/vietnam-geo.service.ts` giữ `parseVietmapDisplay` (province/ward). `BusinessInfoStep.handleAddressSelect` giờ prefill ô **Full Address** bằng toàn bộ địa điểm đã chọn (`s.display`) khi field còn trống, không đè lên thứ chủ KS tự gõ; vẫn auto-fill Tỉnh/TP + Phường/Xã + ghim bản đồ. Cập nhật hint label + placeholder cho rõ.
+
+- [x] **Hotel Partner — bổ sung 9 API partner/owner còn thiếu ở FE (hồ sơ KS · ảnh KS · tiện nghi KS · xoá loại phòng/phòng · tạo tiện nghi)**:
+  - **Bối cảnh**: rà soát swagger vs 5 service của client → 9 endpoint partner/owner chưa được FE gọi. Nhóm inbox hội thoại (S04) **bỏ** vì thuộc cổng staff. Backend contract khớp `server/src/validations/hotel.validation.ts` + `amenity.validation.ts`.
+  - **Data layer (1 endpoint = 1 hook)**: types thêm ở `hotel.types.ts` (`UpdateHotelDto`, `HotelImageInput`, `AddHotelImagesDto`, `CreateAmenityDto`) và `hotel-management.types.ts` (`HotelAmenity`, `AmenityAssignment`, `SetHotelAmenitiesDto`); `queryKeys.hotels.amenities`; service `hotel.service` (`update`/`addImages`/`deleteImage`/`setPrimaryImage`/`getAmenities`/`setAmenities`), `hotel-management.service` (`deleteRoomType`/`deleteRoom`), `amenity.service` (`createAmenity`). Hooks: `hooks/hotels/{use-update-hotel,use-add-hotel-images,use-delete-hotel-image,use-set-primary-hotel-image,use-hotel-amenities,use-set-hotel-amenities}` + `hooks/hotel-management/{use-delete-room-type,use-delete-room,use-create-amenity}` (đều invalidate đúng key `hotels.managed`/`hotels.amenities`/`roomTypes`/`rooms`).
+  - **Validation**: `hotel-management.validation.ts` thêm `hotelProfileFormSchema` (name/address/city/country required, district/ward optional, starRating & businessType chọn từ select, checkIn/out theo pattern HH:mm) và `amenityFormSchema`. Số/giờ giữ dạng string ở form, convert ở submit (đồng nhất cách xử lý zod v4 của dự án).
+  - **UI (shadcn/ui + tailwind, tách component, mobile-first)**: `HotelProfileFormModal` (form sửa hồ sơ KS), `HotelImagesModal` (thêm ảnh theo category cover/exterior/room + đặt ảnh chính + **xoá ảnh có ConfirmDialog**, grid 2→3→4 cột), `HotelAmenitiesModal` (chọn tiện nghi + Free/Paid + nút **New amenity** mở `AmenityFormModal`) — dùng lại các modal đã có sẵn trong `components/hotel-partner/hotel-management/`. Tích hợp vào `HotelDetailPage`: nút **Edit profile** / **Photos** ở header + nút **Manage** ở mục Amenities (helper `Section` nhận `action`).
+  - **Delete có ConfirmDialog**: `RoomTypesTab` + `RoomsTab` thêm action **Delete** (destructive) → `ConfirmDialog`; lỗi 400 của BE (còn phòng/booking, phòng đã từng đặt) hiển thị verbatim qua `errorMessage()`.
+  - `npx tsc -p tsconfig.app.json --noEmit`: sạch cho toàn bộ file mới/đụng tới (chỉ còn các lỗi pre-existing không liên quan: unused `React`, `User.name`, recharts formatter, `NodeJS`).
+
+- [x] **Hotel Partner — trang Amenities riêng + đồng bộ màu button + chuyển nút quản lý phòng**:
+  - **Route quản lý Amenity riêng** (`/partner/amenities`): thêm `pages/hotel-partner/amenities/AmenitiesPage.tsx` — danh sách tiện nghi (bảng `DataTable`: tên + icon, category Pill màu theo loại, icon key) + lọc theo category (tabs All/Hotel/Room/Service, gọi `useAmenities(category)`) + tìm theo tên (client-side) + nút **New amenity** mở `AmenityFormModal`. Đăng ký route trong `partnerRoutes.tsx`, thêm mục **Amenities** (icon `Sparkles`) vào sidebar `HotelPartnerLayout`, hằng `ROUTES.partnerAmenities`. **Lưu ý**: BE chỉ có `GET`/`POST /amenities` (không có update/delete) nên trang chỉ **Create + List** đúng theo lựa chọn của user — chưa có sửa/xoá cho tới khi bổ sung endpoint.
+  - **Đồng bộ màu button về config role-partner**: các nút hành động ở `HotelDetailPage` (Edit profile, Photos, Manage amenities, Manage room) và trang Amenities đều dùng `bg-role-partner-primary hover:bg-role-partner-secondary text-white` thay cho `variant="outline"`/default, để nhất quán màu thương hiệu partner (`--color-role-partner-primary`).
+  - **Chuyển & đổi tên nút quản lý phòng**: bỏ nút "Manage Inventory" ở header `HotelDetailPage`, đưa xuống **phía dưới phần Room types** và đổi tên thành **"Manage room"** (vẫn disable + tooltip khi KS chưa active, deep-link `/partner/room-inventory?hotelId=`).
+  - `npx tsc -p tsconfig.app.json --noEmit`: sạch cho mọi file mới/đụng tới; chỉ còn lỗi pre-existing không liên quan.
+
+- [x] **Hotel Partner — bổ sung 9 API partner/owner còn thiếu ở FE (hồ sơ/ảnh/tiện nghi KS + xoá room-type/room + tạo amenity)**:
+  - **Rà soát**: đối chiếu swagger với client, 9 endpoint partner/owner chưa được FE gọi: `PATCH /hotels/:id` (sửa hồ sơ), `POST/DELETE /hotels/:id/images[/:imageId]` + `PATCH .../images/:imageId/primary`, `GET/PUT /hotels/:id/amenities`, `DELETE /hotels/:id/room-types/:roomTypeId`, `DELETE /hotels/:id/rooms/:roomId`, `POST /amenities`. (Conversations là của staff nên bỏ qua.)
+  - **Data layer** (`types/hotel.types.ts` + `types/hotel-management.types.ts`): thêm `UpdateHotelDto`, `HotelImageInput`/`AddHotelImagesDto`, `HotelAmenity`/`AmenityAssignment`/`SetHotelAmenitiesDto`, `CreateAmenityDto`, `BusinessType`. **Service**: `hotelService` thêm `update`/`addImages`/`deleteImage`/`setPrimaryImage`/`getAmenities`/`setAmenities`; `amenityService.createAmenity`; `hotelManagementService.deleteRoomType`/`deleteRoom`. Thêm `queryKeys.hotels.amenities`.
+  - **Hooks** (1 endpoint = 1 file, đúng convention): `hooks/hotels/` thêm `use-update-hotel`, `use-add-hotel-images`, `use-delete-hotel-image`, `use-set-primary-hotel-image`, `use-hotel-amenities`, `use-set-hotel-amenities`; `hooks/hotel-management/` thêm `use-delete-room-type`, `use-delete-room`, `use-create-amenity`; cập nhật 2 barrel. Mọi mutation invalidate `hotels.managed`/`hotels.amenities`/`hotelManagementKeys` phù hợp.
+  - **Validation** (`hotel-management.validation.ts`): `hotelProfileFormSchema` (name/address/city/country bắt buộc, description ≤5000, starRating/businessType tuỳ chọn, checkIn/out HH:mm 24h) + `amenityFormSchema` (name bắt buộc, category enum). Giữ chuẩn số-để-string như các form cũ.
+  - **UI mới** dưới `components/hotel-partner/hotel-management/` (shadcn + `Modal`/`form-controls` dùng chung, mobile-first, tách nhỏ):
+    - `HotelProfileFormModal` — form sửa hồ sơ (RHF + zod), grid 2 cột responsive, `''→null` để xoá field, `businessType` chỉ gửi khi chọn.
+    - `HotelImagesModal` — quản lý ảnh: grid ảnh hiện có với set-primary/xoá (xoá qua `ConfirmDialog`), chọn category (cover/exterior/room) rồi upload nhiều ảnh, pick ảnh chính trong batch trước khi lưu.
+    - `HotelAmenitiesModal` — chọn tiện nghi (hydrate từ `useHotelAmenities` kèm Free/Paid), tìm kiếm, nút **New amenity** mở `AmenityFormModal` (tạo xong tự chọn), Clear all.
+    - `AmenityFormModal` — tạo tiện nghi mới vào catalog (name/category/icon).
+  - **Wiring**: `HotelDetailPage` thêm nút **Edit profile** / **Photos** ở header + nút **Manage** ở khối Amenities, render 3 modal với `hotel={hotel}`; `Section` nhận thêm `action`. `RoomTypesTab` + `RoomsTab` thêm hành động **Delete** (menu ⋯, tone đỏ) qua `ConfirmDialog`, lỗi BE (vd phòng đã từng được đặt) hiện nguyên văn bằng `errorMessage()`.
+  - `npx tsc -p tsconfig.app.json --noEmit`: các file mới/đụng tới đều sạch; chỉ còn các lỗi pre-existing không liên quan (unused `React`, `User.name`, `NodeJS`, recharts formatter).
+
+- [x] **CommonNavbar — avatar giờ là dropdown (Profile + Back to Home)**:
+  - `common/navbar/Navbar.tsx` (dùng chung admin/partner/staff portal) trước đây chỉ render avatar + tên tĩnh (ảnh hardcode). Đổi thành shadcn `DropdownMenu`: trigger là avatar + tên + `ChevronDown`, mở ra header thông tin người dùng (avatar/tên/email từ `useAuthStore`) và 2 mục **Profile** (`Link` → `ROUTES.accountProfile`) + **Back to Home** (`Link` → `ROUTES.home`).
+  - Avatar lấy `avatarUrl` thật từ store (fallback initials từ `fullName || userName`); bỏ ảnh Twitter hardcode. Dùng `user.fullName` (không phải `user.name`) nên không dính lỗi type có sẵn ở guest navbar.
+  - `tsc -p tsconfig.app.json --noEmit`: file `common/navbar/Navbar.tsx` sạch (4 lỗi `User.name` còn lại là pre-existing của `components/layout/Navbar.tsx`, không đụng tới).
+
 ### June 30, 2026
 
 - [x] **Guest Hotel Detail — bản đồ luôn hiện kể cả khi DB chưa có toạ độ (geocode địa chỉ)**:

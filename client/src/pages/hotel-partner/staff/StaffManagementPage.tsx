@@ -7,10 +7,10 @@ import { HotelDirectory } from '@/components/hotel-partner/hotel-management/Hote
 import { HotelSwitcher } from '@/components/hotel-partner/room-inventory/HotelSwitcher';
 import { StaffTab } from '@/components/hotel-partner/staff/StaffTab';
 import {
-  LoadingState,
   ErrorState,
   EmptyState,
 } from '@/components/hotel-partner/shared/states';
+import { DirectorySkeleton } from '@/components/shared/skeletons';
 import type { PartnerHotel } from '@/types/hotel.types';
 
 /**
@@ -41,7 +41,7 @@ export default function StaffManagementPage() {
   if (isLoading) {
     return (
       <Shell>
-        <LoadingState label="Loading your hotels..." />
+        <DirectorySkeleton columns={4} />
       </Shell>
     );
   }

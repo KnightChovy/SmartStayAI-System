@@ -5,6 +5,7 @@ import VerifyHotelPage from '@/pages/hotel-partner/hotel-verify/VerifyHotelPage'
 import HotelsPage from '@/pages/hotel-partner/hotel-management/HotelsPage';
 import HotelDetailPage from '@/pages/hotel-partner/hotel-management/HotelDetailPage';
 import RoomInventoryPage from '@/pages/hotel-partner/room-inventory/RoomInventoryPage';
+import AmenitiesPage from '@/pages/hotel-partner/amenities/AmenitiesPage';
 import StaffManagementPage from '@/pages/hotel-partner/staff/StaffManagementPage';
 import BookingsPage from '@/pages/hotel-partner/bookings/BookingsPage';
 import ComingSoonPage from '@/pages/ComingSoonPage';
@@ -27,6 +28,7 @@ export const partnerRoutes: RouteObject[] = [
           { path: 'hotel-management', element: <HotelsPage /> },
           { path: 'hotel-management/:hotelId', element: <HotelDetailPage /> },
           { path: 'room-inventory', element: <RoomInventoryPage /> },
+          { path: 'amenities', element: <AmenitiesPage /> },
           { path: 'staff', element: <StaffManagementPage /> },
           { path: 'bookings', element: <BookingsPage /> },
           // Đã có trong sidebar nhưng chưa triển khai — tạm dùng "Coming soon" để tránh link chết.

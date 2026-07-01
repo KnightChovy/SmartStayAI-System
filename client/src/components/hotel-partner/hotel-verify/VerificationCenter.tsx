@@ -11,6 +11,8 @@ import {
   FileText,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
+import { formatDate } from '@/utils/formatDate';
+import { DetailSkeleton } from '@/components/shared/skeletons';
 import { useGetApplications } from '@/hooks/hotel-verify';
 import { useNavigate } from 'react-router';
 import type {
@@ -145,11 +147,7 @@ export function VerificationCenter({ onVerifyNew }: VerificationCenterProps) {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-role-partner-primary" />
-      </div>
-    );
+    return <DetailSkeleton className="min-h-100" />;
   }
 
   const hasAnyApp = (applications?.length ?? 0) > 0;
@@ -325,7 +323,7 @@ export function VerificationCenter({ onVerifyNew }: VerificationCenterProps) {
                 </p>
                 {displayApp.submittedAt && (
                   <p className="text-[11px] font-medium text-slate-400">
-                    {new Date(displayApp.submittedAt).toLocaleDateString()}
+                    {formatDate(displayApp.submittedAt)}
                   </p>
                 )}
               </div>
