@@ -25,6 +25,8 @@ tags:
     description: Endpoints for an external scheduler (cron). Protected by the x-cron-secret header, not user JWT.
   - name: Admin
     description: Platform-wide admin dashboard & oversight (admin / platform_manager)
+  - name: PlatformManager
+    description: Platform analytics & hotel performance scoring (platform_manager / admin)
 
 paths:
   /conversations/messages:
@@ -308,13 +310,13 @@ paths:
         "404":
           $ref: '#/components/responses/NotFound'
 
-  /admin/analytics:
+  /platform-manager/analytics:
     get:
       summary: Platform analytics report (Platform Manager)
       description: >
-        Admin/platform_manager (viewPlatformStats). Totals (bookings, users, conversion rate =
+        Platform_manager/admin (viewPlatformStats). Totals (bookings, users, conversion rate =
         confirmed/total), a month/year time-series for comparison, and top cities / top hotels by bookings.
-      tags: [Admin]
+      tags: [PlatformManager]
       security:
         - bearerAuth: []
       parameters:
@@ -339,13 +341,13 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
 
-  /admin/performance:
+  /platform-manager/performance:
     get:
       summary: Hotel performance leaderboard (Platform Manager)
       description: >
-        Admin/platform_manager (viewPlatformStats). Ranks all hotels by composite performance score
+        Platform_manager/admin (viewPlatformStats). Ranks all hotels by composite performance score
         over a window (default last 90 days). Hotels lacking data are placed last.
-      tags: [Admin]
+      tags: [PlatformManager]
       security:
         - bearerAuth: []
       parameters:
@@ -364,14 +366,14 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
 
-  /admin/hotels/{hotelId}/performance:
+  /platform-manager/hotels/{hotelId}/performance:
     get:
       summary: One hotel's performance & score (Platform Manager)
       description: >
-        Admin/platform_manager (viewPlatformStats). occupancyRate, cancellationRate, avgRating,
+        Platform_manager/admin (viewPlatformStats). occupancyRate, cancellationRate, avgRating,
         avgResponseMinutes and a weighted composite score (rating 40% / occupancy 25% / cancel 20% /
         response 15%) for one hotel over a window (default last 90 days).
-      tags: [Admin]
+      tags: [PlatformManager]
       security:
         - bearerAuth: []
       parameters:
