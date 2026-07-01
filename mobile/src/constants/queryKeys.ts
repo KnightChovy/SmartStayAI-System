@@ -1,16 +1,13 @@
-/**
- * TanStack Query key factory — nguồn duy nhất sinh query key cho toàn app.
- *
- * Dùng để vừa cache vừa invalidate nhất quán:
- *   queryKeys.hotels.detail(id)        → ['hotels', 'detail', id]
- *   queryKeys.bookings.mine(params)    → ['bookings', 'mine', params]
- *
- * `as const` để TS giữ nguyên tuple literal, an toàn khi so khớp key.
- */
 import type { HotelReviewsParams } from '@/types/reviews.type';
 import type { HotelSearchParams, RoomTypeParams } from '@/types/hotels.type';
 import type { MyBookingsParams } from '@/types/bookings.type';
 import type { AmenityParams } from '@/types/amenities.type';
+import type {
+  ConversationsParams,
+  HousekeepingParams,
+  StaffBookingsParams,
+  StaffRoomsParams,
+} from '@/types/staff.type';
 
 export const queryKeys = {
   auth: {
@@ -23,7 +20,8 @@ export const queryKeys = {
   },
   hotels: {
     all: () => ['hotels'] as const,
-    search: (params: HotelSearchParams) => ['hotels', 'search', params] as const,
+    search: (params: HotelSearchParams) =>
+      ['hotels', 'search', params] as const,
     detail: (hotelId: string) => ['hotels', 'detail', hotelId] as const,
     roomTypes: (hotelId: string, params: RoomTypeParams) =>
       ['hotels', hotelId, 'room-types', params] as const,
@@ -39,11 +37,31 @@ export const queryKeys = {
   },
   reviews: {
     all: () => ['reviews'] as const,
-    byHotel: (params: HotelReviewsParams) => ['reviews', 'hotel', params] as const,
+    byHotel: (params: HotelReviewsParams) =>
+      ['reviews', 'hotel', params] as const,
     detail: (reviewId: string) => ['reviews', 'detail', reviewId] as const,
   },
   geo: {
     all: () => ['geo'] as const,
     geocode: (query: string) => ['geo', 'geocode', query] as const,
+  },
+
+  staff: {
+    all: () => ['staff'] as const,
+    myHotels: () => ['staff', 'my-hotels'] as const,
+    bookings: (hotelId: string, params: StaffBookingsParams) =>
+      ['staff', hotelId, 'bookings', params] as const,
+    booking: (hotelId: string, bookingId: string) =>
+      ['staff', hotelId, 'booking', bookingId] as const,
+    lookup: (hotelId: string, voucherCode: string) =>
+      ['staff', hotelId, 'lookup', voucherCode] as const,
+    housekeeping: (hotelId: string, params: HousekeepingParams) =>
+      ['staff', hotelId, 'housekeeping', params] as const,
+    rooms: (hotelId: string, params: StaffRoomsParams) =>
+      ['staff', hotelId, 'rooms', params] as const,
+    conversations: (hotelId: string, params: ConversationsParams) =>
+      ['staff', hotelId, 'conversations', params] as const,
+    conversation: (hotelId: string, conversationId: string) =>
+      ['staff', hotelId, 'conversation', conversationId] as const,
   },
 } as const;

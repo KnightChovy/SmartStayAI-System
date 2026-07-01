@@ -92,6 +92,40 @@ This file tracks the accomplished tasks, resolved user requests, and structural/
   - **Fix "map không hiện"**: seed (`server/prisma/seed.ts`) **không có** `latitude/longitude` → API trả null → map rơi vào fallback. Vì không sửa server, thêm **geocoding từ địa chỉ** (VietMap, giống client): `types/geo.type.ts`, `services/geo.service.ts` (`geocode` gọi `autocomplete/v4` → nếu thiếu toạ độ thì `place/v3` theo `ref_id`, key `EXPO_PUBLIC_API_SEARCH_KEY`, native không vướng CORS), `hooks/geo/use-geocode.ts` (cache `Infinity`), thêm `queryKeys.geo`. `hotel/[id].tsx` ưu tiên lat/lng từ DB, thiếu thì geocode địa chỉ rồi truyền vào `HotelMap`.
   - `npx tsc --noEmit` sạch (ngoài `components/ui/*`); `npm run lint` không lỗi mới ở file map/geo.
 
+### June 30, 2026
+
+- [x] **Phân quyền 2 role (customer / staff) + navigation staff**:
+  - **Hạ tầng role** (`constants/roles.ts` — trước rỗng): `isStaff(role)`, `homeRouteForRole(role)` và 2 hằng `STAFF_HOME = '/(staff)/bookings'`, `CUSTOMER_HOME = '/(tabs)'` — một nguồn chân lý quyết định "role nào về màn nào". `UserRole` đã sẵn `'staff'`/`'customer'` nên không đổi type.
+  - **Điều hướng theo role**: `(auth)/login` `onSuccess` → `router.replace(homeRouteForRole(user.role))` thay vì hardcode `/(tabs)`; `(auth)/_layout` đã đăng nhập → redirect đúng nhà theo role; `(tabs)/_layout` (customer) chặn staff lạc vào → đẩy sang `STAFF_HOME`; `(staff)/_layout` chặn non-staff → đẩy về `CUSTOMER_HOME`. Guard đặt ở tầng layout (UX), không phải bảo mật — quyền thật vẫn do backend kiểm.
+  - **Group `app/(staff)/` — 5 tab + nút Check-in nổi giữa**: `_layout.tsx` tự dựng `CustomTabBar` (tái dụng pattern từ `(tabs)`), thứ tự **Bookings · Inbox · 📷 Scan (nổi cao, navy, giữa) · Refunds · Account**; item `scan` render nút tròn elevated (`marginTop:-24`, viền trắng, shadow) cho thao tác check-in/out.
+  - **Màn staff (stub, sẽ fill nghiệp vụ sau)**: tab `bookings`/`inbox`/`scan`/`refunds`/`profile` (profile có nút Đăng xuất thật) + 4 màn chi tiết `bookings/[id]`, `check-in/[id]`, `conversation/[id]`, `refunds/[id]`.
+  - **Map nhiệm vụ Hotel Staff → tab**: Bookings (confirm + xem + check-out) · Inbox (theo dõi AI + tiếp quản chat + khiếu nại) · Scan (check-in gán phòng / check-out) · Refunds (verify policy + duyệt) · Account.
+  - `npx tsc --noEmit`: 0 lỗi ở file mới (39 lỗi còn lại đều thuộc scaffolding `components/ui/*`). typedRoutes chấp nhận href group mới.
+  - ⚠️ Còn lại: các màn chi tiết đang nằm **trong** Tabs navigator nên hiện vẫn thấy thanh tab; nếu muốn detail trượt đè như stack (ẩn tab bar) thì tách sang nested `(staff)/(tabs)/` + Stack — chưa làm.
+
+### July 1, 2026
+
+- [x] **Tầng API vận hành staff (types + service + hooks) nối 14 endpoint `/hotels/:hotelId/*`**:
+  - **Đối chiếu Swagger** (`server/src/docs/swagger.yml` + `components.yml`): xác nhận 14 API staff — booking (list, lookup theo voucher, detail, check-in, check-out, no-show, record-cash-payment), housekeeping (list, complete), rooms (list, update-status), conversations (list, detail, reply, resolve). Response trả **JSON thô** (không bọc `{success,data}` — kiểm bằng controller `res.send`).
+  - **Types** (`types/staff.type.ts`): `StaffBooking` (+ customer/roomType/bookingRooms/voucher), `HousekeepingTask`, `StaffRoom` (+ `RoomStatus`/`RoomStatusUpdatable`), `Conversation`/`ConversationSummary`/`Message` và các enum + params/payload. Tái dùng `BookingStatus` từ `bookings.type`. Decimal → string.
+  - **Service** (`services/staff.service.ts`): 1 object `staffService` gom 14 method, tham số hoá `hotelId`, dùng `cleanParams` cho query. `listHousekeeping` trả **mảng trần** (không phân trang), phần còn lại `Paginated<T>` hoặc object đơn.
+  - **Query keys**: thêm factory `queryKeys.staff.*`, mọi key gắn `hotelId` để tách cache theo khách sạn.
+  - **Hooks** (mỗi endpoint = 1 file + barrel mỗi thư mục, theo đúng AGENTS): `hooks/staff/bookings/` (7), `housekeeping/` (2), `rooms/` (2), `conversations/` (4) + barrel gốc `hooks/staff/index.ts`. Query có `enabled: !!hotelId`; mutation invalidate `queryKeys.staff.all()` (reply/resolve invalidate thêm key `conversation`); `lookupBooking` dùng `useMutation` (kích hoạt theo hành động quét QR). Ghi đè file rỗng `use-get-bookings.ts` cũ.
+  - `npx tsc --noEmit`: 0 lỗi ở toàn bộ file mới (41 lỗi còn lại đều là pre-existing: gluestack `components/ui/*` + thiếu type `react-native-webview`/`maplibre-gl`).
+  - ⚠️ **Blocker `hotelId`**: chưa có API để staff lấy KS được phân công — `GET /hotels/mine` chỉ trả KS theo `partner.ownerId` (chủ KS), KHÔNG đọc `hotelStaffAssignment`. Login cũng không trả `hotelId`. Cần backend bổ sung (mở rộng `/hotels/mine` đọc assignment, hoặc thêm `/users/me/assignments`) rồi lưu `hotelId` vào store — trước khi wire các hook này vào màn `(staff)/`.
+
+- [x] **UI staff portal (theme teal riêng) — fill toàn bộ màn `(staff)/` + wire API**:
+  - **Config màu riêng**: thêm palette **`staff` (teal)** vào `tailwind.config.js` (`staff-50…900` + `DEFAULT` + `accent` cam) — tách hẳn theme khách hàng (navy/gold). `constants/staffTheme.ts` giữ hex thô (`STAFF_COLORS` cho tab bar/icon/spinner) + map trạng thái → class NativeWind (`ROOM_STATUS_STYLE`, `HOUSEKEEPING_STATUS_STYLE`, `CONVERSATION_STATUS_STYLE`). Đổi `(staff)/_layout` tab bar sang teal (active pill `#CCFBF1`, brand `#0F766E`).
+  - **Cầu nối `hotelId` (tạm)**: `stores/staffStore.ts` (Zustand persist `hotelId`) + hook `useStaffHotelId()` (store → env `EXPO_PUBLIC_STAFF_HOTEL_ID`, thêm vào `.env.example`). Mọi màn dùng hook này; `hotelId` null → hiện trạng thái "Chưa gán khách sạn" thay vì gọi API rỗng. Khi backend có API assignment chỉ cần bơm vào store.
+  - **Component staff dùng chung** (`components/staff/*`, gluestack + NativeWind, mỗi cái 1 thư mục + barrel): `StaffScreenHeader` (header teal + back + right slot), `StaffButton` (variant primary/outline/danger/subtle + loading + icon), `StaffEmptyState` (rỗng/lỗi/loading-fail), `StatusPill` (nhận `StatusStyle`), `StaffBookingCard`, `ConversationCard` + barrel gốc. Thêm helper còn thiếu `lib/cn.ts` (clsx + tailwind-merge) mà AGENTS tham chiếu nhưng repo chưa có.
+  - **Màn hình** (thay stub): `bookings` (filter chip trạng thái + list + pull-to-refresh), `bookings/[id]` (chi tiết khách/kỳ ở/voucher/tổng tiền + hành động theo trạng thái: check-in→điều hướng, thu tiền mặt, no-show, check-out + ô phụ thu), `check-in/[id]` (xác thực voucher + chọn phòng trống cùng loại hoặc để BE tự gán), `scan` (nhập/tra mã voucher → mở booking, chừa khung camera QR), `inbox` (filter hội thoại, mặc định `escalated`), `conversation/[id]` (thread bong bóng guest/staff/ai/system + composer trả lời + nút resolve, `KeyboardAvoidingView`), `refunds` (giữ chỗ — chưa có API), `profile` (thẻ nhân viên + info + đăng xuất, tông teal).
+  - Mọi mutation có `onError` (Alert); màn có loading (`Spinner`) + empty/error state. `npx tsc --noEmit`: **0 lỗi** ở toàn bộ file staff mới (chỉ còn 39 lỗi pre-existing của scaffolding `components/ui/*`).
+- [x] **Tự động lấy `hotelId` sau khi staff đăng nhập (chỉ sửa mobile — KHÔNG đụng BE)**:
+  - **Không sửa backend** (đã revert mọi thay đổi thử nghiệm ở `server/`). Mobile gọi endpoint `GET /hotels/me/assignments` để lấy KS staff được phân công: `staffService.listMyHotels` + hook `useMyStaffHotels(enabled)` + `queryKeys.staff.myHotels` + type `StaffAssignedHotel`.
+  - **Tự chốt hotelId**: `(staff)/_layout` gọi hook (enabled khi đã hydrate + là staff), `useEffect` set `staffStore.hotelId = hotels[0].id` khi chưa có / id cũ không còn hợp lệ. Các màn đọc qua `useStaffHotelId()` (store → env fallback). Endpoint 404 (chưa có) sẽ fail im lặng, app rơi về env `EXPO_PUBLIC_STAFF_HOTEL_ID` — không crash.
+  - ⚠️ **Cần BE bổ sung `GET /hotels/me/assignments`** (auth): đọc `hotel_staff_assignments` theo `user.id` trong token (`unassignedAt = null`, bỏ KS soft-deleted), trả `HotelSummary[]` giống `/hotels/mine`. Khi endpoint sẵn sàng, luồng chạy tự động, không phải sửa mobile.
+  - Camera QR ở tab Scan vẫn là khung giữ chỗ (cần `expo-camera`).
+
 ---
 
-_Last Updated: 2026-06-28_
+_Last Updated: 2026-07-01_
