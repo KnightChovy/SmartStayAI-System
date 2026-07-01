@@ -699,6 +699,91 @@ paths:
                 code: 401
                 message: verify email failed
 
+  /users/me:
+    get:
+      summary: Get my own profile (self-service)
+      description: Auth. Returns the logged-in user's account and profile (passwordHash omitted).
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: The authenticated user's account with profile
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MeProfile' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      summary: Update my own profile (self-service)
+      description: >
+        Auth. The logged-in user updates their own basic fields (fullName, phone, avatarUrl) and
+        UserProfile fields (dateOfBirth, nationality, id/passport, preferredLanguage/Currency,
+        marketingOptIn). email / role / status are NOT editable here. At least one field required.
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              minProperties: 1
+              properties:
+                fullName: { type: string, maxLength: 255 }
+                phone: { type: string, maxLength: 20, nullable: true }
+                avatarUrl: { type: string, format: uri, nullable: true }
+                dateOfBirth: { type: string, format: date, nullable: true }
+                nationality: { type: string, maxLength: 100, nullable: true }
+                idCardNumber: { type: string, maxLength: 50, nullable: true }
+                passportNumber: { type: string, maxLength: 50, nullable: true }
+                preferredLanguage: { type: string, enum: [vi, en] }
+                preferredCurrency: { type: string, enum: [VND, USD] }
+                marketingOptIn: { type: boolean }
+      responses:
+        '200':
+          description: Updated profile
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MeProfile' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /users/me/password:
+    patch:
+      summary: Change my own password (self-service)
+      description: >
+        Auth. Verifies the current password, then sets a new one (must differ from the current).
+        Separate from the email-token forgot/reset flow.
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [currentPassword, newPassword]
+              properties:
+                currentPassword: { type: string, format: password }
+                newPassword:
+                  type: string
+                  format: password
+                  minLength: 8
+                  description: At least one letter and one number
+      responses:
+        '204': { description: Password changed }
+        '400':
+          description: Current password wrong, or new password same as current
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
   /users:
     post:
       summary: Create a user

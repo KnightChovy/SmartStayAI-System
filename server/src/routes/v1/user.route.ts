@@ -11,6 +11,12 @@ router
   .post(auth('manageUsers'), validate(userValidation.createUser), userController.createUser)
   .get(auth('getUsers'), validate(userValidation.getUsers), userController.getUsers);
 
+// Self-service: user thao tác trên CHÍNH mình (id lấy từ token).
+// '/me' là literal nên PHẢI đăng ký TRƯỚC '/:userId' để khỏi bị route param nuốt.
+router.get('/me', auth(), userController.getMe);
+router.patch('/me', auth(), validate(userValidation.updateMyProfile), userController.updateMe);
+router.patch('/me/password', auth(), validate(userValidation.changeMyPassword), userController.changeMyPassword);
+
 router
   .route('/:userId')
   .get(auth('getUsers'), validate(userValidation.getUser), userController.getUser)

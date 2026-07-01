@@ -4,7 +4,14 @@ import type { Prisma, User, UserRole, UserStatus } from '@prisma/client';
 import prisma from '../config/prisma';
 import config from '../config/config';
 import ApiError from '../utils/ApiError';
-import type { CreateUserDto, UpdateUserDto, UserFilter, UserQueryOptions } from '../dto/user.dto';
+import sanitizeUser from '../utils/sanitizeUser';
+import type {
+  CreateUserDto,
+  UpdateUserDto,
+  UpdateMyProfileDto,
+  UserFilter,
+  UserQueryOptions,
+} from '../dto/user.dto';
 import { auditService } from './audit.service';
 
 export class UserService {
@@ -148,6 +155,71 @@ export class UserService {
       where: { id: userId },
       data,
     });
+  };
+
+  /** Hồ sơ của CHÍNH user đang đăng nhập (kèm profile), đã bỏ passwordHash. */
+  getMyProfile = async (userId: string) => {
+    const user = await prisma.user.findFirst({
+      where: { id: userId, deletedAt: null },
+      include: { profile: true },
+    });
+    if (!user) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
+    }
+    return sanitizeUser(user);
+  };
+
+  /**
+   * User tự cập nhật hồ sơ của mình: các trường cơ bản trên User + bảng UserProfile (upsert vì
+   * profile có thể chưa tồn tại). KHÔNG đụng tới email/role/status. Trả về user đã bỏ passwordHash.
+   */
+  updateMyProfile = async (userId: string, dto: UpdateMyProfileDto) => {
+    const userData: Prisma.UserUpdateInput = {};
+    if (dto.fullName !== undefined) userData.fullName = dto.fullName;
+    if (dto.phone !== undefined) userData.phone = dto.phone;
+    if (dto.avatarUrl !== undefined) userData.avatarUrl = dto.avatarUrl;
+
+    // Gom các trường profile được gửi lên; dùng chung cho cả create & update của upsert
+    const profileFields: Prisma.UserProfileCreateWithoutUserInput = {};
+    if (dto.dateOfBirth !== undefined) profileFields.dateOfBirth = dto.dateOfBirth ? new Date(dto.dateOfBirth) : null;
+    if (dto.nationality !== undefined) profileFields.nationality = dto.nationality;
+    if (dto.idCardNumber !== undefined) profileFields.idCardNumber = dto.idCardNumber;
+    if (dto.passportNumber !== undefined) profileFields.passportNumber = dto.passportNumber;
+    if (dto.preferredLanguage !== undefined) profileFields.preferredLanguage = dto.preferredLanguage;
+    if (dto.preferredCurrency !== undefined) profileFields.preferredCurrency = dto.preferredCurrency;
+    if (dto.marketingOptIn !== undefined) profileFields.marketingOptIn = dto.marketingOptIn;
+    const hasProfile = Object.keys(profileFields).length > 0;
+
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...userData,
+        ...(hasProfile ? { profile: { upsert: { create: profileFields, update: profileFields } } } : {}),
+      },
+      include: { profile: true },
+    });
+    return sanitizeUser(user);
+  };
+
+  /**
+   * User tự đổi mật khẩu khi đang đăng nhập: xác minh mật khẩu hiện tại, chặn đặt lại y hệt,
+   * rồi băm mật khẩu mới. (Khác luồng forgot/reset qua email token.)
+   */
+  changeMyPassword = async (userId: string, currentPassword: string, newPassword: string): Promise<void> => {
+    const user = await this.getUserById(userId);
+    if (!user) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
+    }
+    const matches = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!matches) {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Mật khẩu hiện tại không đúng');
+    }
+    const sameAsOld = await bcrypt.compare(newPassword, user.passwordHash);
+    if (sameAsOld) {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Mật khẩu mới phải khác mật khẩu hiện tại');
+    }
+    const passwordHash = await bcrypt.hash(newPassword, config.bcrypt.rounds);
+    await prisma.user.update({ where: { id: userId }, data: { passwordHash } });
   };
 
   /**
