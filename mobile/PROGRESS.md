@@ -138,6 +138,19 @@ This file tracks the accomplished tasks, resolved user requests, and structural/
   - `booking/[id].tsx`: thêm nút "Modify reservation" (hiện khi `status` là `pending`/`confirmed`, cùng điều kiện với Cancel) mở lại `StayPickerSheet` sẵn có (đã dùng ở trang phòng) với ngày/khách hiện tại làm giá trị khởi tạo; sau khi Apply chỉ lưu state cục bộ và hiện card xác nhận mock (ngày mới + số khách + "The property will confirm availability shortly."), không gọi API.
   - `npx tsc --noEmit`: sạch ở file đã sửa.
 
+- [x] **Nối đủ trang cho các nút ở màn Profile (tất cả 9 nút trước đây không có `onPress`)**:
+  - **Rà soát trước khi làm**: cả backend (`server/src`) lẫn web (`client/src`) đều **chưa có API thật** cho loyalty/points, promotions/offers, và không có bất kỳ trang/mô hình nào cho "saved payment methods" hay "transaction history" riêng — `LoyaltyAccount`/`LoyaltyTransaction`/`Promotion` chỉ tồn tại ở Prisma schema, chưa có service/controller/route; web tự nhận là mock (`[MOCK] … Backend chưa có endpoint`). Vì vậy chỉ những trang có nghiệp vụ thật mới gọi API thật; phần còn lại làm mock rõ ràng như web, không giả lập dữ liệu backend không tồn tại.
+  - **Trang mới, tất cả đặt trong `app/profile/`** (theo đúng chỗ `profile/edit.tsx` đã có):
+    - `rewards.tsx` — tier + điểm thưởng (mock, đồng bộ số liệu tĩnh với `LoyaltyPage` bên web), có ghi chú rõ trong code là mock.
+    - `offers.tsx` — danh sách voucher/mã ưu đãi (mock, đồng bộ với `MyVouchersPage`), không dùng `expo-clipboard` (chưa cài) — chỉ hiển thị mã để nhập tay lúc checkout.
+    - `payment-methods.tsx` — empty-state giải thích rõ SmartStay chưa lưu thẻ, thanh toán qua VNPay mỗi lần (không bịa dữ liệu thẻ giả vì không có model nào cho việc này).
+    - `transactions.tsx` — **dữ liệu thật**: dựng lịch sử giao dịch trực tiếp từ `useGetMyBookings()` (mỗi booking là một giao dịch: mã, khách sạn, ngày, tổng tiền, trạng thái), bấm vào mở lại `booking/[id]`.
+    - `security.tsx` — **dữ liệu thật**: đổi mật khẩu qua `useUpdateProfile({ password })` và xoá tài khoản qua `useDeleteAccount()` (2 hook self-access đã có sẵn), dùng `TextInput` thuần theo đúng convention của `profile/edit.tsx` (không dùng `components/ui/input` vì không tương thích props).
+    - `help-support.tsx` — FAQ tĩnh + liên hệ (mail/điện thoại qua `Linking`).
+    - `about.tsx` — thông tin app (tên, version từ `expo-constants`, link điều khoản/chính sách).
+  - **Wire `(tabs)/profile.tsx`**: chuyển `BENEFIT_ITEMS`/`FINANCE_ITEMS`/`SETTING_ITEMS` từ hằng số tĩnh (không `onPress`) thành mảng dựng trong component (cần `router`), mỗi item trỏ đúng route tương ứng; nút quick-action "SmartStay Plus" → `/profile/rewards`; "Notifications" trỏ thẳng route `/notifications` đã có sẵn từ trước (chỉ chưa được liên kết) — màn này vốn đã lấy dữ liệu thật từ booking, không phải mock.
+  - `npx tsc --noEmit`: sạch ở toàn bộ file mới/sửa (chỉ còn các lỗi pre-existing của scaffolding `components/ui/*` gluestack).
+
 ---
 
 _Last Updated: 2026-07-01_
