@@ -133,6 +133,11 @@ This file tracks the accomplished tasks, resolved user requests, and structural/
   - `booking/[id].tsx`: thêm QR check-in ngay trong card mã booking, ẩn khi `status === 'cancelled'` (giống `BookingDetailPage` bên web).
   - `npx tsc --noEmit`: sạch ở các file mới/sửa.
 
+- [x] **Thêm "Modify reservation" cho booking `pending`/`confirmed` (đồng bộ mock UI của web)**:
+  - Web (`BookingDetailPage`) chưa có API sửa booking thật — nút "Modify" chỉ mở form chọn ngày/khách rồi hiện thông báo "Modification request sent" (mock, không gọi backend). Làm y hệt cho mobile để giữ đúng hành vi hiện có, không tự thêm API chưa tồn tại.
+  - `booking/[id].tsx`: thêm nút "Modify reservation" (hiện khi `status` là `pending`/`confirmed`, cùng điều kiện với Cancel) mở lại `StayPickerSheet` sẵn có (đã dùng ở trang phòng) với ngày/khách hiện tại làm giá trị khởi tạo; sau khi Apply chỉ lưu state cục bộ và hiện card xác nhận mock (ngày mới + số khách + "The property will confirm availability shortly."), không gọi API.
+  - `npx tsc --noEmit`: sạch ở file đã sửa.
+
 ---
 
 _Last Updated: 2026-07-01_
