@@ -39,6 +39,32 @@ export const updateHotelFlags = {
     .min(1), // phải gửi ít nhất 1 cờ để đổi
 };
 
+// ===== Analytics & Performance (viewPlatformStats) =====
+export const getAnalytics = {
+  query: Joi.object().keys({
+    period: Joi.string().valid('month', 'year'),
+    range: Joi.number().integer().min(1).max(36),
+    topLimit: Joi.number().integer().min(1).max(20),
+  }),
+};
+
+export const getHotelPerformance = {
+  params: Joi.object().keys({
+    hotelId: Joi.string().uuid().required(),
+  }),
+  query: Joi.object().keys({
+    from: Joi.date().iso(),
+    to: Joi.date().iso().greater(Joi.ref('from')),
+  }),
+};
+
+export const getPerformanceLeaderboard = {
+  query: Joi.object().keys({
+    from: Joi.date().iso(),
+    to: Joi.date().iso().greater(Joi.ref('from')),
+  }),
+};
+
 // ===== Pha 5 — Audit log =====
 export const listAuditLogs = {
   query: Joi.object().keys({

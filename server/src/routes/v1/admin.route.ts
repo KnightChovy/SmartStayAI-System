@@ -22,6 +22,18 @@ router.patch(
 router.get('/hotels', auth('manageHotels'), validate(adminValidation.listHotels), adminController.listHotels);
 router.patch('/hotels/:hotelId', auth('manageHotels'), validate(adminValidation.updateHotelFlags), adminController.updateHotelFlags);
 
+// ===== Analytics & Performance (viewPlatformStats) — Platform Manager =====
+router.get('/analytics', auth('viewPlatformStats'), validate(adminValidation.getAnalytics), adminController.getAnalytics);
+// Bảng xếp hạng hiệu suất toàn sàn
+router.get('/performance', auth('viewPlatformStats'), validate(adminValidation.getPerformanceLeaderboard), adminController.getPerformanceLeaderboard);
+// Hiệu suất + điểm chi tiết của 1 khách sạn
+router.get(
+  '/hotels/:hotelId/performance',
+  auth('viewPlatformStats'),
+  validate(adminValidation.getHotelPerformance),
+  adminController.getHotelPerformance
+);
+
 // ===== Pha 5 — Audit log (viewPlatformStats) =====
 router.get('/audit-logs', auth('viewPlatformStats'), validate(adminValidation.listAuditLogs), adminController.listAuditLogs);
 

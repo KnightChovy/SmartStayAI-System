@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import type { User } from '@prisma/client';
 import pick from '../utils/pick';
 import catchAsync from '../utils/catchAsync';
-import { adminService, auditService } from '../services';
+import { adminService, analyticsService, auditService } from '../services';
 
 export class AdminController {
   // [Admin/Platform_manager] Số liệu tổng quan toàn sàn
@@ -35,6 +35,25 @@ export class AdminController {
   updateHotelFlags = catchAsync(async (req: Request, res: Response): Promise<void> => {
     const hotel = await adminService.setHotelFlags(req.params.hotelId as string, req.body, req.user as User);
     res.send(hotel);
+  });
+
+  // ===== Analytics & Performance =====
+  getAnalytics = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const query = pick(req.query, ['period', 'range', 'topLimit']);
+    const result = await analyticsService.getPlatformAnalytics(query);
+    res.send(result);
+  });
+
+  getPerformanceLeaderboard = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const query = pick(req.query, ['from', 'to']);
+    const result = await analyticsService.getPerformanceLeaderboard(query);
+    res.send(result);
+  });
+
+  getHotelPerformance = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const query = pick(req.query, ['from', 'to']);
+    const result = await analyticsService.getHotelPerformance(req.params.hotelId as string, query);
+    res.send(result);
   });
 
   // ===== Pha 5 — Audit log =====

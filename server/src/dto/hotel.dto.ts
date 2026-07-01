@@ -49,6 +49,21 @@ export interface UpdateHotelDto {
   checkInTime?: string | null;
   checkOutTime?: string | null;
   businessType?: 'hotel' | 'resort' | 'villa' | 'apartment';
+  // ----- Chi tiết bổ sung kiểu booking.com (Pha 1 DB) -----
+  postalCode?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  totalFloors?: number | null;
+  builtYear?: number | null;
+  renovationYear?: number | null;
+  isSmokingAllowed?: boolean;
+  petsPolicy?: 'not_allowed' | 'allowed' | 'on_request' | null;
+  cancellationPolicy?: string | null;
+  childrenPolicy?: string | null;
+  minGuestAge?: number | null;
+  securityDepositAmount?: number | null;
+  languagesSpoken?: string[]; // Json — gửi [] để xoá hết
+  maxLengthOfStay?: number | null;
 }
 
 /** Ảnh khách sạn để thêm (URL đã upload trước qua POST /v1/uploads). */
@@ -58,4 +73,36 @@ export interface HotelImageInput {
   caption?: string;
   isPrimary?: boolean;
   sortOrder?: number;
+}
+
+/** Một liên hệ của khách sạn (thay thế toàn bộ khi PUT). */
+export interface HotelContactInput {
+  contactType: 'physical_location' | 'general' | 'availability' | 'invoices';
+  name?: string | null;
+  jobTitle?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  phoneType?: 'voice' | 'fax' | 'mobile' | null;
+}
+
+/** Một chính sách / phụ phí của khách sạn (thay thế toàn bộ khi PUT). */
+export interface HotelPolicyInput {
+  policyType: 'cancellation' | 'tax' | 'fee' | 'parking' | 'internet' | 'deposit';
+  code?: string | null;
+  description?: string | null;
+  amount?: number | null;
+  isPercentage?: boolean;
+  chargeFrequency?: 'per_stay' | 'per_night' | 'per_person' | 'per_person_per_night' | null;
+  minAge?: number | null;
+  maxAge?: number | null;
+}
+
+/** Một địa điểm lân cận khách sạn (thay thế toàn bộ khi PUT). */
+export interface HotelNearbyPlaceInput {
+  name: string;
+  category: 'attraction' | 'beach' | 'airport' | 'restaurant' | 'public_transport' | 'landmark' | 'nature';
+  distance: number;
+  distanceUnit: 'km' | 'miles';
+  transportType?: 'walk' | 'car' | 'public_transport' | 'taxi' | 'shuttle' | null;
+  journeyMinutes?: number | null;
 }

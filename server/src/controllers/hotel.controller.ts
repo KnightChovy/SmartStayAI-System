@@ -89,6 +89,41 @@ export class HotelController {
     );
     res.send(amenities);
   });
+
+  // ----- Liên hệ / chính sách / địa điểm lân cận (Pha 1 DB) -----
+  getHotelContacts = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const result = await hotelService.getHotelContacts(req.params.hotelId as string, req.user as User);
+    res.send(result);
+  });
+
+  setHotelContacts = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const result = await hotelService.setHotelContacts(req.params.hotelId as string, req.user as User, req.body.contacts);
+    res.send(result);
+  });
+
+  getHotelPolicies = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const result = await hotelService.getHotelPolicies(req.params.hotelId as string, req.user as User);
+    res.send(result);
+  });
+
+  setHotelPolicies = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const result = await hotelService.setHotelPolicies(req.params.hotelId as string, req.user as User, req.body.policies);
+    res.send(result);
+  });
+
+  getHotelNearbyPlaces = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const result = await hotelService.getHotelNearbyPlaces(req.params.hotelId as string, req.user as User);
+    res.send(result);
+  });
+
+  setHotelNearbyPlaces = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const result = await hotelService.setHotelNearbyPlaces(
+      req.params.hotelId as string,
+      req.user as User,
+      req.body.nearbyPlaces
+    );
+    res.send(result);
+  });
 }
 
 export const hotelController = new HotelController();

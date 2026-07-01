@@ -12,6 +12,9 @@ import type {
   HotelQueryOptions,
   UpdateHotelDto,
   HotelImageInput,
+  HotelContactInput,
+  HotelPolicyInput,
+  HotelNearbyPlaceInput,
 } from '../dto/hotel.dto';
 import type { AmenityAssignmentInput } from '../dto/amenity.dto';
 
@@ -77,11 +80,15 @@ export class HotelService {
       include: {
         images: { orderBy: [{ isPrimary: 'desc' }, { sortOrder: 'asc' }] },
         amenities: { include: { amenity: true } },
+        contacts: true,
+        policies: true,
+        nearbyPlaces: true,
         roomTypes: {
           orderBy: { basePrice: 'asc' },
           include: {
             images: { orderBy: { sortOrder: 'asc' } },
             amenities: { include: { amenity: true } },
+            beds: true,
             _count: { select: { rooms: true } },
           },
         },
@@ -230,6 +237,60 @@ export class HotelService {
     });
   };
 
+  /** Danh sách liên hệ của khách sạn (chủ KS / manageHotels). */
+  getHotelContacts = async (hotelId: string, currentUser: User) => {
+    await this.getManagedHotel(hotelId, currentUser);
+    return prisma.hotelContact.findMany({ where: { hotelId }, orderBy: { createdAt: 'asc' } });
+  };
+
+  /** Gán lại TOÀN BỘ liên hệ của khách sạn (thay thế; mảng rỗng = xoá hết). */
+  setHotelContacts = async (hotelId: string, currentUser: User, contacts: HotelContactInput[]) => {
+    await this.getManagedHotel(hotelId, currentUser);
+    return prisma.$transaction(async (tx) => {
+      await tx.hotelContact.deleteMany({ where: { hotelId } });
+      if (contacts.length > 0) {
+        await tx.hotelContact.createMany({ data: contacts.map((c) => ({ hotelId, ...c })) });
+      }
+      return tx.hotelContact.findMany({ where: { hotelId }, orderBy: { createdAt: 'asc' } });
+    });
+  };
+
+  /** Danh sách chính sách / phụ phí của khách sạn (chủ KS / manageHotels). */
+  getHotelPolicies = async (hotelId: string, currentUser: User) => {
+    await this.getManagedHotel(hotelId, currentUser);
+    return prisma.hotelPolicy.findMany({ where: { hotelId }, orderBy: { createdAt: 'asc' } });
+  };
+
+  /** Gán lại TOÀN BỘ chính sách / phụ phí của khách sạn (thay thế; mảng rỗng = xoá hết). */
+  setHotelPolicies = async (hotelId: string, currentUser: User, policies: HotelPolicyInput[]) => {
+    await this.getManagedHotel(hotelId, currentUser);
+    return prisma.$transaction(async (tx) => {
+      await tx.hotelPolicy.deleteMany({ where: { hotelId } });
+      if (policies.length > 0) {
+        await tx.hotelPolicy.createMany({ data: policies.map((p) => ({ hotelId, ...p })) });
+      }
+      return tx.hotelPolicy.findMany({ where: { hotelId }, orderBy: { createdAt: 'asc' } });
+    });
+  };
+
+  /** Danh sách địa điểm lân cận của khách sạn (chủ KS / manageHotels). */
+  getHotelNearbyPlaces = async (hotelId: string, currentUser: User) => {
+    await this.getManagedHotel(hotelId, currentUser);
+    return prisma.hotelNearbyPlace.findMany({ where: { hotelId }, orderBy: { createdAt: 'asc' } });
+  };
+
+  /** Gán lại TOÀN BỘ địa điểm lân cận của khách sạn (thay thế; mảng rỗng = xoá hết). */
+  setHotelNearbyPlaces = async (hotelId: string, currentUser: User, nearbyPlaces: HotelNearbyPlaceInput[]) => {
+    await this.getManagedHotel(hotelId, currentUser);
+    return prisma.$transaction(async (tx) => {
+      await tx.hotelNearbyPlace.deleteMany({ where: { hotelId } });
+      if (nearbyPlaces.length > 0) {
+        await tx.hotelNearbyPlace.createMany({ data: nearbyPlaces.map((n) => ({ hotelId, ...n })) });
+      }
+      return tx.hotelNearbyPlace.findMany({ where: { hotelId }, orderBy: { createdAt: 'asc' } });
+    });
+  };
+
   /**
    * Tìm khách sạn theo thành phố. Nếu có khoảng ngày (checkIn/checkOut) thì chỉ trả về
    * khách sạn còn ít nhất một loại phòng trống đủ sức chứa trong suốt kỳ ở.
@@ -305,12 +366,16 @@ export class HotelService {
       include: {
         images: { orderBy: [{ isPrimary: 'desc' }, { sortOrder: 'asc' }] },
         amenities: { include: { amenity: true } },
+        contacts: true,
+        policies: true,
+        nearbyPlaces: true,
         roomTypes: {
           where: { isActive: true },
           orderBy: { basePrice: 'asc' },
           include: {
             images: { orderBy: { sortOrder: 'asc' } },
             amenities: { include: { amenity: true } },
+            beds: true,
           },
         },
       },
@@ -355,6 +420,7 @@ export class HotelService {
       include: {
         images: { orderBy: { sortOrder: 'asc' } },
         amenities: { include: { amenity: true } },
+        beds: true,
       },
       orderBy: { basePrice: 'asc' },
     });
