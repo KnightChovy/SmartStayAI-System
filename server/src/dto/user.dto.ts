@@ -29,6 +29,29 @@ export interface UpdateUserDto {
 }
 
 /**
+ * Payload user tự cập nhật hồ sơ của CHÍNH MÌNH (self-service). Không có email/role/status —
+ * những trường đó do admin quản, không cho tự đổi.
+ */
+export interface UpdateMyProfileDto {
+  fullName?: string;
+  phone?: string | null;
+  avatarUrl?: string | null;
+  dateOfBirth?: string | Date | null;
+  nationality?: string | null;
+  idCardNumber?: string | null;
+  passportNumber?: string | null;
+  preferredLanguage?: 'vi' | 'en';
+  preferredCurrency?: 'VND' | 'USD';
+  marketingOptIn?: boolean;
+}
+
+/** Payload user tự đổi mật khẩu khi đang đăng nhập (cần mật khẩu hiện tại). */
+export interface ChangePasswordDto {
+  currentPassword: string;
+  newPassword: string;
+}
+
+/**
  * Filters for querying the list of users.
  */
 export interface UserFilter {

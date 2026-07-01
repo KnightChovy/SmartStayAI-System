@@ -19,6 +19,41 @@ components:
         name: fake name
         role: user
 
+    UserProfile:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        userId: { type: string, format: uuid }
+        dateOfBirth: { type: string, format: date, nullable: true }
+        nationality: { type: string, nullable: true }
+        idCardNumber: { type: string, nullable: true }
+        passportNumber: { type: string, nullable: true }
+        preferredLanguage: { type: string, enum: [vi, en] }
+        preferredCurrency: { type: string, enum: [VND, USD] }
+        marketingOptIn: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    MeProfile:
+      type: object
+      description: The authenticated user's own account (passwordHash omitted) with its profile.
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        fullName: { type: string }
+        phone: { type: string, nullable: true }
+        avatarUrl: { type: string, nullable: true }
+        role: { type: string, enum: [guest, customer, staff, hotel_partner, platform_manager, admin] }
+        status: { type: string, enum: [active, inactive, suspended] }
+        emailVerifiedAt: { type: string, format: date-time, nullable: true }
+        lastLoginAt: { type: string, format: date-time, nullable: true }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        profile:
+          allOf:
+            - $ref: '#/components/schemas/UserProfile'
+          nullable: true
+
     Token:
       type: object
       properties:
