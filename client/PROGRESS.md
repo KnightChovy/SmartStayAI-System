@@ -8,6 +8,31 @@ This file tracks the accomplished tasks, resolved user requests, and visual/func
 
 ### July 1, 2026
 
+- [x] **Thay `<input type=date>` bằng shadcn DatePicker (Popover + Calendar) cho Hotel Partner + siết validation ngày chặt chẽ**:
+  - **Cài shadcn**: `npx shadcn add calendar popover` (kéo `react-day-picker` v10). Giữ nguyên `button.tsx` (đã custom `size="xs"`) — từ chối overwrite. Sửa import `@/lib/utils` → `@/lib/cn` trong `calendar.tsx` + `popover.tsx` (dự án dùng `lib/cn`).
+  - **Component chung** `components/ui/date-picker.tsx`: controlled, `value`/`onChange` dạng `YYYY-MM-DD` (tương thích value cũ), hiển thị **dd/MM/yyyy**, hỗ trợ `min`/`max` (vừa bound dropdown năm vừa disable ngày ngoài khoảng), nút Clear, `captionLayout="dropdown"`. Trigger là Button `type="button"` (không submit form); Calendar portal ra ngoài form nên chọn ngày không submit. Thêm RHF wrapper `DateField` vào `hotel-partner/shared/form-controls.tsx` (Controller + DatePicker + FieldShell).
+  - **Áp dụng + logic ngày**:
+    - `PricingRuleFormModal` → `DateField` start/end với min/max động (end ≥ start ngay trên lịch). `pricingRuleFormSchema`: thêm `requiredDate` (đúng format + ngày thật) và giữ refine end ≥ start (an toàn khi 1 vế chưa hợp lệ).
+    - `BookingsTab` filter (from/to) → DatePicker, from ≤ to qua min/max chéo.
+    - `ProfileForm` (dùng chung, hiển thị ở `/partner/profile`) → DOB: max = hôm nay, min = 120 năm trước.
+    - Verify wizard (`PropertyDetailsStep`, `AccommodationCertificateStep`, `RepresentativeVerificationStep`) → Controller + DatePicker. `hotel-verify.validation.ts` thêm helper ngày (`isDateStr`/`notFuture`/`ageFrom`): license/certificate `issueDate` không được tương lai; `expiryDate ≥ issueDate`; **người đại diện phải ≥ 18 và ≤ 120 tuổi**, DOB không tương lai; DatePicker của DOB bound max = 18 năm trước.
+  - `npx tsc -p tsconfig.app.json --noEmit`: không phát sinh lỗi mới; chỉ còn lỗi pre-existing (`User.name`, unused `React`, recharts formatter).
+
+- [x] **Profile self-service dùng chung (`CommonProfilePage`) + nối API thật `/users/me` — áp dụng Hotel Partner & Manager**:
+  - **Nối API thật (bỏ mock localStorage)**: BE đã có `GET /users/me` + `PATCH /users/me` (self-service, id lấy từ token; không nhận email/role/status). `services/profile.service.ts` viết lại gọi API thật, map response lồng (User + `profile`) ↔ view-model phẳng `UserProfile`: `dateOfBirth` cắt còn `YYYY-MM-DD` cho `<input type=date>`, patch **whitelist** đúng field self-service (BE Joi reject unknown key nên bỏ email/emailVerifiedAt). Thêm raw types `MyProfileResponse`/`UserProfileRaw`/`UpdateMyProfileDto` vào `types/account.types.ts`. `hooks/account/use-profile.ts` đổi `useProfile()` bỏ tham số `seed` (không cần nữa).
+  - **Trang dùng chung** trong `common/`: `common/profile/ProfileForm.tsx` (form avatar-upload + info + preferences, tách từ trang guest cũ, lưu qua `useUpdateProfile`) và `common/profile/CommonProfilePage.tsx` (heading + `useProfile` + skeleton + form). Guest `pages/account/ProfilePage.tsx` giờ render `<CommonProfilePage />` (dedupe, hết dùng seed).
+  - **Route theo cổng** (mỗi role render chung 1 trang): `ROUTES.partnerProfile` = `/partner/profile`, `ROUTES.managerProfile` = `/manager/profile`; đăng ký `{ path: 'profile', element: <CommonProfilePage /> }` trong `partnerRoutes.tsx` + `managerRoutes.tsx` (nằm trong layout nên giữ sidebar). Helper `getProfilePathForRole(role)` trong `constants/routes.ts`.
+  - **Navbar chung** `common/navbar/Navbar.tsx`: link **Profile** ở dropdown giờ trỏ theo role qua `getProfilePathForRole(user?.role)` — Hotel Partner + Manager (đều dùng CommonNavbar mặc định) tự vào đúng cổng của mình.
+  - **Còn lại (theo yêu cầu "trước mắt làm partner + manager")**: Admin & Staff **chưa** thêm route/link (2 layout này tự override `rightContent` của navbar) — sẽ bổ sung sau; data-layer + trang chung đã sẵn sàng để cắm thêm.
+  - `npx tsc -p tsconfig.app.json --noEmit`: không phát sinh lỗi mới; chỉ còn lỗi pre-existing (`User.name`, unused `React`, recharts formatter).
+
+- [x] **`formatDate` dùng chung theo dd/MM/yyyy + áp dụng cho Hotel Partner & Manager**:
+  - **Util** `utils/formatDate.ts`: đổi `formatDate` thành formatter ngày chung dạng **`dd/MM/yyyy`** — nhận `string | Date | null`, trả "—" nếu rỗng/không hợp lệ (build thủ công `dd`/`mm`/`yyyy`, không phụ thuộc locale). Bản format dài "en-US" cũ (dùng cho đồng hồ realtime Admin) tách sang `formatDateLong(date: Date)`.
+  - **Admin (giữ nguyên hiển thị)**: 9 modal (`AdminCalendar/FileManager/Notes/CreateUser/Support/Tasks/Messages/Report/Maintenance`) đổi import + gọi `formatDate` → `formatDateLong` để đồng hồ realtime không đổi look.
+  - **Hotel Partner**: `BookingDetailModal`, `BookingsTab`, `StaffTab`, `PricingRulesTab` chuyển từ `formatDateShort` sang `formatDate`; `VerificationCenter` bỏ `new Date(...).toLocaleDateString()` → `formatDate(...)`.
+  - **Manager**: `VerificationRequestsPage` bỏ `toLocaleDateString('vi-VN')` → `formatDate(...)`; `VerificationDetailModal` helper `fmtDate` giờ delegate về `formatDate` (giữ null cho giá trị rỗng để ẩn dòng). `formatDateShort` vẫn giữ cho các portal khác (staff/guest/account/admin).
+  - `npx tsc -p tsconfig.app.json --noEmit`: sạch cho mọi file đụng tới; chỉ còn lỗi pre-existing (`User.name`, unused `React`, recharts formatter).
+
 - [x] **Hotel Partner + Manager — đổi toàn bộ loading content từ spinner sang skeleton**:
   - **Bộ skeleton dùng chung** `components/shared/skeletons.tsx` (build trên shadcn `Skeleton`, màu neutral): `TableSkeleton` (header + rows khớp `DataTable`), `ToolbarSkeleton`, `DirectorySkeleton` (toolbar + table cho trang chọn KS), `CardGridSkeleton`, `ListSkeleton` (list dạng dòng), `DetailSkeleton` (header + N section).
   - **Hotel Partner**: thay `LoadingState`/spinner ở content-loading bằng skeleton đúng ngữ cảnh — tables `RoomsTab`/`RoomTypesTab`/`PricingRulesTab`/`BookingsTab`/`StaffTab`/`AmenitiesPage` → `TableSkeleton`; pages chọn KS `HotelsPage`/`RoomInventoryPage`/`BookingsPage`/`StaffManagementPage` → `DirectorySkeleton`; `HotelDetailPage` + `BookingDetailModal` + `VerificationCenter` → `DetailSkeleton`; `HotelAmenitiesModal` + `RoomTypeAmenitiesModal` → `ListSkeleton`. Mỗi file bỏ `LoadingState` khỏi import (giữ `ErrorState`/`EmptyState`).

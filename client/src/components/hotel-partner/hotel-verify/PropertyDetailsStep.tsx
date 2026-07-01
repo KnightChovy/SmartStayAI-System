@@ -1,15 +1,20 @@
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
 import { FileUploadDropzone } from '@/components/ui/file-upload';
 import { propertyDetailsSchema, type PropertyDetailsFormValues } from '@/validations/hotel-verify.validation';
 import { hotelVerifyService } from '@/services/hotel-verify.service';
 import { useHotelVerifyStore } from '@/stores/hotel-verify.store';
+import { toDateInputValue } from '@/utils/formatDate';
+
+/** Hôm nay (YYYY-MM-DD) — chặn chọn ngày cấp phép trong tương lai. */
+const TODAY = toDateInputValue(new Date());
 
 export function PropertyDetailsStep({
   onBack,
@@ -28,6 +33,7 @@ export function PropertyDetailsStep({
     setValue,
     getValues,
     watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<PropertyDetailsFormValues>({
     resolver: zodResolver(propertyDetailsSchema),
@@ -43,6 +49,7 @@ export function PropertyDetailsStep({
 
   // URL tài liệu đã upload (giữ trong draft) — hiển thị lại sau reload.
   const documentFileUrl = watch('documentFileUrl');
+  const issueDate = watch('issueDate');
 
   const handleDocumentFileChange = async (files: File[]) => {
     if (files.length === 0) return;
@@ -105,11 +112,19 @@ export function PropertyDetailsStep({
             <Label htmlFor="issueDate">
               License Issue Date <span className="text-red-500">*</span>
             </Label>
-            <Input
-              id="issueDate"
-              type="date"
-              className="h-11 border-slate-200 text-slate-700"
-              {...register('issueDate')}
+            <Controller
+              control={control}
+              name="issueDate"
+              render={({ field }) => (
+                <DatePicker
+                  id="issueDate"
+                  value={field.value}
+                  onChange={field.onChange}
+                  max={TODAY}
+                  placeholder="Chọn ngày cấp"
+                  ariaInvalid={!!errors.issueDate}
+                />
+              )}
             />
             {errors.issueDate && (
               <span className="text-xs text-red-500">{errors.issueDate.message}</span>
@@ -117,12 +132,23 @@ export function PropertyDetailsStep({
           </div>
           <div className="space-y-2">
             <Label htmlFor="expiryDate">License Expiry Date</Label>
-            <Input
-              id="expiryDate"
-              type="date"
-              className="h-11 border-slate-200 text-slate-700"
-              {...register('expiryDate')}
+            <Controller
+              control={control}
+              name="expiryDate"
+              render={({ field }) => (
+                <DatePicker
+                  id="expiryDate"
+                  value={field.value}
+                  onChange={field.onChange}
+                  min={issueDate || undefined}
+                  placeholder="Chọn ngày hết hạn"
+                  ariaInvalid={!!errors.expiryDate}
+                />
+              )}
             />
+            {errors.expiryDate && (
+              <span className="text-xs text-red-500">{errors.expiryDate.message}</span>
+            )}
           </div>
         </div>
 

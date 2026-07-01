@@ -2,6 +2,8 @@
  * Hằng số đường dẫn toàn ứng dụng. Dùng thay vì hardcode string ở mọi nơi
  * (Link, navigate, route config) để đổi path một chỗ là xong.
  */
+import { UserRole } from './roles';
+
 export const ROUTES = {
   // Guest / public
   home: '/',
@@ -42,6 +44,10 @@ export const ROUTES = {
   partnerStaff: '/partner/staff',
   partnerBookings: '/partner/bookings',
   partnerAmenities: '/partner/amenities',
+  partnerProfile: '/partner/profile',
+
+  // Cổng Platform Manager
+  managerProfile: '/manager/profile',
 
   // Cổng nhân viên (staff — lễ tân / housekeeping)
   staffSelectHotel: '/staff/select-hotel',
@@ -62,3 +68,18 @@ export const ROUTES = {
   accountNotifications: '/account/notifications',
   accountSettings: '/account/settings',
 } as const;
+
+/**
+ * Đường dẫn trang Profile theo cổng của từng role (mỗi cổng render chung
+ * `CommonProfilePage`). Role chưa có cổng riêng → về account profile.
+ */
+export function getProfilePathForRole(role?: string | null): string {
+  switch (role) {
+    case UserRole.HOTEL_PARTNER:
+      return ROUTES.partnerProfile;
+    case UserRole.PLATFORM_MANAGER:
+      return ROUTES.managerProfile;
+    default:
+      return ROUTES.accountProfile;
+  }
+}

@@ -2,17 +2,27 @@ import { useMemo, useState } from 'react';
 import { CalendarDays, Eye, Search } from 'lucide-react';
 import AppFilter from '@/common/filter/AppFilter';
 import AppPagination from '@/common/pagination/AppPagination';
-import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Label } from '@/components/ui/label';
-import { ErrorState, EmptyState } from '@/components/hotel-partner/shared/states';
+import {
+  ErrorState,
+  EmptyState,
+} from '@/components/hotel-partner/shared/states';
 import { TableSkeleton } from '@/components/shared/skeletons';
-import { DataTable, type Column } from '@/components/hotel-partner/shared/DataTable';
+import {
+  DataTable,
+  type Column,
+} from '@/components/hotel-partner/shared/DataTable';
 import { ActionMenu } from '@/components/hotel-partner/shared/ActionMenu';
 import { Pill } from '@/components/hotel-partner/shared/Pill';
 import { useHotelBookings } from '@/hooks/staff';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { formatDate } from '@/utils/formatDate';
-import type { BookingStatus, HotelBooking, HotelBookingsParams } from '@/types/staff.types';
+import type {
+  BookingStatus,
+  HotelBooking,
+  HotelBookingsParams,
+} from '@/types/staff.types';
 import { BOOKING_STATUS_CONFIG, BOOKING_STATUS_OPTIONS } from './labels';
 import { BookingDetailModal } from './BookingDetailModal';
 
@@ -26,7 +36,9 @@ const ALL = 'all';
 /** Danh sách booking của MỘT khách sạn cho chủ KS — lọc trạng thái + xem chi tiết / vận hành. */
 export function BookingsTab({ hotelId }: BookingsTabProps) {
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<BookingStatus | typeof ALL>(ALL);
+  const [statusFilter, setStatusFilter] = useState<BookingStatus | typeof ALL>(
+    ALL
+  );
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [page, setPage] = useState(1);
@@ -102,7 +114,11 @@ export function BookingsTab({ hotelId }: BookingsTabProps) {
       id: 'total',
       header: 'Total',
       align: 'right',
-      cell: b => <span className="font-medium text-slate-900">{formatCurrency(b.totalAmount)}</span>,
+      cell: b => (
+        <span className="font-medium text-slate-900">
+          {formatCurrency(b.totalAmount)}
+        </span>
+      ),
     },
     {
       id: 'status',
@@ -117,7 +133,15 @@ export function BookingsTab({ hotelId }: BookingsTabProps) {
       header: '',
       align: 'right',
       cell: b => (
-        <ActionMenu items={[{ label: 'View / manage', icon: Eye, onClick: () => setDetailId(b.id) }]} />
+        <ActionMenu
+          items={[
+            {
+              label: 'View / manage',
+              icon: Eye,
+              onClick: () => setDetailId(b.id),
+            },
+          ]}
+        />
       ),
     },
   ];
@@ -127,7 +151,9 @@ export function BookingsTab({ hotelId }: BookingsTabProps) {
       <div className="mb-4">
         <h2 className="text-lg font-bold text-slate-900">Bookings</h2>
         <p className="text-sm text-slate-500">
-          {data ? `${data.totalResults} bookings` : 'Manage guest bookings for this hotel.'}
+          {data
+            ? `${data.totalResults} bookings`
+            : 'Manage guest bookings for this hotel.'}
         </p>
       </div>
 
@@ -145,35 +171,35 @@ export function BookingsTab({ hotelId }: BookingsTabProps) {
         />
         <div className="flex flex-wrap items-end gap-3">
           <div className="space-y-1">
-            <Label htmlFor="fromDate" className="text-xs text-slate-500">
-              Check-in from
+            <Label htmlFor="fromDate" className="text-xs text-slate-500 mr-2">
+              Check-in from:
             </Label>
-            <Input
+            <DatePicker
               id="fromDate"
-              type="date"
               value={fromDate}
               max={toDate || undefined}
-              onChange={e => {
+              onChange={v => {
                 setPage(1);
-                setFromDate(e.target.value);
+                setFromDate(v);
               }}
-              className="w-44"
+              className="w-44 h-10"
+              placeholder="dd/mm/yyyy"
             />
           </div>
           <div className="space-y-1">
-            <Label htmlFor="toDate" className="text-xs text-slate-500">
-              Check-in to
+            <Label htmlFor="toDate" className="text-xs text-slate-500 mr-2">
+              Check-in to:
             </Label>
-            <Input
+            <DatePicker
               id="toDate"
-              type="date"
               value={toDate}
               min={fromDate || undefined}
-              onChange={e => {
+              onChange={v => {
                 setPage(1);
-                setToDate(e.target.value);
+                setToDate(v);
               }}
-              className="w-44"
+              className="w-44 h-10"
+              placeholder="dd/mm/yyyy"
             />
           </div>
         </div>
@@ -186,7 +212,11 @@ export function BookingsTab({ hotelId }: BookingsTabProps) {
       ) : bookings.length === 0 ? (
         <EmptyState
           icon={CalendarDays}
-          title={hasServerFilter ? 'No bookings match this status' : 'No bookings yet'}
+          title={
+            hasServerFilter
+              ? 'No bookings match this status'
+              : 'No bookings yet'
+          }
           description={
             hasServerFilter
               ? 'Try a different status filter.'

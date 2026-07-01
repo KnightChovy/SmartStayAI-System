@@ -9,6 +9,7 @@ import {
   TextField,
   SelectField,
   ToggleField,
+  DateField,
   FieldShell,
 } from '@/components/hotel-partner/shared/form-controls';
 import {
@@ -38,7 +39,7 @@ interface PricingRuleFormModalProps {
 /** Sentinel for the "whole hotel" option (Radix Select rejects empty values). */
 const WHOLE_HOTEL = '__hotel__';
 
-/** ISO datetime -> 'YYYY-MM-DD' for <input type="date">. */
+/** ISO datetime -> 'YYYY-MM-DD' cho DatePicker (value dạng ngày). */
 function toDateInput(value?: string | null): string {
   if (!value) return '';
   return value.slice(0, 10);
@@ -74,6 +75,8 @@ export function PricingRuleFormModal({
   });
 
   const ruleType = methods.watch('ruleType');
+  const startDate = methods.watch('startDate');
+  const endDate = methods.watch('endDate');
 
   const onSubmit = methods.handleSubmit(async values => {
     const dto: CreatePricingRuleDto = {
@@ -160,8 +163,20 @@ export function PricingRuleFormModal({
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <TextField<PricingRuleFormValues> name="startDate" label="Start date" type="date" required />
-            <TextField<PricingRuleFormValues> name="endDate" label="End date" type="date" required />
+            <DateField<PricingRuleFormValues>
+              name="startDate"
+              label="Start date"
+              required
+              max={endDate || undefined}
+              placeholder="Chọn ngày bắt đầu"
+            />
+            <DateField<PricingRuleFormValues>
+              name="endDate"
+              label="End date"
+              required
+              min={startDate || undefined}
+              placeholder="Chọn ngày kết thúc"
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-4">

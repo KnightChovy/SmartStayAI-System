@@ -18,7 +18,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ROUTES } from '@/constants/routes';
+import { ROUTES, getProfilePathForRole } from '@/constants/routes';
 import { useAuthStore } from '@/stores/authStore';
 
 export interface CommonNavbarProps {
@@ -150,7 +150,10 @@ export default function CommonNavbar({
                   </div>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link to={ROUTES.accountProfile} className="cursor-pointer">
+                    <Link
+                      to={getProfilePathForRole(user?.role)}
+                      className="cursor-pointer"
+                    >
                       <UserIcon className="size-4" />
                       Profile
                     </Link>

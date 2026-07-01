@@ -117,12 +117,19 @@ export type RoomFormValues = z.infer<typeof roomFormSchema>;
 const ruleTypeEnum = z.enum(['seasonal', 'weekend', 'occupancy', 'early_bird']);
 const adjustmentTypeEnum = z.enum(['percentage', 'fixed']);
 
+/** Chuỗi ngày `YYYY-MM-DD` hợp lệ (đúng format + là ngày thật). */
+const isDateStr = (v: string) =>
+  /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(new Date(`${v}T00:00:00`).getTime());
+
+const requiredDate = () =>
+  z.string().min(1, 'Required').refine(isDateStr, 'Invalid date');
+
 export const pricingRuleFormSchema = z
   .object({
     name: z.string().trim().min(1, 'Rule name is required').max(255, 'Max 255 characters'),
     ruleType: ruleTypeEnum,
-    startDate: z.string().min(1, 'Required'),
-    endDate: z.string().min(1, 'Required'),
+    startDate: requiredDate(),
+    endDate: requiredDate(),
     adjustmentType: adjustmentTypeEnum,
     adjustmentValue: signedNumber(),
     /** '' / sentinel = applies to the whole hotel. */
@@ -132,7 +139,7 @@ export const pricingRuleFormSchema = z
     priority: optionalInt(0, 1000),
     isActive: z.boolean(),
   })
-  .refine(d => new Date(d.endDate) >= new Date(d.startDate), {
+  .refine(d => !isDateStr(d.startDate) || !isDateStr(d.endDate) || new Date(d.endDate) >= new Date(d.startDate), {
     message: 'End date must be on or after the start date',
     path: ['endDate'],
   })

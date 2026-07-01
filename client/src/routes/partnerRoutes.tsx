@@ -8,6 +8,7 @@ import RoomInventoryPage from '@/pages/hotel-partner/room-inventory/RoomInventor
 import AmenitiesPage from '@/pages/hotel-partner/amenities/AmenitiesPage';
 import StaffManagementPage from '@/pages/hotel-partner/staff/StaffManagementPage';
 import BookingsPage from '@/pages/hotel-partner/bookings/BookingsPage';
+import { CommonProfilePage } from '@/common/profile/CommonProfilePage';
 import ComingSoonPage from '@/pages/ComingSoonPage';
 import NotFoundPage from '@/pages/NotFoundPage';
 import { ProtectedRoute } from '@/routes/ProtectedRoute';
@@ -31,6 +32,7 @@ export const partnerRoutes: RouteObject[] = [
           { path: 'amenities', element: <AmenitiesPage /> },
           { path: 'staff', element: <StaffManagementPage /> },
           { path: 'bookings', element: <BookingsPage /> },
+          { path: 'profile', element: <CommonProfilePage /> },
           // Đã có trong sidebar nhưng chưa triển khai — tạm dùng "Coming soon" để tránh link chết.
           { path: 'revenue', element: <ComingSoonPage title="Revenue" /> },
           { path: 'analytics', element: <ComingSoonPage title="Analytics" /> },
