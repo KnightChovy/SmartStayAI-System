@@ -2785,6 +2785,30 @@ paths:
           $ref: '#/components/responses/NotFound'
 
   /hotels/{hotelId}/staff/{userId}:
+    get:
+      summary: Get a staff member's detail (owner)
+      description: Hotel owner or manageHotels views one assigned staff member's detail (user info + assignment).
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: path
+          name: userId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Staff assignment detail (with user info)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/StaffAssignmentDetail' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
     delete:
       summary: Unassign a staff member from the hotel (owner)
       description: >
@@ -2822,6 +2846,66 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+
+  /hotels/{hotelId}/reviews:
+    get:
+      summary: List reviews of my hotel (partner)
+      description: >
+        Hotel owner or manageHotels lists reviews of THEIR hotel — unlike the public GET /reviews this
+        returns ALL statuses (pending/published/hidden) and can be filtered by status. Paginated.
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: query
+          name: status
+          schema: { type: string, enum: [pending, published, hidden] }
+        - in: query
+          name: sortBy
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100 }
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1 }
+      responses:
+        '200':
+          description: Paginated reviews of the hotel
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PaginatedReviews' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /hotels/{hotelId}/reviews/stats:
+    get:
+      summary: Get review stats of my hotel (partner)
+      description: >
+        Hotel owner or manageHotels gets aggregate review stats (total, average per category, star
+        distribution) computed over the hotel's published reviews.
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Aggregate review stats
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReviewStats' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
 
   /hotels/{hotelId}/room-types/manage:
     get:

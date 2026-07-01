@@ -20,6 +20,11 @@ export interface ReviewFilter {
   hotelId: string;
 }
 
+/** Bộ lọc khi partner xem đánh giá của CHÍNH khách sạn mình (được lọc theo trạng thái). */
+export interface PartnerReviewFilter {
+  status?: 'pending' | 'published' | 'hidden';
+}
+
 /** Tuỳ chọn phân trang / sắp xếp khi liệt kê đánh giá. */
 export interface ReviewQueryOptions {
   limit?: number;
