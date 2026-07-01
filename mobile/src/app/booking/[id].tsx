@@ -9,6 +9,7 @@ import { Text } from '@/components/ui/text';
 import { Heading } from '@/components/ui/heading';
 import { BookingStatusBadge } from '@/components/shared/BookingStatusBadge';
 import { PriceSummary } from '@/components/shared/PriceSummary';
+import { QRVoucher } from '@/components/shared/QRVoucher';
 import { useGetBooking, useCancelBooking } from '@/hooks/bookings';
 import { useCreateVnpayPayment } from '@/hooks/payments';
 import { formatDateLong } from '@/utils/formatDate';
@@ -119,6 +120,13 @@ export default function BookingDetailScreen() {
           {booking.cancellationReason ? (
             <Text size="sm" className="text-red-600">Reason: {booking.cancellationReason}</Text>
           ) : null}
+
+          {booking.status !== 'cancelled' && (
+            <View className="items-center pt-4 mt-1 border-t border-dashed border-gray-200">
+              <QRVoucher data={booking.bookingCode} label={booking.bookingCode} />
+              <Text size="2xs" className="text-gray-400 mt-2">Show this QR code at check-in</Text>
+            </View>
+          )}
         </View>
 
         {/* Hotel + room */}
