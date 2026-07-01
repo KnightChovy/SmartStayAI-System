@@ -1,12 +1,15 @@
+import { useEffect } from 'react';
 import { CUSTOMER_HOME, isStaff } from '@/constants/roles';
 import { useAuthStore } from '@/stores/authStore';
+import { useStaffStore } from '@/stores/staffStore';
+import { useMyStaffHotels } from '@/hooks/staff';
 import { Ionicons } from '@expo/vector-icons';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { Redirect, Tabs } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const NAVY = '#0B1D45';
+const NAVY = '#0F766E'; // staff-700 — màu thương hiệu portal staff (teal)
 const GRAY = '#9CA3AF';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
@@ -134,7 +137,7 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
                 width: 48,
                 height: 28,
                 borderRadius: 14,
-                backgroundColor: focused ? '#E8EEF9' : 'transparent',
+                backgroundColor: focused ? '#CCFBF1' : 'transparent',
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
@@ -163,6 +166,18 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
 
 export default function StaffTabsLayout() {
   const { isAuthenticated, _hasHydrated, user } = useAuthStore();
+  const hotelId = useStaffStore((s) => s.hotelId);
+  const setHotelId = useStaffStore((s) => s.setHotelId);
+
+  // Sau khi staff đăng nhập: tự lấy KS của tài khoản (`GET /hotels/mine`) và chốt hotelId
+  // vận hành vào store. Chỉ set khi chưa có / hotelId cũ không còn hợp lệ.
+  const canQuery = _hasHydrated && isAuthenticated && isStaff(user?.role);
+  const { data: hotels } = useMyStaffHotels(canQuery);
+  useEffect(() => {
+    if (!hotels?.length) return;
+    const stillValid = hotelId && hotels.some((h) => h.id === hotelId);
+    if (!stillValid) setHotelId(hotels[0].id);
+  }, [hotels, hotelId, setHotelId]);
 
   if (_hasHydrated && !isAuthenticated) {
     return <Redirect href="/(auth)/login" />;

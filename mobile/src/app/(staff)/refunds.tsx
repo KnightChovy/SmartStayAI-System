@@ -1,17 +1,20 @@
 import { View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Heading } from '@/components/ui/heading';
-import { Text } from '@/components/ui/text';
+import { StaffScreenHeader, StaffEmptyState } from '@/components/staff';
 
+/**
+ * Hoàn tiền — backend hiện CHƯA có API riêng cho staff (Refund chỉ sinh tự động khi
+ * huỷ booking). Màn giữ chỗ tới khi có endpoint list/duyệt hoàn tiền.
+ */
 export default function StaffRefundsScreen() {
   return (
-    <SafeAreaView className="flex-1 bg-gray-50" edges={['top']}>
-      <View className="flex-1 px-4 pt-4">
-        <Heading size="xl" className="text-navy">Refunds</Heading>
-        <Text className="text-gray-500 mt-1">
-          Xử lý hoàn tiền: kiểm tra chính sách & duyệt yêu cầu. (TODO)
-        </Text>
-      </View>
-    </SafeAreaView>
+    <View className="flex-1 bg-gray-50">
+      <StaffScreenHeader title="Hoàn tiền" subtitle="Xử lý yêu cầu hoàn tiền" />
+      <StaffEmptyState
+        icon="cash-outline"
+        tone="brand"
+        title="Sắp ra mắt"
+        subtitle="Chức năng duyệt hoàn tiền đang chờ API từ backend. Hiện hoàn tiền được xử lý tự động theo chính sách khi huỷ booking."
+      />
+    </View>
   );
 }

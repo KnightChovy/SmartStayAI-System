@@ -1,5 +1,18 @@
 import type { BookingStatus } from '@/types/bookings.type';
 
+/* ===================== Khách sạn staff được phân công ===================== */
+
+/** Item của `GET /hotels/me/assignments` — KS staff đang vận hành (cover + đếm phòng). */
+export interface StaffAssignedHotel {
+  id: string;
+  name: string;
+  city: string;
+  address: string;
+  starRating?: number | null;
+  images?: { id: string; imageUrl: string; isPrimary: boolean }[];
+  _count?: { roomTypes: number; rooms: number };
+}
+
 export interface StaffBookingCustomer {
   id: string;
   fullName: string;

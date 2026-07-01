@@ -48,6 +48,7 @@ export const queryKeys = {
 
   staff: {
     all: () => ['staff'] as const,
+    myHotels: () => ['staff', 'my-hotels'] as const,
     bookings: (hotelId: string, params: StaffBookingsParams) =>
       ['staff', hotelId, 'bookings', params] as const,
     booking: (hotelId: string, bookingId: string) =>
