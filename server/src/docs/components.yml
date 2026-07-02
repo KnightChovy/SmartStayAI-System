@@ -1060,7 +1060,37 @@ components:
               avgRating: { type: number, nullable: true }
               avgResponseMinutes: { type: number, nullable: true }
 
+    PartnerSummary:
+      type: object
+      description: Hotel partner list item for Platform Manager oversight.
+      properties:
+        id: { type: string, format: uuid }
+        businessName: { type: string }
+        status: { type: string, enum: [pending, approved, suspended, rejected] }
+        commissionRate: { type: string, description: Decimal as string }
+        contactEmail: { type: string, nullable: true }
+        contactPhone: { type: string, nullable: true }
+        approvedAt: { type: string, format: date-time, nullable: true }
+        createdAt: { type: string, format: date-time }
+        owner:
+          type: object
+          properties:
+            id: { type: string, format: uuid }
+            fullName: { type: string }
+            email: { type: string, format: email }
+        _count:
+          type: object
+          properties:
+            hotels: { type: integer }
+
     # ===== Bao phân trang theo từng entity (allOf Pagination + results) =====
+    PaginatedPartners:
+      allOf:
+        - $ref: '#/components/schemas/Pagination'
+        - type: object
+          properties:
+            results: { type: array, items: { $ref: '#/components/schemas/PartnerSummary' } }
+
     PaginatedHotels:
       allOf:
         - $ref: '#/components/schemas/Pagination'

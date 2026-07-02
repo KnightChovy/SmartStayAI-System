@@ -39,6 +39,16 @@ export const updateHotelFlags = {
     .min(1), // phải gửi ít nhất 1 cờ để đổi
 };
 
+// [Platform Manager/Admin] Danh sách đối tác toàn sàn
+export const listPartners = {
+  query: Joi.object().keys({
+    status: Joi.string().valid('pending', 'approved', 'suspended', 'rejected'),
+    search: Joi.string(),
+    limit: Joi.number().integer().min(1).max(100),
+    page: Joi.number().integer().min(1),
+  }),
+};
+
 // ===== Analytics & Performance (viewPlatformStats) =====
 export const getAnalytics = {
   query: Joi.object().keys({
