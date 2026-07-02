@@ -9,9 +9,11 @@ import { Text } from '@/components/ui/text';
 import { Heading } from '@/components/ui/heading';
 import { BookingStatusBadge } from '@/components/shared/BookingStatusBadge';
 import { PriceSummary } from '@/components/shared/PriceSummary';
+import { QRVoucher } from '@/components/shared/QRVoucher';
+import { StayPickerSheet, type StaySelection } from '@/components/shared/StayPickerSheet';
 import { useGetBooking, useCancelBooking } from '@/hooks/bookings';
 import { useCreateVnpayPayment } from '@/hooks/payments';
-import { formatDateLong } from '@/utils/formatDate';
+import { formatDateLong, formatDateShort } from '@/utils/formatDate';
 
 const NAVY = '#0B1D45';
 
@@ -32,9 +34,17 @@ export default function BookingDetailScreen() {
   const cancelBooking = useCancelBooking();
   const createPayment = useCreateVnpayPayment();
   const [actionError, setActionError] = useState('');
+  const [showModifySheet, setShowModifySheet] = useState(false);
+  const [modifyRequest, setModifyRequest] = useState<StaySelection | null>(null);
 
   const canCancel = booking?.status === 'pending' || booking?.status === 'confirmed';
+  const canModify = booking?.status === 'pending' || booking?.status === 'confirmed';
   const canPay = booking?.status === 'pending';
+
+  function handleApplyModify(selection: StaySelection) {
+    setModifyRequest(selection);
+    setShowModifySheet(false);
+  }
 
   function handleCancel() {
     Alert.alert('Cancel booking', 'Are you sure you want to cancel this booking? This cannot be undone.', [
@@ -119,6 +129,13 @@ export default function BookingDetailScreen() {
           {booking.cancellationReason ? (
             <Text size="sm" className="text-red-600">Reason: {booking.cancellationReason}</Text>
           ) : null}
+
+          {booking.status !== 'cancelled' && (
+            <View className="items-center pt-4 mt-1 border-t border-dashed border-gray-200">
+              <QRVoucher data={booking.bookingCode} label={booking.bookingCode} />
+              <Text size="2xs" className="text-gray-400 mt-2">Show this QR code at check-in</Text>
+            </View>
+          )}
         </View>
 
         {/* Hotel + room */}
@@ -146,6 +163,33 @@ export default function BookingDetailScreen() {
           <InfoRow label="Guests" value={`${booking.numGuests} guest${booking.numGuests > 1 ? 's' : ''}`} />
           {booking.specialRequests ? <InfoRow label="Requests" value={booking.specialRequests} /> : null}
         </View>
+
+        {/* Modify reservation (mock — gửi yêu cầu, giống web) */}
+        {canModify && (
+          <Pressable
+            onPress={() => setShowModifySheet(true)}
+            className="flex-row items-center justify-center gap-2 border border-gray-200 rounded-2xl py-3 mb-3.5 bg-white"
+          >
+            <Ionicons name="create-outline" size={18} color={NAVY} />
+            <Text bold className="text-navy">Modify reservation</Text>
+          </Pressable>
+        )}
+
+        {modifyRequest && (
+          <View className="bg-emerald-50 rounded-2xl p-4 mb-3.5 flex-row items-start gap-2.5">
+            <Ionicons name="checkmark-circle" size={20} color="#16A34A" />
+            <View className="flex-1">
+              <Text bold className="text-emerald-700">Modification request sent</Text>
+              <Text size="sm" className="text-emerald-700 mt-0.5">
+                New dates: {formatDateShort(modifyRequest.checkIn)} → {formatDateShort(modifyRequest.checkOut)} ·{' '}
+                {modifyRequest.guests} guest{modifyRequest.guests > 1 ? 's' : ''}
+              </Text>
+              <Text size="xs" className="text-emerald-600 mt-1">
+                The property will confirm availability shortly.
+              </Text>
+            </View>
+          </View>
+        )}
 
         {/* Price */}
         <Heading size="md" className="text-navy mb-2 px-1">Price details</Heading>
@@ -198,6 +242,15 @@ export default function BookingDetailScreen() {
           )}
         </View>
       )}
+
+      <StayPickerSheet
+        visible={showModifySheet}
+        initialCheckIn={booking.checkInDate.slice(0, 10)}
+        initialCheckOut={booking.checkOutDate.slice(0, 10)}
+        initialGuests={booking.numGuests}
+        onClose={() => setShowModifySheet(false)}
+        onApply={handleApplyModify}
+      />
     </View>
   );
 }

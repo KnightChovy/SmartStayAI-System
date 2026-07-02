@@ -245,12 +245,6 @@ export default function SearchScreen() {
           ListFooterComponent={<View style={{ height: bottom + 80 }} />}
         />
       )}
-
-      {/* Map FAB */}
-      <Pressable className="absolute bottom-6 self-center flex-row items-center gap-1.5 bg-navy rounded-full px-5 py-3 shadow-hard-2">
-        <Ionicons name="map-outline" size={18} color="#fff" />
-        <Text bold className="text-white">Map</Text>
-      </Pressable>
     </View>
   );
 }

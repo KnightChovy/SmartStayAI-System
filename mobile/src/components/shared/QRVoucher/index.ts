@@ -1,0 +1,1 @@
+export { QRVoucher } from './QRVoucher';

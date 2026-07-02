@@ -15,7 +15,7 @@ const SUGGESTIONS = [
 export function ChatEmptyState() {
   return (
     <View className="flex-1 items-center justify-center px-8 gap-3">
-      <View className="w-18 h-18 rounded-full bg-navy items-center justify-center">
+      <View className="w-20 h-20 rounded-full bg-navy items-center justify-center">
         <Ionicons name="sparkles" size={34} color={GOLD} />
       </View>
       <Heading size="lg" className="text-navy">

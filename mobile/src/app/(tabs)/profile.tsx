@@ -10,26 +10,26 @@ import { useAuthStore } from '@/stores/authStore';
 const GOLD = '#F5A623';
 const NAVY = '#0B1D45';
 
-const BENEFIT_ITEMS = [
-  { icon: 'gift-outline' as const, label: 'My Offers', sub: '3 offers available' },
-  { icon: 'star-outline' as const, label: 'Reward Points', sub: '1,240 points' },
-];
-
-const FINANCE_ITEMS = [
-  { icon: 'card-outline' as const, label: 'Payment Methods', sub: 'Add card/wallet' },
-  { icon: 'receipt-outline' as const, label: 'Transaction History', sub: 'View all' },
-];
-
-const SETTING_ITEMS = [
-  { icon: 'notifications-outline' as const, label: 'Notifications' },
-  { icon: 'shield-checkmark-outline' as const, label: 'Security & Privacy' },
-  { icon: 'help-circle-outline' as const, label: 'Help & Support' },
-  { icon: 'information-circle-outline' as const, label: 'About' },
-];
-
 export default function ProfileScreen() {
   const router = useRouter();
   const { user, clearAuth } = useAuthStore();
+
+  const benefitItems = [
+    { icon: 'gift-outline' as const, label: 'My Offers', sub: '3 offers available', onPress: () => router.push('/profile/offers') },
+    { icon: 'star-outline' as const, label: 'Reward Points', sub: '1,240 points', onPress: () => router.push('/profile/rewards') },
+  ];
+
+  const financeItems = [
+    { icon: 'card-outline' as const, label: 'Payment Methods', sub: 'Add card/wallet', onPress: () => router.push('/profile/payment-methods') },
+    { icon: 'receipt-outline' as const, label: 'Transaction History', sub: 'View all', onPress: () => router.push('/profile/transactions') },
+  ];
+
+  const settingItems = [
+    { icon: 'notifications-outline' as const, label: 'Notifications', onPress: () => router.push('/notifications') },
+    { icon: 'shield-checkmark-outline' as const, label: 'Security & Privacy', onPress: () => router.push('/profile/security') },
+    { icon: 'help-circle-outline' as const, label: 'Help & Support', onPress: () => router.push('/profile/help-support') },
+    { icon: 'information-circle-outline' as const, label: 'About', onPress: () => router.push('/profile/about') },
+  ];
 
   const initials = user?.fullName
     ?.split(' ')
@@ -161,7 +161,7 @@ export default function ProfileScreen() {
                 View history
               </Text>
             </Pressable>
-            <Pressable className="flex-1 bg-white rounded-2xl p-4 items-start gap-2">
+            <Pressable onPress={() => router.push('/profile/rewards')} className="flex-1 bg-white rounded-2xl p-4 items-start gap-2">
               <View className="w-10 h-10 rounded-xl bg-amber-50 items-center justify-center">
                 <Ionicons name="diamond-outline" size={20} color={GOLD} />
               </View>
@@ -176,20 +176,20 @@ export default function ProfileScreen() {
 
           {/* Benefits */}
           <SectionHeader title="Offers" />
-          <MenuList items={BENEFIT_ITEMS} />
+          <MenuList items={benefitItems} />
 
           {/* Finance */}
-          <SectionHeader title="Finance" actionLabel="See more" />
-          <MenuList items={FINANCE_ITEMS} />
+          <SectionHeader title="Finance" actionLabel="See more" onAction={() => router.push('/profile/transactions')} />
+          <MenuList items={financeItems} />
 
           {/* Settings */}
           <SectionHeader title="Settings" />
-          <MenuList items={SETTING_ITEMS} />
+          <MenuList items={settingItems} />
 
           {/* Logout */}
           <Pressable
             onPress={handleLogout}
-            className="flex-row items-center justify-center gap-2 mt-4 bg-red-50 rounded-2xl py-3.5"
+            className="flex-row items-center justify-center gap-2 mt-4 bg-red-50 rounded-2xl py-3.5 border border-red-500"
           >
             <Ionicons name="log-out-outline" size={20} color="#DC2626" />
             <Text bold className="text-red-600 text-base">
