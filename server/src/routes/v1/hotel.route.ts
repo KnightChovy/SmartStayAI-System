@@ -10,6 +10,7 @@ import {
   staffValidation,
   housekeepingValidation,
   conversationValidation,
+  reviewValidation,
 } from '../../validations';
 import {
   hotelController,
@@ -20,6 +21,7 @@ import {
   staffController,
   housekeepingController,
   conversationController,
+  reviewController,
 } from '../../controllers';
 
 const router = express.Router();
@@ -79,6 +81,22 @@ router
   // Gán lại toàn bộ tiện nghi của KS (replace, kèm isFree/quantity)
   .put(auth(), validate(hotelValidation.setHotelAmenities), hotelController.setHotelAmenities);
 
+// ----- Liên hệ / chính sách / địa điểm lân cận của khách sạn (chủ KS / manageHotels) -----
+router
+  .route('/:hotelId/contacts')
+  .get(auth(), validate(hotelValidation.hotelIdParam), hotelController.getHotelContacts)
+  .put(auth(), validate(hotelValidation.setHotelContacts), hotelController.setHotelContacts);
+
+router
+  .route('/:hotelId/policies')
+  .get(auth(), validate(hotelValidation.hotelIdParam), hotelController.getHotelPolicies)
+  .put(auth(), validate(hotelValidation.setHotelPolicies), hotelController.setHotelPolicies);
+
+router
+  .route('/:hotelId/nearby-places')
+  .get(auth(), validate(hotelValidation.hotelIdParam), hotelController.getHotelNearbyPlaces)
+  .put(auth(), validate(hotelValidation.setHotelNearbyPlaces), hotelController.setHotelNearbyPlaces);
+
 // ----- Quản lý loại phòng (chủ khách sạn hoặc quyền manageHotels — service tự kiểm) -----
 router
   .route('/:hotelId/room-types')
@@ -124,6 +142,12 @@ router.put(
   validate(roomTypeValidation.setAmenities),
   roomTypeController.setAmenities
 );
+
+// Cấu hình giường của loại phòng (xem + gán lại toàn bộ)
+router
+  .route('/:hotelId/room-types/:roomTypeId/beds')
+  .get(auth(), validate(roomTypeValidation.getBeds), roomTypeController.getBeds)
+  .put(auth(), validate(roomTypeValidation.setBeds), roomTypeController.setBeds);
 
 // ----- Quản lý phòng vật lý -----
 router
@@ -260,11 +284,29 @@ router
   .get(auth(), validate(staffValidation.listStaff), staffController.listStaff)
   .post(auth(), validate(staffValidation.addStaff), staffController.addStaff);
 
+// Chi tiết một nhân viên của khách sạn (chủ KS / manageHotels)
+router.get('/:hotelId/staff/:userId', auth(), validate(staffValidation.getStaff), staffController.getStaff);
+
 router.delete(
   '/:hotelId/staff/:userId',
   auth(),
   validate(staffValidation.removeStaff),
   staffController.removeStaff
+);
+
+// ----- Đánh giá của khách sạn (partner xem review KS mình + thống kê) -----
+// '/reviews/stats' (literal) đặt TRƯỚC '/reviews' cho rõ ràng; cả hai chỉ GET, chủ KS / manageHotels.
+router.get(
+  '/:hotelId/reviews/stats',
+  auth(),
+  validate(reviewValidation.getHotelReviewStats),
+  reviewController.getHotelReviewStats
+);
+router.get(
+  '/:hotelId/reviews',
+  auth(),
+  validate(reviewValidation.getHotelReviewsForPartner),
+  reviewController.getHotelReviewsForPartner
 );
 
 export default router;

@@ -3,13 +3,14 @@ import type { Prisma, User } from '@prisma/client';
 import prisma from '../config/prisma';
 import ApiError from '../utils/ApiError';
 import { hotelService } from './hotel.service';
-import type { CreateRoomTypeDto, UpdateRoomTypeDto, RoomTypeImageInput } from '../dto/room-type.dto';
+import type { CreateRoomTypeDto, UpdateRoomTypeDto, RoomTypeImageInput, RoomBedInput } from '../dto/room-type.dto';
 import type { AmenityAssignmentInput } from '../dto/amenity.dto';
 
 // Quan hệ kèm theo khi trả loại phòng cho màn quản trị
 const roomTypeInclude = {
   images: { orderBy: { sortOrder: 'asc' } },
   amenities: { include: { amenity: true } },
+  beds: true,
   _count: { select: { rooms: true } },
 } satisfies Prisma.RoomTypeInclude;
 
@@ -132,6 +133,28 @@ export class RoomTypeService {
         });
       }
       return tx.roomType.findUniqueOrThrow({ where: { id: roomTypeId }, include: roomTypeInclude });
+    });
+  };
+
+  /** Danh sách cấu hình giường của loại phòng (chủ KS / manageHotels). */
+  getBeds = async (hotelId: string, roomTypeId: string, currentUser: User) => {
+    await hotelService.getManagedHotel(hotelId, currentUser);
+    await this.getOwnedRoomType(hotelId, roomTypeId);
+    return prisma.roomBed.findMany({ where: { roomTypeId }, orderBy: { createdAt: 'asc' } });
+  };
+
+  /** Gán lại TOÀN BỘ cấu hình giường của loại phòng (thay thế; mảng rỗng = xoá hết). */
+  setBeds = async (hotelId: string, roomTypeId: string, currentUser: User, beds: RoomBedInput[]) => {
+    await hotelService.getManagedHotel(hotelId, currentUser);
+    await this.getOwnedRoomType(hotelId, roomTypeId);
+    return prisma.$transaction(async (tx) => {
+      await tx.roomBed.deleteMany({ where: { roomTypeId } });
+      if (beds.length > 0) {
+        await tx.roomBed.createMany({
+          data: beds.map((bed) => ({ roomTypeId, bedType: bed.bedType, quantity: bed.quantity ?? 1 })),
+        });
+      }
+      return tx.roomBed.findMany({ where: { roomTypeId }, orderBy: { createdAt: 'asc' } });
     });
   };
 }

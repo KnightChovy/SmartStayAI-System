@@ -28,6 +28,26 @@ export const getHotelReviews = {
   }),
 };
 
+// [Partner] Đánh giá của chính khách sạn mình (mọi trạng thái, lọc theo status)
+export const getHotelReviewsForPartner = {
+  params: Joi.object().keys({
+    hotelId: Joi.string().uuid().required(),
+  }),
+  query: Joi.object().keys({
+    status: Joi.string().valid('pending', 'published', 'hidden'),
+    sortBy: Joi.string(),
+    limit: Joi.number().integer().min(1).max(100),
+    page: Joi.number().integer().min(1),
+  }),
+};
+
+// [Partner] Thống kê đánh giá của khách sạn
+export const getHotelReviewStats = {
+  params: Joi.object().keys({
+    hotelId: Joi.string().uuid().required(),
+  }),
+};
+
 // Chi tiết một đánh giá
 export const getReview = {
   params: Joi.object().keys({

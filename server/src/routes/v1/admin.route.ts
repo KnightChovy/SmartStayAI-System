@@ -22,6 +22,8 @@ router.patch(
 router.get('/hotels', auth('manageHotels'), validate(adminValidation.listHotels), adminController.listHotels);
 router.patch('/hotels/:hotelId', auth('manageHotels'), validate(adminValidation.updateHotelFlags), adminController.updateHotelFlags);
 
+// Analytics & Performance đã tách sang /platform-manager/* (platform-manager.route.ts)
+
 // ===== Pha 5 — Audit log (viewPlatformStats) =====
 router.get('/audit-logs', auth('viewPlatformStats'), validate(adminValidation.listAuditLogs), adminController.listAuditLogs);
 

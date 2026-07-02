@@ -25,6 +25,8 @@ tags:
     description: Endpoints for an external scheduler (cron). Protected by the x-cron-secret header, not user JWT.
   - name: Admin
     description: Platform-wide admin dashboard & oversight (admin / platform_manager)
+  - name: PlatformManager
+    description: Platform analytics & hotel performance scoring (platform_manager / admin)
 
 paths:
   /conversations/messages:
@@ -307,6 +309,93 @@ paths:
           $ref: '#/components/responses/Forbidden'
         "404":
           $ref: '#/components/responses/NotFound'
+
+  /platform-manager/analytics:
+    get:
+      summary: Platform analytics report (Platform Manager)
+      description: >
+        Platform_manager/admin (viewPlatformStats). Totals (bookings, users, conversion rate =
+        confirmed/total), a month/year time-series for comparison, and top cities / top hotels by bookings.
+      tags: [PlatformManager]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: period
+          schema: { type: string, enum: [month, year] }
+          description: Time-series bucket (default month)
+        - in: query
+          name: range
+          schema: { type: integer, minimum: 1, maximum: 36 }
+          description: Number of recent buckets (default 12 months / 5 years)
+        - in: query
+          name: topLimit
+          schema: { type: integer, minimum: 1, maximum: 20 }
+          description: Max items for top city / top hotel lists (default 5)
+      responses:
+        '200':
+          description: Platform analytics report
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PlatformAnalytics' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /platform-manager/performance:
+    get:
+      summary: Hotel performance leaderboard (Platform Manager)
+      description: >
+        Platform_manager/admin (viewPlatformStats). Ranks all hotels by composite performance score
+        over a window (default last 90 days). Hotels lacking data are placed last.
+      tags: [PlatformManager]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: from
+          schema: { type: string, format: date }
+        - in: query
+          name: to
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: Hotels ranked by score
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PerformanceLeaderboard' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /platform-manager/hotels/{hotelId}/performance:
+    get:
+      summary: One hotel's performance & score (Platform Manager)
+      description: >
+        Platform_manager/admin (viewPlatformStats). occupancyRate, cancellationRate, avgRating,
+        avgResponseMinutes and a weighted composite score (rating 40% / occupancy 25% / cancel 20% /
+        response 15%) for one hotel over a window (default last 90 days).
+      tags: [PlatformManager]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: query
+          name: from
+          schema: { type: string, format: date }
+        - in: query
+          name: to
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: Hotel performance and score
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/HotelPerformance' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
 
   /admin/audit-logs:
     get:
@@ -1486,6 +1575,21 @@ paths:
                 checkInTime: { type: string, example: '14:00' }
                 checkOutTime: { type: string, example: '12:00' }
                 businessType: { type: string, enum: [hotel, resort, villa, apartment] }
+                # ----- Chi tiết bổ sung kiểu booking.com (Pha 1 DB) -----
+                postalCode: { type: string, nullable: true }
+                phone: { type: string, nullable: true }
+                email: { type: string, format: email, nullable: true }
+                totalFloors: { type: integer, minimum: 0, maximum: 200, nullable: true }
+                builtYear: { type: integer, minimum: 1800, maximum: 2100, nullable: true }
+                renovationYear: { type: integer, minimum: 1800, maximum: 2100, nullable: true }
+                isSmokingAllowed: { type: boolean }
+                petsPolicy: { type: string, enum: [not_allowed, allowed, on_request], nullable: true }
+                cancellationPolicy: { type: string, nullable: true }
+                childrenPolicy: { type: string, nullable: true }
+                minGuestAge: { type: integer, minimum: 0, maximum: 120, nullable: true }
+                securityDepositAmount: { type: number, minimum: 0, nullable: true }
+                languagesSpoken: { type: array, items: { type: string }, description: 'send [] to clear' }
+                maxLengthOfStay: { type: integer, minimum: 1, maximum: 365, nullable: true }
       responses:
         '200':
           description: Updated hotel
@@ -2785,6 +2889,30 @@ paths:
           $ref: '#/components/responses/NotFound'
 
   /hotels/{hotelId}/staff/{userId}:
+    get:
+      summary: Get a staff member's detail (owner)
+      description: Hotel owner or manageHotels views one assigned staff member's detail (user info + assignment).
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: path
+          name: userId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Staff assignment detail (with user info)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/StaffAssignmentDetail' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
     delete:
       summary: Unassign a staff member from the hotel (owner)
       description: >
@@ -2822,6 +2950,66 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+
+  /hotels/{hotelId}/reviews:
+    get:
+      summary: List reviews of my hotel (partner)
+      description: >
+        Hotel owner or manageHotels lists reviews of THEIR hotel — unlike the public GET /reviews this
+        returns ALL statuses (pending/published/hidden) and can be filtered by status. Paginated.
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: query
+          name: status
+          schema: { type: string, enum: [pending, published, hidden] }
+        - in: query
+          name: sortBy
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100 }
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1 }
+      responses:
+        '200':
+          description: Paginated reviews of the hotel
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PaginatedReviews' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /hotels/{hotelId}/reviews/stats:
+    get:
+      summary: Get review stats of my hotel (partner)
+      description: >
+        Hotel owner or manageHotels gets aggregate review stats (total, average per category, star
+        distribution) computed over the hotel's published reviews.
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Aggregate review stats
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReviewStats' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
 
   /hotels/{hotelId}/room-types/manage:
     get:
@@ -2877,6 +3065,12 @@ paths:
                 bedType: { type: string }
                 viewType: { type: string }
                 isActive: { type: boolean, default: true }
+                maxAdults: { type: integer, minimum: 0, maximum: 20 }
+                maxChildren: { type: integer, minimum: 0, maximum: 20 }
+                sizeUnit: { type: string, enum: [sqm, sqft] }
+                isNonSmoking: { type: boolean }
+                hasPrivateBathroom: { type: boolean }
+                hasBalcony: { type: boolean }
               example:
                 name: Phòng Deluxe Twin
                 maxOccupancy: 3
@@ -2925,6 +3119,12 @@ paths:
                 bedType: { type: string }
                 viewType: { type: string }
                 isActive: { type: boolean }
+                maxAdults: { type: integer, minimum: 0, maximum: 20 }
+                maxChildren: { type: integer, minimum: 0, maximum: 20 }
+                sizeUnit: { type: string, enum: [sqm, sqft] }
+                isNonSmoking: { type: boolean }
+                hasPrivateBathroom: { type: boolean }
+                hasBalcony: { type: boolean }
       responses:
         '200':
           description: Updated room type
@@ -3012,6 +3212,170 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
 
+  /hotels/{hotelId}/contacts:
+    get:
+      summary: List hotel contacts (management)
+      description: Hotel owner or manageHotels.
+      tags: [HotelManagement]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: path, name: hotelId, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Hotel contacts
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/HotelContact' } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      summary: Replace all hotel contacts (management)
+      description: Hotel owner or manageHotels. Replaces the whole set; an empty array clears all.
+      tags: [HotelManagement]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: path, name: hotelId, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [contacts]
+              properties:
+                contacts:
+                  type: array
+                  items:
+                    type: object
+                    required: [contactType]
+                    properties:
+                      contactType: { type: string, enum: [physical_location, general, availability, invoices] }
+                      name: { type: string, nullable: true }
+                      jobTitle: { type: string, nullable: true }
+                      email: { type: string, format: email, nullable: true }
+                      phone: { type: string, nullable: true }
+                      phoneType: { type: string, enum: [voice, fax, mobile], nullable: true }
+      responses:
+        '200':
+          description: Hotel contacts after replace
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/HotelContact' } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /hotels/{hotelId}/policies:
+    get:
+      summary: List hotel policies / fees (management)
+      description: Hotel owner or manageHotels.
+      tags: [HotelManagement]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: path, name: hotelId, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Hotel policies
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/HotelPolicy' } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      summary: Replace all hotel policies / fees (management)
+      description: Hotel owner or manageHotels. Replaces the whole set; an empty array clears all.
+      tags: [HotelManagement]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: path, name: hotelId, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [policies]
+              properties:
+                policies:
+                  type: array
+                  items:
+                    type: object
+                    required: [policyType]
+                    properties:
+                      policyType: { type: string, enum: [cancellation, tax, fee, parking, internet, deposit] }
+                      code: { type: string, nullable: true }
+                      description: { type: string, nullable: true }
+                      amount: { type: number, minimum: 0, nullable: true }
+                      isPercentage: { type: boolean }
+                      chargeFrequency: { type: string, enum: [per_stay, per_night, per_person, per_person_per_night], nullable: true }
+                      minAge: { type: integer, minimum: 0, maximum: 120, nullable: true }
+                      maxAge: { type: integer, minimum: 0, maximum: 120, nullable: true }
+      responses:
+        '200':
+          description: Hotel policies after replace
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/HotelPolicy' } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /hotels/{hotelId}/nearby-places:
+    get:
+      summary: List hotel nearby places (management)
+      description: Hotel owner or manageHotels.
+      tags: [HotelManagement]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: path, name: hotelId, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Hotel nearby places
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/HotelNearbyPlace' } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      summary: Replace all hotel nearby places (management)
+      description: Hotel owner or manageHotels. Replaces the whole set; an empty array clears all.
+      tags: [HotelManagement]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: path, name: hotelId, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nearbyPlaces]
+              properties:
+                nearbyPlaces:
+                  type: array
+                  items:
+                    type: object
+                    required: [name, category, distance, distanceUnit]
+                    properties:
+                      name: { type: string }
+                      category: { type: string, enum: [attraction, beach, airport, restaurant, public_transport, landmark, nature] }
+                      distance: { type: number, minimum: 0 }
+                      distanceUnit: { type: string, enum: [km, miles] }
+                      transportType: { type: string, enum: [walk, car, public_transport, taxi, shuttle], nullable: true }
+                      journeyMinutes: { type: integer, minimum: 0, nullable: true }
+      responses:
+        '200':
+          description: Hotel nearby places after replace
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/HotelNearbyPlace' } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
   /hotels/{hotelId}/amenities:
     get:
       summary: List hotel amenities (management)
@@ -3068,6 +3432,58 @@ paths:
                 type: array
                 items: { $ref: '#/components/schemas/HotelAmenity' }
         '400': { description: Some amenity ids do not exist }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /hotels/{hotelId}/room-types/{roomTypeId}/beds:
+    get:
+      summary: List a room type's bed configuration (management)
+      description: Hotel owner or manageHotels.
+      tags: [HotelManagement]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: path, name: hotelId, required: true, schema: { type: string, format: uuid } }
+        - { in: path, name: roomTypeId, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Bed configuration
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/RoomBed' } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      summary: Replace a room type's bed configuration (management)
+      description: Hotel owner or manageHotels. Replaces the whole set; an empty array clears all.
+      tags: [HotelManagement]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: path, name: hotelId, required: true, schema: { type: string, format: uuid } }
+        - { in: path, name: roomTypeId, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [beds]
+              properties:
+                beds:
+                  type: array
+                  items:
+                    type: object
+                    required: [bedType]
+                    properties:
+                      bedType: { type: string, enum: [single, double, queen, king, sofa_bed, bunk] }
+                      quantity: { type: integer, minimum: 1, maximum: 20, default: 1 }
+      responses:
+        '200':
+          description: Bed configuration after replace
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/RoomBed' } }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }

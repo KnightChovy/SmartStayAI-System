@@ -503,11 +503,24 @@ components:
         amenities:
           type: array
           items: { $ref: '#/components/schemas/RoomTypeAmenity' }
+        beds:
+          type: array
+          items: { $ref: '#/components/schemas/RoomBed' }
         _count:
           type: object
           description: Present on management endpoints only.
           properties:
             rooms: { type: integer }
+
+    RoomBed:
+      type: object
+      description: One bed-configuration row of a room type.
+      properties:
+        id: { type: string, format: uuid }
+        roomTypeId: { type: string, format: uuid }
+        bedType: { type: string, enum: [single, double, queen, king, sofa_bed, bunk] }
+        quantity: { type: integer }
+        createdAt: { type: string, format: date-time }
 
     Room:
       type: object
@@ -555,9 +568,15 @@ components:
         email: { type: string, nullable: true }
         totalFloors: { type: integer, nullable: true }
         builtYear: { type: integer, nullable: true }
-        petsPolicy: { type: string, enum: [not_allowed, allowed, allowed_on_request], nullable: true }
+        renovationYear: { type: integer, nullable: true }
+        isSmokingAllowed: { type: boolean }
+        petsPolicy: { type: string, enum: [not_allowed, allowed, on_request], nullable: true }
         cancellationPolicy: { type: string, nullable: true }
         childrenPolicy: { type: string, nullable: true }
+        minGuestAge: { type: integer, nullable: true }
+        securityDepositAmount: { type: string, nullable: true, description: Decimal as string }
+        languagesSpoken: { type: array, nullable: true, items: { type: string } }
+        maxLengthOfStay: { type: integer, nullable: true }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
         images:
@@ -566,9 +585,56 @@ components:
         amenities:
           type: array
           items: { $ref: '#/components/schemas/HotelAmenity' }
+        contacts:
+          type: array
+          items: { $ref: '#/components/schemas/HotelContact' }
+        policies:
+          type: array
+          items: { $ref: '#/components/schemas/HotelPolicy' }
+        nearbyPlaces:
+          type: array
+          items: { $ref: '#/components/schemas/HotelNearbyPlace' }
         roomTypes:
           type: array
           items: { $ref: '#/components/schemas/RoomType' }
+
+    HotelContact:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        hotelId: { type: string, format: uuid }
+        contactType: { type: string, enum: [physical_location, general, availability, invoices] }
+        name: { type: string, nullable: true }
+        jobTitle: { type: string, nullable: true }
+        email: { type: string, nullable: true }
+        phone: { type: string, nullable: true }
+        phoneType: { type: string, enum: [voice, fax, mobile], nullable: true }
+
+    HotelPolicy:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        hotelId: { type: string, format: uuid }
+        policyType: { type: string, enum: [cancellation, tax, fee, parking, internet, deposit] }
+        code: { type: string, nullable: true }
+        description: { type: string, nullable: true }
+        amount: { type: string, nullable: true, description: Decimal as string }
+        isPercentage: { type: boolean }
+        chargeFrequency: { type: string, enum: [per_stay, per_night, per_person, per_person_per_night], nullable: true }
+        minAge: { type: integer, nullable: true }
+        maxAge: { type: integer, nullable: true }
+
+    HotelNearbyPlace:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        hotelId: { type: string, format: uuid }
+        name: { type: string }
+        category: { type: string, enum: [attraction, beach, airport, restaurant, public_transport, landmark, nature] }
+        distance: { type: string, description: Decimal as string }
+        distanceUnit: { type: string, enum: [km, miles] }
+        transportType: { type: string, enum: [walk, car, public_transport, taxi, shuttle], nullable: true }
+        journeyMinutes: { type: integer, nullable: true }
 
     HotelSummary:
       type: object
@@ -754,7 +820,7 @@ components:
       properties:
         id: { type: string, format: uuid }
         conversationId: { type: string, format: uuid }
-        senderType: { type: string, enum: [guest, staff, ai, system] }
+        senderType: { type: string, enum: [user, ai_bot, staff, system] }
         senderId: { type: string, format: uuid, nullable: true }
         content: { type: string }
         messageType: { type: string, enum: [text, image, file, system_event] }
@@ -819,6 +885,52 @@ components:
             phone: { type: string, nullable: true }
             status: { type: string }
 
+    StaffAssignmentDetail:
+      type: object
+      description: A staff assignment with fuller user info — partner "view staff detail" screen.
+      properties:
+        id: { type: string, format: uuid }
+        hotelId: { type: string, format: uuid }
+        userId: { type: string, format: uuid }
+        assignedRole: { type: string, enum: [staff] }
+        assignedAt: { type: string, format: date-time }
+        unassignedAt: { type: string, format: date-time, nullable: true }
+        user:
+          type: object
+          properties:
+            id: { type: string, format: uuid }
+            fullName: { type: string }
+            email: { type: string, format: email }
+            phone: { type: string, nullable: true }
+            avatarUrl: { type: string, nullable: true }
+            status: { type: string, enum: [active, inactive, suspended] }
+            role: { type: string, enum: [guest, customer, staff, hotel_partner, platform_manager, admin] }
+            lastLoginAt: { type: string, format: date-time, nullable: true }
+            createdAt: { type: string, format: date-time }
+
+    ReviewStats:
+      type: object
+      description: Aggregate review stats for a hotel, computed over published reviews.
+      properties:
+        total: { type: integer }
+        average:
+          type: object
+          properties:
+            overall: { type: number, nullable: true }
+            cleanliness: { type: number, nullable: true }
+            service: { type: number, nullable: true }
+            location: { type: number, nullable: true }
+            value: { type: number, nullable: true }
+        countByStar:
+          type: object
+          description: Number of published reviews per overall star (1..5)
+          properties:
+            '1': { type: integer }
+            '2': { type: integer }
+            '3': { type: integer }
+            '4': { type: integer }
+            '5': { type: integer }
+
     HousekeepingTask:
       type: object
       properties:
@@ -851,6 +963,102 @@ components:
         ipAddress: { type: string, nullable: true }
         userAgent: { type: string, nullable: true }
         createdAt: { type: string, format: date-time }
+
+    # ===== Analytics & Performance (Platform Manager) =====
+    PlatformAnalytics:
+      type: object
+      description: Platform-wide analytics report (totals, time-series, top city/hotel).
+      properties:
+        totals:
+          type: object
+          properties:
+            totalBookings: { type: integer }
+            confirmedBookings: { type: integer }
+            conversionRate: { type: number, description: confirmed / total bookings (0..1) }
+            totalUsers: { type: integer }
+        period: { type: string, enum: [month, year] }
+        range: { type: integer }
+        timeSeries:
+          type: array
+          items:
+            type: object
+            properties:
+              period: { type: string, example: '2026-07' }
+              bookings: { type: integer }
+              confirmedBookings: { type: integer }
+              newUsers: { type: integer }
+        topCities:
+          type: array
+          items:
+            type: object
+            properties:
+              city: { type: string }
+              bookings: { type: integer }
+        topHotels:
+          type: array
+          items:
+            type: object
+            properties:
+              hotelId: { type: string, format: uuid }
+              name: { type: string }
+              bookings: { type: integer }
+
+    HotelPerformance:
+      type: object
+      description: >
+        One hotel's performance + composite score over a window (default last 90 days). Metrics that
+        have no data are null and are excluded from the weighted score (weights re-normalized).
+      properties:
+        hotelId: { type: string, format: uuid }
+        hotelName: { type: string }
+        city: { type: string }
+        window:
+          type: object
+          properties:
+            from: { type: string, format: date-time }
+            to: { type: string, format: date-time }
+        metrics:
+          type: object
+          properties:
+            occupancyRate: { type: number, nullable: true, description: '0..1 (Σ bookedRooms / Σ totalRooms)' }
+            cancellationRate: { type: number, nullable: true, description: '0..1 (cancelled / total bookings)' }
+            avgRating: { type: number, nullable: true, description: '0..5 (published reviews, lifetime)' }
+            avgResponseMinutes: { type: number, nullable: true, description: avg minutes from a guest message to the next staff reply }
+            totalBookings: { type: integer }
+            cancelledBookings: { type: integer }
+            reviewCount: { type: integer }
+        scores:
+          type: object
+          description: Each component normalized to 0..100 (null if no data)
+          properties:
+            rating: { type: integer, nullable: true }
+            occupancy: { type: integer, nullable: true }
+            cancellation: { type: integer, nullable: true }
+            response: { type: integer, nullable: true }
+        score: { type: integer, nullable: true, description: 'Weighted composite 0..100 (rating 40% / occupancy 25% / cancel 20% / response 15%)' }
+
+    PerformanceLeaderboard:
+      type: object
+      description: All hotels ranked by performance score (highest first; hotels lacking data are last).
+      properties:
+        window:
+          type: object
+          properties:
+            from: { type: string, format: date-time }
+            to: { type: string, format: date-time }
+        hotels:
+          type: array
+          items:
+            type: object
+            properties:
+              hotelId: { type: string, format: uuid }
+              hotelName: { type: string }
+              city: { type: string }
+              score: { type: integer, nullable: true }
+              occupancyRate: { type: number, nullable: true }
+              cancellationRate: { type: number, nullable: true }
+              avgRating: { type: number, nullable: true }
+              avgResponseMinutes: { type: number, nullable: true }
 
     # ===== Bao phân trang theo từng entity (allOf Pagination + results) =====
     PaginatedHotels:

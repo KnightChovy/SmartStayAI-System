@@ -55,6 +55,21 @@ export const updateHotel = {
       checkInTime: Joi.string().pattern(timePattern).allow(null),
       checkOutTime: Joi.string().pattern(timePattern).allow(null),
       businessType: Joi.string().valid('hotel', 'resort', 'villa', 'apartment'),
+      // ----- Chi tiết bổ sung kiểu booking.com (Pha 1 DB) — đều tuỳ chọn -----
+      postalCode: Joi.string().max(20).allow('', null),
+      phone: Joi.string().max(30).allow('', null),
+      email: Joi.string().email().allow('', null),
+      totalFloors: Joi.number().integer().min(0).max(200).allow(null),
+      builtYear: Joi.number().integer().min(1800).max(2100).allow(null),
+      renovationYear: Joi.number().integer().min(1800).max(2100).allow(null),
+      isSmokingAllowed: Joi.boolean(),
+      petsPolicy: Joi.string().valid('not_allowed', 'allowed', 'on_request').allow(null),
+      cancellationPolicy: Joi.string().max(5000).allow('', null),
+      childrenPolicy: Joi.string().max(5000).allow('', null),
+      minGuestAge: Joi.number().integer().min(0).max(120).allow(null),
+      securityDepositAmount: Joi.number().min(0).allow(null),
+      languagesSpoken: Joi.array().items(Joi.string().max(50)), // gửi [] để xoá hết
+      maxLengthOfStay: Joi.number().integer().min(1).max(365).allow(null),
     })
     .min(1),
 };
@@ -85,6 +100,76 @@ export const hotelImageId = {
   params: Joi.object().keys({
     hotelId: Joi.string().uuid().required(),
     imageId: Joi.string().uuid().required(),
+  }),
+};
+
+const hotelParams = Joi.object().keys({
+  hotelId: Joi.string().uuid().required(),
+});
+
+// GET (chỉ params) dùng chung cho các sub-resource của khách sạn
+export const hotelIdParam = { params: hotelParams };
+
+// Thay thế TOÀN BỘ liên hệ của khách sạn (mảng rỗng = xoá hết)
+export const setHotelContacts = {
+  params: hotelParams,
+  body: Joi.object().keys({
+    contacts: Joi.array()
+      .items(
+        Joi.object().keys({
+          contactType: Joi.string().valid('physical_location', 'general', 'availability', 'invoices').required(),
+          name: Joi.string().max(255).allow('', null),
+          jobTitle: Joi.string().max(255).allow('', null),
+          email: Joi.string().email().allow('', null),
+          phone: Joi.string().max(30).allow('', null),
+          phoneType: Joi.string().valid('voice', 'fax', 'mobile').allow(null),
+        })
+      )
+      .required(),
+  }),
+};
+
+// Thay thế TOÀN BỘ chính sách / phụ phí của khách sạn
+export const setHotelPolicies = {
+  params: hotelParams,
+  body: Joi.object().keys({
+    policies: Joi.array()
+      .items(
+        Joi.object().keys({
+          policyType: Joi.string().valid('cancellation', 'tax', 'fee', 'parking', 'internet', 'deposit').required(),
+          code: Joi.string().max(100).allow('', null),
+          description: Joi.string().max(2000).allow('', null),
+          amount: Joi.number().min(0).allow(null),
+          isPercentage: Joi.boolean(),
+          chargeFrequency: Joi.string()
+            .valid('per_stay', 'per_night', 'per_person', 'per_person_per_night')
+            .allow(null),
+          minAge: Joi.number().integer().min(0).max(120).allow(null),
+          maxAge: Joi.number().integer().min(0).max(120).allow(null),
+        })
+      )
+      .required(),
+  }),
+};
+
+// Thay thế TOÀN BỘ địa điểm lân cận của khách sạn
+export const setHotelNearbyPlaces = {
+  params: hotelParams,
+  body: Joi.object().keys({
+    nearbyPlaces: Joi.array()
+      .items(
+        Joi.object().keys({
+          name: Joi.string().max(255).required(),
+          category: Joi.string()
+            .valid('attraction', 'beach', 'airport', 'restaurant', 'public_transport', 'landmark', 'nature')
+            .required(),
+          distance: Joi.number().min(0).required(),
+          distanceUnit: Joi.string().valid('km', 'miles').required(),
+          transportType: Joi.string().valid('walk', 'car', 'public_transport', 'taxi', 'shuttle').allow(null),
+          journeyMinutes: Joi.number().integer().min(0).allow(null),
+        })
+      )
+      .required(),
   }),
 };
 

@@ -11,6 +11,7 @@ import reviewRoute from './review.route';
 import amenityRoute from './amenity.route';
 import internalRoute from './internal.route';
 import adminRoute from './admin.route';
+import platformManagerRoute from './platform-manager.route';
 import docsRoute from './docs.route';
 import config from '../../config/config';
 
@@ -66,6 +67,11 @@ const defaultRoutes = [
     // Khu quản trị toàn sàn (admin / platform_manager)
     path: '/admin',
     route: adminRoute,
+  },
+  {
+    // Analytics & hiệu suất toàn sàn cho Platform Manager (admin cũng truy cập được)
+    path: '/platform-manager',
+    route: platformManagerRoute,
   },
 ];
 
