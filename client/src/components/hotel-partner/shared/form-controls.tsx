@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { DatePicker } from '@/components/ui/date-picker';
 import { cn } from '@/lib/cn';
 
 // ─── Shell ────────────────────────────────────────────────────────────────────
@@ -81,6 +82,57 @@ export function TextField<T extends FieldValues>({
         placeholder={placeholder}
         aria-invalid={!!error}
         {...register(name)}
+      />
+    </FieldShell>
+  );
+}
+
+// ─── Date (shadcn DatePicker + RHF) ─────────────────────────────────────────────
+
+interface DateFieldProps<T extends FieldValues> {
+  name: Path<T>;
+  label: string;
+  required?: boolean;
+  hint?: string;
+  /** Chặn chọn trước ngày này (YYYY-MM-DD). */
+  min?: string | null;
+  /** Chặn chọn sau ngày này (YYYY-MM-DD). */
+  max?: string | null;
+  placeholder?: string;
+  className?: string;
+}
+
+export function DateField<T extends FieldValues>({
+  name,
+  label,
+  required,
+  hint,
+  min,
+  max,
+  placeholder,
+  className,
+}: DateFieldProps<T>) {
+  const {
+    control,
+    formState: { errors },
+  } = useFormContext<T>();
+  const error = errors[name]?.message as string | undefined;
+  return (
+    <FieldShell label={label} htmlFor={name} required={required} error={error} hint={hint} className={className}>
+      <Controller
+        control={control}
+        name={name}
+        render={({ field }) => (
+          <DatePicker
+            id={name}
+            value={field.value}
+            onChange={field.onChange}
+            min={min}
+            max={max}
+            placeholder={placeholder}
+            ariaInvalid={!!error}
+          />
+        )}
       />
     </FieldShell>
   );

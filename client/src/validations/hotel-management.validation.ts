@@ -44,6 +44,66 @@ const optionalDecimal = (min: number) =>
     .refine(v => !v || isNum(v), 'Must be a number')
     .refine(v => !v || Number(v) >= min, min === 0 ? 'Cannot be negative' : `Minimum ${min}`);
 
+// ─── Hotel profile ────────────────────────────────────────────────────────────
+
+/** HH:mm 24h — khớp pattern của backend. */
+const timePattern = /^([01]\d|2[0-3]):[0-5]\d$/;
+const optionalTime = () =>
+  z
+    .string()
+    .trim()
+    .optional()
+    .refine(v => !v || timePattern.test(v), 'Use 24h format, e.g. 14:00');
+
+export const hotelProfileFormSchema = z.object({
+  name: z.string().trim().min(1, 'Hotel name is required').max(255, 'Max 255 characters'),
+  description: z.string().max(5000, 'Max 5000 characters').optional(),
+  address: z.string().trim().min(1, 'Address is required').max(500, 'Max 500 characters'),
+  city: z.string().trim().min(1, 'City is required').max(255, 'Max 255 characters'),
+  country: z.string().trim().min(1, 'Country is required').max(255, 'Max 255 characters'),
+  district: z.string().max(255, 'Max 255 characters').optional(),
+  ward: z.string().max(255, 'Max 255 characters').optional(),
+  /** '' = giữ nguyên/không chọn; nếu chọn thì là '1'..'5'. */
+  starRating: z.string().optional(),
+  /** '' = giữ nguyên/không chọn; nếu chọn thì là enum hợp lệ. */
+  businessType: z.string().optional(),
+  checkInTime: optionalTime(),
+  checkOutTime: optionalTime(),
+  // ----- Chi tiết bổ sung kiểu booking.com (Pha 1) — đều tuỳ chọn -----
+  postalCode: z.string().max(20, 'Max 20 characters').optional(),
+  phone: z.string().max(30, 'Max 30 characters').optional(),
+  email: z
+    .string()
+    .trim()
+    .optional()
+    .refine(v => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v), 'Invalid email'),
+  totalFloors: optionalInt(0, 200),
+  builtYear: optionalInt(1800, 2100),
+  renovationYear: optionalInt(1800, 2100),
+  isSmokingAllowed: z.boolean(),
+  /** '' = không đặt; nếu chọn thì là enum hợp lệ. */
+  petsPolicy: z.string().optional(),
+  cancellationPolicy: z.string().max(5000, 'Max 5000 characters').optional(),
+  childrenPolicy: z.string().max(5000, 'Max 5000 characters').optional(),
+  minGuestAge: optionalInt(0, 120),
+  securityDepositAmount: optionalDecimal(0),
+  maxLengthOfStay: optionalInt(1, 365),
+  /** Danh sách ngôn ngữ, nhập cách nhau bằng dấu phẩy. */
+  languagesSpoken: z.string().optional(),
+});
+
+export type HotelProfileFormValues = z.infer<typeof hotelProfileFormSchema>;
+
+// ─── Amenity (catalog) ────────────────────────────────────────────────────────
+
+export const amenityFormSchema = z.object({
+  name: z.string().trim().min(1, 'Name is required').max(255, 'Max 255 characters'),
+  icon: z.string().max(100, 'Max 100 characters').optional(),
+  category: z.enum(['room', 'hotel', 'service']),
+});
+
+export type AmenityFormValues = z.infer<typeof amenityFormSchema>;
+
 // ─── Room type ────────────────────────────────────────────────────────────────
 
 export const roomTypeFormSchema = z.object({
@@ -55,6 +115,14 @@ export const roomTypeFormSchema = z.object({
   bedType: z.string().max(100, 'Max 100 characters').optional(),
   viewType: z.string().max(100, 'Max 100 characters').optional(),
   isActive: z.boolean(),
+  // ----- Chi tiết bổ sung kiểu booking.com (Pha 1) — đều tuỳ chọn -----
+  maxAdults: optionalInt(0, 20),
+  maxChildren: optionalInt(0, 20),
+  /** '' = không đặt; nếu chọn thì 'sqm' | 'sqft'. */
+  sizeUnit: z.string().optional(),
+  isNonSmoking: z.boolean(),
+  hasPrivateBathroom: z.boolean(),
+  hasBalcony: z.boolean(),
 });
 
 export type RoomTypeFormValues = z.infer<typeof roomTypeFormSchema>;
@@ -78,12 +146,19 @@ export type RoomFormValues = z.infer<typeof roomFormSchema>;
 const ruleTypeEnum = z.enum(['seasonal', 'weekend', 'occupancy', 'early_bird']);
 const adjustmentTypeEnum = z.enum(['percentage', 'fixed']);
 
+/** Chuỗi ngày `YYYY-MM-DD` hợp lệ (đúng format + là ngày thật). */
+const isDateStr = (v: string) =>
+  /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(new Date(`${v}T00:00:00`).getTime());
+
+const requiredDate = () =>
+  z.string().min(1, 'Required').refine(isDateStr, 'Invalid date');
+
 export const pricingRuleFormSchema = z
   .object({
     name: z.string().trim().min(1, 'Rule name is required').max(255, 'Max 255 characters'),
     ruleType: ruleTypeEnum,
-    startDate: z.string().min(1, 'Required'),
-    endDate: z.string().min(1, 'Required'),
+    startDate: requiredDate(),
+    endDate: requiredDate(),
     adjustmentType: adjustmentTypeEnum,
     adjustmentValue: signedNumber(),
     /** '' / sentinel = applies to the whole hotel. */
@@ -93,7 +168,7 @@ export const pricingRuleFormSchema = z
     priority: optionalInt(0, 1000),
     isActive: z.boolean(),
   })
-  .refine(d => new Date(d.endDate) >= new Date(d.startDate), {
+  .refine(d => !isDateStr(d.startDate) || !isDateStr(d.endDate) || new Date(d.endDate) >= new Date(d.startDate), {
     message: 'End date must be on or after the start date',
     path: ['endDate'],
   })

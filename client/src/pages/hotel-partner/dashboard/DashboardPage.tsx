@@ -13,13 +13,13 @@ export default function DashboardPage() {
     <div className="p-6 max-w-[1400px] mx-auto w-full bg-white rounded-xl border border-slate-200">
       <DashboardHeader />
       <DashboardStats />
-      
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 flex flex-col gap-6">
           <RevenueBookingChart />
           <RecentActivities />
         </div>
-        
+
         <div className="flex flex-col">
           <QuickActions />
           <VerificationStatus />

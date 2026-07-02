@@ -13,7 +13,8 @@ import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/hotel-partner/shared/Modal';
 import { Pill } from '@/components/hotel-partner/shared/Pill';
 import { ConfirmDialog } from '@/components/hotel-partner/shared/ConfirmDialog';
-import { LoadingState, ErrorState } from '@/components/hotel-partner/shared/states';
+import { ErrorState } from '@/components/hotel-partner/shared/states';
+import { DetailSkeleton } from '@/components/shared/skeletons';
 import {
   useHotelBooking,
   useHotelRooms,
@@ -22,7 +23,7 @@ import {
 } from '@/hooks/staff';
 import { errorMessage } from '@/utils/errorMessage';
 import { formatCurrency } from '@/utils/formatCurrency';
-import { formatDateShort, toUtcDateKey, todayUtcKey } from '@/utils/formatDate';
+import { formatDate, toUtcDateKey, todayUtcKey } from '@/utils/formatDate';
 import {
   BOOKING_STATUS_CONFIG,
   PAYMENT_STATUS_CONFIG,
@@ -110,7 +111,7 @@ export function BookingDetailModal({ open, onClose, hotelId, bookingId }: Bookin
         }
       >
         {isLoading ? (
-          <LoadingState label="Loading booking…" />
+          <DetailSkeleton sections={2} />
         ) : isError || !booking ? (
           <ErrorState label="Could not load this booking." />
         ) : (
@@ -120,7 +121,7 @@ export function BookingDetailModal({ open, onClose, hotelId, bookingId }: Bookin
                 {BOOKING_STATUS_CONFIG[booking.status].label}
               </Pill>
               <span className="text-xs text-slate-400">
-                Created {formatDateShort(booking.createdAt)}
+                Created {formatDate(booking.createdAt)}
               </span>
             </div>
 
@@ -129,7 +130,7 @@ export function BookingDetailModal({ open, onClose, hotelId, bookingId }: Bookin
               <Row label="Guests" value={`${booking.numGuests} guest(s)`} />
               <Row
                 label="Check-in → Check-out"
-                value={`${formatDateShort(booking.checkInDate)} → ${formatDateShort(
+                value={`${formatDate(booking.checkInDate)} → ${formatDate(
                   booking.checkOutDate
                 )} (${booking.numNights} night(s))`}
               />
@@ -199,7 +200,7 @@ export function BookingDetailModal({ open, onClose, hotelId, bookingId }: Bookin
               {beforeWindow && booking.status === 'confirmed' && (
                 <div className="mb-3 flex items-start gap-2 rounded-lg bg-amber-50 p-2.5 text-xs text-amber-700">
                   <CalendarClock className="mt-0.5 size-3.5 shrink-0" />
-                  The check-in date ({formatDateShort(booking.checkInDate)}) has not arrived yet.
+                  The check-in date ({formatDate(booking.checkInDate)}) has not arrived yet.
                 </div>
               )}
 

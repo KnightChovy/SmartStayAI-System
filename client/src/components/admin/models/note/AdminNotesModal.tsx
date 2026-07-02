@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { NotebookText, Pin, Plus, Search, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { formatDate, formatTime } from '@/utils/formatDate';
+import { formatDateLong, formatTime } from '@/utils/formatDate';
 
 interface AdminNotesModalProps {
   currentTime: Date;
@@ -26,7 +26,10 @@ const notes = [
   },
 ];
 
-export function AdminNotesModal({ currentTime, onClose }: AdminNotesModalProps) {
+export function AdminNotesModal({
+  currentTime,
+  onClose,
+}: AdminNotesModalProps) {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -60,7 +63,7 @@ export function AdminNotesModal({ currentTime, onClose }: AdminNotesModalProps) 
               <h2 className="text-xl font-bold text-slate-950">Notes</h2>
             </div>
             <p className="mt-1 text-xs font-semibold text-muted-foreground">
-              Updated {formatDate(currentTime)} | {formatTime(currentTime)}
+              Updated {formatDateLong(currentTime)} | {formatTime(currentTime)}
             </p>
           </div>
           <button

@@ -4,7 +4,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ArrowRight, BadgeCheck, Loader2, MapPin, Search, X } from 'lucide-react';
+import {
+  ArrowRight,
+  BadgeCheck,
+  Loader2,
+  MapPin,
+  Search,
+  X,
+} from 'lucide-react';
 import { cn } from '@/lib/cn';
 import {
   businessInfoSchema,
@@ -18,8 +25,6 @@ import {
 } from '@/services/vietnam-geo.service';
 import type { VietmapSuggestion } from '@/types/vietnam-geo.types';
 import { PropertyMapPicker, type FlyTarget } from './PropertyMapPicker';
-
-// ── Inline address autocomplete ──────────────────────────────────────────────
 
 interface AddressSearchProps {
   onSelect: (suggestion: VietmapSuggestion) => void;
@@ -36,7 +41,10 @@ function AddressSearch({ onSelect }: AddressSearchProps) {
   // Close dropdown on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+      if (
+        wrapperRef.current &&
+        !wrapperRef.current.contains(e.target as Node)
+      ) {
         setOpen(false);
       }
     };
@@ -69,7 +77,7 @@ function AddressSearch({ onSelect }: AddressSearchProps) {
       setOpen(false);
       onSelect(s);
     },
-    [onSelect],
+    [onSelect]
   );
 
   const handleClear = () => {
@@ -105,17 +113,19 @@ function AddressSearch({ onSelect }: AddressSearchProps) {
 
       {open && suggestions.length > 0 && (
         <ul className="absolute z-50 w-full mt-1 bg-white rounded-lg border border-slate-200 shadow-lg max-h-64 overflow-y-auto">
-          {suggestions.map((s) => (
+          {suggestions.map(s => (
             <li key={s.ref_id}>
               <button
                 type="button"
-                onMouseDown={(e) => {
+                onMouseDown={e => {
                   e.preventDefault();
                   handleSelect(s);
                 }}
                 className="w-full text-left px-4 py-2.5 text-sm hover:bg-slate-50 border-b border-slate-100 last:border-0"
               >
-                <span className="font-medium text-slate-800 block leading-tight">{s.name}</span>
+                <span className="font-medium text-slate-800 block leading-tight">
+                  {s.name}
+                </span>
                 <span className="text-slate-500 text-xs">{s.address}</span>
               </button>
             </li>
@@ -137,6 +147,7 @@ export function BusinessInfoStep({ onContinue }: { onContinue?: () => void }) {
     handleSubmit,
     setValue,
     watch,
+    getValues,
     formState: { errors },
   } = useForm<BusinessInfoFormValues>({
     resolver: zodResolver(businessInfoSchema),
@@ -153,7 +164,6 @@ export function BusinessInfoStep({ onContinue }: { onContinue?: () => void }) {
     },
   });
 
-  // Property type is locked to "hotel" — this platform onboards hotels only.
   useEffect(() => {
     setValue('businessType', 'hotel');
   }, [setValue]);
@@ -163,23 +173,38 @@ export function BusinessInfoStep({ onContinue }: { onContinue?: () => void }) {
   const handleAddressSelect = useCallback(
     async (s: VietmapSuggestion) => {
       const { province, ward } = parseVietmapDisplay(s.display);
-      if (province) setValue('cityProvince', province, { shouldValidate: true });
+      if (province)
+        setValue('cityProvince', province, { shouldValidate: true });
       if (ward) setValue('ward', ward);
+
+      // Prefill Full Address with the whole selected place, but only when it's
+      // still empty so a search never overwrites what the partner typed by hand.
+      if (!getValues('address')?.trim()) {
+        setValue('address', s.display, { shouldValidate: true });
+      }
 
       let lat = s.lat;
       let lng = s.lng;
 
-      // Autocomplete may return 0/null coords — fetch place detail for precise coordinates
       if (!lat || !lng) {
         const detail = await getPlaceDetail(s.ref_id);
-        if (detail) { lat = detail.lat; lng = detail.lng; }
+        if (detail) {
+          lat = detail.lat;
+          lng = detail.lng;
+        }
       }
 
       if (lat && lng) {
-        setMapFlyTarget({ lat, lng, zoom: 16, label: s.display, autoPin: true });
+        setMapFlyTarget({
+          lat,
+          lng,
+          zoom: 16,
+          label: s.display,
+          autoPin: true,
+        });
       }
     },
-    [setValue],
+    [setValue, getValues]
   );
 
   const onSubmit = (data: BusinessInfoFormValues) => {
@@ -190,10 +215,12 @@ export function BusinessInfoStep({ onContinue }: { onContinue?: () => void }) {
   return (
     <div className="w-full bg-white rounded-2xl p-6 md:p-8 border border-slate-200 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] mt-4">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-slate-900 mb-2">Business Information</h2>
+        <h2 className="text-2xl font-bold text-slate-900 mb-2">
+          Business Information
+        </h2>
         <p className="text-slate-600">
-          Provide the official details for your property. This information will be verified against
-          public records.
+          Provide the official details for your property. This information will
+          be verified against public records.
         </p>
       </div>
 
@@ -212,7 +239,9 @@ export function BusinessInfoStep({ onContinue }: { onContinue?: () => void }) {
             {...register('businessName')}
           />
           {errors.businessName && (
-            <span className="text-xs text-red-500">{errors.businessName.message}</span>
+            <span className="text-xs text-red-500">
+              {errors.businessName.message}
+            </span>
           )}
         </div>
 
@@ -232,7 +261,8 @@ export function BusinessInfoStep({ onContinue }: { onContinue?: () => void }) {
           </div>
           <div className="space-y-2">
             <Label htmlFor="businessRegistrationNumber">
-              Business Registration Number <span className="text-red-500">*</span>
+              Business Registration Number{' '}
+              <span className="text-red-500">*</span>
             </Label>
             <Input
               id="businessRegistrationNumber"
@@ -270,7 +300,9 @@ export function BusinessInfoStep({ onContinue }: { onContinue?: () => void }) {
               {...register('phone')}
             />
             {errors.phone && (
-              <span className="text-xs text-red-500">{errors.phone.message}</span>
+              <span className="text-xs text-red-500">
+                {errors.phone.message}
+              </span>
             )}
           </div>
         </div>
@@ -299,12 +331,14 @@ export function BusinessInfoStep({ onContinue }: { onContinue?: () => void }) {
           </Label>
           <Input
             id="address"
-            placeholder="Street address, building, floor"
+            placeholder="Số nhà, tên đường, toà nhà, tầng — hoặc dùng ô tìm kiếm bên dưới"
             className="h-11 border-slate-200"
             {...register('address')}
           />
           {errors.address && (
-            <span className="text-xs text-red-500">{errors.address.message}</span>
+            <span className="text-xs text-red-500">
+              {errors.address.message}
+            </span>
           )}
         </div>
 
@@ -314,7 +348,7 @@ export function BusinessInfoStep({ onContinue }: { onContinue?: () => void }) {
             <Search className="w-3.5 h-3.5 text-slate-500" />
             Address Search
             <span className="text-xs text-slate-500 font-normal">
-              — tìm để điền tự động Tỉnh/TP và Phường/Xã
+              — tìm để tự điền địa chỉ, Tỉnh/TP, Phường/Xã và ghim bản đồ
             </span>
           </Label>
           <AddressSearch onSelect={handleAddressSelect} />
@@ -333,7 +367,9 @@ export function BusinessInfoStep({ onContinue }: { onContinue?: () => void }) {
               {...register('cityProvince')}
             />
             {errors.cityProvince && (
-              <span className="text-xs text-red-500">{errors.cityProvince.message}</span>
+              <span className="text-xs text-red-500">
+                {errors.cityProvince.message}
+              </span>
             )}
           </div>
           <div className="space-y-2">
@@ -362,19 +398,20 @@ export function BusinessInfoStep({ onContinue }: { onContinue?: () => void }) {
             </Label>
             {locationValue && (
               <span className="text-xs text-emerald-600 font-medium bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-md">
-                Pinned: {locationValue.lat.toFixed(5)}, {locationValue.lng.toFixed(5)}
+                Pinned: {locationValue.lat.toFixed(5)},{' '}
+                {locationValue.lng.toFixed(5)}
               </span>
             )}
           </div>
           <div
             className={cn(
               'w-full h-52 sm:h-72 rounded-xl overflow-hidden border shadow-sm',
-              errors.location ? 'border-red-300' : 'border-slate-200',
+              errors.location ? 'border-red-300' : 'border-slate-200'
             )}
           >
             <PropertyMapPicker
               value={locationValue}
-              onChange={(loc) =>
+              onChange={loc =>
                 setValue('location', loc, { shouldValidate: true })
               }
               flyTarget={mapFlyTarget}

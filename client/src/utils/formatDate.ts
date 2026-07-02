@@ -1,4 +1,19 @@
-export function formatDate(date: Date): string {
+/**
+ * Ngày dạng `dd/MM/yyyy` — formatter ngày dùng chung của app.
+ * Nhận ISO string / Date / null; trả "—" nếu rỗng hoặc không hợp lệ.
+ */
+export function formatDate(value: string | Date | null | undefined): string {
+  if (!value) return '—';
+  const date = typeof value === 'string' ? new Date(value) : value;
+  if (Number.isNaN(date.getTime())) return '—';
+  const dd = String(date.getDate()).padStart(2, '0');
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const yyyy = date.getFullYear();
+  return `${dd}/${mm}/${yyyy}`;
+}
+
+/** Ngày dạng dài "July 01, 2026" — dùng cho đồng hồ realtime ở Admin. */
+export function formatDateLong(date: Date): string {
   return new Intl.DateTimeFormat('en-US', {
     day: '2-digit',
     month: 'long',

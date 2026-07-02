@@ -3,14 +3,15 @@ import { Plus, Tag, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/button';
-import { LoadingState, ErrorState, EmptyState } from '@/components/hotel-partner/shared/states';
+import { ErrorState, EmptyState } from '@/components/hotel-partner/shared/states';
+import { TableSkeleton } from '@/components/shared/skeletons';
 import { ConfirmDialog } from '@/components/hotel-partner/shared/ConfirmDialog';
 import { DataTable, type Column } from '@/components/hotel-partner/shared/DataTable';
 import { ActionMenu } from '@/components/hotel-partner/shared/ActionMenu';
 import { Pill } from '@/components/hotel-partner/shared/Pill';
 import { RULE_TYPE_LABELS, formatAdjustment } from '@/components/hotel-partner/shared/labels';
 import { usePricingRules, useRoomTypes, useDeletePricingRule } from '@/hooks/hotel-management';
-import { formatDateShort } from '@/utils/formatDate';
+import { formatDate } from '@/utils/formatDate';
 import type { PricingRule } from '@/types/hotel-management.types';
 import { PricingRuleFormModal } from './PricingRuleFormModal';
 
@@ -68,7 +69,7 @@ export function PricingRulesTab({ hotelId }: PricingRulesTabProps) {
       className: 'hidden lg:table-cell',
       cell: rule => (
         <span className="text-slate-600">
-          {formatDateShort(rule.startDate)} – {formatDateShort(rule.endDate)}
+          {formatDate(rule.startDate)} – {formatDate(rule.endDate)}
         </span>
       ),
     },
@@ -128,7 +129,7 @@ export function PricingRulesTab({ hotelId }: PricingRulesTabProps) {
       </div>
 
       {isLoading ? (
-        <LoadingState label="Loading pricing rules..." />
+        <TableSkeleton columns={5} />
       ) : isError ? (
         <ErrorState label="Failed to load pricing rules." />
       ) : !rules || rules.length === 0 ? (

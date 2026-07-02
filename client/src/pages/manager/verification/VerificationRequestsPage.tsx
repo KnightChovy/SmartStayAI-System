@@ -10,11 +10,12 @@ import {
   ChevronLeft,
   ChevronRight as ChevronRightIcon,
   MapPin,
-  Loader2,
   AlertCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/button';
+import { TableSkeleton } from '@/components/shared/skeletons';
+import { formatDate } from '@/utils/formatDate';
 import { useListRegistrations } from '@/hooks/manager/useManagerVerification';
 import { VerificationDetailModal } from '@/components/manager/VerificationDetailModal';
 import type {
@@ -120,9 +121,7 @@ export default function VerificationRequestsPage() {
       {/* Table */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         {isLoading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-8 h-8 text-role-manager-primary animate-spin" />
-          </div>
+          <TableSkeleton rows={6} columns={6} className="border-0 rounded-none" />
         ) : isError ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
             <AlertCircle className="w-8 h-8 text-red-400" />
@@ -170,7 +169,7 @@ export default function VerificationRequestsPage() {
                         </span>
                       </td>
                       <td className="px-5 py-4 text-slate-500">
-                        {new Date(r.submittedAt).toLocaleDateString('vi-VN')}
+                        {formatDate(r.submittedAt)}
                       </td>
                       <td className="px-5 py-4">
                         <span className={cn('inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full', cfg.class)}>

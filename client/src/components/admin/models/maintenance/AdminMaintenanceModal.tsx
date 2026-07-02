@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { CalendarClock, Server, ShieldAlert, Wrench, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { formatDate, formatTime } from '@/utils/formatDate';
+import { formatDateLong, formatTime } from '@/utils/formatDate';
 
 interface AdminMaintenanceModalProps {
   currentTime: Date;
@@ -48,7 +48,8 @@ export function AdminMaintenanceModal({
               </h2>
             </div>
             <p className="mt-1 text-xs font-semibold text-muted-foreground">
-              Current time {formatDate(currentTime)} | {formatTime(currentTime)}
+              Current time {formatDateLong(currentTime)} |{' '}
+              {formatTime(currentTime)}
             </p>
           </div>
           <button
@@ -75,7 +76,7 @@ export function AdminMaintenanceModal({
                 <Label htmlFor="maintenance-date">Date</Label>
                 <Input
                   id="maintenance-date"
-                  defaultValue={formatDate(currentTime)}
+                  defaultValue={formatDateLong(currentTime)}
                 />
               </div>
               <div className="space-y-2">
@@ -101,9 +102,7 @@ export function AdminMaintenanceModal({
           <aside className="space-y-3">
             <div className="rounded-[22px] bg-slate-50 p-4">
               <Server className="size-5 text-slate-700" />
-              <p className="mt-3 text-sm font-bold text-slate-950">
-                Services
-              </p>
+              <p className="mt-3 text-sm font-bold text-slate-950">Services</p>
               <p className="mt-1 text-xs text-muted-foreground">
                 API, admin dashboard, notification jobs
               </p>

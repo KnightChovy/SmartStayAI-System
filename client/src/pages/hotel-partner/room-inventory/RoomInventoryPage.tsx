@@ -13,7 +13,8 @@ import {
 import { RoomTypesTab } from '@/components/hotel-partner/room-inventory/room-types/RoomTypesTab';
 import { RoomsTab } from '@/components/hotel-partner/room-inventory/rooms/RoomsTab';
 import { PricingRulesTab } from '@/components/hotel-partner/room-inventory/pricing/PricingRulesTab';
-import { LoadingState, ErrorState, EmptyState } from '@/components/hotel-partner/shared/states';
+import { ErrorState, EmptyState } from '@/components/hotel-partner/shared/states';
+import { DirectorySkeleton } from '@/components/shared/skeletons';
 import type { PartnerHotel } from '@/types/hotel.types';
 
 /**
@@ -46,7 +47,7 @@ export default function RoomInventoryPage() {
   // ─── Loading / error / empty ────────────────────────────────────────────────
 
   if (isLoading) {
-    return <Shell><LoadingState label="Loading your hotels..." /></Shell>;
+    return <Shell><DirectorySkeleton columns={4} /></Shell>;
   }
   if (isError) {
     return <Shell><ErrorState label="Failed to load your hotels." /></Shell>;

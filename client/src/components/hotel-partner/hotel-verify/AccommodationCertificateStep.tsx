@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
 import { FileUploadDropzone } from '@/components/ui/file-upload';
@@ -13,6 +14,10 @@ import {
 } from '@/validations/hotel-verify.validation';
 import { hotelVerifyService } from '@/services/hotel-verify.service';
 import { useHotelVerifyStore } from '@/stores/hotel-verify.store';
+import { toDateInputValue } from '@/utils/formatDate';
+
+/** Hôm nay (YYYY-MM-DD) — chặn chọn ngày cấp giấy tờ trong tương lai. */
+const TODAY = toDateInputValue(new Date());
 
 type UploadState = { uploading: boolean; error: string | null };
 
@@ -60,6 +65,7 @@ export function AccommodationCertificateStep({
     setValue,
     getValues,
     watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<AccommodationCertificateFormValues>({
     resolver: zodResolver(accommodationCertificateSchema),
@@ -148,11 +154,19 @@ export function AccommodationCertificateStep({
               <Label htmlFor="opIssueDate">
                 Issue Date <span className="text-red-500">*</span>
               </Label>
-              <Input
-                id="opIssueDate"
-                type="date"
-                className="h-11 border-slate-200 text-slate-700"
-                {...register('operatingLicense.issueDate')}
+              <Controller
+                control={control}
+                name="operatingLicense.issueDate"
+                render={({ field }) => (
+                  <DatePicker
+                    id="opIssueDate"
+                    value={field.value}
+                    onChange={field.onChange}
+                    max={TODAY}
+                    placeholder="Chọn ngày cấp"
+                    ariaInvalid={!!errors.operatingLicense?.issueDate}
+                  />
+                )}
               />
               {errors.operatingLicense?.issueDate && (
                 <span className="text-xs text-red-500">
@@ -215,11 +229,19 @@ export function AccommodationCertificateStep({
               <Label htmlFor="fireIssueDate">
                 Issue Date <span className="text-red-500">*</span>
               </Label>
-              <Input
-                id="fireIssueDate"
-                type="date"
-                className="h-11 border-slate-200 text-slate-700"
-                {...register('fireSafety.issueDate')}
+              <Controller
+                control={control}
+                name="fireSafety.issueDate"
+                render={({ field }) => (
+                  <DatePicker
+                    id="fireIssueDate"
+                    value={field.value}
+                    onChange={field.onChange}
+                    max={TODAY}
+                    placeholder="Chọn ngày cấp"
+                    ariaInvalid={!!errors.fireSafety?.issueDate}
+                  />
+                )}
               />
               {errors.fireSafety?.issueDate && (
                 <span className="text-xs text-red-500">
@@ -260,12 +282,25 @@ export function AccommodationCertificateStep({
             </div>
             <div className="space-y-2">
               <Label htmlFor="securityIssueDate">Issue Date</Label>
-              <Input
-                id="securityIssueDate"
-                type="date"
-                className="h-11 border-slate-200 text-slate-700"
-                {...register('securityOrder.issueDate')}
+              <Controller
+                control={control}
+                name="securityOrder.issueDate"
+                render={({ field }) => (
+                  <DatePicker
+                    id="securityIssueDate"
+                    value={field.value}
+                    onChange={field.onChange}
+                    max={TODAY}
+                    placeholder="Chọn ngày cấp"
+                    ariaInvalid={!!errors.securityOrder?.issueDate}
+                  />
+                )}
               />
+              {errors.securityOrder?.issueDate && (
+                <span className="text-xs text-red-500">
+                  {errors.securityOrder.issueDate.message}
+                </span>
+              )}
             </div>
           </div>
           <FileUploadDropzone

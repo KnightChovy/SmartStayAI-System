@@ -1,14 +1,18 @@
 import { useState } from 'react';
-import { Plus, BedDouble, Pencil } from 'lucide-react';
+import { Plus, BedDouble, Pencil, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import AppFilter from '@/common/filter/AppFilter';
 import AppPagination from '@/common/pagination/AppPagination';
-import { LoadingState, ErrorState, EmptyState } from '@/components/hotel-partner/shared/states';
+import { ErrorState, EmptyState } from '@/components/hotel-partner/shared/states';
+import { TableSkeleton } from '@/components/shared/skeletons';
 import { DataTable, type Column } from '@/components/hotel-partner/shared/DataTable';
 import { ActionMenu } from '@/components/hotel-partner/shared/ActionMenu';
+import { ConfirmDialog } from '@/components/hotel-partner/shared/ConfirmDialog';
 import { Pill } from '@/components/hotel-partner/shared/Pill';
 import { ROOM_STATUS_CONFIG, ROOM_STATUS_OPTIONS } from '@/components/hotel-partner/shared/labels';
-import { useRooms, useRoomTypes } from '@/hooks/hotel-management';
+import { useRooms, useRoomTypes, useDeleteRoom } from '@/hooks/hotel-management';
+import { errorMessage } from '@/utils/errorMessage';
 import type { PhysicalRoom, RoomStatus, RoomListParams } from '@/types/hotel-management.types';
 import { RoomFormModal } from './RoomFormModal';
 
@@ -27,8 +31,10 @@ export function RoomsTab({ hotelId }: RoomsTabProps) {
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<PhysicalRoom | null>(null);
+  const [deleting, setDeleting] = useState<PhysicalRoom | null>(null);
 
   const { data: roomTypes } = useRoomTypes(hotelId);
+  const deleteRoom = useDeleteRoom(hotelId);
 
   const params: RoomListParams = {
     page,
@@ -62,6 +68,18 @@ export function RoomsTab({ hotelId }: RoomsTabProps) {
   const openCreate = () => {
     setEditing(null);
     setFormOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!deleting) return;
+    try {
+      await deleteRoom.mutateAsync(deleting.id);
+      toast.success('Room deleted');
+      setDeleting(null);
+    } catch (err) {
+      // BE trả 400 khi phòng đã từng được đặt — hiển thị đúng lý do
+      toast.error(errorMessage(err, 'Failed to delete room'));
+    }
   };
 
   const statusOptions = [
@@ -109,6 +127,7 @@ export function RoomsTab({ hotelId }: RoomsTabProps) {
         <ActionMenu
           items={[
             { label: 'Edit', icon: Pencil, onClick: () => { setEditing(room); setFormOpen(true); } },
+            { label: 'Delete', icon: Trash2, onClick: () => setDeleting(room), destructive: true },
           ]}
         />
       ),
@@ -149,7 +168,7 @@ export function RoomsTab({ hotelId }: RoomsTabProps) {
       </div>
 
       {isLoading ? (
-        <LoadingState label="Loading rooms..." />
+        <TableSkeleton columns={5} />
       ) : isError ? (
         <ErrorState label="Failed to load the room list." />
       ) : rooms.length === 0 ? (
@@ -185,6 +204,17 @@ export function RoomsTab({ hotelId }: RoomsTabProps) {
         hotelId={hotelId}
         roomTypes={roomTypes ?? []}
         room={editing}
+      />
+
+      <ConfirmDialog
+        open={!!deleting}
+        onClose={() => setDeleting(null)}
+        onConfirm={handleDelete}
+        title="Delete room"
+        message={`Delete room "${deleting?.roomNumber}"? This only works if the room has never been booked — otherwise set it to maintenance instead. This action cannot be undone.`}
+        confirmLabel="Delete"
+        destructive
+        loading={deleteRoom.isPending}
       />
     </div>
   );

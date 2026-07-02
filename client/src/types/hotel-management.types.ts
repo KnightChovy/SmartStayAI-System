@@ -5,13 +5,15 @@
  * serialize qua JSON thành **string**; Date/DateTime trả về ISO 8601 string.
  */
 
-import type { Amenity, HotelImage } from '@/types/hotel.types';
+import type { Amenity, HotelImage, PetsPolicy } from '@/types/hotel.types';
 
 // ─── Shared enums ─────────────────────────────────────────────────────────────
 
 export type RoomStatus = 'available' | 'occupied' | 'maintenance' | 'cleaning';
 export type RuleType = 'seasonal' | 'weekend' | 'occupancy' | 'early_bird';
 export type AdjustmentType = 'percentage' | 'fixed';
+export type SizeUnit = 'sqm' | 'sqft';
+export type BedType = 'single' | 'double' | 'queen' | 'king' | 'sofa_bed' | 'bunk';
 /** 0 = Chủ nhật ... 6 = Thứ bảy. */
 export type DayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
@@ -26,11 +28,13 @@ export interface ManagedRoomTypeImage {
   createdAt: string;
 }
 
-/** Bảng nối N-N giữa room type và amenity (kèm chi tiết amenity). */
+/** Bảng nối N-N giữa room type và amenity (kèm chi tiết amenity + isFree/quantity như BE). */
 export interface RoomTypeAmenityLink {
   roomTypeId: string;
   amenityId: string;
   createdAt: string;
+  isFree?: boolean;
+  quantity?: number | null;
   amenity: Amenity;
 }
 
@@ -46,6 +50,13 @@ export interface ManagedRoomType {
   bedType: string | null;
   viewType: string | null;
   isActive: boolean;
+  // ----- Chi tiết bổ sung kiểu booking.com (Pha 1 DB) -----
+  maxAdults?: number | null;
+  maxChildren?: number | null;
+  sizeUnit?: SizeUnit | null;
+  isNonSmoking?: boolean | null;
+  hasPrivateBathroom?: boolean | null;
+  hasBalcony?: boolean | null;
   createdAt: string;
   updatedAt: string;
   images: ManagedRoomTypeImage[];
@@ -61,6 +72,28 @@ export interface HotelAmenityLink {
   amenityId: string;
   createdAt: string;
   amenity: Amenity;
+}
+
+/** Tiện nghi đã gán cho khách sạn (`GET /hotels/:id/amenities`) — kèm isFree/quantity + catalog. */
+export interface HotelAmenity {
+  hotelId: string;
+  amenityId: string;
+  isFree: boolean;
+  quantity: number | null;
+  createdAt?: string;
+  amenity: Amenity;
+}
+
+/** Một dòng gán tiện nghi khi lưu (mặc định isFree=true, quantity=null). */
+export interface AmenityAssignment {
+  amenityId: string;
+  isFree?: boolean;
+  quantity?: number | null;
+}
+
+/** Body cho `PUT /hotels/:id/amenities` — thay thế TOÀN BỘ tiện nghi ([] = bỏ hết). */
+export interface SetHotelAmenitiesDto {
+  amenities: AmenityAssignment[];
 }
 
 /**
@@ -86,6 +119,22 @@ export interface ManagedHotel {
   checkOutTime: string | null;
   isActive: boolean;
   isListed: boolean;
+  // ----- Chi tiết bổ sung kiểu booking.com (Pha 1 DB) -----
+  postalCode?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  totalFloors?: number | null;
+  builtYear?: number | null;
+  renovationYear?: number | null;
+  isSmokingAllowed?: boolean | null;
+  petsPolicy?: PetsPolicy | null;
+  cancellationPolicy?: string | null;
+  childrenPolicy?: string | null;
+  minGuestAge?: number | null;
+  /** Decimal -> string. */
+  securityDepositAmount?: string | null;
+  languagesSpoken?: string[] | null;
+  maxLengthOfStay?: number | null;
   createdAt: string;
   updatedAt: string;
   images: HotelImage[];
@@ -148,6 +197,13 @@ export interface CreateRoomTypeDto {
   bedType?: string | null;
   viewType?: string | null;
   isActive?: boolean;
+  // ----- Chi tiết bổ sung kiểu booking.com (Pha 1 DB) — đều tuỳ chọn -----
+  maxAdults?: number;
+  maxChildren?: number;
+  sizeUnit?: SizeUnit;
+  isNonSmoking?: boolean;
+  hasPrivateBathroom?: boolean;
+  hasBalcony?: boolean;
 }
 
 /** Body partial — tối thiểu 1 field. */
@@ -163,9 +219,12 @@ export interface AddRoomTypeImagesDto {
   images: RoomTypeImageInput[];
 }
 
+/**
+ * Body cho `PUT /:hotelId/room-types/:roomTypeId/amenities` — thay thế TOÀN BỘ tiện nghi
+ * ([] = bỏ hết). Khớp BE: mỗi dòng là object có amenityId + isFree/quantity tuỳ chọn.
+ */
 export interface ReplaceAmenitiesDto {
-  /** UUID[]; phải unique; [] = bỏ hết. */
-  amenityIds: string[];
+  amenities: AmenityAssignment[];
 }
 
 export interface CreateRoomDto {

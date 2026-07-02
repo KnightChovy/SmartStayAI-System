@@ -11,6 +11,8 @@ import {
   FileText,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
+import { formatDate } from '@/utils/formatDate';
+import { DetailSkeleton } from '@/components/shared/skeletons';
 import { useGetApplications } from '@/hooks/hotel-verify';
 import { useNavigate } from 'react-router';
 import type {
@@ -145,11 +147,7 @@ export function VerificationCenter({ onVerifyNew }: VerificationCenterProps) {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-role-partner-primary" />
-      </div>
-    );
+    return <DetailSkeleton className="min-h-100" />;
   }
 
   const hasAnyApp = (applications?.length ?? 0) > 0;
@@ -176,7 +174,7 @@ export function VerificationCenter({ onVerifyNew }: VerificationCenterProps) {
   })();
 
   return (
-    <div className="w-full max-w-5xl mx-auto">
+    <div className="w-full">
       <div className="flex flex-col sm:flex-row justify-between sm:items-end gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 mb-1">
@@ -325,7 +323,7 @@ export function VerificationCenter({ onVerifyNew }: VerificationCenterProps) {
                 </p>
                 {displayApp.submittedAt && (
                   <p className="text-[11px] font-medium text-slate-400">
-                    {new Date(displayApp.submittedAt).toLocaleDateString()}
+                    {formatDate(displayApp.submittedAt)}
                   </p>
                 )}
               </div>
@@ -427,7 +425,7 @@ export function VerificationCenter({ onVerifyNew }: VerificationCenterProps) {
           <RejectedDocumentsCard application={displayApp} />
         </div>
       ) : !hasAnyApp ? (
-        <div className="border border-slate-200 rounded-xl p-10 bg-slate-50 text-center max-w-3xl border-dashed">
+        <div className="border border-slate-200 rounded-xl p-10 bg-slate-50 text-center border-dashed">
           <h3 className="text-lg font-semibold text-slate-700 mb-2">
             No Verification Applications
           </h3>
@@ -443,7 +441,7 @@ export function VerificationCenter({ onVerifyNew }: VerificationCenterProps) {
           </Button>
         </div>
       ) : (
-        <div className="border border-slate-200 rounded-xl p-10 bg-slate-50 text-center max-w-3xl border-dashed">
+        <div className="border border-slate-200 rounded-xl p-10 bg-slate-50 text-center border-dashed">
           <h3 className="text-base font-semibold text-slate-700 mb-2">
             No {statusLabel.toLowerCase()} applications
           </h3>

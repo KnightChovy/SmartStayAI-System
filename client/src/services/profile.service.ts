@@ -1,37 +1,59 @@
-import { delay, readMock, writeMock } from './mock/mockStore';
-import type { UserProfile } from '@/types/account.types';
+import { api } from '@/lib/api';
+import type {
+  UserProfile,
+  MyProfileResponse,
+  UpdateMyProfileDto,
+} from '@/types/account.types';
 
 /**
- * [MOCK] Hồ sơ cá nhân. Backend chưa có endpoint self-profile (route `/users`
- * hiện chỉ cho admin), nên lưu phần mở rộng vào localStorage.
- * `seed` là dữ liệu cơ bản lấy từ phiên đăng nhập (tên, email, avatar...).
+ * Hồ sơ cá nhân của user đang đăng nhập — gọi API thật `GET/PATCH /users/me`.
+ * Map response lồng (User + profile) về view-model phẳng `UserProfile` cho form,
+ * và map ngược patch phẳng về `UpdateMyProfileDto` (chỉ gửi field self-service).
  */
-const KEY = 'profile';
+
+function toViewModel(res: MyProfileResponse): UserProfile {
+  const p = res.profile;
+  return {
+    fullName: res.fullName ?? '',
+    email: res.email ?? '',
+    phone: res.phone ?? '',
+    avatarUrl: res.avatarUrl ?? null,
+    emailVerifiedAt: res.emailVerifiedAt ?? null,
+    // API trả ISO datetime; form dùng <input type="date"> nên cắt còn YYYY-MM-DD.
+    dateOfBirth: p?.dateOfBirth ? p.dateOfBirth.slice(0, 10) : null,
+    nationality: p?.nationality ?? null,
+    idCardNumber: p?.idCardNumber ?? null,
+    passportNumber: p?.passportNumber ?? null,
+    preferredLanguage: p?.preferredLanguage ?? 'vi',
+    preferredCurrency: p?.preferredCurrency ?? 'VND',
+    marketingOptIn: p?.marketingOptIn ?? false,
+  };
+}
+
+/** Whitelist field được phép sửa; bỏ email/emailVerifiedAt (BE reject unknown key). */
+function toDto(patch: Partial<UserProfile>): UpdateMyProfileDto {
+  const dto: UpdateMyProfileDto = {};
+  if (patch.fullName !== undefined) dto.fullName = patch.fullName;
+  if (patch.phone !== undefined) dto.phone = patch.phone || null;
+  if (patch.avatarUrl !== undefined) dto.avatarUrl = patch.avatarUrl || null;
+  if (patch.dateOfBirth !== undefined) dto.dateOfBirth = patch.dateOfBirth || null;
+  if (patch.nationality !== undefined) dto.nationality = patch.nationality || null;
+  if (patch.idCardNumber !== undefined) dto.idCardNumber = patch.idCardNumber || null;
+  if (patch.passportNumber !== undefined) dto.passportNumber = patch.passportNumber || null;
+  if (patch.preferredLanguage !== undefined) dto.preferredLanguage = patch.preferredLanguage;
+  if (patch.preferredCurrency !== undefined) dto.preferredCurrency = patch.preferredCurrency;
+  if (patch.marketingOptIn !== undefined) dto.marketingOptIn = patch.marketingOptIn;
+  return dto;
+}
 
 export const profileService = {
-  async get(seed: Partial<UserProfile>): Promise<UserProfile> {
-    const stored = readMock<Partial<UserProfile>>(KEY, {});
-    const merged: UserProfile = {
-      fullName: stored.fullName ?? seed.fullName ?? '',
-      email: seed.email ?? stored.email ?? '',
-      phone: stored.phone ?? seed.phone ?? '',
-      avatarUrl: stored.avatarUrl ?? seed.avatarUrl ?? null,
-      emailVerifiedAt: seed.emailVerifiedAt ?? null,
-      dateOfBirth: stored.dateOfBirth ?? null,
-      nationality: stored.nationality ?? null,
-      idCardNumber: stored.idCardNumber ?? null,
-      passportNumber: stored.passportNumber ?? null,
-      preferredLanguage: stored.preferredLanguage ?? 'vi',
-      preferredCurrency: stored.preferredCurrency ?? 'VND',
-      marketingOptIn: stored.marketingOptIn ?? false,
-    };
-    return delay(merged);
+  async get(): Promise<UserProfile> {
+    const { data } = await api.get<MyProfileResponse>('/users/me');
+    return toViewModel(data);
   },
 
   async update(patch: Partial<UserProfile>): Promise<UserProfile> {
-    const stored = readMock<Partial<UserProfile>>(KEY, {});
-    const next = { ...stored, ...patch };
-    writeMock(KEY, next);
-    return delay(next as UserProfile);
+    const { data } = await api.patch<MyProfileResponse>('/users/me', toDto(patch));
+    return toViewModel(data);
   },
 };

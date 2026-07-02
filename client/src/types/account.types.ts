@@ -3,7 +3,7 @@
  * backend có API thật thì khớp shape sẵn. Hiện đang phục vụ mock.
  */
 
-// ----- Profile (User + UserProfile) -----
+// ----- Profile (view-model phẳng dùng cho form) -----
 export interface UserProfile {
   fullName: string;
   email: string;
@@ -17,6 +17,52 @@ export interface UserProfile {
   preferredLanguage: 'vi' | 'en';
   preferredCurrency: 'VND' | 'USD';
   marketingOptIn: boolean;
+}
+
+// ----- Raw API shape của GET/PATCH /users/me (khớp backend) -----
+export interface UserProfileRaw {
+  id: string;
+  userId: string;
+  dateOfBirth: string | null;
+  nationality: string | null;
+  idCardNumber: string | null;
+  passportNumber: string | null;
+  preferredLanguage: 'vi' | 'en';
+  preferredCurrency: 'VND' | 'USD';
+  marketingOptIn: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Response của `GET /users/me` (User đã bỏ passwordHash, kèm quan hệ profile). */
+export interface MyProfileResponse {
+  id: string;
+  email: string;
+  fullName: string;
+  phone: string | null;
+  avatarUrl: string | null;
+  role: string;
+  status: 'active' | 'inactive' | 'suspended';
+  emailVerifiedAt: string | null;
+  lastLoginAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+  profile: UserProfileRaw | null;
+}
+
+/** Body của `PATCH /users/me` — chỉ các field self-service (không email/role/status). */
+export interface UpdateMyProfileDto {
+  fullName?: string;
+  phone?: string | null;
+  avatarUrl?: string | null;
+  dateOfBirth?: string | null;
+  nationality?: string | null;
+  idCardNumber?: string | null;
+  passportNumber?: string | null;
+  preferredLanguage?: 'vi' | 'en';
+  preferredCurrency?: 'VND' | 'USD';
+  marketingOptIn?: boolean;
 }
 
 // ----- Loyalty -----

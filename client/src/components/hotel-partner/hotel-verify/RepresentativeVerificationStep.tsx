@@ -1,15 +1,22 @@
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
 import { FileUploadDropzone } from '@/components/ui/file-upload';
 import { representativeSchema, type RepresentativeFormValues } from '@/validations/hotel-verify.validation';
 import { hotelVerifyService } from '@/services/hotel-verify.service';
 import { useHotelVerifyStore } from '@/stores/hotel-verify.store';
+import { toDateInputValue } from '@/utils/formatDate';
+
+// Người đại diện phải đủ 18 tuổi và không quá 120 tuổi.
+const now = new Date();
+const MAX_DOB = toDateInputValue(new Date(now.getFullYear() - 18, now.getMonth(), now.getDate()));
+const MIN_DOB = toDateInputValue(new Date(now.getFullYear() - 120, 0, 1));
 
 export function RepresentativeVerificationStep({
   onBack,
@@ -30,6 +37,7 @@ export function RepresentativeVerificationStep({
     setValue,
     getValues,
     watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<RepresentativeFormValues>({
     resolver: zodResolver(representativeSchema),
@@ -165,11 +173,20 @@ export function RepresentativeVerificationStep({
               <Label htmlFor="dob">
                 Date of Birth <span className="text-red-500">*</span>
               </Label>
-              <Input
-                id="dob"
-                type="date"
-                className="h-11 border-slate-200 text-slate-700"
-                {...register('dob')}
+              <Controller
+                control={control}
+                name="dob"
+                render={({ field }) => (
+                  <DatePicker
+                    id="dob"
+                    value={field.value}
+                    onChange={field.onChange}
+                    min={MIN_DOB}
+                    max={MAX_DOB}
+                    placeholder="Chọn ngày sinh"
+                    ariaInvalid={!!errors.dob}
+                  />
+                )}
               />
               {errors.dob && (
                 <span className="text-xs text-red-500">{errors.dob.message}</span>
