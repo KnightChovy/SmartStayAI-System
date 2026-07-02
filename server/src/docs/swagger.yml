@@ -310,6 +310,38 @@ paths:
         "404":
           $ref: '#/components/responses/NotFound'
 
+  /platform-manager/partners:
+    get:
+      summary: List all hotel partners (Platform Manager)
+      description: >
+        Platform_manager/admin (viewPlatformStats). Lists every hotel partner platform-wide, filtered by
+        status and a name/email search. Each item includes the owner account and the partner's hotel count.
+      tags: [PlatformManager]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: status
+          schema: { type: string, enum: [pending, approved, suspended, rejected] }
+        - in: query
+          name: search
+          schema: { type: string }
+          description: Match businessName or contactEmail
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100 }
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1 }
+      responses:
+        '200':
+          description: Paginated partner list
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PaginatedPartners' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
   /platform-manager/analytics:
     get:
       summary: Platform analytics report (Platform Manager)

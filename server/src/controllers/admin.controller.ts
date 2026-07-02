@@ -37,6 +37,14 @@ export class AdminController {
     res.send(hotel);
   });
 
+  // [Platform Manager/Admin] Danh sách toàn bộ đối tác (hotel_partner)
+  listPartners = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const filter = pick(req.query, ['search', 'status']);
+    const options = pick(req.query, ['limit', 'page']);
+    const result = await adminService.listPartners(filter, options);
+    res.send(result);
+  });
+
   // ===== Analytics & Performance =====
   getAnalytics = catchAsync(async (req: Request, res: Response): Promise<void> => {
     const query = pick(req.query, ['period', 'range', 'topLimit']);
