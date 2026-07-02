@@ -8,6 +8,11 @@ This file tracks the accomplished tasks, resolved user requests, and visual/func
 
 ### July 2, 2026
 
+- [x] **Sidebar Logout — màu đỏ + in đậm/loading khi bấm + toast khi thành công**:
+  - `common/sidebar/Sidebar.tsx`: nút Logout đổi sang **đỏ** (`text-red-600` + hover `bg-red-50/text-red-700`), `active:font-bold` khi nhấn; thêm prop `isLoggingOut` → khi đang đăng xuất thì **in đậm** + đổi icon `LogOut` sang `Loader2` xoay + chữ "Logging out…" + `disabled` (chống double-click).
+  - Truyền `isPending` từ `useLogout()` vào `CommonSidebar` ở cả 4 layout dùng chung: Manager/HotelPartner/Staff/Admin (`isLoggingOut={isLoggingOut}`).
+  - Toast sonner "Logged out successfully" **đã sẵn** trong `hooks/auth/use-logout.ts` (`onSuccess`), hiển thị được kể cả sau redirect vì Toaster mount ở App root. `tsc`: không phát sinh lỗi mới (tổng vẫn 21 pre-existing).
+
 - [x] **Manager Dashboard — làm lại toàn trang theo Acceptance Criteria (AC-1→AC-8, mock data)**:
   - **Data layer mock (shape theo API tương lai)**: `types/dashboard.types.ts`; `services/dashboard.service.ts` = MOCK deterministic theo date-range (revenue/bookings prorate theo ngày, activeUsers/hotelPartners là level; sparkline 8 tháng; verifications giữ state module-level để approve/reject phản ánh ngay; search phân nhóm hotels/users/bookings); hooks `hooks/dashboard/` (summary/time-series/verifications/review-mutation/alerts/top-hotels/recent-activity/search, dùng `keepPreviousData`).
   - **AC-1 Charts**: `RevenueTrendChart` (area, 12 tháng), `BookingsBarChart` (bar), `UsersGrowthChart` (line) — đủ tiêu đề, trục X/Y, tooltip custom giá trị chính xác, responsive `ResponsiveContainer`; khung `ChartCard` dùng chung.

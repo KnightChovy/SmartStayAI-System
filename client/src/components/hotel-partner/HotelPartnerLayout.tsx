@@ -35,7 +35,7 @@ const footerItems = [
 ];
 
 export function HotelPartnerLayout() {
-  const { mutate: logout } = useLogout();
+  const { mutate: logout, isPending: isLoggingOut } = useLogout();
   return (
     <SidebarProvider>
       <CommonSidebar
@@ -44,6 +44,7 @@ export function HotelPartnerLayout() {
         navItems={navItems}
         footerItems={footerItems}
         onLogout={() => logout()}
+        isLoggingOut={isLoggingOut}
       />
       <SidebarInset>
         <CommonNavbar />
