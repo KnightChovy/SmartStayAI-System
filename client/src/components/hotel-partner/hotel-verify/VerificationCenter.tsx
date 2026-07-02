@@ -174,7 +174,7 @@ export function VerificationCenter({ onVerifyNew }: VerificationCenterProps) {
   })();
 
   return (
-    <div className="w-full max-w-5xl mx-auto">
+    <div className="w-full">
       <div className="flex flex-col sm:flex-row justify-between sm:items-end gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 mb-1">
@@ -425,7 +425,7 @@ export function VerificationCenter({ onVerifyNew }: VerificationCenterProps) {
           <RejectedDocumentsCard application={displayApp} />
         </div>
       ) : !hasAnyApp ? (
-        <div className="border border-slate-200 rounded-xl p-10 bg-slate-50 text-center max-w-3xl border-dashed">
+        <div className="border border-slate-200 rounded-xl p-10 bg-slate-50 text-center border-dashed">
           <h3 className="text-lg font-semibold text-slate-700 mb-2">
             No Verification Applications
           </h3>
@@ -441,7 +441,7 @@ export function VerificationCenter({ onVerifyNew }: VerificationCenterProps) {
           </Button>
         </div>
       ) : (
-        <div className="border border-slate-200 rounded-xl p-10 bg-slate-50 text-center max-w-3xl border-dashed">
+        <div className="border border-slate-200 rounded-xl p-10 bg-slate-50 text-center border-dashed">
           <h3 className="text-base font-semibold text-slate-700 mb-2">
             No {statusLabel.toLowerCase()} applications
           </h3>

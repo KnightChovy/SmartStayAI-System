@@ -45,7 +45,7 @@ export function RoomTypeAmenitiesModal({
     try {
       await replaceAmenities.mutateAsync({
         roomTypeId: roomType.id,
-        dto: { amenityIds: Array.from(selected) },
+        dto: { amenities: Array.from(selected).map(amenityId => ({ amenityId })) },
       });
       toast.success('Amenities updated');
       onClose();

@@ -8,6 +8,20 @@ This file tracks the accomplished tasks, resolved user requests, and visual/func
 
 ### July 2, 2026
 
+- [x] **Hotel Partner — chặn dùng tính năng khi chưa verify khách sạn (gate + popup)**:
+  - **Nguồn dữ liệu**: `GET /hotel-partners/registrations/me` (đã có `hotelVerifyService.getApplications` + `useGetApplications`). Thêm hook suy ra trạng thái `hooks/hotel-verify/use-partner-verification.ts` → `usePartnerVerification()` trả `state: 'none' | 'pending' | 'rejected' | 'verified'` (`verified` = có ≥1 hồ sơ `approved`) + `isVerified/isLoading/isError`.
+  - **Gate**: `components/hotel-partner/hotel-verify/PartnerVerificationGate.tsx` — panel chặn nội dung + **popup Modal cảnh báo** (message theo từng state: chưa nộp / đang chờ duyệt / bị từ chối), CTA dẫn tới `/partner/verify`.
+  - **Wire trong `HotelPartnerLayout`**: chưa verify + không ở route được phép → render gate thay cho `<Outlet/>`. Route được phép đi qua: `/partner/verify` và `/partner/profile` (để partner hoàn tất hồ sơ + sửa profile). Có state loading (spinner) và **fail-open khi lỗi mạng** (không khoá nhầm). Chỉ áp cho cổng partner (layout đã guard role `hotel_partner`).
+  - `npx tsc`: file mới/đụng tới sạch, tổng vẫn 21 lỗi pre-existing.
+
+- [x] **Hotel Partner — đồng bộ FE với spec BE hotel & room (fix bug amenity + bổ sung field Pha-1)**:
+  - **Rà soát**: đọc lại `server` routes/validation `hotel.validation.ts` + `room-type.validation.ts` + `room.validation.ts` đối chiếu FE data layer.
+  - **Bug (đã fix)**: `PUT /hotels/:id/room-types/:roomTypeId/amenities` — BE yêu cầu `{ amenities: [{ amenityId, isFree?, quantity? }] }` nhưng FE gửi `{ amenityIds: string[] }` → BE reject (save tiện nghi loại phòng hỏng). Đổi `ReplaceAmenitiesDto` sang `{ amenities: AmenityAssignment[] }` và `RoomTypeAmenitiesModal` build `amenities.map(id => ({ amenityId }))`. Thêm `isFree?/quantity?` vào `RoomTypeAmenityLink` (BE có trả).
+  - **Bổ sung field Pha-1 (booking.com style) cho `PATCH /hotels/:id`**: `UpdateHotelDto` + response types (`Hotel`, `ManagedHotel`) thêm postalCode, phone, email, totalFloors, builtYear, renovationYear, isSmokingAllowed, petsPolicy (enum `PetsPolicy`), cancellationPolicy, childrenPolicy, minGuestAge, securityDepositAmount, languagesSpoken[], maxLengthOfStay. `HotelProfileFormModal` thêm 3 nhóm field (Contact & location / Property details / Policies) + schema `hotelProfileFormSchema` mở rộng (số giữ string→convert lúc submit, languages nhập CSV→array, '' → null để xoá field).
+  - **Bổ sung field Pha-1 cho room-type** (`POST/PUT room-types`): `CreateRoomTypeDto` + `ManagedRoomType`/`RoomType` thêm maxAdults, maxChildren, sizeUnit (`sqm|sqft`), isNonSmoking, hasPrivateBathroom, hasBalcony. `RoomTypeFormModal` + `roomTypeFormSchema` thêm các field tương ứng (select đơn vị diện tích + 3 toggle).
+  - ⚠️ **Còn thiếu ở FE (BE đã có, chưa wire — cần UI riêng, chưa làm)**: hotel `GET/PUT /contacts`, `/policies`, `/nearby-places`; room-type `GET/PUT /beds`; partner reviews `GET /reviews` + `/reviews/stats`. Data-layer + UI cho các mục này chưa thêm để tránh dead code — sẽ làm khi cần.
+  - `npx tsc -p tsconfig.app.json --noEmit`: file đụng tới sạch, tổng vẫn 21 lỗi pre-existing không liên quan.
+
 - [x] **Sidebar Logout — màu đỏ + in đậm/loading khi bấm + toast khi thành công**:
   - `common/sidebar/Sidebar.tsx`: nút Logout đổi sang **đỏ** (`text-red-600` + hover `bg-red-50/text-red-700`), `active:font-bold` khi nhấn; thêm prop `isLoggingOut` → khi đang đăng xuất thì **in đậm** + đổi icon `LogOut` sang `Loader2` xoay + chữ "Logging out…" + `disabled` (chống double-click).
   - Truyền `isPending` từ `useLogout()` vào `CommonSidebar` ở cả 4 layout dùng chung: Manager/HotelPartner/Staff/Admin (`isLoggingOut={isLoggingOut}`).

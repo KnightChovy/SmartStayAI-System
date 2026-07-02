@@ -41,9 +41,6 @@ export default function VerifyHotelPage() {
 
   const { data: application, isError } = useGetApplicationById(applicationId);
 
-  // When editing an existing application ("Review & Fix"), prefill the wizard
-  // draft from the fetched data once — before the step forms mount, since RHF
-  // only reads defaultValues on mount.
   const hydrateFromApplication = useHotelVerifyStore(
     s => s.hydrateFromApplication
   );

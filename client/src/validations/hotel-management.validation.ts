@@ -69,6 +69,27 @@ export const hotelProfileFormSchema = z.object({
   businessType: z.string().optional(),
   checkInTime: optionalTime(),
   checkOutTime: optionalTime(),
+  // ----- Chi tiết bổ sung kiểu booking.com (Pha 1) — đều tuỳ chọn -----
+  postalCode: z.string().max(20, 'Max 20 characters').optional(),
+  phone: z.string().max(30, 'Max 30 characters').optional(),
+  email: z
+    .string()
+    .trim()
+    .optional()
+    .refine(v => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v), 'Invalid email'),
+  totalFloors: optionalInt(0, 200),
+  builtYear: optionalInt(1800, 2100),
+  renovationYear: optionalInt(1800, 2100),
+  isSmokingAllowed: z.boolean(),
+  /** '' = không đặt; nếu chọn thì là enum hợp lệ. */
+  petsPolicy: z.string().optional(),
+  cancellationPolicy: z.string().max(5000, 'Max 5000 characters').optional(),
+  childrenPolicy: z.string().max(5000, 'Max 5000 characters').optional(),
+  minGuestAge: optionalInt(0, 120),
+  securityDepositAmount: optionalDecimal(0),
+  maxLengthOfStay: optionalInt(1, 365),
+  /** Danh sách ngôn ngữ, nhập cách nhau bằng dấu phẩy. */
+  languagesSpoken: z.string().optional(),
 });
 
 export type HotelProfileFormValues = z.infer<typeof hotelProfileFormSchema>;
@@ -94,6 +115,14 @@ export const roomTypeFormSchema = z.object({
   bedType: z.string().max(100, 'Max 100 characters').optional(),
   viewType: z.string().max(100, 'Max 100 characters').optional(),
   isActive: z.boolean(),
+  // ----- Chi tiết bổ sung kiểu booking.com (Pha 1) — đều tuỳ chọn -----
+  maxAdults: optionalInt(0, 20),
+  maxChildren: optionalInt(0, 20),
+  /** '' = không đặt; nếu chọn thì 'sqm' | 'sqft'. */
+  sizeUnit: z.string().optional(),
+  isNonSmoking: z.boolean(),
+  hasPrivateBathroom: z.boolean(),
+  hasBalcony: z.boolean(),
 });
 
 export type RoomTypeFormValues = z.infer<typeof roomTypeFormSchema>;

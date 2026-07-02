@@ -13,3 +13,4 @@
 # PHẢI neo bằng "/AI" — pattern trần "AI" sẽ nuốt luôn server/src/services/ai trên hệ thống không phân biệt hoa/thường.
 /AI
 /.playwright-mcp
+.vscode

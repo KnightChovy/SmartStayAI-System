@@ -8,6 +8,7 @@ import {
   TextField,
   TextareaField,
   SelectField,
+  ToggleField,
   type SelectOption,
 } from '@/components/hotel-partner/shared/form-controls';
 import {
@@ -37,10 +38,21 @@ const BUSINESS_TYPE_OPTIONS: SelectOption[] = [
   { value: 'apartment', label: 'Apartment' },
 ];
 
+const PETS_POLICY_OPTIONS: SelectOption[] = [
+  { value: 'not_allowed', label: 'Not allowed' },
+  { value: 'allowed', label: 'Allowed' },
+  { value: 'on_request', label: 'On request' },
+];
+
 /** '' -> null để BE xoá field; ngược lại trim. */
 function nullableText(value?: string): string | null {
   const v = value?.trim();
   return v ? v : null;
+}
+
+/** '' -> null; ngược lại Number. */
+function numOrNull(value?: string): number | null {
+  return value && value.trim() ? Number(value) : null;
 }
 
 function toDto(values: HotelProfileFormValues): UpdateHotelDto {
@@ -59,6 +71,23 @@ function toDto(values: HotelProfileFormValues): UpdateHotelDto {
     ...(values.businessType
       ? { businessType: values.businessType as UpdateHotelDto['businessType'] }
       : {}),
+    // ----- Chi tiết bổ sung (Pha 1) -----
+    postalCode: nullableText(values.postalCode),
+    phone: nullableText(values.phone),
+    email: nullableText(values.email),
+    totalFloors: numOrNull(values.totalFloors),
+    builtYear: numOrNull(values.builtYear),
+    renovationYear: numOrNull(values.renovationYear),
+    isSmokingAllowed: values.isSmokingAllowed,
+    petsPolicy: (values.petsPolicy || null) as UpdateHotelDto['petsPolicy'],
+    cancellationPolicy: nullableText(values.cancellationPolicy),
+    childrenPolicy: nullableText(values.childrenPolicy),
+    minGuestAge: numOrNull(values.minGuestAge),
+    securityDepositAmount: numOrNull(values.securityDepositAmount),
+    maxLengthOfStay: numOrNull(values.maxLengthOfStay),
+    languagesSpoken: values.languagesSpoken
+      ? values.languagesSpoken.split(',').map(s => s.trim()).filter(Boolean)
+      : [],
   };
 }
 
@@ -80,6 +109,21 @@ export function HotelProfileFormModal({ open, onClose, hotel }: HotelProfileForm
       businessType: hotel.businessType ?? '',
       checkInTime: hotel.checkInTime ?? '',
       checkOutTime: hotel.checkOutTime ?? '',
+      postalCode: hotel.postalCode ?? '',
+      phone: hotel.phone ?? '',
+      email: hotel.email ?? '',
+      totalFloors: hotel.totalFloors != null ? String(hotel.totalFloors) : '',
+      builtYear: hotel.builtYear != null ? String(hotel.builtYear) : '',
+      renovationYear: hotel.renovationYear != null ? String(hotel.renovationYear) : '',
+      isSmokingAllowed: hotel.isSmokingAllowed ?? false,
+      petsPolicy: hotel.petsPolicy ?? '',
+      cancellationPolicy: hotel.cancellationPolicy ?? '',
+      childrenPolicy: hotel.childrenPolicy ?? '',
+      minGuestAge: hotel.minGuestAge != null ? String(hotel.minGuestAge) : '',
+      securityDepositAmount:
+        hotel.securityDepositAmount != null ? String(Number(hotel.securityDepositAmount)) : '',
+      maxLengthOfStay: hotel.maxLengthOfStay != null ? String(hotel.maxLengthOfStay) : '',
+      languagesSpoken: (hotel.languagesSpoken ?? []).join(', '),
     },
   });
 
@@ -179,6 +223,81 @@ export function HotelProfileFormModal({ open, onClose, hotel }: HotelProfileForm
             rows={4}
             placeholder="Describe your hotel, location highlights, services..."
           />
+
+          {/* ----- Contact & location ----- */}
+          <div className="border-t border-slate-100 pt-4">
+            <p className="text-sm font-semibold text-slate-800 mb-3">Contact & location</p>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <TextField<HotelProfileFormValues> name="phone" label="Phone" type="tel" placeholder="+84 24 1234 5678" />
+              <TextField<HotelProfileFormValues> name="email" label="Email" type="email" placeholder="info@hotel.com" />
+              <TextField<HotelProfileFormValues> name="postalCode" label="Postal code" placeholder="100000" />
+            </div>
+          </div>
+
+          {/* ----- Property details ----- */}
+          <div className="border-t border-slate-100 pt-4">
+            <p className="text-sm font-semibold text-slate-800 mb-3">Property details</p>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <TextField<HotelProfileFormValues> name="totalFloors" label="Total floors" type="number" placeholder="12" />
+              <TextField<HotelProfileFormValues> name="builtYear" label="Built year" type="number" placeholder="2015" />
+              <TextField<HotelProfileFormValues> name="renovationYear" label="Renovation year" type="number" placeholder="2022" />
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 mt-4">
+              <TextField<HotelProfileFormValues> name="minGuestAge" label="Min guest age" type="number" placeholder="18" />
+              <TextField<HotelProfileFormValues>
+                name="securityDepositAmount"
+                label="Security deposit (VND)"
+                type="number"
+                placeholder="500000"
+              />
+              <TextField<HotelProfileFormValues>
+                name="maxLengthOfStay"
+                label="Max length of stay (nights)"
+                type="number"
+                placeholder="30"
+              />
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 mt-4">
+              <SelectField<HotelProfileFormValues>
+                name="petsPolicy"
+                label="Pets policy"
+                options={PETS_POLICY_OPTIONS}
+                placeholder="Select policy"
+              />
+              <TextField<HotelProfileFormValues>
+                name="languagesSpoken"
+                label="Languages spoken"
+                placeholder="Vietnamese, English, French"
+                hint="Separate with commas"
+              />
+            </div>
+            <div className="mt-4">
+              <ToggleField<HotelProfileFormValues>
+                name="isSmokingAllowed"
+                label="Smoking allowed"
+                description="Whether smoking is allowed on the property"
+              />
+            </div>
+          </div>
+
+          {/* ----- Policies ----- */}
+          <div className="border-t border-slate-100 pt-4">
+            <p className="text-sm font-semibold text-slate-800 mb-3">Policies</p>
+            <div className="space-y-4">
+              <TextareaField<HotelProfileFormValues>
+                name="cancellationPolicy"
+                label="Cancellation policy"
+                rows={3}
+                placeholder="Describe your cancellation terms..."
+              />
+              <TextareaField<HotelProfileFormValues>
+                name="childrenPolicy"
+                label="Children policy"
+                rows={3}
+                placeholder="Describe your children / extra-bed terms..."
+              />
+            </div>
+          </div>
         </form>
       </FormProvider>
     </Modal>
