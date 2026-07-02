@@ -1,8 +1,8 @@
 import httpStatus from 'http-status';
-import type { BookingStatus } from '@prisma/client';
+import type { BookingStatus, PartnerStatus, Prisma } from '@prisma/client';
 import prisma from '../config/prisma';
 import ApiError from '../utils/ApiError';
-import type { AnalyticsQuery, PerformanceQuery } from '../dto/analytics.dto';
+import type { AnalyticsQuery, PerformanceQuery } from '../dto/platform-manager.dto';
 
 // Booking được coi là "đã chốt" (đã thanh toán / đã đến): dùng cho conversion rate & GMV
 const CONFIRMED_STATUSES: BookingStatus[] = ['confirmed', 'checked_in', 'checked_out'];
@@ -55,7 +55,55 @@ const generatePeriods = (period: 'month' | 'year', start: Date, range: number): 
   return periods;
 };
 
-export class AnalyticsService {
+export class PlatformManagerService {
+  /**
+   * [Platform Manager] Liệt kê MỌI đối tác (hotel_partner) toàn sàn, lọc theo trạng thái +
+   * tìm theo tên doanh nghiệp/email. Kèm thông tin chủ tài khoản (owner) và số khách sạn của partner.
+   */
+  listPartners = async (
+    filter: { search?: string; status?: PartnerStatus },
+    options: { limit?: number; page?: number }
+  ) => {
+    const limit = options.limit || 20;
+    const page = options.page || 1;
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.HotelPartnerWhereInput = { deletedAt: null };
+    if (filter.status) where.status = filter.status;
+    if (filter.search) {
+      where.OR = [
+        { businessName: { contains: filter.search, mode: 'insensitive' } },
+        { contactEmail: { contains: filter.search, mode: 'insensitive' } },
+      ];
+    }
+
+    const [rows, totalResults] = await prisma.$transaction([
+      prisma.hotelPartner.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          businessName: true,
+          status: true,
+          commissionRate: true,
+          contactEmail: true,
+          contactPhone: true,
+          approvedAt: true,
+          createdAt: true,
+          ownerUser: { select: { id: true, fullName: true, email: true } },
+          _count: { select: { hotels: true } },
+        },
+      }),
+      prisma.hotelPartner.count({ where }),
+    ]);
+
+    // Đổi tên quan hệ ownerUser -> owner cho FE dễ đọc
+    const results = rows.map(({ ownerUser, ...partner }) => ({ ...partner, owner: ownerUser }));
+    return { results, page, limit, totalPages: Math.ceil(totalResults / limit), totalResults };
+  };
+
   /**
    * [Platform Manager] Báo cáo analytics toàn sàn: tổng booking/user, conversion rate (confirmed/tổng),
    * time-series so sánh theo tháng/năm, và top thành phố / top khách sạn được đặt nhiều nhất.
@@ -298,4 +346,4 @@ const avgResponseMinutesByHotel = (from: Date, to: Date) =>
     SELECT hotel_id AS "hotelId", AVG(EXTRACT(EPOCH FROM (next_at - created_at)) / 60.0)::float8 AS "avgMinutes"
     FROM m WHERE sender_type = 'user' AND next_sender = 'staff' GROUP BY hotel_id`;
 
-export const analyticsService = new AnalyticsService();
+export const platformManagerService = new PlatformManagerService();

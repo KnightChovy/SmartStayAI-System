@@ -1,32 +1,43 @@
 import express from 'express';
 import auth from '../../middlewares/auth';
 import validate from '../../middlewares/validate';
-import { adminValidation } from '../../validations';
-import { adminController } from '../../controllers';
+import { platformManagerValidation } from '../../validations';
+import { platformManagerController } from '../../controllers';
 
 const router = express.Router();
 
-// Danh sách toàn bộ đối tác (hotel_partner) — Platform Manager (admin cũng truy cập được)
-router.get('/partners', auth('viewPlatformStats'), validate(adminValidation.listPartners), adminController.listPartners);
+// Tất cả endpoint dưới đây dành cho Platform Manager (quyền viewPlatformStats; admin cũng có quyền này).
 
-// Analytics & hiệu suất toàn sàn — Platform Manager (quyền viewPlatformStats; admin cũng có quyền này).
-// Handler tái dùng adminController vì nghiệp vụ chung tầng platform.
-router.get('/analytics', auth('viewPlatformStats'), validate(adminValidation.getAnalytics), adminController.getAnalytics);
+// Danh sách toàn bộ đối tác (hotel_partner)
+router.get(
+  '/partners',
+  auth('viewPlatformStats'),
+  validate(platformManagerValidation.listPartners),
+  platformManagerController.listPartners
+);
+
+// Báo cáo analytics toàn sàn
+router.get(
+  '/analytics',
+  auth('viewPlatformStats'),
+  validate(platformManagerValidation.getAnalytics),
+  platformManagerController.getAnalytics
+);
 
 // Bảng xếp hạng hiệu suất toàn sàn
 router.get(
   '/performance',
   auth('viewPlatformStats'),
-  validate(adminValidation.getPerformanceLeaderboard),
-  adminController.getPerformanceLeaderboard
+  validate(platformManagerValidation.getPerformanceLeaderboard),
+  platformManagerController.getPerformanceLeaderboard
 );
 
 // Hiệu suất + điểm chi tiết của 1 khách sạn
 router.get(
   '/hotels/:hotelId/performance',
   auth('viewPlatformStats'),
-  validate(adminValidation.getHotelPerformance),
-  adminController.getHotelPerformance
+  validate(platformManagerValidation.getHotelPerformance),
+  platformManagerController.getHotelPerformance
 );
 
 export default router;
