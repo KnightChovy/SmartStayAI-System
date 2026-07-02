@@ -25,7 +25,7 @@ const footerItems = [
 ];
 
 export function ManagerLayout() {
-  const { mutate: logout } = useLogout();
+  const { mutate: logout, isPending: isLoggingOut } = useLogout();
   return (
     <SidebarProvider>
       <CommonSidebar
@@ -34,6 +34,7 @@ export function ManagerLayout() {
         navItems={navItems}
         footerItems={footerItems}
         onLogout={() => logout()}
+        isLoggingOut={isLoggingOut}
       />
       <SidebarInset>
         <CommonNavbar />

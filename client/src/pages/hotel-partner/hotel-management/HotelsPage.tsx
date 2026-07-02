@@ -4,10 +4,10 @@ import { usePartnerHotels } from '@/hooks/hotels';
 import { Button } from '@/components/ui/button';
 import { HotelDirectory } from '@/components/hotel-partner/hotel-management/HotelDirectory';
 import {
-  LoadingState,
   ErrorState,
   EmptyState,
 } from '@/components/hotel-partner/shared/states';
+import { DirectorySkeleton } from '@/components/shared/skeletons';
 import type { PartnerHotel } from '@/types/hotel.types';
 
 /**
@@ -40,7 +40,7 @@ export default function HotelsPage() {
       </div>
 
       {isLoading ? (
-        <LoadingState label="Loading your hotels..." />
+        <DirectorySkeleton columns={5} />
       ) : isError ? (
         <ErrorState label="Failed to load your hotels." />
       ) : !hotels || hotels.length === 0 ? (

@@ -3,14 +3,15 @@ import { Plus, Users, Trash2, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import AppFilter from '@/common/filter/AppFilter';
-import { LoadingState, ErrorState, EmptyState } from '@/components/hotel-partner/shared/states';
+import { ErrorState, EmptyState } from '@/components/hotel-partner/shared/states';
+import { TableSkeleton } from '@/components/shared/skeletons';
 import { DataTable, type Column } from '@/components/hotel-partner/shared/DataTable';
 import { ActionMenu } from '@/components/hotel-partner/shared/ActionMenu';
 import { Pill } from '@/components/hotel-partner/shared/Pill';
 import { ConfirmDialog } from '@/components/hotel-partner/shared/ConfirmDialog';
 import { useHotelStaff, useRemoveHotelStaff } from '@/hooks/hotel-staff';
 import { errorMessage } from '@/utils/errorMessage';
-import { formatDateShort } from '@/utils/formatDate';
+import { formatDate } from '@/utils/formatDate';
 import type { StaffAssignment, StaffRole } from '@/types/hotel-staff.types';
 import { STAFF_ROLE_CONFIG, STAFF_ROLE_OPTIONS, USER_STATUS_CONFIG } from './labels';
 import { StaffFormModal } from './StaffFormModal';
@@ -101,7 +102,7 @@ export function StaffTab({ hotelId, hotelName }: StaffTabProps) {
       header: 'Assigned',
       align: 'center',
       className: 'hidden sm:table-cell',
-      cell: a => <span className="text-slate-600">{formatDateShort(a.assignedAt)}</span>,
+      cell: a => <span className="text-slate-600">{formatDate(a.assignedAt)}</span>,
     },
     {
       id: 'actions',
@@ -156,7 +157,7 @@ export function StaffTab({ hotelId, hotelName }: StaffTabProps) {
       </div>
 
       {isLoading ? (
-        <LoadingState label="Loading staff..." />
+        <TableSkeleton columns={5} />
       ) : isError ? (
         <ErrorState label="Failed to load the staff list." />
       ) : (staff?.length ?? 0) === 0 ? (

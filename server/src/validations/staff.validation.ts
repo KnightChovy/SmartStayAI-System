@@ -22,6 +22,14 @@ export const listStaff = {
   }),
 };
 
+// Chi tiết một nhân viên của khách sạn
+export const getStaff = {
+  params: Joi.object().keys({
+    hotelId: Joi.string().uuid().required(),
+    userId: Joi.string().uuid().required(),
+  }),
+};
+
 // Bỏ gán một nhân viên khỏi khách sạn
 export const removeStaff = {
   params: Joi.object().keys({

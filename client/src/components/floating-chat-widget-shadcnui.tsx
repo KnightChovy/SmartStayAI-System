@@ -2,12 +2,13 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AnimatePresence, motion, type Variants } from 'framer-motion';
-import { Bot, Loader2, MessageSquare, Send, Sparkles, X } from 'lucide-react';
+import { Bot, Building2, Loader2, MessageSquare, Send, Sparkles, X } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { useSendChatMessage, useSendChatMessageStream } from '@/hooks/chat';
+import { useSearchHotels } from '@/hooks/hotels';
 import { cn } from '@/lib/cn';
 import { chatService } from '@/services/chat.service';
 import { useAuthStore } from '@/stores/authStore';
@@ -67,12 +68,23 @@ const messageVariants: Variants = {
   },
 };
 
+const greetingMessage = (): Message => ({
+  id: 'greeting',
+  sender: 'ai',
+  text: "Good evening. I'm your SmartStay AI concierge. Pick a hotel below or tell me a destination and I'll help you.",
+  time: now(),
+  quickReplies: initialQuickReplies,
+});
+
 export function FloatingChatWidget() {
-  const { hotelId } = useParams<{ hotelId?: string }>();
+  const { hotelId: routeHotelId } = useParams<{ hotelId?: string }>();
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const sendChatMessage = useSendChatMessage();
   const sendChatMessageStream = useSendChatMessageStream();
+  const { data: hotelsData } = useSearchHotels({ limit: 50 });
+  const hotels = hotelsData?.results ?? [];
   const [isOpen, setIsOpen] = useState(false);
+  const [selectedHotelId, setSelectedHotelId] = useState<string>();
   const [conversationId, setConversationId] = useState<string>();
   const {
     register,
@@ -84,22 +96,24 @@ export function FloatingChatWidget() {
     resolver: zodResolver(chatSchema),
     defaultValues: { message: '' },
   });
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      sender: 'ai',
-      text: "Good evening. I'm your SmartStay AI concierge. Tell me a destination and I'll find stays for you.",
-      time: now(),
-      quickReplies: initialQuickReplies,
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([greetingMessage()]);
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const idCounter = useRef(0);
+  const makeId = useCallback(() => `m-${(idCounter.current += 1)}`, []);
+
+  // Chatbot gắn theo từng khách sạn (backend yêu cầu hotelId). Ưu tiên hotel chọn
+  // từ thanh chip, rồi tới hotel trên URL (trang chi tiết), cuối cùng là hotel đầu tiên.
+  const activeHotelId = selectedHotelId ?? routeHotelId ?? hotels[0]?.id;
+  const activeHotel = hotels.find(hotel => hotel.id === activeHotelId);
 
   const toggleOpen = useCallback(() => setIsOpen(prev => !prev), []);
 
+  // Đổi khách sạn → reset hội thoại + lời chào (giống "clearChat" bên mobile).
   useEffect(() => {
     setConversationId(undefined);
-  }, [hotelId]);
+    setMessages([greetingMessage()]);
+  }, [activeHotelId]);
 
   useEffect(() => {
     if (isOpen) {
@@ -107,19 +121,28 @@ export function FloatingChatWidget() {
     }
   }, [isOpen, messages, isTyping]);
 
+  const handleSelectHotel = (hotelId: string) => {
+    if (hotelId === activeHotelId || isTyping) return;
+    setSelectedHotelId(hotelId);
+  };
+
   const sendText = async (raw: string) => {
     const text = raw.trim();
     if (!text || isTyping) return;
 
-    setMessages(prev => [...prev, { sender: 'user', text, time: now() }]);
+    setMessages(prev => [
+      ...prev,
+      { id: makeId(), sender: 'user', text, time: now() },
+    ]);
     setIsTyping(true);
 
     try {
-      if (hotelId) {
+      if (activeHotelId) {
         if (!isAuthenticated) {
           setMessages(prev => [
             ...prev,
             {
+              id: makeId(),
               sender: 'ai',
               text: 'Please sign in to chat with this hotel concierge. After signing in, I can help with rooms, amenities, and booking status.',
               time: now(),
@@ -129,25 +152,28 @@ export function FloatingChatWidget() {
           return;
         }
 
-        let streamMessageAdded = false;
-        const streamMessageTime = now();
-        const updateStreamMessage = (fullText: string, isComplete = false) => {
+        // Một id ổn định cho bong bóng AI. Updater dưới đây thuần (quyết định
+        // append/update từ chính `prev`), nên React gọi 2 lần (StrictMode) vẫn đúng
+        // và không bao giờ ghi đè tin nhắn của user.
+        const aiId = makeId();
+        const aiTime = now();
+        const updateAi = (fullText: string, isComplete = false) => {
           setMessages(prev => {
-            if (!streamMessageAdded) {
-              streamMessageAdded = true;
+            const exists = prev.some(item => item.id === aiId);
+            if (!exists) {
               return [
                 ...prev,
                 {
+                  id: aiId,
                   sender: 'ai',
                   text: fullText,
-                  time: streamMessageTime,
+                  time: aiTime,
                   quickReplies: isComplete ? hotelQuickReplies : undefined,
                 },
               ];
             }
-
-            return prev.map((item, index) =>
-              index === prev.length - 1
+            return prev.map(item =>
+              item.id === aiId
                 ? {
                     ...item,
                     text: fullText,
@@ -161,50 +187,53 @@ export function FloatingChatWidget() {
         try {
           const result = await sendChatMessageStream.mutateAsync({
             payload: {
-              hotelId,
+              hotelId: activeHotelId,
               conversationId,
               message: text,
             },
             handlers: {
               onConversationId: setConversationId,
-              onChunk: (_chunk, fullText) => updateStreamMessage(fullText),
+              onChunk: (_chunk, fullText) => updateAi(fullText),
             },
           });
           if (result.conversationId) {
             setConversationId(result.conversationId);
           }
           if (result.reply.trim()) {
-            updateStreamMessage(result.reply, true);
+            updateAi(result.reply, true);
+          } else {
+            // Stream xong nhưng không có reply tổng hợp — gắn quick replies vào tin đã stream.
+            setMessages(prev =>
+              prev.map(item =>
+                item.id === aiId
+                  ? { ...item, quickReplies: hotelQuickReplies }
+                  : item
+              )
+            );
           }
           return;
         } catch (streamErr) {
-          if (streamMessageAdded) {
+          // Stream lỗi → thử endpoint không stream, tái dùng đúng bong bóng AI.
+          try {
+            const fallback = await sendChatMessage.mutateAsync({
+              hotelId: activeHotelId,
+              conversationId,
+              message: text,
+            });
+            setConversationId(fallback.conversationId);
+            updateAi(fallback.reply, true);
+            return;
+          } catch {
             throw streamErr;
           }
         }
-
-        const fallback = await sendChatMessage.mutateAsync({
-          hotelId,
-          conversationId,
-          message: text,
-        });
-        setConversationId(fallback.conversationId);
-        setMessages(prev => [
-          ...prev,
-          {
-            sender: 'ai',
-            text: fallback.reply,
-            time: now(),
-            quickReplies: hotelQuickReplies,
-          },
-        ]);
-        return;
       }
 
       const reply = await chatService.reply(text);
       setMessages(prev => [
         ...prev,
         {
+          id: makeId(),
           sender: 'ai',
           text: reply.text,
           time: now(),
@@ -216,13 +245,14 @@ export function FloatingChatWidget() {
       setMessages(prev => [
         ...prev,
         {
+          id: makeId(),
           sender: 'ai',
           text: errorMessage(
             err,
             'Sorry, I could not reach the concierge right now. Please try again.'
           ),
           time: now(),
-          quickReplies: hotelId ? hotelQuickReplies : initialQuickReplies,
+          quickReplies: activeHotelId ? hotelQuickReplies : initialQuickReplies,
         },
       ]);
     } finally {
@@ -233,6 +263,22 @@ export function FloatingChatWidget() {
   const latestMessageIndex = messages.length - 1;
   const messageValue = watch('message');
   const isSendDisabled = !messageValue.trim() || isTyping;
+
+  const messageField = register('message');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Tự giãn chiều cao theo nội dung (như ô nhập Messenger), giới hạn ~5 dòng rồi scroll.
+  const resizeTextarea = useCallback(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
+  }, []);
+
+  // Đồng bộ chiều cao khi giá trị đổi (gõ, dán, hoặc reset sau khi gửi).
+  useEffect(() => {
+    resizeTextarea();
+  }, [messageValue, resizeTextarea]);
 
   const onSubmit = (values: ChatFormValues) => {
     void sendText(values.message);
@@ -268,8 +314,8 @@ export function FloatingChatWidget() {
                       SmartStay AI
                     </h3>
                     <p className="truncate text-xs text-muted-foreground">
-                      {hotelId
-                        ? 'Hotel concierge online'
+                      {activeHotel
+                        ? activeHotel.name
                         : 'Digital concierge online'}
                     </p>
                   </div>
@@ -286,13 +332,41 @@ export function FloatingChatWidget() {
               </div>
             </div>
 
+            {hotels.length > 0 && (
+              <div className="border-b border-border/40 bg-background/70 px-3 py-2">
+                <div className="flex gap-1.5 overflow-x-auto pb-0.5">
+                  {hotels.map(hotel => {
+                    const isActiveHotel = hotel.id === activeHotelId;
+                    return (
+                      <button
+                        key={hotel.id}
+                        type="button"
+                        onClick={() => handleSelectHotel(hotel.id)}
+                        disabled={isTyping}
+                        title={hotel.name}
+                        className={cn(
+                          'flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors disabled:opacity-60',
+                          isActiveHotel
+                            ? 'border-primary bg-primary text-primary-foreground'
+                            : 'border-border/50 bg-background/80 text-muted-foreground hover:border-primary/40 hover:text-foreground'
+                        )}
+                      >
+                        <Building2 className="h-3 w-3 shrink-0" />
+                        <span className="max-w-32 truncate">{hotel.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <div className="flex h-90 flex-col gap-4 overflow-y-auto bg-background/55 p-4">
               {messages.map((item, index) => {
                 const isAi = item.sender === 'ai';
 
                 return (
                   <motion.div
-                    key={`${item.sender}-${index}-${item.time}`}
+                    key={item.id ?? `${item.sender}-${index}-${item.time}`}
                     variants={messageVariants}
                     className={cn(
                       'flex gap-3',
@@ -419,13 +493,28 @@ export function FloatingChatWidget() {
 
             <div className="border-t border-border/40 bg-background/80 p-3 backdrop-blur-md">
               <form className="space-y-1.5" onSubmit={handleSubmit(onSubmit)}>
-                <div className="relative flex items-center gap-2">
-                  <input
-                    {...register('message')}
-                    type="text"
+                <div className="relative flex items-end gap-2">
+                  <textarea
+                    {...messageField}
+                    ref={el => {
+                      messageField.ref(el);
+                      textareaRef.current = el;
+                    }}
+                    rows={1}
                     placeholder="Ask for stays, deals, or loyalty..."
                     aria-invalid={Boolean(errors.message)}
-                    className="min-w-0 flex-1 rounded-full border border-border/50 bg-background/70 px-4 py-2.5 text-sm outline-none transition-all placeholder:text-muted-foreground focus:border-primary/50 focus:bg-background focus:ring-2 focus:ring-primary/10 aria-invalid:border-destructive/60"
+                    onChange={event => {
+                      void messageField.onChange(event);
+                      resizeTextarea();
+                    }}
+                    onKeyDown={event => {
+                      // Enter để gửi, Shift+Enter để xuống dòng (giống Messenger).
+                      if (event.key === 'Enter' && !event.shiftKey) {
+                        event.preventDefault();
+                        void handleSubmit(onSubmit)();
+                      }
+                    }}
+                    className="min-w-0 max-h-30 flex-1 resize-none rounded-2xl border border-border/50 bg-background/70 px-4 py-2.5 text-sm leading-relaxed outline-none transition-colors placeholder:text-muted-foreground focus:border-primary/50 focus:bg-background focus:ring-2 focus:ring-primary/10 aria-invalid:border-destructive/60"
                   />
                   <Button
                     type="submit"

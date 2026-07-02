@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/cn';
-import { formatDate, formatTime } from '@/utils/formatDate';
+import { formatDateLong, formatTime } from '@/utils/formatDate';
 
 interface AdminReportModalProps {
   currentTime: Date;
@@ -81,7 +81,7 @@ export function AdminReportModal({
               Generate Report
             </h2>
             <p className="mt-1 text-xs font-semibold text-muted-foreground">
-              Realtime {formatDate(currentTime)} | {formatTime(currentTime)}
+              Realtime {formatDateLong(currentTime)} | {formatTime(currentTime)}
             </p>
           </div>
           <button

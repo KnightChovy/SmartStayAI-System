@@ -8,6 +8,8 @@ import {
   TextField,
   TextareaField,
   ToggleField,
+  SelectField,
+  type SelectOption,
 } from '@/components/hotel-partner/shared/form-controls';
 import {
   roomTypeFormSchema,
@@ -23,6 +25,11 @@ interface RoomTypeFormModalProps {
   /** When set, the modal is in edit mode. */
   roomType?: ManagedRoomType | null;
 }
+
+const SIZE_UNIT_OPTIONS: SelectOption[] = [
+  { value: 'sqm', label: 'm² (sqm)' },
+  { value: 'sqft', label: 'ft² (sqft)' },
+];
 
 /** '' -> null so the API can clear the field; otherwise trim. */
 function nullableText(value?: string): string | null {
@@ -40,6 +47,13 @@ function toDto(values: RoomTypeFormValues): CreateRoomTypeDto {
     areaSqm: values.areaSqm?.trim() ? Number(values.areaSqm) : null,
     bedType: nullableText(values.bedType),
     viewType: nullableText(values.viewType),
+    // ----- Chi tiết bổ sung (Pha 1) — chỉ gửi số khi có nhập -----
+    ...(values.maxAdults?.trim() ? { maxAdults: Number(values.maxAdults) } : {}),
+    ...(values.maxChildren?.trim() ? { maxChildren: Number(values.maxChildren) } : {}),
+    ...(values.sizeUnit ? { sizeUnit: values.sizeUnit as CreateRoomTypeDto['sizeUnit'] } : {}),
+    isNonSmoking: values.isNonSmoking,
+    hasPrivateBathroom: values.hasPrivateBathroom,
+    hasBalcony: values.hasBalcony,
   };
 }
 
@@ -60,6 +74,12 @@ export function RoomTypeFormModal({ open, onClose, hotelId, roomType }: RoomType
       bedType: roomType?.bedType ?? '',
       viewType: roomType?.viewType ?? '',
       isActive: roomType?.isActive ?? true,
+      maxAdults: roomType?.maxAdults != null ? String(roomType.maxAdults) : '',
+      maxChildren: roomType?.maxChildren != null ? String(roomType.maxChildren) : '',
+      sizeUnit: roomType?.sizeUnit ?? '',
+      isNonSmoking: roomType?.isNonSmoking ?? false,
+      hasPrivateBathroom: roomType?.hasPrivateBathroom ?? true,
+      hasBalcony: roomType?.hasBalcony ?? false,
     },
   });
 
@@ -126,15 +146,38 @@ export function RoomTypeFormModal({ open, onClose, hotelId, roomType }: RoomType
           <div className="grid grid-cols-2 gap-4">
             <TextField<RoomTypeFormValues>
               name="areaSqm"
-              label="Area (m²)"
+              label="Area"
               type="number"
               step="0.01"
               placeholder="28.5"
             />
-            <TextField<RoomTypeFormValues> name="bedType" label="Bed type" placeholder="Double / King" />
+            <SelectField<RoomTypeFormValues>
+              name="sizeUnit"
+              label="Area unit"
+              options={SIZE_UNIT_OPTIONS}
+              placeholder="m² / ft²"
+            />
           </div>
 
-          <TextField<RoomTypeFormValues> name="viewType" label="View" placeholder="Sea view / City view" />
+          <div className="grid grid-cols-2 gap-4">
+            <TextField<RoomTypeFormValues>
+              name="maxAdults"
+              label="Max adults"
+              type="number"
+              placeholder="2"
+            />
+            <TextField<RoomTypeFormValues>
+              name="maxChildren"
+              label="Max children"
+              type="number"
+              placeholder="1"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <TextField<RoomTypeFormValues> name="bedType" label="Bed type" placeholder="Double / King" />
+            <TextField<RoomTypeFormValues> name="viewType" label="View" placeholder="Sea view / City view" />
+          </div>
 
           <TextareaField<RoomTypeFormValues>
             name="description"
@@ -142,11 +185,28 @@ export function RoomTypeFormModal({ open, onClose, hotelId, roomType }: RoomType
             placeholder="Short description of this room type..."
           />
 
-          <ToggleField<RoomTypeFormValues>
-            name="isActive"
-            label="Active"
-            description="Turn off to hide this room type from booking"
-          />
+          <div className="grid grid-cols-1 gap-2.5">
+            <ToggleField<RoomTypeFormValues>
+              name="hasPrivateBathroom"
+              label="Private bathroom"
+              description="Room has its own bathroom"
+            />
+            <ToggleField<RoomTypeFormValues>
+              name="hasBalcony"
+              label="Balcony"
+              description="Room has a balcony"
+            />
+            <ToggleField<RoomTypeFormValues>
+              name="isNonSmoking"
+              label="Non-smoking"
+              description="Smoking is not allowed in this room type"
+            />
+            <ToggleField<RoomTypeFormValues>
+              name="isActive"
+              label="Active"
+              description="Turn off to hide this room type from booking"
+            />
+          </div>
         </form>
       </FormProvider>
     </Modal>

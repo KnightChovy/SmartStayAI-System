@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import {
   ArrowLeft,
@@ -11,14 +12,20 @@ import {
   EyeOff,
   Archive,
   Sparkles,
+  Pencil,
+  ImageIcon,
+  Plus,
 } from 'lucide-react';
 import { useManagedHotel } from '@/hooks/hotels';
+import { HotelProfileFormModal } from '@/components/hotel-partner/hotel-management/HotelProfileFormModal';
+import { HotelImagesModal } from '@/components/hotel-partner/hotel-management/HotelImagesModal';
+import { HotelAmenitiesModal } from '@/components/hotel-partner/hotel-management/HotelAmenitiesModal';
 import { Button } from '@/components/ui/button';
 import {
-  LoadingState,
   ErrorState,
   EmptyState,
 } from '@/components/hotel-partner/shared/states';
+import { DetailSkeleton } from '@/components/shared/skeletons';
 import {
   DataTable,
   type Column,
@@ -31,11 +38,14 @@ export default function HotelDetailPage() {
   const { hotelId = '' } = useParams();
   const navigate = useNavigate();
   const { data: hotel, isLoading, isError } = useManagedHotel(hotelId);
+  const [editOpen, setEditOpen] = useState(false);
+  const [photosOpen, setPhotosOpen] = useState(false);
+  const [amenitiesOpen, setAmenitiesOpen] = useState(false);
 
   if (isLoading) {
     return (
       <Shell onBack={() => navigate('/partner/hotel-management')}>
-        <LoadingState label="Loading hotel..." />
+        <DetailSkeleton />
       </Shell>
     );
   }
@@ -51,19 +61,14 @@ export default function HotelDetailPage() {
     hotel.images.find(img => img.isPrimary)?.url ??
     hotel.images[0]?.url ??
     null;
-  const location = [
-    hotel.address,
-    hotel.ward,
-    hotel.district,
-    hotel.city,
-    hotel.country,
-  ]
+  const location = [hotel.ward, hotel.district, hotel.city, hotel.country]
     .filter(Boolean)
     .join(', ');
   const roomsCount = hotel.roomTypes.reduce(
     (sum, rt) => sum + rt._count.rooms,
     0
   );
+  console.log(location, 'location');
 
   const roomTypeColumns: Column<ManagedRoomType>[] = [
     {
@@ -152,21 +157,22 @@ export default function HotelDetailPage() {
           </div>
         </div>
 
-        <Button
-          onClick={() =>
-            navigate(`/partner/room-inventory?hotelId=${hotel.id}`)
-          }
-          disabled={!hotel.isActive}
-          title={
-            hotel.isActive
-              ? undefined
-              : 'Hotel must be active to manage inventory'
-          }
-          className="shrink-0 bg-role-partner-primary text-white hover:bg-role-partner-secondary"
-        >
-          <Archive className="mr-1.5 h-4 w-4" />
-          Manage Inventory
-        </Button>
+        <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+          <Button
+            onClick={() => setEditOpen(true)}
+            className="shrink-0 bg-role-partner-primary text-white hover:bg-role-partner-secondary"
+          >
+            <Pencil className="mr-1.5 h-4 w-4" />
+            Edit Hotel
+          </Button>
+          <Button
+            onClick={() => setPhotosOpen(true)}
+            className="shrink-0 bg-role-partner-primary text-white hover:bg-role-partner-secondary"
+          >
+            <ImageIcon className="mr-1.5 h-4 w-4" />
+            Photos
+          </Button>
+        </div>
       </div>
 
       {/* Stat tiles */}
@@ -198,7 +204,18 @@ export default function HotelDetailPage() {
             </p>
           </Section>
 
-          <Section title="Amenities">
+          <Section
+            title="Amenities"
+            action={
+              <Button
+                size="sm"
+                onClick={() => setAmenitiesOpen(true)}
+                className="h-7 bg-role-partner-primary px-2.5 text-xs text-white hover:bg-role-partner-secondary"
+              >
+                <Plus className="mr-1 h-3 w-3" /> Add
+              </Button>
+            }
+          >
             {hotel.amenities.length === 0 ? (
               <p className="text-sm text-slate-400">No amenities listed.</p>
             ) : (
@@ -228,6 +245,24 @@ export default function HotelDetailPage() {
       <div className="mt-6">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-lg font-bold text-slate-900">Room types</h2>
+          {/* Quản lý phòng — đặt dưới phần room type */}
+          <div className="mt-4 flex justify-end">
+            <Button
+              onClick={() =>
+                navigate(`/partner/room-inventory?hotelId=${hotel.id}`)
+              }
+              disabled={!hotel.isActive}
+              title={
+                hotel.isActive
+                  ? undefined
+                  : 'Hotel must be active to manage rooms'
+              }
+              className="bg-role-partner-primary text-white hover:bg-role-partner-secondary"
+            >
+              <Archive className="mr-1.5 h-4 w-4" />
+              Manage room
+            </Button>
+          </div>
         </div>
         {hotel.roomTypes.length === 0 ? (
           <EmptyState
@@ -244,6 +279,23 @@ export default function HotelDetailPage() {
           />
         )}
       </div>
+
+      {/* Management modals */}
+      <HotelProfileFormModal
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        hotel={hotel}
+      />
+      <HotelImagesModal
+        open={photosOpen}
+        onClose={() => setPhotosOpen(false)}
+        hotel={hotel}
+      />
+      <HotelAmenitiesModal
+        open={amenitiesOpen}
+        onClose={() => setAmenitiesOpen(false)}
+        hotel={hotel}
+      />
     </Shell>
   );
 }
@@ -287,16 +339,21 @@ function StatTile({
 
 function Section({
   title,
+  action,
   children,
 }: {
   title: string;
+  action?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
     <div className="rounded-xl border border-slate-200 p-4">
-      <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-slate-500">
-        {title}
-      </h3>
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h3 className="text-sm font-bold uppercase tracking-wide text-slate-500">
+          {title}
+        </h3>
+        {action}
+      </div>
       {children}
     </div>
   );

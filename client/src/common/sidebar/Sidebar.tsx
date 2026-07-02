@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLocation, Link } from 'react-router';
-import { LogOut } from 'lucide-react';
+import { LogOut, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import {
   Sidebar,
@@ -29,6 +29,8 @@ export interface CommonSidebarProps {
   userName?: string;
   userRole?: string;
   onLogout?: () => void;
+  /** Đang trong quá trình đăng xuất → nút hiện spinner + in đậm + khoá click. */
+  isLoggingOut?: boolean;
 }
 
 export default function CommonSidebar({
@@ -39,6 +41,7 @@ export default function CommonSidebar({
   footerItems,
 
   onLogout,
+  isLoggingOut = false,
 }: CommonSidebarProps) {
   const location = useLocation();
 
@@ -145,13 +148,26 @@ export default function CommonSidebar({
 
         <div className="space-y-2">
           <button
-            className="flex cursor-pointer items-center gap-2 px-2 text-sm text-slate-700 w-full text-left hover:text-slate-900 transition-colors group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
+            className={cn(
+              'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-red-600 transition-colors',
+              'hover:bg-red-50 hover:text-red-700 active:font-bold',
+              'disabled:cursor-not-allowed disabled:opacity-70',
+              'group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0',
+              isLoggingOut ? 'font-bold cursor-wait' : 'font-medium cursor-pointer'
+            )}
             type="button"
             onClick={onLogout}
+            disabled={isLoggingOut}
             title="Logout"
           >
-            <LogOut className="size-4 shrink-0" />
-            <span className="group-data-[collapsible=icon]:hidden">Logout</span>
+            {isLoggingOut ? (
+              <Loader2 className="size-4 shrink-0 animate-spin" />
+            ) : (
+              <LogOut className="size-4 shrink-0" />
+            )}
+            <span className="group-data-[collapsible=icon]:hidden">
+              {isLoggingOut ? 'Logging out…' : 'Logout'}
+            </span>
           </button>
         </div>
       </SidebarFooter>

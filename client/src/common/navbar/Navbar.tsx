@@ -1,8 +1,25 @@
 import React from 'react';
-import { Bell, HelpCircle, Search } from 'lucide-react';
+import { Link } from 'react-router';
+import {
+  Bell,
+  ChevronDown,
+  HelpCircle,
+  Home,
+  Search,
+  User as UserIcon,
+} from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { ROUTES, getProfilePathForRole } from '@/constants/routes';
+import { useAuthStore } from '@/stores/authStore';
 
 export interface CommonNavbarProps {
   currentTime?: Date;
@@ -24,6 +41,9 @@ export default function CommonNavbar({
   userName = 'User',
 }: CommonNavbarProps) {
   const [searchValue, setSearchValue] = React.useState('');
+  const user = useAuthStore(state => state.user);
+  const displayName = user?.fullName || userName;
+  const initials = (displayName || 'U').slice(0, 2).toUpperCase();
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchValue(e.target.value);
@@ -97,13 +117,55 @@ export default function CommonNavbar({
                 <HelpCircle className="size-3.5" />
               </button>
               <div className="h-6 w-px bg-outline-variant/40" />
-              <div className="flex items-center gap-2">
-                <Avatar className="size-8 rounded-full bg-surface-container">
-                  <AvatarImage src="https://pbs.twimg.com/profile_images/1593304942210478080/TUYae5z7_400x400.jpg" />
-                  <AvatarFallback>{userName[0]}</AvatarFallback>
-                </Avatar>
-                <p className="text-sm font-semibold">{userName}</p>
-              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger className="flex items-center gap-2 rounded-full p-1 pr-2 outline-none transition-colors hover:bg-surface-container-low data-[state=open]:bg-surface-container-low cursor-pointer">
+                  <Avatar className="size-8 rounded-full bg-surface-container">
+                    {user?.avatarUrl ? (
+                      <AvatarImage src={user.avatarUrl} alt={displayName} />
+                    ) : null}
+                    <AvatarFallback>{initials}</AvatarFallback>
+                  </Avatar>
+                  <p className="text-sm font-semibold">{displayName}</p>
+                  <ChevronDown className="size-4 text-muted-foreground" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-60">
+                  {/* Thông tin người dùng */}
+                  <div className="flex items-center gap-3 px-2 py-2.5">
+                    <Avatar className="size-10 rounded-full bg-surface-container">
+                      {user?.avatarUrl ? (
+                        <AvatarImage src={user.avatarUrl} alt={displayName} />
+                      ) : null}
+                      <AvatarFallback>{initials}</AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold">
+                        {displayName}
+                      </p>
+                      {user?.email ? (
+                        <p className="truncate text-xs text-muted-foreground">
+                          {user.email}
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link
+                      to={getProfilePathForRole(user?.role)}
+                      className="cursor-pointer"
+                    >
+                      <UserIcon className="size-4" />
+                      Profile
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to={ROUTES.home} className="cursor-pointer">
+                      <Home className="size-4" />
+                      Back to Home
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </>
           )}
         </div>

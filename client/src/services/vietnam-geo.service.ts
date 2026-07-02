@@ -44,6 +44,24 @@ export async function getPlaceDetail(
   }
 }
 
+/**
+ * Suy toạ độ từ địa chỉ tự do: lấy gợi ý autocomplete đầu tiên; nếu thiếu toạ độ
+ * thì lấy chi tiết qua place detail theo `ref_id`. Trả null nếu không có kết quả.
+ * Dùng để hiện bản đồ khi `Hotel.latitude/longitude` chưa có trong DB.
+ */
+export async function geocodeAddress(
+  text: string
+): Promise<{ lat: number; lng: number } | null> {
+  const suggestions = await autocompleteAddress(text);
+  const first = suggestions[0];
+  if (!first) return null;
+  if (first.lat && first.lng) return { lat: first.lat, lng: first.lng };
+
+  const detail = await getPlaceDetail(first.ref_id);
+  if (detail?.lat && detail?.lng) return { lat: detail.lat, lng: detail.lng };
+  return null;
+}
+
 export function parseVietmapDisplay(display: string): {
   province: string;
   ward: string;

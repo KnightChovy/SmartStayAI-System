@@ -15,3 +15,4 @@ export * as housekeepingValidation from './housekeeping.validation';
 export * as conversationValidation from './conversation.validation';
 export * as reviewValidation from './review.validation';
 export * as adminValidation from './admin.validation';
+export * as platformManagerValidation from './platform-manager.validation';

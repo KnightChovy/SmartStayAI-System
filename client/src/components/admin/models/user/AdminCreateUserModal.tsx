@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { UserRole } from '@/constants/roles';
 import { useCreateAdminUser } from '@/hooks/admin';
 import { errorMessage } from '@/utils/errorMessage';
-import { formatDate, formatTime } from '@/utils/formatDate';
+import { formatDateLong, formatTime } from '@/utils/formatDate';
 
 interface AdminCreateUserModalProps {
   currentTime: Date;
@@ -96,7 +96,8 @@ export function AdminCreateUserModal({
               </h2>
             </div>
             <p className="mt-1 text-xs font-semibold text-muted-foreground">
-              Created at {formatDate(currentTime)} | {formatTime(currentTime)}
+              Created at {formatDateLong(currentTime)} |{' '}
+              {formatTime(currentTime)}
             </p>
           </div>
           <button

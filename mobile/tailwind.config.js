@@ -21,6 +21,21 @@ module.exports = {
       colors: {
         navy: '#0B1D45',
         gold: '#F5A623',
+        // ===== Staff portal palette (teal) — tách biệt hẳn theme khách hàng (navy/gold) =====
+        staff: {
+          DEFAULT: '#0F766E',
+          accent: '#F97316',
+          50: '#F0FDFA',
+          100: '#CCFBF1',
+          200: '#99F6E4',
+          300: '#5EEAD4',
+          400: '#2DD4BF',
+          500: '#14B8A6',
+          600: '#0D9488',
+          700: '#0F766E',
+          800: '#115E59',
+          900: '#134E4A',
+        },
         primary: {
           0: 'rgb(var(--color-primary-0)/<alpha-value>)',
           50: 'rgb(var(--color-primary-50)/<alpha-value>)',

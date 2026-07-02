@@ -3,7 +3,8 @@ import { Prisma } from '@prisma/client';
 import type { User } from '@prisma/client';
 import prisma from '../config/prisma';
 import ApiError from '../utils/ApiError';
-import type { CreateReviewDto, ReviewFilter, ReviewQueryOptions } from '../dto/review.dto';
+import { hotelService } from './hotel.service';
+import type { CreateReviewDto, ReviewFilter, PartnerReviewFilter, ReviewQueryOptions } from '../dto/review.dto';
 
 // Quan hệ kèm theo khi trả review về client (kèm người viết + ảnh)
 const reviewInclude = {
@@ -75,6 +76,82 @@ export class ReviewService {
     ]);
 
     return { results, page, limit, totalPages: Math.ceil(totalResults / limit), totalResults };
+  };
+
+  /**
+   * [Partner] Danh sách đánh giá của CHÍNH khách sạn mình — khác endpoint public ở chỗ trả về MỌI
+   * trạng thái (kể cả pending/hidden) và có thể lọc theo status. Quyền kiểm qua getManagedHotel.
+   */
+  getHotelReviewsForPartner = async (
+    hotelId: string,
+    currentUser: User,
+    filter: PartnerReviewFilter,
+    options: ReviewQueryOptions
+  ) => {
+    await hotelService.getManagedHotel(hotelId, currentUser);
+    const limit = options.limit || 20;
+    const page = options.page || 1;
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.ReviewWhereInput = { hotelId };
+    if (filter.status) {
+      where.status = filter.status;
+    }
+
+    let orderBy: Prisma.ReviewOrderByWithRelationInput = { createdAt: 'desc' };
+    if (options.sortBy) {
+      const [field, direction] = options.sortBy.split(':');
+      orderBy = { [field]: direction === 'desc' ? 'desc' : 'asc' };
+    }
+
+    const [results, totalResults] = await prisma.$transaction([
+      prisma.review.findMany({ where, skip, take: limit, orderBy, include: reviewInclude }),
+      prisma.review.count({ where }),
+    ]);
+
+    return { results, page, limit, totalPages: Math.ceil(totalResults / limit), totalResults };
+  };
+
+  /**
+   * [Partner] Thống kê đánh giá của khách sạn: tổng số, điểm trung bình từng tiêu chí và phân bố theo
+   * số sao (overall). Tính trên các đánh giá đã công khai (published) — đây là điểm hiển thị cho khách.
+   */
+  getHotelReviewStats = async (hotelId: string, currentUser: User) => {
+    await hotelService.getManagedHotel(hotelId, currentUser);
+    const where: Prisma.ReviewWhereInput = { hotelId, status: 'published' };
+
+    const [agg, byRating] = await prisma.$transaction([
+      prisma.review.aggregate({
+        where,
+        _count: { _all: true },
+        _avg: {
+          overallRating: true,
+          cleanlinessRating: true,
+          serviceRating: true,
+          locationRating: true,
+          valueRating: true,
+        },
+      }),
+      prisma.review.groupBy({ by: ['overallRating'], where, _count: { _all: true } }),
+    ]);
+
+    // Chuẩn hoá phân bố 1..5 sao, điền 0 cho mức sao chưa có đánh giá
+    const countByStar: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    for (const row of byRating) {
+      countByStar[row.overallRating] = row._count._all;
+    }
+
+    return {
+      total: agg._count._all,
+      average: {
+        overall: agg._avg.overallRating,
+        cleanliness: agg._avg.cleanlinessRating,
+        service: agg._avg.serviceRating,
+        location: agg._avg.locationRating,
+        value: agg._avg.valueRating,
+      },
+      countByStar,
+    };
   };
 
   /** Chi tiết một đánh giá công khai. */

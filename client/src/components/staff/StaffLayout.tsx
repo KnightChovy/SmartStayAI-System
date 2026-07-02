@@ -32,7 +32,7 @@ export function StaffLayout() {
   const user = useAuthStore(state => state.user);
   const hotel = useStaffHotelStore(state => state.hotel);
   const clearHotel = useStaffHotelStore(state => state.clearHotel);
-  const { mutate: logout } = useLogout();
+  const { mutate: logout, isPending: isLoggingOut } = useLogout();
 
   // Only let staff switch hotels when they're actually assigned to more than one. With a single
   // assignment there's nothing to switch to, so the "Change" button is hidden.
@@ -49,6 +49,7 @@ export function StaffLayout() {
         subtitle="Staff Portal"
         navItems={navItems}
         onLogout={() => logout()}
+        isLoggingOut={isLoggingOut}
       />
       <SidebarInset>
         <CommonNavbar

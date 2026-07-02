@@ -13,13 +13,7 @@ function App() {
         theme="light"
         position="top-right"
         closeButton={false}
-        toastOptions={{
-          style: {
-            background: '#ffffff',
-            color: '#10120C',
-            border: '1px solid #E5E7EB',
-          },
-        }}
+        duration={1500}
       />
     </TooltipProvider>
   );

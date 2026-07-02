@@ -24,6 +24,8 @@ import {
 import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/button';
 import { FilePreviewModal, type PreviewFile } from '@/components/shared/FilePreviewModal';
+import { DetailSkeleton } from '@/components/shared/skeletons';
+import { formatDate } from '@/utils/formatDate';
 import {
   useGetRegistrationDetail,
   useReviewRegistration,
@@ -52,8 +54,7 @@ const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
 
 function fmtDate(value?: string | null): string | null {
   if (!value) return null;
-  const d = new Date(value);
-  return Number.isNaN(d.getTime()) ? value : d.toLocaleDateString('vi-VN');
+  return formatDate(value);
 }
 
 function InfoRow({
@@ -438,11 +439,7 @@ export function VerificationDetailModal({ summary, onClose }: Props) {
 
   const renderSection = () => {
     if (isLoading) {
-      return (
-        <div className="flex items-center justify-center h-full py-20">
-          <Loader2 className="w-8 h-8 text-role-manager-primary animate-spin" />
-        </div>
-      );
+      return <DetailSkeleton className="p-6" />;
     }
     if (isError || !detail) {
       return (

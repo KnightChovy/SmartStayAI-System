@@ -14,13 +14,17 @@ export class AmenityService {
     return prisma.amenity.findMany({ where, orderBy: [{ category: 'asc' }, { name: 'asc' }] });
   };
 
-  /** Tạo tiện nghi mới (chỉ admin) — tên là unique toàn hệ thống. */
+  /**
+   * Tạo tiện nghi mới (partner hoặc admin) — tên là unique toàn hệ thống. Vì catalog dùng chung cho mọi
+   * partner, chuẩn hoá tên (trim) và so khớp KHÔNG phân biệt hoa/thường để chặn trùng kiểu "Wifi"/"wifi".
+   */
   createAmenity = async (payload: CreateAmenityDto) => {
-    const existing = await prisma.amenity.findUnique({ where: { name: payload.name } });
+    const name = payload.name.trim();
+    const existing = await prisma.amenity.findFirst({ where: { name: { equals: name, mode: 'insensitive' } } });
     if (existing) {
-      throw new ApiError(httpStatus.BAD_REQUEST, `Tiện nghi "${payload.name}" đã tồn tại`);
+      throw new ApiError(httpStatus.BAD_REQUEST, `Tiện nghi "${name}" đã tồn tại`);
     }
-    return prisma.amenity.create({ data: payload });
+    return prisma.amenity.create({ data: { ...payload, name } });
   };
 }
 

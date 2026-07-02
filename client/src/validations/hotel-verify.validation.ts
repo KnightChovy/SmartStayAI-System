@@ -1,5 +1,30 @@
 import { z } from 'zod';
 
+// ─── Date helpers (chuỗi `YYYY-MM-DD`; so sánh chuỗi = so sánh thời gian) ────────
+const isDateStr = (v: string) =>
+  /^\d{4}-\d{2}-\d{2}$/.test(v) &&
+  !Number.isNaN(new Date(`${v}T00:00:00`).getTime());
+
+const todayStr = () => {
+  const d = new Date();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${mm}-${dd}`;
+};
+
+/** Không nằm trong tương lai (bỏ qua nếu chưa hợp lệ để refine khác báo). */
+const notFuture = (v: string) => !isDateStr(v) || v <= todayStr();
+
+/** Số tuổi tính đến hôm nay từ chuỗi `YYYY-MM-DD`. */
+const ageFrom = (from: string) => {
+  const f = new Date(`${from}T00:00:00`);
+  const t = new Date(`${todayStr()}T00:00:00`);
+  let age = t.getFullYear() - f.getFullYear();
+  const m = t.getMonth() - f.getMonth();
+  if (m < 0 || (m === 0 && t.getDate() < f.getDate())) age--;
+  return age;
+};
+
 export const businessInfoSchema = z.object({
   businessName: z.string().min(1, 'Business name is required '),
   businessType: z.string().min(1, 'Business type is required'),
@@ -54,25 +79,45 @@ export const roomConfigSchema = z
 
 export type RoomConfigFormValues = z.infer<typeof roomConfigSchema>;
 
-export const propertyDetailsSchema = z.object({
-  licenseNumber: z.string().min(1, 'License number is required'),
-  issueDate: z.string().min(1, 'Issue date is required'),
-  expiryDate: z.string().optional(),
-  authority: z.string().min(1, 'Issuing authority is required'),
-  status: z.enum(['active', 'pending', 'expired'], {
-    error: 'Please select a status',
-  }),
-  documentFileUrl: z
-    .string()
-    .min(1, 'Please upload the business license document'),
-});
+export const propertyDetailsSchema = z
+  .object({
+    licenseNumber: z.string().min(1, 'License number is required'),
+    issueDate: z
+      .string()
+      .min(1, 'Issue date is required')
+      .refine(isDateStr, 'Invalid date')
+      .refine(notFuture, 'Issue date cannot be in the future'),
+    expiryDate: z
+      .string()
+      .optional()
+      .refine(v => !v || isDateStr(v), 'Invalid date'),
+    authority: z.string().min(1, 'Issuing authority is required'),
+    status: z.enum(['active', 'pending', 'expired'], {
+      error: 'Please select a status',
+    }),
+    documentFileUrl: z
+      .string()
+      .min(1, 'Please upload the business license document'),
+  })
+  .refine(
+    d =>
+      !d.expiryDate ||
+      !isDateStr(d.issueDate) ||
+      !isDateStr(d.expiryDate) ||
+      d.expiryDate >= d.issueDate,
+    { message: 'Expiry date must be on or after the issue date', path: ['expiryDate'] }
+  );
 
 export type PropertyDetailsFormValues = z.infer<typeof propertyDetailsSchema>;
 
 export const accommodationCertificateSchema = z.object({
   operatingLicense: z.object({
     licenseNumber: z.string().min(1, 'License number is required'),
-    issueDate: z.string().min(1, 'Issue date is required'),
+    issueDate: z
+      .string()
+      .min(1, 'Issue date is required')
+      .refine(isDateStr, 'Invalid date')
+      .refine(notFuture, 'Issue date cannot be in the future'),
     authority: z.string().min(1, 'Issuing authority is required'),
     documentFileUrl: z
       .string()
@@ -80,7 +125,11 @@ export const accommodationCertificateSchema = z.object({
   }),
   fireSafety: z.object({
     certificateNumber: z.string().min(1, 'Certificate number is required'),
-    issueDate: z.string().min(1, 'Issue date is required'),
+    issueDate: z
+      .string()
+      .min(1, 'Issue date is required')
+      .refine(isDateStr, 'Invalid date')
+      .refine(notFuture, 'Issue date cannot be in the future'),
     documentFileUrl: z
       .string()
       .min(1, 'Please upload the fire safety document'),
@@ -88,7 +137,11 @@ export const accommodationCertificateSchema = z.object({
   securityOrder: z
     .object({
       certificateNumber: z.string().optional(),
-      issueDate: z.string().optional(),
+      issueDate: z
+        .string()
+        .optional()
+        .refine(v => !v || isDateStr(v), 'Invalid date')
+        .refine(v => !v || notFuture(v), 'Issue date cannot be in the future'),
       documentFileUrl: z.string().optional(),
     })
     .optional(),
@@ -112,7 +165,13 @@ export const representativeSchema = z.object({
       error: 'Role is required',
     }
   ),
-  dob: z.string().min(1, 'Date of birth is required'),
+  dob: z
+    .string()
+    .min(1, 'Date of birth is required')
+    .refine(isDateStr, 'Invalid date')
+    .refine(v => !isDateStr(v) || v <= todayStr(), 'Date of birth cannot be in the future')
+    .refine(v => !isDateStr(v) || ageFrom(v) >= 18, 'Representative must be at least 18 years old')
+    .refine(v => !isDateStr(v) || ageFrom(v) <= 120, 'Please enter a valid date of birth'),
   idNumber: z
     .string()
     .min(9, 'ID number must be at least 9 characters')

@@ -75,7 +75,7 @@ export function AdminLayout() {
     setIsTasksOpen(false);
   };
 
-  const { mutate: logout } = useLogout();
+  const { mutate: logout, isPending: isLoggingOut } = useLogout();
   const handleLogout = () => {
     closeAllModals();
     logout();
@@ -148,6 +148,7 @@ export function AdminLayout() {
           navItems={adminNavItems}
           footerItems={adminFooterItems}
           onLogout={handleLogout}
+          isLoggingOut={isLoggingOut}
         />
         <SidebarInset className="bg-[#f7f4f3] text-on-surface">
           {isCalendarOpen ? (

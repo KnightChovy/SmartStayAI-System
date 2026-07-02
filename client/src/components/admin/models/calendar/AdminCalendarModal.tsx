@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/cn';
-import { formatDate, formatTime } from '@/utils/formatDate';
+import { formatDateLong, formatTime } from '@/utils/formatDate';
 
 interface AdminCalendarModalProps {
   currentTime: Date;
@@ -144,7 +144,7 @@ export function AdminCalendarModal({
               </div>
               <p className="mt-1 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
                 <Clock className="size-3.5" />
-                {formatDate(currentTime)} | {formatTime(currentTime)}
+                {formatDateLong(currentTime)} | {formatTime(currentTime)}
               </p>
             </div>
 

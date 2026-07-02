@@ -19,6 +19,24 @@ export class UserController {
     res.send(result);
   });
 
+  // Hồ sơ của chính user đang đăng nhập (id lấy từ token)
+  getMe = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const user = await userService.getMyProfile((req.user as User).id);
+    res.send(user);
+  });
+
+  // User tự cập nhật hồ sơ của mình
+  updateMe = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const user = await userService.updateMyProfile((req.user as User).id, req.body);
+    res.send(user);
+  });
+
+  // User tự đổi mật khẩu (cần mật khẩu hiện tại)
+  changeMyPassword = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    await userService.changeMyPassword((req.user as User).id, req.body.currentPassword, req.body.newPassword);
+    res.status(httpStatus.NO_CONTENT).send();
+  });
+
   getUser = catchAsync(async (req: Request, res: Response): Promise<void> => {
     const user = await userService.getUserById(req.params.userId as string);
     if (!user) {

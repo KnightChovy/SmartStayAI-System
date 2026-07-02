@@ -5,7 +5,8 @@ import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/hotel-partner/shared/Modal';
-import { LoadingState, ErrorState } from '@/components/hotel-partner/shared/states';
+import { ErrorState } from '@/components/hotel-partner/shared/states';
+import { ListSkeleton } from '@/components/shared/skeletons';
 import { useAmenities, useReplaceAmenities } from '@/hooks/hotel-management';
 import type { ManagedRoomType } from '@/types/hotel-management.types';
 
@@ -44,7 +45,7 @@ export function RoomTypeAmenitiesModal({
     try {
       await replaceAmenities.mutateAsync({
         roomTypeId: roomType.id,
-        dto: { amenityIds: Array.from(selected) },
+        dto: { amenities: Array.from(selected).map(amenityId => ({ amenityId })) },
       });
       toast.success('Amenities updated');
       onClose();
@@ -82,7 +83,7 @@ export function RoomTypeAmenitiesModal({
       }
     >
       {isLoading ? (
-        <LoadingState label="Loading amenities..." />
+        <ListSkeleton rows={6} />
       ) : isError ? (
         <ErrorState label="Failed to load the amenity catalog." />
       ) : (

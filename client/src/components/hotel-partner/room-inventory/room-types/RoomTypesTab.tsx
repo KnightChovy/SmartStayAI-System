@@ -1,13 +1,16 @@
 import { useState } from 'react';
-import { Plus, Layers, Pencil, ImageIcon, Tags, Power, PowerOff, Users } from 'lucide-react';
+import { Plus, Layers, Pencil, ImageIcon, Tags, Power, PowerOff, Users, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { LoadingState, ErrorState, EmptyState } from '@/components/hotel-partner/shared/states';
+import { ErrorState, EmptyState } from '@/components/hotel-partner/shared/states';
+import { TableSkeleton } from '@/components/shared/skeletons';
 import { DataTable, type Column } from '@/components/hotel-partner/shared/DataTable';
 import { ActionMenu } from '@/components/hotel-partner/shared/ActionMenu';
+import { ConfirmDialog } from '@/components/hotel-partner/shared/ConfirmDialog';
 import { Pill } from '@/components/hotel-partner/shared/Pill';
-import { useRoomTypes, useUpdateRoomType } from '@/hooks/hotel-management';
+import { useRoomTypes, useUpdateRoomType, useDeleteRoomType } from '@/hooks/hotel-management';
 import { formatCurrency } from '@/utils/formatCurrency';
+import { errorMessage } from '@/utils/errorMessage';
 import type { ManagedRoomType } from '@/types/hotel-management.types';
 import { RoomTypeFormModal } from './RoomTypeFormModal';
 import { RoomTypeImagesModal } from './RoomTypeImagesModal';
@@ -48,12 +51,14 @@ function NameCell({ roomType }: { roomType: ManagedRoomType }) {
 export function RoomTypesTab({ hotelId }: RoomTypesTabProps) {
   const { data: roomTypes, isLoading, isError } = useRoomTypes(hotelId);
   const updateRoomType = useUpdateRoomType(hotelId);
+  const deleteRoomType = useDeleteRoomType(hotelId);
   const [togglingId, setTogglingId] = useState<string | null>(null);
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<ManagedRoomType | null>(null);
   const [imagesTarget, setImagesTarget] = useState<ManagedRoomType | null>(null);
   const [amenitiesTarget, setAmenitiesTarget] = useState<ManagedRoomType | null>(null);
+  const [deleting, setDeleting] = useState<ManagedRoomType | null>(null);
 
   const openCreate = () => {
     setEditing(null);
@@ -69,6 +74,18 @@ export function RoomTypesTab({ hotelId }: RoomTypesTabProps) {
       toast.error('Failed to update status');
     } finally {
       setTogglingId(null);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleting) return;
+    try {
+      await deleteRoomType.mutateAsync(deleting.id);
+      toast.success('Room type deleted');
+      setDeleting(null);
+    } catch (err) {
+      // BE trả 400 khi còn phòng/booking — hiển thị đúng lý do
+      toast.error(errorMessage(err, 'Failed to delete room type'));
     }
   };
 
@@ -128,6 +145,7 @@ export function RoomTypesTab({ hotelId }: RoomTypesTabProps) {
               onClick: () => toggleActive(rt),
               disabled: togglingId === rt.id,
             },
+            { label: 'Delete', icon: Trash2, onClick: () => setDeleting(rt), destructive: true },
           ]}
         />
       ),
@@ -147,7 +165,7 @@ export function RoomTypesTab({ hotelId }: RoomTypesTabProps) {
       </div>
 
       {isLoading ? (
-        <LoadingState label="Loading room types..." />
+        <TableSkeleton columns={5} />
       ) : isError ? (
         <ErrorState label="Failed to load room types." />
       ) : !roomTypes || roomTypes.length === 0 ? (
@@ -187,6 +205,17 @@ export function RoomTypesTab({ hotelId }: RoomTypesTabProps) {
           roomType={amenitiesTarget}
         />
       )}
+
+      <ConfirmDialog
+        open={!!deleting}
+        onClose={() => setDeleting(null)}
+        onConfirm={handleDelete}
+        title="Delete room type"
+        message={`Delete "${deleting?.name}"? This only works if it has no rooms or bookings — otherwise deactivate it instead. This action cannot be undone.`}
+        confirmLabel="Delete"
+        destructive
+        loading={deleteRoomType.isPending}
+      />
     </div>
   );
 }

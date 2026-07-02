@@ -5,6 +5,7 @@ import VerificationRequestsPage from '@/pages/manager/verification/VerificationR
 import HotelPartnersPage from '@/pages/manager/hotel-partners/HotelPartnersPage';
 import RevenuePage from '@/pages/manager/revenue/RevenuePage';
 import AnalyticsPage from '@/pages/manager/analytics/AnalyticsPage';
+import { CommonProfilePage } from '@/common/profile/CommonProfilePage';
 import { ProtectedRoute } from '@/routes/ProtectedRoute';
 import { UserRole } from '@/constants/roles';
 
@@ -23,6 +24,7 @@ export const managerRoutes: RouteObject[] = [
           { path: 'hotel-partners', element: <HotelPartnersPage /> },
           { path: 'revenue', element: <RevenuePage /> },
           { path: 'analytics', element: <AnalyticsPage /> },
+          { path: 'profile', element: <CommonProfilePage /> },
         ],
       },
     ],

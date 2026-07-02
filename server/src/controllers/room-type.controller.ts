@@ -40,9 +40,30 @@ export class RoomTypeController {
       req.params.hotelId as string,
       req.params.roomTypeId as string,
       req.user as User,
-      req.body.amenityIds
+      req.body.amenities
     );
     res.send(roomType);
+  });
+
+  // Danh sách cấu hình giường của loại phòng
+  getBeds = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const beds = await roomTypeService.getBeds(
+      req.params.hotelId as string,
+      req.params.roomTypeId as string,
+      req.user as User
+    );
+    res.send(beds);
+  });
+
+  // Gán lại toàn bộ cấu hình giường của loại phòng
+  setBeds = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const beds = await roomTypeService.setBeds(
+      req.params.hotelId as string,
+      req.params.roomTypeId as string,
+      req.user as User,
+      req.body.beds
+    );
+    res.send(beds);
   });
 
   // Xoá loại phòng (chỉ khi chưa có phòng/booking)

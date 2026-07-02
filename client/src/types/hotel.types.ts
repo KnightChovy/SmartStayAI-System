@@ -4,6 +4,9 @@
  * Lưu ý: các field Decimal của Prisma serialize qua JSON thành **string**.
  */
 
+/** Chính sách thú cưng của khách sạn (khớp enum BE). */
+export type PetsPolicy = 'not_allowed' | 'allowed' | 'on_request';
+
 export interface HotelImage {
   id: string;
   hotelId: string;
@@ -88,6 +91,21 @@ export interface Hotel {
   checkOutTime: string | null;
   isActive: boolean;
   isListed: boolean;
+  // ----- Chi tiết bổ sung kiểu booking.com (Pha 1 DB) -----
+  postalCode?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  totalFloors?: number | null;
+  builtYear?: number | null;
+  renovationYear?: number | null;
+  isSmokingAllowed?: boolean | null;
+  petsPolicy?: PetsPolicy | null;
+  cancellationPolicy?: string | null;
+  childrenPolicy?: string | null;
+  minGuestAge?: number | null;
+  securityDepositAmount?: string | null;
+  languagesSpoken?: string[] | null;
+  maxLengthOfStay?: number | null;
   settings: Record<string, unknown> | null;
   createdAt: string;
   updatedAt: string;
@@ -99,6 +117,70 @@ export interface Amenity {
   name: string;
   icon?: string | null;
   category: 'room' | 'hotel' | 'service';
+}
+
+/** Body cho `POST /amenities` — tạo tiện nghi vào catalog (quyền manageAmenities). */
+export interface CreateAmenityDto {
+  name: string;
+  icon?: string | null;
+  category: 'room' | 'hotel' | 'service';
+}
+
+/** Body cho `PATCH /amenities/:id` — cập nhật tiện nghi (partial, tối thiểu 1 field). */
+export interface UpdateAmenityDto {
+  name?: string;
+  icon?: string | null;
+  category?: 'room' | 'hotel' | 'service';
+}
+
+/**
+ * Body cho `PATCH /hotels/:id` — cập nhật hồ sơ khách sạn (partial, tối thiểu 1 field).
+ * KHÔNG gồm isActive/isListed (dùng flow publish) và taxCode/businessRegistrationNumber (khoá).
+ */
+export interface UpdateHotelDto {
+  name?: string;
+  description?: string | null;
+  address?: string;
+  city?: string;
+  country?: string;
+  district?: string | null;
+  ward?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  starRating?: number | null;
+  checkInTime?: string | null;
+  checkOutTime?: string | null;
+  businessType?: 'hotel' | 'resort' | 'villa' | 'apartment';
+  // ----- Chi tiết bổ sung kiểu booking.com (Pha 1 DB) — đều tuỳ chọn -----
+  postalCode?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  totalFloors?: number | null;
+  builtYear?: number | null;
+  renovationYear?: number | null;
+  isSmokingAllowed?: boolean;
+  petsPolicy?: PetsPolicy | null;
+  cancellationPolicy?: string | null;
+  childrenPolicy?: string | null;
+  minGuestAge?: number | null;
+  securityDepositAmount?: number | null;
+  /** Gửi [] để xoá hết. */
+  languagesSpoken?: string[];
+  maxLengthOfStay?: number | null;
+}
+
+/** Một ảnh khách sạn cần thêm (URL phải upload qua `POST /uploads` trước). */
+export interface HotelImageInput {
+  url: string;
+  imageCategory: 'cover' | 'exterior' | 'room';
+  caption?: string | null;
+  isPrimary?: boolean;
+  sortOrder?: number;
+}
+
+/** Body cho `POST /hotels/:id/images`. */
+export interface AddHotelImagesDto {
+  images: HotelImageInput[];
 }
 
 export interface RoomTypeImage {
@@ -120,6 +202,13 @@ export interface RoomType {
   bedType?: string | null;
   viewType?: string | null;
   isActive: boolean;
+  // ----- Chi tiết bổ sung kiểu booking.com (Pha 1 DB) -----
+  maxAdults?: number | null;
+  maxChildren?: number | null;
+  sizeUnit?: 'sqm' | 'sqft' | null;
+  isNonSmoking?: boolean | null;
+  hasPrivateBathroom?: boolean | null;
+  hasBalcony?: boolean | null;
   images: RoomTypeImage[];
   amenities: { amenity: Amenity }[];
   /** Chỉ có khi search kèm khoảng ngày (checkIn/checkOut). */

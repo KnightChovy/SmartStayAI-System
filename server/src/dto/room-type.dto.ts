@@ -8,6 +8,13 @@ export interface CreateRoomTypeDto {
   bedType?: string;
   viewType?: string;
   isActive?: boolean;
+  // ----- Chi tiết bổ sung kiểu booking.com (Pha 1 DB) -----
+  maxAdults?: number;
+  maxChildren?: number;
+  sizeUnit?: 'sqm' | 'sqft';
+  isNonSmoking?: boolean;
+  hasPrivateBathroom?: boolean;
+  hasBalcony?: boolean;
 }
 
 /** Payload cập nhật loại phòng — mọi field đều tuỳ chọn. */
@@ -18,4 +25,10 @@ export interface RoomTypeImageInput {
   url: string;
   isPrimary?: boolean;
   sortOrder?: number;
+}
+
+/** Một dòng cấu hình giường của loại phòng (thay thế toàn bộ khi PUT). */
+export interface RoomBedInput {
+  bedType: 'single' | 'double' | 'queen' | 'king' | 'sofa_bed' | 'bunk';
+  quantity?: number;
 }

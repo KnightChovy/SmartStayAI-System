@@ -18,6 +18,13 @@ const roomTypeFields = {
   bedType: Joi.string().max(100).allow('', null),
   viewType: Joi.string().max(100).allow('', null),
   isActive: Joi.boolean(),
+  // ----- Chi tiết bổ sung kiểu booking.com (Pha 1 DB) — đều tuỳ chọn -----
+  maxAdults: Joi.number().integer().min(0).max(20),
+  maxChildren: Joi.number().integer().min(0).max(20),
+  sizeUnit: Joi.string().valid('sqm', 'sqft'),
+  isNonSmoking: Joi.boolean(),
+  hasPrivateBathroom: Joi.boolean(),
+  hasBalcony: Joi.boolean(),
 };
 
 export const createRoomType = {
@@ -62,7 +69,36 @@ export const addImages = {
 export const setAmenities = {
   params: roomTypeParams,
   body: Joi.object().keys({
-    // Danh sách THAY THẾ toàn bộ tiện nghi hiện có; mảng rỗng = bỏ hết
-    amenityIds: Joi.array().items(Joi.string().uuid()).unique().required(),
+    // Danh sách THAY THẾ toàn bộ tiện nghi hiện có; mảng rỗng = bỏ hết. Mỗi dòng kèm isFree/quantity.
+    amenities: Joi.array()
+      .items(
+        Joi.object().keys({
+          amenityId: Joi.string().uuid().required(),
+          isFree: Joi.boolean(),
+          quantity: Joi.number().integer().min(0).allow(null),
+        })
+      )
+      .unique('amenityId')
+      .required(),
+  }),
+};
+
+// GET beds — chỉ cần params
+export const getBeds = {
+  params: roomTypeParams,
+};
+
+// Thay thế TOÀN BỘ cấu hình giường của loại phòng (mảng rỗng = xoá hết)
+export const setBeds = {
+  params: roomTypeParams,
+  body: Joi.object().keys({
+    beds: Joi.array()
+      .items(
+        Joi.object().keys({
+          bedType: Joi.string().valid('single', 'double', 'queen', 'king', 'sofa_bed', 'bunk').required(),
+          quantity: Joi.number().integer().min(1).max(20),
+        })
+      )
+      .required(),
   }),
 };

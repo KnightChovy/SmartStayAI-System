@@ -46,6 +46,32 @@ export const deleteUser = {
   }),
 };
 
+// User tự cập nhật hồ sơ (self-service) — không nhận email/role/status
+export const updateMyProfile = {
+  body: Joi.object()
+    .keys({
+      fullName: Joi.string().max(255),
+      phone: Joi.string().max(20).allow('', null),
+      avatarUrl: Joi.string().uri().allow('', null),
+      dateOfBirth: Joi.date().iso().allow(null),
+      nationality: Joi.string().max(100).allow('', null),
+      idCardNumber: Joi.string().max(50).allow('', null),
+      passportNumber: Joi.string().max(50).allow('', null),
+      preferredLanguage: Joi.string().valid('vi', 'en'),
+      preferredCurrency: Joi.string().valid('VND', 'USD'),
+      marketingOptIn: Joi.boolean(),
+    })
+    .min(1),
+};
+
+// User tự đổi mật khẩu — cần mật khẩu hiện tại + mật khẩu mới hợp lệ
+export const changeMyPassword = {
+  body: Joi.object().keys({
+    currentPassword: Joi.string().required(),
+    newPassword: Joi.string().required().custom(password),
+  }),
+};
+
 // [Admin] Đổi trạng thái tài khoản (suspend/active/inactive)
 export const updateUserStatus = {
   params: Joi.object().keys({
