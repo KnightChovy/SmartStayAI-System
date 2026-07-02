@@ -1,7 +1,7 @@
 import httpStatus from 'http-status';
 import { randomBytes } from 'crypto';
 import { Prisma } from '@prisma/client';
-import type { User } from '@prisma/client';
+import type { User, BookingStatus } from '@prisma/client';
 import prisma from '../config/prisma';
 import ApiError from '../utils/ApiError';
 import { roleRights } from '../config/roles';
@@ -14,6 +14,8 @@ import type {
   BookingFilter,
   BookingQueryOptions,
   HotelBookingFilter,
+  PlatformBookingFilter,
+  PartnerBookingFilter,
   CheckInBookingDto,
   CheckOutBookingDto,
 } from '../dto/booking.dto';
@@ -36,6 +38,13 @@ const staffBookingInclude = {
   roomType: { select: { id: true, name: true } },
   bookingRooms: { include: { room: { select: { id: true, roomNumber: true, floor: true } } } },
   voucher: { select: { voucherCode: true, usedAt: true } },
+} satisfies Prisma.BookingInclude;
+
+// Quan hệ kèm theo cho màn GIÁM SÁT (PM toàn sàn / partner theo đối tác): kèm khách + khách sạn + loại phòng
+const oversightBookingInclude = {
+  customer: { select: { id: true, fullName: true, email: true, phone: true } },
+  hotel: { select: { id: true, name: true, city: true } },
+  roomType: { select: { id: true, name: true } },
 } satisfies Prisma.BookingInclude;
 
 // Mã booking dễ đọc cho khách; cột booking_code có unique constraint chặn trùng
@@ -375,6 +384,70 @@ export class BookingService {
     ]);
 
     return { results, page, limit, totalPages: Math.ceil(totalResults / limit), totalResults };
+  };
+
+  // Truy vấn phân trang dùng chung cho các màn GIÁM SÁT booking (PM toàn sàn / partner theo đối tác)
+  private queryOversightBookings = async (where: Prisma.BookingWhereInput, options: BookingQueryOptions) => {
+    const limit = options.limit || 20;
+    const page = options.page || 1;
+    const skip = (page - 1) * limit;
+
+    let orderBy: Prisma.BookingOrderByWithRelationInput = { createdAt: 'desc' };
+    if (options.sortBy) {
+      const [field, direction] = options.sortBy.split(':');
+      orderBy = { [field]: direction === 'desc' ? 'desc' : 'asc' };
+    }
+
+    const [results, totalResults] = await prisma.$transaction([
+      prisma.booking.findMany({ where, skip, take: limit, orderBy, include: oversightBookingInclude }),
+      prisma.booking.count({ where }),
+    ]);
+    return { results, page, limit, totalPages: Math.ceil(totalResults / limit), totalResults };
+  };
+
+  // Ghép điều kiện lọc chung cho màn giám sát (trạng thái / ngày nhận phòng / tìm kiếm)
+  private applyOversightFilters = (
+    where: Prisma.BookingWhereInput,
+    filter: { status?: BookingStatus; fromDate?: Date; toDate?: Date; search?: string }
+  ) => {
+    if (filter.status) where.status = filter.status;
+    if (filter.fromDate || filter.toDate) {
+      where.checkInDate = {
+        ...(filter.fromDate && { gte: toUtcDate(filter.fromDate) }),
+        ...(filter.toDate && { lte: toUtcDate(filter.toDate) }),
+      };
+    }
+    if (filter.search) {
+      where.OR = [
+        { bookingCode: { contains: filter.search, mode: 'insensitive' } },
+        { customer: { fullName: { contains: filter.search, mode: 'insensitive' } } },
+        { customer: { email: { contains: filter.search, mode: 'insensitive' } } },
+      ];
+    }
+    return where;
+  };
+
+  /**
+   * [Platform Manager] Liệt kê TOÀN BỘ booking toàn sàn — lọc theo trạng thái / khách sạn / đối tác /
+   * khoảng ngày nhận phòng + tìm theo mã booking hoặc tên/email khách. Kèm khách + khách sạn + loại phòng.
+   */
+  listPlatformBookings = async (filter: PlatformBookingFilter, options: BookingQueryOptions) => {
+    const where: Prisma.BookingWhereInput = {};
+    if (filter.hotelId) where.hotelId = filter.hotelId;
+    if (filter.partnerId) where.hotel = { partnerId: filter.partnerId };
+    this.applyOversightFilters(where, filter);
+    return this.queryOversightBookings(where, options);
+  };
+
+  /**
+   * [Partner] Liệt kê booking của MỌI khách sạn của partner đang đăng nhập (suy partnerId từ token),
+   * tuỳ chọn thu hẹp theo 1 khách sạn. Cùng bộ lọc & shape với bản giám sát của PM.
+   */
+  listPartnerBookings = async (userId: string, filter: PartnerBookingFilter, options: BookingQueryOptions) => {
+    const where: Prisma.BookingWhereInput = { hotel: { partner: { ownerId: userId } } };
+    if (filter.hotelId) where.hotelId = filter.hotelId;
+    this.applyOversightFilters(where, filter);
+    return this.queryOversightBookings(where, options);
   };
 
   /** Chi tiết một booking (chủ booking hoặc người có quyền manageBookings). */

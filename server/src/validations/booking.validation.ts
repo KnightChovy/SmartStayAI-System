@@ -51,6 +51,35 @@ export const listHotelBookings = {
   }),
 };
 
+// [Platform Manager] Toàn bộ booking toàn sàn (lọc thêm theo KS/đối tác + tìm kiếm)
+export const listPlatformBookings = {
+  query: Joi.object().keys({
+    status: Joi.string().valid('pending', 'confirmed', 'checked_in', 'checked_out', 'cancelled', 'no_show'),
+    hotelId: Joi.string().uuid(),
+    partnerId: Joi.string().uuid(),
+    fromDate: Joi.date().iso(),
+    toDate: Joi.date().iso(),
+    search: Joi.string().max(255),
+    sortBy: Joi.string(),
+    limit: Joi.number().integer().min(1).max(100),
+    page: Joi.number().integer().min(1),
+  }),
+};
+
+// [Partner] Booking của mọi khách sạn của partner đang đăng nhập (tuỳ chọn thu hẹp theo 1 KS)
+export const listPartnerBookings = {
+  query: Joi.object().keys({
+    status: Joi.string().valid('pending', 'confirmed', 'checked_in', 'checked_out', 'cancelled', 'no_show'),
+    hotelId: Joi.string().uuid(),
+    fromDate: Joi.date().iso(),
+    toDate: Joi.date().iso(),
+    search: Joi.string().max(255),
+    sortBy: Joi.string(),
+    limit: Joi.number().integer().min(1).max(100),
+    page: Joi.number().integer().min(1),
+  }),
+};
+
 // Staff/chủ KS xem chi tiết một booking của khách sạn
 export const getHotelBooking = {
   params: Joi.object().keys({
