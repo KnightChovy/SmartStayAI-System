@@ -1,13 +1,6 @@
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/cn';
 
-/**
- * Skeleton loaders dùng chung cho các portal (hotel-partner, manager, ...).
- * Thay cho spinner ở các khối content đang tải để giữ layout ổn định và cảm
- * giác nhanh hơn. Nút submit (mutation) vẫn dùng spinner nhỏ, không dùng ở đây.
- */
-
-/** Skeleton cho bảng dữ liệu — khớp look của `DataTable` (header + rows). */
 export function TableSkeleton({
   rows = 5,
   columns = 4,
@@ -18,7 +11,12 @@ export function TableSkeleton({
   className?: string;
 }) {
   return (
-    <div className={cn('overflow-hidden rounded-xl border border-slate-200', className)}>
+    <div
+      className={cn(
+        'overflow-hidden rounded-xl border border-slate-200',
+        className
+      )}
+    >
       <div className="flex gap-4 bg-slate-50 px-4 py-3.5">
         {Array.from({ length: columns }).map((_, i) => (
           <Skeleton key={i} className="h-3.5 flex-1" />
@@ -40,7 +38,6 @@ export function TableSkeleton({
   );
 }
 
-/** Skeleton cho thanh công cụ (search + filter) đứng trên bảng directory. */
 export function ToolbarSkeleton({ className }: { className?: string }) {
   return (
     <div className={cn('flex flex-wrap items-center gap-3', className)}>
@@ -50,7 +47,6 @@ export function ToolbarSkeleton({ className }: { className?: string }) {
   );
 }
 
-/** Directory page (danh sách khách sạn): toolbar + bảng. */
 export function DirectorySkeleton({
   rows = 5,
   columns = 4,
@@ -84,7 +80,10 @@ export function CardGridSkeleton({
       )}
     >
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="rounded-xl border border-slate-200 p-4 space-y-3">
+        <div
+          key={i}
+          className="rounded-xl border border-slate-200 p-4 space-y-3"
+        >
           <Skeleton className="h-32 w-full rounded-lg" />
           <Skeleton className="h-4 w-3/4" />
           <Skeleton className="h-3 w-1/2" />
@@ -143,7 +142,10 @@ export function DetailSkeleton({
         <Skeleton className="h-9 w-24 rounded-lg" />
       </div>
       {Array.from({ length: sections }).map((_, s) => (
-        <div key={s} className="rounded-xl border border-slate-200 p-5 space-y-3">
+        <div
+          key={s}
+          className="rounded-xl border border-slate-200 p-5 space-y-3"
+        >
           <Skeleton className="h-4 w-32" />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {Array.from({ length: 4 }).map((_, i) => (
