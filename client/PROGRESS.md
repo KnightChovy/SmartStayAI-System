@@ -8,6 +8,19 @@ This file tracks the accomplished tasks, resolved user requests, and visual/func
 
 ### July 2, 2026
 
+- [x] **Manager Dashboard — làm lại toàn trang theo Acceptance Criteria (AC-1→AC-8, mock data)**:
+  - **Data layer mock (shape theo API tương lai)**: `types/dashboard.types.ts`; `services/dashboard.service.ts` = MOCK deterministic theo date-range (revenue/bookings prorate theo ngày, activeUsers/hotelPartners là level; sparkline 8 tháng; verifications giữ state module-level để approve/reject phản ánh ngay; search phân nhóm hotels/users/bookings); hooks `hooks/dashboard/` (summary/time-series/verifications/review-mutation/alerts/top-hotels/recent-activity/search, dùng `keepPreviousData`).
+  - **AC-1 Charts**: `RevenueTrendChart` (area, 12 tháng), `BookingsBarChart` (bar), `UsersGrowthChart` (line) — đủ tiêu đề, trục X/Y, tooltip custom giá trị chính xác, responsive `ResponsiveContainer`; khung `ChartCard` dùng chung.
+  - **AC-2 KPI cards**: 4 card chuẩn hoá — giá trị + `ChangeBadge` (xanh↑/đỏ↓/xám–) + dòng "vs previous period" + **mini `Sparkline`** (SVG) + click card điều hướng trang tương ứng (Revenue→/revenue, Partners→/hotel-partners, Users/Bookings→/analytics).
+  - **AC-3 Date range filter**: `DashboardDateRangePicker` preset Today/This Week/This Month/This Quarter/This Year/Custom + validate from≤to; đổi range refetch mọi khối; **persist trong URL query params** (`preset`/`from`/`to`) nên giữ khi reload.
+  - **AC-4 Loading/Empty/Error**: skeleton riêng cho KPI/chart/list (`states.tsx`), empty state có icon+text+CTA, error + nút "Try again" từng khối (không spinner toàn trang).
+  - **AC-5 Actionable lists**: `RecentVerifications` có View/Approve/Reject (Approve/Reject qua `ConfirmDialog` + toast); `PolicyAlerts` có link "View detail" tới hồ sơ hotel; badge trạng thái dùng token dùng chung (`labels.ts`).
+  - **AC-6 Search**: `DashboardSearch` command palette — mở bằng click, **⌘/Ctrl+K** hoặc **"/"**, gõ ≥2 ký tự → gợi ý phân nhóm Hotels/Users/Bookings (debounce 250ms), Esc đóng.
+  - **AC-7 A11y/Responsive**: KPI grid 4→2→1; các hàng chart/list `lg:grid-cols-2/3` stack 1 cột dưới lg; icon-only button có `aria-label`; focus-visible ring; metadata dùng `slate-500` (contrast tốt hơn `slate-400`).
+  - **AC-8 Bổ sung quản lý**: `PendingQueueCard` ("Needs your attention" đếm verification chờ duyệt), `TopHotelsWidget` (top theo revenue), `RecentActivity` (audit log), nút **Export** (dropdown CSV / PDF-print).
+  - Toàn bộ tách nhỏ dưới `components/manager/dashboard/` + barrel; `DashboardPage.tsx` là orchestrator (URL range + ghép component). `npx tsc`: 0 lỗi ở dashboard, tổng vẫn 21 pre-existing.
+  - ⚠️ Mock data (theo yêu cầu) — khi có BE chỉ cần thay thân `services/dashboard.service.ts` sang `api.get(...)`, không đụng hook/type/component.
+
 - [x] **Manager Analytics — tách component (page thành orchestrator mỏng)**:
   - Bóc toàn bộ UI trong `AnalyticsPage.tsx` ra `components/manager/analytics/`: `AnalyticsKpiCards` (+ `KpiCard` nội bộ), `AnalyticsTrendChart` (+ `LineTooltip`/`LowDataBlock`), `AnalyticsTopHotels` (tự giữ state Show all), `AnalyticsTopCities` (+ `CityTooltip`), `AnalyticsSkeleton`, `ChangeBadge`, `states.tsx` (`EmptyBlock`), và `helpers.ts` (formatNumber/formatPercent, `periodChange`/`conversionChange`, `ChartTooltipProps`, hằng `PIE_COLORS`/`SMALL_SAMPLE`/`MIN_TREND_POINTS`/`TOP_HOTELS_PREVIEW`). Barrel `index.ts` export toàn bộ.
   - `AnalyticsPage.tsx` giờ chỉ còn header + toggle + error/loading + orchestrate các component (truyền `data.totals/timeSeries/topHotels/topCities` + `period`, dim khi `isFetching`). Không đổi hành vi (A1–A8 giữ nguyên). `tsc` sạch, tổng lỗi vẫn 21 pre-existing.
