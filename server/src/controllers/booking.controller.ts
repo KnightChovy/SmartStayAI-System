@@ -20,6 +20,22 @@ export class BookingController {
     res.send(result);
   });
 
+  // [Platform Manager] Toàn bộ booking toàn sàn
+  listPlatformBookings = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const filter = pick(req.query, ['status', 'hotelId', 'partnerId', 'fromDate', 'toDate', 'search']);
+    const options = pick(req.query, ['sortBy', 'limit', 'page']);
+    const result = await bookingService.listPlatformBookings(filter, options);
+    res.send(result);
+  });
+
+  // [Partner] Toàn bộ booking của mọi khách sạn của partner đang đăng nhập
+  listMyPartnerBookings = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const filter = pick(req.query, ['status', 'hotelId', 'fromDate', 'toDate', 'search']);
+    const options = pick(req.query, ['sortBy', 'limit', 'page']);
+    const result = await bookingService.listPartnerBookings((req.user as User).id, filter, options);
+    res.send(result);
+  });
+
   getBooking = catchAsync(async (req: Request, res: Response): Promise<void> => {
     const booking = await bookingService.getBookingById(req.params.bookingId as string, req.user as User);
     res.send(booking);

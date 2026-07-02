@@ -342,6 +342,54 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
 
+  /platform-manager/bookings:
+    get:
+      summary: List all platform bookings (Platform Manager)
+      description: >
+        Platform_manager/admin (viewPlatformStats). Lists every booking platform-wide, filtered by status,
+        hotel, partner and check-in date range, plus a search over booking code / customer name / email.
+      tags: [PlatformManager]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: status
+          schema: { type: string, enum: [pending, confirmed, checked_in, checked_out, cancelled, no_show] }
+        - in: query
+          name: hotelId
+          schema: { type: string, format: uuid }
+        - in: query
+          name: partnerId
+          schema: { type: string, format: uuid }
+          description: Narrow to bookings of one partner's hotels
+        - in: query
+          name: fromDate
+          schema: { type: string, format: date }
+        - in: query
+          name: toDate
+          schema: { type: string, format: date }
+        - in: query
+          name: search
+          schema: { type: string }
+          description: Match bookingCode / customer fullName / customer email
+        - in: query
+          name: sortBy
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100 }
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1 }
+      responses:
+        '200':
+          description: Paginated platform bookings
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PaginatedOversightBookings' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
   /platform-manager/analytics:
     get:
       summary: Platform analytics report (Platform Manager)
@@ -1273,6 +1321,50 @@ paths:
                 $ref: '#/components/schemas/Error'
         '401':
           $ref: '#/components/responses/Unauthorized'
+
+  /hotel-partners/me/bookings:
+    get:
+      summary: List all bookings across my hotels (partner)
+      description: >
+        Auth (partner). Lists bookings of ALL hotels owned by the logged-in partner (partner derived from
+        token). Optionally narrow to one of their hotels via hotelId. Same shape as the platform oversight list.
+      tags: [HotelPartners]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: status
+          schema: { type: string, enum: [pending, confirmed, checked_in, checked_out, cancelled, no_show] }
+        - in: query
+          name: hotelId
+          schema: { type: string, format: uuid }
+          description: Narrow to one of the partner's hotels
+        - in: query
+          name: fromDate
+          schema: { type: string, format: date }
+        - in: query
+          name: toDate
+          schema: { type: string, format: date }
+        - in: query
+          name: search
+          schema: { type: string }
+          description: Match bookingCode / customer fullName / customer email
+        - in: query
+          name: sortBy
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100 }
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1 }
+      responses:
+        '200':
+          description: Paginated bookings across the partner's hotels
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PaginatedOversightBookings' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
 
   /hotel-partners/registrations:
     post:
