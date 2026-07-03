@@ -40,3 +40,17 @@ export interface AdminMaintenanceReminder {
   notes: string;
   createdAt: string;
 }
+
+/**
+ * File thật (upload qua `POST /uploads`, lưu ở Cloudinary) — chỉ có DANH MỤC (category/folder,
+ * tên, kích thước) là lưu cục bộ vì backend chưa có API list/xoá. Xoá ở đây chỉ gỡ khỏi danh
+ * sách cục bộ, KHÔNG xoá file khỏi Cloudinary.
+ */
+export interface AdminFileEntry {
+  id: string;
+  name: string;
+  url: string;
+  size: number;
+  category: string;
+  uploadedAt: string;
+}
