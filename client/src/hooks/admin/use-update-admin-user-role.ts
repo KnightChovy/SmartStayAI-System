@@ -2,19 +2,19 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { adminKeys } from '@/hooks/admin/keys';
 import { adminService } from '@/services/admin.service';
-import type { AdminUpdateUserPayload } from '@/types/admin.types';
+import type { AdminUpdateUserRolePayload } from '@/types/admin.types';
 
-interface UpdateAdminUserVariables {
+interface UpdateAdminUserRoleVariables {
   userId: string;
-  payload: AdminUpdateUserPayload;
+  payload: AdminUpdateUserRolePayload;
 }
 
-export function useUpdateAdminUser() {
+export function useUpdateAdminUserRole() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ userId, payload }: UpdateAdminUserVariables) =>
-      adminService.updateUser(userId, payload),
+    mutationFn: ({ userId, payload }: UpdateAdminUserRoleVariables) =>
+      adminService.updateUserRole(userId, payload),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
       queryClient.invalidateQueries({
