@@ -44,6 +44,14 @@ export class AdminController {
     const result = await auditService.queryLogs(filter, options);
     res.send(result);
   });
+
+  // ===== Pha 6 — Giao dịch thanh toán toàn sàn =====
+  listPayments = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const filter = pick(req.query, ['status', 'paymentMethod', 'hotelId']);
+    const options = pick(req.query, ['limit', 'page']);
+    const result = await adminService.listPayments(filter, options);
+    res.send(result);
+  });
 }
 
 export const adminController = new AdminController();

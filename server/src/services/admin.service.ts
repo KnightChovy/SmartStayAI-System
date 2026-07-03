@@ -1,5 +1,5 @@
 import httpStatus from 'http-status';
-import type { Prisma, User, CommissionStatus } from '@prisma/client';
+import type { Prisma, User, CommissionStatus, PaymentStatus, PaymentMethod } from '@prisma/client';
 import prisma from '../config/prisma';
 import ApiError from '../utils/ApiError';
 import { auditService } from './audit.service';
@@ -200,6 +200,79 @@ export class AdminService {
       newValue: { isListed: updated.isListed, isActive: updated.isActive },
     });
     return updated;
+  };
+
+  // ===== Pha 6 — Giao dịch thanh toán toàn sàn =====
+
+  /**
+   * [Admin/PM] Liệt kê tình trạng thanh toán của MỌI booking toàn sàn.
+   * Đi từ `Booking` (luôn tồn tại) chứ không đi từ `Payment` — vì `Payment` chỉ được ghi khi có
+   * hành động thu tiền (cash lúc tạo booking, hoặc VNPay lúc bấm thanh toán); booking VNPay bị bỏ
+   * dở (chưa từng bấm thanh toán) sẽ KHÔNG có dòng Payment nào, nếu liệt kê từ Payment sẽ mất
+   * hẳn các booking này. Mỗi booking kèm khoản thanh toán MỚI NHẤT (nếu có) qua quan hệ `payments`.
+   */
+  listPayments = async (
+    filter: { status?: PaymentStatus | 'unpaid'; paymentMethod?: PaymentMethod; hotelId?: string },
+    options: { limit?: number; page?: number }
+  ) => {
+    const limit = options.limit || 20;
+    const page = options.page || 1;
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.BookingWhereInput = {};
+    if (filter.hotelId) where.hotelId = filter.hotelId;
+    if (filter.status === 'unpaid') {
+      // Chưa từng có khoản thanh toán nào (vd booking VNPay bị bỏ dở, chưa bấm thanh toán)
+      where.payments = { none: {} };
+    } else if (filter.status || filter.paymentMethod) {
+      where.payments = {
+        some: {
+          ...(filter.status ? { status: filter.status } : {}),
+          ...(filter.paymentMethod ? { paymentMethod: filter.paymentMethod } : {}),
+        },
+      };
+    }
+
+    const [rows, totalResults] = await prisma.$transaction([
+      prisma.booking.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          bookingCode: true,
+          totalAmount: true,
+          status: true,
+          createdAt: true,
+          hotel: { select: { id: true, name: true } },
+          customer: { select: { id: true, fullName: true, email: true } },
+          payments: {
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+            select: {
+              id: true,
+              paymentMethod: true,
+              transactionId: true,
+              amount: true,
+              currency: true,
+              status: true,
+              paidAt: true,
+              createdAt: true,
+            },
+          },
+        },
+      }),
+      prisma.booking.count({ where }),
+    ]);
+
+    // payments[0] -> khoản mới nhất, hoặc null nếu booking chưa từng có payment
+    const results = rows.map(({ payments, ...booking }) => ({
+      ...booking,
+      payment: payments[0] ?? null,
+    }));
+
+    return { results, page, limit, totalPages: Math.ceil(totalResults / limit), totalResults };
   };
 }
 

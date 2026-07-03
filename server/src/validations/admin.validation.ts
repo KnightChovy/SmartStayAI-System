@@ -49,3 +49,15 @@ export const listAuditLogs = {
     page: Joi.number().integer().min(1),
   }),
 };
+
+// ===== Pha 6 — Giao dịch thanh toán toàn sàn =====
+export const listPayments = {
+  query: Joi.object().keys({
+    // 'unpaid' = booking chưa từng có khoản thanh toán nào (không phải trạng thái thật của Payment)
+    status: Joi.string().valid('pending', 'completed', 'failed', 'refunded', 'unpaid'),
+    paymentMethod: Joi.string().valid('vnpay', 'sepay', 'stripe', 'cash'),
+    hotelId: Joi.string().uuid(),
+    limit: Joi.number().integer().min(1).max(100),
+    page: Joi.number().integer().min(1),
+  }),
+};
