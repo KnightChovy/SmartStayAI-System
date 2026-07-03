@@ -2,7 +2,11 @@ import type { ReactNode } from 'react';
 import type { UserRole } from '@/constants/roles';
 import type { Paginated } from '@/types/api.types';
 import type { HotelImage } from '@/types/hotel.types';
-import type { HotelBooking } from '@/types/staff.types';
+import type {
+  HotelBooking,
+  PaymentMethod,
+  PaymentStatus,
+} from '@/types/staff.types';
 
 export interface AdminNavbarProps {
   searchPlaceholder: string;
@@ -11,6 +15,8 @@ export interface AdminNavbarProps {
 export interface AdminAnalyticsHeaderProps {
   title: string;
   description: string;
+  onExport?: () => void;
+  isExporting?: boolean;
 }
 
 export interface AdminAnalyticsKpiCardProps {
@@ -38,7 +44,11 @@ export interface AdminPropertiesTableProps {
 }
 
 export interface AdminUsersTableProps {
-  rows: string[][];
+  users: AdminUser[];
+  onView: (user: AdminUser) => void;
+  onEdit: (user: AdminUser) => void;
+  onDelete: (user: AdminUser) => void;
+  isDeleting?: boolean;
 }
 
 export interface AdminPageHeaderProps {
@@ -94,6 +104,14 @@ export interface AdminUpdateUserPayload {
   email?: string;
   password?: string;
   name?: string;
+}
+
+export interface AdminUpdateUserStatusPayload {
+  status: AdminUserStatus;
+}
+
+export interface AdminUpdateUserRolePayload {
+  role: UserRole;
 }
 
 export type AdminUsersResponse = Paginated<AdminUser>;
@@ -270,3 +288,49 @@ export interface AdminAuditLog {
 }
 
 export type AdminAuditLogsResponse = Paginated<AdminAuditLog>;
+
+/** `status=unpaid` không phải trạng thái Payment thật — nghĩa là booking chưa từng có khoản thanh toán nào. */
+export interface AdminPaymentsParams {
+  status?: PaymentStatus | 'unpaid';
+  paymentMethod?: PaymentMethod;
+  hotelId?: string;
+  limit?: number;
+  page?: number;
+}
+
+export interface AdminPaymentBookingHotel {
+  id: string;
+  name: string;
+}
+
+export interface AdminPaymentBookingCustomer {
+  id: string;
+  fullName?: string | null;
+  email: string;
+}
+
+export interface AdminPaymentTransaction {
+  id: string;
+  paymentMethod: PaymentMethod;
+  transactionId: string;
+  amount: string;
+  currency: string;
+  status: PaymentStatus;
+  paidAt?: string | null;
+  createdAt: string;
+}
+
+/** Một dòng = 1 booking (luôn tồn tại), kèm khoản thanh toán mới nhất nếu có — `payment: null` nghĩa là
+ * booking chưa từng có ai thanh toán (vd VNPay bị bỏ dở, chưa bấm thanh toán). */
+export interface AdminPayment {
+  id: string;
+  bookingCode: string;
+  totalAmount: string;
+  status: string;
+  createdAt: string;
+  hotel: AdminPaymentBookingHotel;
+  customer: AdminPaymentBookingCustomer;
+  payment: AdminPaymentTransaction | null;
+}
+
+export type AdminPaymentsResponse = Paginated<AdminPayment>;

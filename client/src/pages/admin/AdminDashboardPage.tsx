@@ -1,16 +1,21 @@
 import { AdminDashboardActivityLog } from '@/components/admin/dashboard/AdminDashboardActivityLog';
 import { AdminDashboardAppPanel } from '@/components/admin/dashboard/AdminDashboardAppPanel';
-import { AdminDashboardDeviceChart } from '@/components/admin/dashboard/AdminDashboardDeviceChart';
+import { AdminDashboardBookingStatusChart } from '@/components/admin/dashboard/AdminDashboardBookingStatusChart';
 import { AdminDashboardGrowthChart } from '@/components/admin/dashboard/AdminDashboardGrowthChart';
 import { AdminDashboardQuickActions } from '@/components/admin/dashboard/AdminDashboardQuickActions';
 import { AdminDashboardStatCard } from '@/components/admin/dashboard/AdminDashboardStatCard';
 import { AdminDashboardSystemHealth } from '@/components/admin/dashboard/AdminDashboardSystemHealth';
 import { useAdminOverview } from '@/hooks/admin';
+import { usePlatformAnalytics } from '@/hooks/analytics';
 import { errorMessage } from '@/utils/errorMessage';
 import { formatCurrency } from '@/utils/formatCurrency';
 
 export function AdminDashboardPage() {
   const { data: overview, isLoading, isError, error } = useAdminOverview();
+  const { data: analytics, isLoading: isAnalyticsLoading } = usePlatformAnalytics({
+    period: 'month',
+    range: 8,
+  });
 
   const stats = [
     {
@@ -58,8 +63,14 @@ export function AdminDashboardPage() {
         </section>
 
         <section className="grid gap-4 xl:grid-cols-[1.9fr_1fr]">
-          <AdminDashboardGrowthChart />
-          <AdminDashboardDeviceChart />
+          <AdminDashboardGrowthChart
+            data={analytics?.timeSeries ?? []}
+            isLoading={isAnalyticsLoading}
+          />
+          <AdminDashboardBookingStatusChart
+            byStatus={overview?.bookings.byStatus ?? {}}
+            isLoading={isLoading}
+          />
         </section>
 
         <section className="grid gap-4 xl:grid-cols-[1.9fr_1fr]">

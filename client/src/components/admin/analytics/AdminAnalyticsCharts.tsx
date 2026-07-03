@@ -11,52 +11,63 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import type {
+  PlatformAnalyticsTimePoint,
+  PlatformAnalyticsTopCity,
+} from '@/types/analytics.types';
 
-const revenueData = [
-  { month: 'Jan', revenue: 180000, target: 170000 },
-  { month: 'Feb', revenue: 210000, target: 190000 },
-  { month: 'Mar', revenue: 245000, target: 220000 },
-  { month: 'Apr', revenue: 230000, target: 235000 },
-  { month: 'May', revenue: 285000, target: 260000 },
-  { month: 'Jun', revenue: 320000, target: 290000 },
-  { month: 'Jul', revenue: 365000, target: 330000 },
-  { month: 'Aug', revenue: 410000, target: 360000 },
-];
+interface AdminAnalyticsChartsProps {
+  timeSeries: PlatformAnalyticsTimePoint[];
+  topCities: PlatformAnalyticsTopCity[];
+  isLoading?: boolean;
+}
 
-const demographicsData = [
-  { color: '#2f7df6', name: 'Leisure Guests', value: 52 },
-  { color: '#047857', name: 'Business Travelers', value: 26 },
-  { color: '#020617', name: 'Long-stay Guests', value: 22 },
-];
+const CITY_COLORS = ['#2f7df6', '#047857', '#020617', '#f59e0b', '#a855f7'];
 
-const totalRevenue = revenueData.reduce(
-  (total, item) => total + item.revenue,
-  0
-);
-const latestRevenue = revenueData[revenueData.length - 1].revenue;
+function formatPeriodLabel(period: string): string {
+  const [year, month] = period.split('-');
+  if (!month) return period;
+  return `${month}/${year.slice(2)}`;
+}
 
-export function AdminAnalyticsCharts() {
-  const [activeRevenueIndex, setActiveRevenueIndex] = useState<number | null>(
+export function AdminAnalyticsCharts({
+  timeSeries,
+  topCities,
+  isLoading,
+}: AdminAnalyticsChartsProps) {
+  const [activeBookingIndex, setActiveBookingIndex] = useState<number | null>(
     null
   );
-  const [activeDemographicIndex, setActiveDemographicIndex] = useState<
-    number | null
-  >(null);
-  const activeRevenue =
-    activeRevenueIndex === null ? null : revenueData[activeRevenueIndex];
-  const activeDemographic =
-    activeDemographicIndex === null
-      ? null
-      : demographicsData[activeDemographicIndex];
+  const [activeCityIndex, setActiveCityIndex] = useState<number | null>(null);
+
+  const bookingData = timeSeries.map(point => ({
+    month: formatPeriodLabel(point.period),
+    bookings: point.bookings,
+    confirmed: point.confirmedBookings,
+  }));
+  const activeBooking =
+    activeBookingIndex === null ? null : bookingData[activeBookingIndex];
+
+  const totalBookings = bookingData.reduce((sum, item) => sum + item.bookings, 0);
+  const latestBookings = bookingData[bookingData.length - 1]?.bookings ?? 0;
+
+  const totalCityBookings = topCities.reduce((sum, item) => sum + item.bookings, 0);
+  const cityData = topCities.map((item, index) => ({
+    name: item.city,
+    value: item.bookings,
+    color: CITY_COLORS[index % CITY_COLORS.length],
+    share: totalCityBookings > 0 ? (item.bookings / totalCityBookings) * 100 : 0,
+  }));
+  const activeCity = activeCityIndex === null ? null : cityData[activeCityIndex];
 
   return (
     <section className="grid gap-5 lg:gap-6 xl:grid-cols-[1.6fr_1fr]">
       <div className="rounded-2xl border bg-white p-4 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h2 className="text-xl font-bold sm:text-2xl">Revenue Growth</h2>
+            <h2 className="text-xl font-bold sm:text-2xl">Bookings Growth</h2>
             <p className="text-sm text-muted-foreground sm:text-base">
-              Monthly income trajectory vs target
+              Monthly bookings vs confirmed
             </p>
           </div>
           <div className="grid grid-cols-2 gap-3 text-right">
@@ -65,7 +76,7 @@ export function AdminAnalyticsCharts() {
                 Total
               </p>
               <p className="text-lg font-bold text-slate-950">
-                ${(totalRevenue / 1000000).toFixed(1)}M
+                {totalBookings.toLocaleString('en-US')}
               </p>
             </div>
             <div>
@@ -73,176 +84,203 @@ export function AdminAnalyticsCharts() {
                 Latest
               </p>
               <p className="text-lg font-bold text-blue-600">
-                ${(latestRevenue / 1000).toFixed(0)}k
+                {latestBookings.toLocaleString('en-US')}
               </p>
             </div>
           </div>
         </div>
         <div className="mt-5 h-64 rounded-xl bg-linear-to-b from-blue-50 to-white p-3 sm:mt-6 sm:h-80">
-          {activeRevenue ? (
-            <div className="mb-2 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-blue-100 bg-white px-3 py-2 shadow-sm">
-              <p className="text-xs font-bold text-slate-950">
-                {activeRevenue.month} revenue
-              </p>
-              <div className="flex gap-4 text-xs">
-                <span className="font-bold text-blue-600">
-                  ${activeRevenue.revenue.toLocaleString()}
-                </span>
-                <span className="font-semibold text-muted-foreground">
-                  Target ${activeRevenue.target.toLocaleString()}
-                </span>
-              </div>
+          {isLoading ? (
+            <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+              Loading...
             </div>
-          ) : null}
-          <ResponsiveContainer height="100%" width="100%">
-            <BarChart
-              data={revenueData}
-              margin={{ bottom: 0, left: -10, right: 8, top: 16 }}
-              onMouseMove={state => {
-                if (typeof state.activeTooltipIndex === 'number') {
-                  setActiveRevenueIndex(state.activeTooltipIndex);
-                }
-              }}
-              onMouseLeave={() => setActiveRevenueIndex(null)}
-            >
-              <CartesianGrid
-                stroke="#dbeafe"
-                strokeDasharray="4 4"
-                vertical={false}
-              />
-              <XAxis
-                axisLine={false}
-                dataKey="month"
-                tick={{ fill: '#64748b', fontSize: 11, fontWeight: 700 }}
-                tickLine={false}
-              />
-              <YAxis
-                axisLine={false}
-                tick={{ fill: '#64748b', fontSize: 11, fontWeight: 700 }}
-                tickFormatter={value => `$${Number(value) / 1000}k`}
-                tickLine={false}
-              />
-              <Tooltip
-                contentStyle={{
-                  border: '1px solid #dbeafe',
-                  borderRadius: '14px',
-                  boxShadow: '0 16px 40px rgba(15, 23, 42, 0.12)',
-                }}
-                formatter={(value, name) => [
-                  `$${Number(value).toLocaleString()}`,
-                  name === 'target' ? 'Target' : 'Revenue',
-                ]}
-                labelStyle={{ color: '#0f172a', fontWeight: 700 }}
-              />
-              <Bar
-                dataKey="revenue"
-                fill="#2f7df6"
-                name="revenue"
-                radius={[8, 8, 0, 0]}
-                barSize={18}
-              />
-              <Bar
-                dataKey="target"
-                fill="#94a3b8"
-                name="target"
-                radius={[8, 8, 0, 0]}
-                barSize={18}
-              />
-            </BarChart>
-          </ResponsiveContainer>
+          ) : bookingData.length === 0 ? (
+            <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+              No data yet
+            </div>
+          ) : (
+            <>
+              {activeBooking ? (
+                <div className="mb-2 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-blue-100 bg-white px-3 py-2 shadow-sm">
+                  <p className="text-xs font-bold text-slate-950">
+                    {activeBooking.month} bookings
+                  </p>
+                  <div className="flex gap-4 text-xs">
+                    <span className="font-bold text-blue-600">
+                      {activeBooking.bookings.toLocaleString()} total
+                    </span>
+                    <span className="font-semibold text-muted-foreground">
+                      {activeBooking.confirmed.toLocaleString()} confirmed
+                    </span>
+                  </div>
+                </div>
+              ) : null}
+              <ResponsiveContainer height="100%" width="100%">
+                <BarChart
+                  data={bookingData}
+                  margin={{ bottom: 0, left: -10, right: 8, top: 16 }}
+                  onMouseMove={state => {
+                    if (typeof state.activeTooltipIndex === 'number') {
+                      setActiveBookingIndex(state.activeTooltipIndex);
+                    }
+                  }}
+                  onMouseLeave={() => setActiveBookingIndex(null)}
+                >
+                  <CartesianGrid
+                    stroke="#dbeafe"
+                    strokeDasharray="4 4"
+                    vertical={false}
+                  />
+                  <XAxis
+                    axisLine={false}
+                    dataKey="month"
+                    tick={{ fill: '#64748b', fontSize: 11, fontWeight: 700 }}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    axisLine={false}
+                    tick={{ fill: '#64748b', fontSize: 11, fontWeight: 700 }}
+                    tickLine={false}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      border: '1px solid #dbeafe',
+                      borderRadius: '14px',
+                      boxShadow: '0 16px 40px rgba(15, 23, 42, 0.12)',
+                    }}
+                    formatter={(value, name) => [
+                      Number(value).toLocaleString(),
+                      name === 'confirmed' ? 'Confirmed' : 'Bookings',
+                    ]}
+                    labelStyle={{ color: '#0f172a', fontWeight: 700 }}
+                  />
+                  <Bar
+                    dataKey="bookings"
+                    fill="#2f7df6"
+                    name="bookings"
+                    radius={[8, 8, 0, 0]}
+                    barSize={18}
+                  />
+                  <Bar
+                    dataKey="confirmed"
+                    fill="#94a3b8"
+                    name="confirmed"
+                    radius={[8, 8, 0, 0]}
+                    barSize={18}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </>
+          )}
         </div>
       </div>
       <div className="rounded-2xl border bg-white p-4 sm:p-6">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h2 className="text-xl font-bold sm:text-2xl">User Demographics</h2>
-            <p className="text-sm text-muted-foreground">Segment share</p>
+            <h2 className="text-xl font-bold sm:text-2xl">Top Cities</h2>
+            <p className="text-sm text-muted-foreground">Booking share by city</p>
           </div>
           <div className="text-right">
             <p className="text-xs font-semibold uppercase text-muted-foreground">
-              Users
+              Bookings
             </p>
-            <p className="text-lg font-bold text-slate-950">14.8k</p>
+            <p className="text-lg font-bold text-slate-950">
+              {totalCityBookings.toLocaleString('en-US')}
+            </p>
           </div>
         </div>
-        <div className="mx-auto mt-5 h-52 max-w-72 sm:h-64">
-          <ResponsiveContainer height="100%" width="100%">
-            <PieChart>
-              {activeDemographic ? (
-                <>
-                  <text
-                    dominantBaseline="middle"
-                    fill="#0f172a"
-                    fontSize="24"
-                    fontWeight="800"
-                    textAnchor="middle"
-                    x="50%"
-                    y="47%"
+
+        {isLoading ? (
+          <div className="mt-5 flex h-52 items-center justify-center text-sm text-muted-foreground sm:h-64">
+            Loading...
+          </div>
+        ) : cityData.length === 0 ? (
+          <div className="mt-5 flex h-52 items-center justify-center text-sm text-muted-foreground sm:h-64">
+            No data yet
+          </div>
+        ) : (
+          <>
+            <div className="mx-auto mt-5 h-52 max-w-72 sm:h-64">
+              <ResponsiveContainer height="100%" width="100%">
+                <PieChart>
+                  {activeCity ? (
+                    <>
+                      <text
+                        dominantBaseline="middle"
+                        fill="#0f172a"
+                        fontSize="24"
+                        fontWeight="800"
+                        textAnchor="middle"
+                        x="50%"
+                        y="47%"
+                      >
+                        {activeCity.share.toFixed(0)}%
+                      </text>
+                      <text
+                        dominantBaseline="middle"
+                        fill="#64748b"
+                        fontSize="11"
+                        fontWeight="700"
+                        textAnchor="middle"
+                        x="50%"
+                        y="57%"
+                      >
+                        {activeCity.name}
+                      </text>
+                    </>
+                  ) : null}
+                  <Pie
+                    cx="50%"
+                    cy="50%"
+                    data={cityData}
+                    dataKey="value"
+                    innerRadius="58%"
+                    onMouseEnter={(_, index: number) => setActiveCityIndex(index)}
+                    onMouseLeave={() => setActiveCityIndex(null)}
+                    outerRadius="82%"
+                    paddingAngle={2}
                   >
-                    {activeDemographic.value}%
-                  </text>
-                  <text
-                    dominantBaseline="middle"
-                    fill="#64748b"
-                    fontSize="11"
-                    fontWeight="700"
-                    textAnchor="middle"
-                    x="50%"
-                    y="57%"
-                  >
-                    {activeDemographic.name}
-                  </text>
-                </>
-              ) : null}
-              <Pie
-                cx="50%"
-                cy="50%"
-                data={demographicsData}
-                dataKey="value"
-                innerRadius="58%"
-                onMouseEnter={(_, index: number) =>
-                  setActiveDemographicIndex(index)
-                }
-                onMouseLeave={() => setActiveDemographicIndex(null)}
-                outerRadius="82%"
-                paddingAngle={2}
-              >
-                {demographicsData.map(item => (
-                  <Cell fill={item.color} key={item.name} />
-                ))}
-              </Pie>
-              <Tooltip
-                formatter={value => [`${value}%`, 'Share']}
-                contentStyle={{
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '14px',
-                  boxShadow: '0 16px 40px rgba(15, 23, 42, 0.12)',
-                }}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-        <div className="mt-3 space-y-2">
-          {demographicsData.map(item => (
-            <div
-              className="flex items-center justify-between gap-3"
-              key={item.name}
-            >
-              <div className="flex items-center gap-2">
-                <span
-                  className="size-2.5 rounded-full"
-                  style={{ backgroundColor: item.color }}
-                />
-                <span className="text-sm font-semibold text-slate-700">
-                  {item.name}
-                </span>
-              </div>
-              <span className="text-sm font-bold text-slate-950">
-                {item.value}%
-              </span>
+                    {cityData.map(item => (
+                      <Cell fill={item.color} key={item.name} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(value, _name, item) => [
+                      `${value} (${(item?.payload?.share ?? 0).toFixed(1)}%)`,
+                      item?.payload?.name ?? 'Bookings',
+                    ]}
+                    contentStyle={{
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '14px',
+                      boxShadow: '0 16px 40px rgba(15, 23, 42, 0.12)',
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
             </div>
-          ))}
-        </div>
+            <div className="mt-3 space-y-2">
+              {cityData.map(item => (
+                <div
+                  className="flex items-center justify-between gap-3"
+                  key={item.name}
+                >
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="size-2.5 rounded-full"
+                      style={{ backgroundColor: item.color }}
+                    />
+                    <span className="text-sm font-semibold text-slate-700">
+                      {item.name}
+                    </span>
+                  </div>
+                  <span className="text-sm font-bold text-slate-950">
+                    {item.value}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </section>
   );

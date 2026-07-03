@@ -1,6 +1,9 @@
-import { useEffect } from 'react';
-import { Edit3, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Plus, Trash2, X } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { useAdminTasks } from '@/hooks/admin-tools';
 import { cn } from '@/lib/cn';
+import type { AdminTaskPriority } from '@/types/admin-tools.types';
 import { formatDateLong, formatTime } from '@/utils/formatDate';
 
 interface AdminTasksModalProps {
@@ -8,76 +11,38 @@ interface AdminTasksModalProps {
   onClose: () => void;
 }
 
-const tasks = [
-  {
-    assignee: 'Sarah H.',
-    due: 'Now + 1',
-    priority: 'High',
-    status: 'In progress',
-    task: 'Iterate Mobile Profile Screen',
-  },
-  {
-    assignee: 'Alex M.',
-    due: 'Oct 28',
-    priority: 'Mid',
-    status: 'Review',
-    task: 'Finalize Color System Guide',
-  },
-  {
-    assignee: 'Donovan',
-    due: 'Oct 30',
-    priority: 'Mid',
-    status: 'Done',
-    task: 'Animate Header Interaction',
-  },
-  {
-    assignee: 'Donovan',
-    due: 'Oct 31',
-    priority: 'Low',
-    status: 'Done',
-    task: 'Design Story Profile Task',
-  },
-];
-
 function getStatusClass(status: string) {
-  if (status === 'In progress') {
-    return 'bg-red-50 text-red-600';
-  }
-
-  if (status === 'Review') {
-    return 'bg-amber-50 text-amber-600';
-  }
-
+  if (status === 'In progress') return 'bg-red-50 text-red-600';
+  if (status === 'To do') return 'bg-slate-100 text-slate-600';
   return 'bg-emerald-50 text-emerald-600';
 }
 
 function getPriorityClass(priority: string) {
-  if (priority === 'High') {
-    return 'bg-red-500 text-white';
-  }
-
-  if (priority === 'Mid') {
-    return 'bg-amber-400 text-white';
-  }
-
+  if (priority === 'High') return 'bg-red-500 text-white';
+  if (priority === 'Mid') return 'bg-amber-400 text-white';
   return 'bg-blue-100 text-blue-700';
 }
 
-export function AdminTasksModal({
-  currentTime,
-  onClose,
-}: AdminTasksModalProps) {
+export function AdminTasksModal({ currentTime, onClose }: AdminTasksModalProps) {
+  const { tasks, openCount, addTask, cycleStatus, removeTask } = useAdminTasks();
+  const [taskName, setTaskName] = useState('');
+  const [priority, setPriority] = useState<AdminTaskPriority>('Mid');
+  const [due, setDue] = useState('');
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onClose();
-      }
+      if (event.key === 'Escape') onClose();
     };
-
     window.addEventListener('keydown', handleKeyDown);
-
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
+
+  const handleAdd = () => {
+    if (!taskName.trim()) return;
+    addTask(taskName, priority, due);
+    setTaskName('');
+    setDue('');
+  };
 
   return (
     <div
@@ -97,13 +62,11 @@ export function AdminTasksModal({
           <div>
             <div className="flex items-center gap-2">
               <span className="size-3 rounded-full bg-red-500" />
-              <h2 className="text-lg font-bold text-slate-950">
-                Design Tasks Overview
-              </h2>
+              <h2 className="text-lg font-bold text-slate-950">Task Board</h2>
             </div>
             <p className="mt-1 text-xs font-medium text-muted-foreground">
-              Mobile Project / Layout Design / Tasks -{' '}
-              {formatDateLong(currentTime)} | {formatTime(currentTime)}
+              {openCount} open · {tasks.length} total — {formatDateLong(currentTime)} |{' '}
+              {formatTime(currentTime)}
             </p>
           </div>
           <button
@@ -116,70 +79,117 @@ export function AdminTasksModal({
           </button>
         </header>
 
+        <div className="flex flex-wrap items-end gap-2 border-b border-outline-variant/30 px-4 py-3 sm:px-5">
+          <div className="min-w-40 flex-1 space-y-1">
+            <label className="text-[11px] font-bold uppercase text-slate-500" htmlFor="task-name">
+              New task
+            </label>
+            <Input
+              id="task-name"
+              onChange={event => setTaskName(event.target.value)}
+              placeholder="e.g. Review hotel verification queue"
+              value={taskName}
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-[11px] font-bold uppercase text-slate-500" htmlFor="task-priority">
+              Priority
+            </label>
+            <select
+              className="h-9 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-ring focus:ring-3 focus:ring-ring/50"
+              id="task-priority"
+              onChange={event => setPriority(event.target.value as AdminTaskPriority)}
+              value={priority}
+            >
+              <option value="High">High</option>
+              <option value="Mid">Mid</option>
+              <option value="Low">Low</option>
+            </select>
+          </div>
+          <div className="space-y-1">
+            <label className="text-[11px] font-bold uppercase text-slate-500" htmlFor="task-due">
+              Due
+            </label>
+            <Input
+              id="task-due"
+              onChange={event => setDue(event.target.value)}
+              type="date"
+              value={due}
+            />
+          </div>
+          <button
+            className="inline-flex h-9 items-center gap-1.5 rounded-full bg-slate-950 px-4 text-xs font-bold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={!taskName.trim()}
+            onClick={handleAdd}
+            type="button"
+          >
+            <Plus className="size-3.5" />
+            Add
+          </button>
+        </div>
+
         <div className="overflow-x-auto">
-          <table className="w-full min-w-170 text-left">
-            <thead>
-              <tr className="border-b border-outline-variant/40 text-[11px] font-bold uppercase tracking-wide text-slate-400">
-                <th className="px-5 py-3">Status</th>
-                <th className="px-4 py-3">Priority</th>
-                <th className="px-4 py-3">Task</th>
-                <th className="px-4 py-3">Assigned</th>
-                <th className="px-5 py-3">Due</th>
-              </tr>
-            </thead>
-            <tbody>
-              {tasks.map(task => (
-                <tr
-                  className="border-b border-outline-variant/30 last:border-b-0"
-                  key={task.task}
-                >
-                  <td className="px-5 py-4">
-                    <span
-                      className={cn(
-                        'rounded-full px-2.5 py-1 text-[10px] font-bold uppercase',
-                        getStatusClass(task.status)
-                      )}
-                    >
-                      {task.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-4">
-                    <span
-                      className={cn(
-                        'rounded-full px-2.5 py-1 text-[10px] font-bold uppercase',
-                        getPriorityClass(task.priority)
-                      )}
-                    >
-                      {task.priority}
-                    </span>
-                  </td>
-                  <td className="px-4 py-4">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-slate-950">
-                        {task.task}
-                      </span>
-                      <Edit3 className="size-3.5 text-slate-500" />
-                    </div>
-                  </td>
-                  <td className="px-4 py-4">
-                    <div className="flex items-center gap-2">
-                      <span className="flex size-6 items-center justify-center rounded-full bg-slate-900 text-[10px] font-bold text-white">
-                        {task.assignee.charAt(0)}
-                      </span>
-                      <span className="text-xs font-semibold text-slate-700">
-                        {task.assignee}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-5 py-4 text-xs font-semibold text-blue-600">
-                    {task.due === 'Now + 1'
-                      ? formatTime(currentTime)
-                      : task.due}
-                  </td>
+          {tasks.length === 0 ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              No tasks yet — add one above.
+            </p>
+          ) : (
+            <table className="w-full min-w-170 text-left">
+              <thead>
+                <tr className="border-b border-outline-variant/40 text-[11px] font-bold uppercase tracking-wide text-slate-400">
+                  <th className="px-5 py-3">Status</th>
+                  <th className="px-4 py-3">Priority</th>
+                  <th className="px-4 py-3">Task</th>
+                  <th className="px-5 py-3">Due</th>
+                  <th className="py-3 pr-5 text-right"> </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {tasks.map(task => (
+                  <tr className="border-b border-outline-variant/30 last:border-b-0" key={task.id}>
+                    <td className="px-5 py-4">
+                      <button
+                        className={cn(
+                          'rounded-full px-2.5 py-1 text-[10px] font-bold uppercase',
+                          getStatusClass(task.status)
+                        )}
+                        onClick={() => cycleStatus(task.id)}
+                        type="button"
+                      >
+                        {task.status}
+                      </button>
+                    </td>
+                    <td className="px-4 py-4">
+                      <span
+                        className={cn(
+                          'rounded-full px-2.5 py-1 text-[10px] font-bold uppercase',
+                          getPriorityClass(task.priority)
+                        )}
+                      >
+                        {task.priority}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4">
+                      <span className="text-sm font-bold text-slate-950">{task.task}</span>
+                    </td>
+                    <td className="px-5 py-4 text-xs font-semibold text-blue-600">
+                      {task.due || '—'}
+                    </td>
+                    <td className="py-4 pr-5 text-right">
+                      <button
+                        aria-label={`Delete ${task.task}`}
+                        className="inline-flex size-7 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-red-600"
+                        onClick={() => removeTask(task.id)}
+                        type="button"
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </section>
     </div>

@@ -1,4 +1,7 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
+import { AdminConfirmDialog } from '@/components/admin/shared/AdminConfirmDialog';
+import { AdminUserDetailModal } from '@/components/admin/models/user/AdminUserDetailModal';
 import { AdminUsersHeader } from '@/components/admin/users/AdminUsersHeader';
 import { AdminUsersTable } from '@/components/admin/users/AdminUsersTable';
 import { Button } from '@/components/ui/button';
@@ -6,17 +9,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAdminModal } from '@/components/admin/models/AdminModalContext';
 import { UserRole } from '@/constants/roles';
-import { useAdminUsers } from '@/hooks/admin';
-import type { AdminUsersParams } from '@/types/admin.types';
+import { useAdminUsers, useDeleteAdminUser } from '@/hooks/admin';
+import type { AdminUser, AdminUsersParams } from '@/types/admin.types';
 import { errorMessage } from '@/utils/errorMessage';
-import { formatDateShort } from '@/utils/formatDate';
-
-function formatRole(role: string): string {
-  return role
-    .split('_')
-    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ');
-}
 
 type UserFilterState = {
   name: string;
@@ -66,15 +61,25 @@ export function AdminUsersPage() {
   ].filter(Boolean).length;
 
   const { data, isLoading, isError, error } = useAdminUsers(queryParams);
+  const deleteUser = useDeleteAdminUser();
+  const [userToDelete, setUserToDelete] = useState<AdminUser | null>(null);
+  const [detailUserId, setDetailUserId] = useState<string | null>(null);
 
-  const rows =
-    data?.results.map(user => [
-      user.fullName ?? user.name ?? user.email,
-      formatRole(user.role),
-      formatDateShort(user.createdAt),
-      user.emailVerifiedAt ? 'Email verified' : 'Email pending',
-      user.status,
-    ]) ?? [];
+  const users = data?.results ?? [];
+
+  const handleConfirmDelete = () => {
+    if (!userToDelete) return;
+
+    deleteUser.mutate(userToDelete.id, {
+      onSuccess: () => {
+        toast.success('User deleted');
+        setUserToDelete(null);
+      },
+      onError: err => {
+        toast.error(errorMessage(err, 'Could not delete user.'));
+      },
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -164,7 +169,36 @@ export function AdminUsersPage() {
           {errorMessage(error, 'Could not load users.')}
         </p>
       )}
-      {!isLoading && !isError && <AdminUsersTable rows={rows} />}
+      {!isLoading && !isError && (
+        <AdminUsersTable
+          isDeleting={deleteUser.isPending}
+          onDelete={setUserToDelete}
+          onEdit={user => setDetailUserId(user.id)}
+          onView={user => setDetailUserId(user.id)}
+          users={users}
+        />
+      )}
+
+      {detailUserId && (
+        <AdminUserDetailModal
+          onClose={() => setDetailUserId(null)}
+          onDeleted={() => setDetailUserId(null)}
+          userId={detailUserId}
+        />
+      )}
+
+      <AdminConfirmDialog
+        confirmLabel="Delete user"
+        destructive
+        loading={deleteUser.isPending}
+        message={`Are you sure you want to delete "${
+          userToDelete?.fullName ?? userToDelete?.name ?? userToDelete?.email ?? ''
+        }"? This action cannot be undone.`}
+        onClose={() => setUserToDelete(null)}
+        onConfirm={handleConfirmDelete}
+        open={Boolean(userToDelete)}
+        title="Delete user"
+      />
     </div>
   );
 }
