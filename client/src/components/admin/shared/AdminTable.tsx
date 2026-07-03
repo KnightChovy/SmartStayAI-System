@@ -18,20 +18,20 @@ export function AdminTable({
           </tr>
         </thead>
         <tbody>
-          {rows.map(row => (
-            <tr key={row[0]} className="border-b last:border-b-0">
+          {rows.map((row, rowIdx) => (
+            <tr key={`${row[0]}-${rowIdx}`} className="border-b last:border-b-0">
               {row.map((cell, idx) => {
                 const isLast = idx === row.length - 1;
                 if (isLast && renderLastColumn) {
                   return (
-                    <td key={`${row[0]}-${idx}`} className="px-3 py-3 sm:px-4">
+                    <td key={`${row[0]}-${rowIdx}-${idx}`} className="px-3 py-3 sm:px-4">
                       {renderLastColumn(row)}
                     </td>
                   );
                 }
                 return (
                   <td
-                    key={`${row[0]}-${idx}`}
+                    key={`${row[0]}-${rowIdx}-${idx}`}
                     className="px-3 py-3 text-sm sm:px-4 sm:text-base"
                   >
                     {cell}
