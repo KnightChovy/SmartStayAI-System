@@ -6,6 +6,9 @@ import ApiError from '../utils/ApiError';
 import { auditService } from './audit.service';
 import { walletService } from './wallet.service';
 
+// Kỳ giữ sau khi khách check-out trước khi tự tất toán (đối soát). 0 = tất toán ngay khi đã check-out.
+const SETTLEMENT_HOLD_DAYS = 1;
+
 export class AdminService {
   /**
    * [Admin/Platform_manager] Tổng quan toàn sàn: user, khách sạn, booking, doanh thu.
@@ -293,6 +296,49 @@ export class AdminService {
       newValue: { status: 'settled' },
     });
     return updated;
+  };
+
+  /**
+   * [Cron] Tự tất toán các khoản hoa hồng ĐỦ ĐIỀU KIỆN: booking đã checked_out (hết cửa huỷ/hoàn)
+   * và đã qua kỳ giữ SETTLEMENT_HOLD_DAYS ngày. Mỗi khoản: commission pending→settled + ví chuyển
+   * pending→available, gói trong 1 transaction; update CÓ ĐIỀU KIỆN (status pending) để không tất
+   * toán hai lần nếu cron chạy chồng. Vết tiền nằm ở wallet_transactions (type payout), không cần audit user.
+   * @returns số khoản đã tất toán
+   */
+  settleEligibleCommissions = async (): Promise<number> => {
+    const cutoff = new Date(Date.now() - SETTLEMENT_HOLD_DAYS * 24 * 60 * 60 * 1000);
+    const eligible = await prisma.platformCommission.findMany({
+      where: {
+        status: 'pending',
+        booking: { status: 'checked_out', checkedOutAt: { lte: cutoff } },
+      },
+      select: {
+        id: true,
+        commissionAmount: true,
+        booking: { select: { hotelId: true, totalAmount: true } },
+      },
+    });
+
+    let settled = 0;
+    for (const c of eligible) {
+      const net = c.booking.totalAmount.sub(c.commissionAmount);
+      // eslint-disable-next-line no-await-in-loop
+      const done = await prisma.$transaction(async (tx) => {
+        const updated = await tx.platformCommission.updateMany({
+          where: { id: c.id, status: 'pending' },
+          data: { status: 'settled', settledAt: new Date() },
+        });
+        if (updated.count === 0) {
+          return false; // khoản này vừa được tất toán bởi lần chạy khác
+        }
+        await walletService.settle(tx, c.booking.hotelId, net, c.id);
+        return true;
+      });
+      if (done) {
+        settled += 1;
+      }
+    }
+    return settled;
   };
 
   // ===== Pha 4 — Giám sát khách sạn toàn sàn =====

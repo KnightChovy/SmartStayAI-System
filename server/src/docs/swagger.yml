@@ -660,6 +660,39 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /internal/jobs/settle-commissions:
+    post:
+      summary: Auto-settle eligible commissions (cron)
+      description: >
+        Called by an external scheduler (suggested daily). Settles every pending commission whose
+        booking has checked out and passed the reconciliation hold period, moving the hotel's net from
+        the wallet's pending to available balance. Protected by x-cron-secret. Idempotent — conditional
+        updates prevent double-settlement.
+      tags: [Internal]
+      parameters:
+        - in: header
+          name: x-cron-secret
+          required: true
+          schema:
+            type: string
+          description: Must equal the server's CRON_SECRET
+      responses:
+        "200":
+          description: Number of commissions settled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  settled:
+                    type: integer
+        "401":
+          description: Missing or wrong cron secret
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /auth/send-otp:
     post:
       summary: Send OTP verification code
@@ -1941,6 +1974,69 @@ paths:
                       limit: { type: integer }
                       totalPages: { type: integer }
                       totalResults: { type: integer }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /hotels/{hotelId}/analytics:
+    get:
+      summary: Hotel operational analytics + score (owner/manager)
+      description: >
+        Auth. Operational performance for ONE hotel over a window (default last 90 days): occupancyRate,
+        cancellationRate, avgRating, avgResponseMinutes, plus each metric normalized to 0..100 and a
+        weighted overall score (rating 40% / occupancy 25% / cancellation 20% / response 15%). Reuses the
+        platform performance logic but scoped to the hotel owner/manager (checked in-service). This is the
+        partner-facing view of the same metrics platform managers see at /platform-manager.
+      tags: [Revenue]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: query
+          name: from
+          schema: { type: string, format: date }
+          description: Window start (YYYY-MM-DD). Defaults to 90 days before "to".
+        - in: query
+          name: to
+          schema: { type: string, format: date }
+          description: Window end (YYYY-MM-DD). Defaults to today.
+      responses:
+        '200':
+          description: Hotel performance metrics + scores
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  hotelId: { type: string, format: uuid }
+                  hotelName: { type: string }
+                  city: { type: string }
+                  window:
+                    type: object
+                    properties:
+                      from: { type: string, format: date-time }
+                      to: { type: string, format: date-time }
+                  metrics:
+                    type: object
+                    properties:
+                      occupancyRate: { type: number, nullable: true, example: 0.72 }
+                      cancellationRate: { type: number, nullable: true, example: 0.08 }
+                      avgRating: { type: number, nullable: true, example: 4.3 }
+                      avgResponseMinutes: { type: number, nullable: true, example: 45 }
+                      totalBookings: { type: integer }
+                      cancelledBookings: { type: integer }
+                      reviewCount: { type: integer }
+                  scores:
+                    type: object
+                    properties:
+                      rating: { type: integer, nullable: true }
+                      occupancy: { type: integer, nullable: true }
+                      cancellation: { type: integer, nullable: true }
+                      response: { type: integer, nullable: true }
+                  score: { type: integer, nullable: true, example: 82 }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
