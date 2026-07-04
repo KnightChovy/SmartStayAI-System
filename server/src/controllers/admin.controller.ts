@@ -11,6 +11,13 @@ export class AdminController {
     res.send(overview);
   });
 
+  // [Admin/PM] Doanh thu nền tảng theo khoảng thời gian + so sánh kỳ trước
+  getPlatformRevenue = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const options = pick(req.query, ['from', 'to', 'groupBy']);
+    const result = await adminService.getPlatformRevenue(options);
+    res.send(result);
+  });
+
   // ===== Pha 3 — Hoa hồng / payout =====
   listCommissions = catchAsync(async (req: Request, res: Response): Promise<void> => {
     const filter = pick(req.query, ['status', 'partnerId']);
