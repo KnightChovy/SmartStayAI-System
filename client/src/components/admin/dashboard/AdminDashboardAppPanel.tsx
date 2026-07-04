@@ -11,6 +11,7 @@ import { useAdminAuditLogs } from '@/hooks/admin';
 import {
   useAdminActivitySeen,
   useAdminCalendarEvents,
+  useAdminFiles,
   useAdminNotes,
   useAdminTasks,
 } from '@/hooks/admin-tools';
@@ -30,6 +31,7 @@ export function AdminDashboardAppPanel() {
   const { events } = useAdminCalendarEvents();
   const { openCount: openTaskCount, tasks } = useAdminTasks();
   const { notes } = useAdminNotes();
+  const { files } = useAdminFiles();
   const { lastSeenAt } = useAdminActivitySeen();
   const { data: activityData } = useAdminAuditLogs({ limit: 30 });
 
@@ -70,7 +72,7 @@ export function AdminDashboardAppPanel() {
       accent: 'bg-slate-100 text-slate-700',
       icon: FileText,
       label: 'File Manager',
-      status: 'Coming soon',
+      status: files.length > 0 ? `${files.length} file${files.length === 1 ? '' : 's'}` : 'No files',
       onClick: openFileManager,
     },
     {
