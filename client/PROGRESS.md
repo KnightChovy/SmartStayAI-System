@@ -6,6 +6,15 @@ This file tracks the accomplished tasks, resolved user requests, and visual/func
 
 ## Completed Tasks Checklist
 
+### July 4, 2026
+
+- [x] **Admin — new Revenue page wired to the just-added `GET /admin/revenue` backend endpoint**:
+  - **Data layer**: `types/admin.types.ts` adds `AdminRevenueParams`/`AdminRevenueSummary`/`AdminRevenueSeriesPoint`/`AdminRevenueComparison`/`AdminPlatformRevenue` matching the backend response exactly (`summary{gmv,commissionPending,commissionSettled,refunded,netPlatformRevenue,bookingCount}`, `groupBy`, `series[]`, `comparison` — money as strings, only computed when both `from`/`to` given). `services/admin.service.ts` adds `getPlatformRevenue(params)` → `GET /admin/revenue`. `hooks/admin/` adds `use-admin-revenue.ts` (`useAdminRevenue`, `keepPreviousData` to avoid layout jump when changing range/groupBy) + `revenue` key in `keys.ts`, exported from the barrel.
+  - **UI** `components/admin/revenue/`: `AdminRevenueFilters` (from/to date inputs + Daily/Monthly `groupBy` toggle + Export CSV, admin's white-card style), `AdminRevenueKpiCards` (GMV, Net Platform Revenue, Commission Settled/Pending, Refunded, Bookings — with `ChangeBadge` % vs previous period on GMV/Net Revenue, only populated when `comparison` is present), `AdminRevenueChart` (GMV bar + Net Platform Revenue line over the series, recharts `ComposedChart`, same visual language as `AdminAnalyticsCharts`).
+  - **Page** `pages/admin/AdminRevenuePage.tsx`: defaults to current-month-to-date range; CSV export via existing `exportToCsv` util.
+  - **Wiring**: registered `{ path: 'revenue', element: <AdminRevenuePage /> }` in `routes/adminRoutes.tsx` and a `Revenue` (`DollarSign` icon) sidebar entry in `AdminLayout.tsx`, right after Payments.
+  - `npx tsc -p tsconfig.app.json --noEmit`: all new/touched files clean; only the same pre-existing unrelated errors remain (unused `React`, `User.name`, `NodeJS`).
+
 ### July 2, 2026
 
 - [x] **Hotel Partner — chặn dùng tính năng khi chưa verify khách sạn (gate + popup)**:
