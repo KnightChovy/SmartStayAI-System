@@ -1,5 +1,6 @@
 import httpStatus from 'http-status';
-import type { Prisma, User, CommissionStatus, PaymentStatus, PaymentMethod } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import type { User, CommissionStatus, PaymentStatus, PaymentMethod } from '@prisma/client';
 import prisma from '../config/prisma';
 import ApiError from '../utils/ApiError';
 import { auditService } from './audit.service';
@@ -81,6 +82,153 @@ export class AdminService {
         refundedTotal: (refundAgg._sum.amount ?? 0).toString(),
       },
     };
+  };
+
+  /**
+   * [Admin/PM] Doanh thu NỀN TẢNG theo khoảng [from, to]: GMV (tổng tiền booking đã chốt),
+   * hoa hồng pending/settled, tiền hoàn, và net platform revenue (= tổng hoa hồng). Kèm chuỗi
+   * thời gian day/month và so sánh % với kỳ trước liền kề (chỉ khi truyền đủ from + to).
+   * Rule GMV giống getOverview. Tiền trả dạng chuỗi (Decimal).
+   */
+  getPlatformRevenue = async (query: { from?: Date; to?: Date; groupBy?: 'day' | 'month' }) => {
+    const groupBy = query.groupBy ?? 'month';
+    const from = query.from;
+    // 'to' là mốc NGÀY (gồm cả ngày đó) ⇒ chặn trên lấy 00:00 ngày kế tiếp → nửa khoảng [from, toExclusive)
+    const toExclusive = query.to ? new Date(query.to.getTime() + 24 * 60 * 60 * 1000) : undefined;
+    const dateWhere = this.buildDateWhere(from, toExclusive);
+
+    const [bookingAgg, commissionByStatus, refundAgg] = await prisma.$transaction([
+      prisma.booking.aggregate({
+        _sum: { totalAmount: true },
+        _count: { _all: true },
+        where: { status: { in: ['confirmed', 'checked_in', 'checked_out'] }, ...dateWhere },
+      }),
+      prisma.platformCommission.groupBy({
+        by: ['status'],
+        _sum: { commissionAmount: true },
+        where: dateWhere,
+      }),
+      prisma.refund.aggregate({ _sum: { amount: true }, where: dateWhere }),
+    ]);
+
+    const commissionMap: Record<string, Prisma.Decimal> = {};
+    for (const r of commissionByStatus) commissionMap[r.status] = r._sum.commissionAmount ?? new Prisma.Decimal(0);
+    const commissionPending = commissionMap.pending ?? new Prisma.Decimal(0);
+    const commissionSettled = commissionMap.settled ?? new Prisma.Decimal(0);
+    // Doanh thu thật của sàn = hoa hồng đã ghi nhận (pending + settled); disputed không tính
+    const netPlatformRevenue = commissionPending.add(commissionSettled);
+
+    const gmv = bookingAgg._sum.totalAmount ?? new Prisma.Decimal(0);
+    const series = await this.buildPlatformSeries(groupBy, from, toExclusive);
+    const comparison = await this.buildPeriodComparison(from, toExclusive, gmv, netPlatformRevenue);
+
+    return {
+      summary: {
+        gmv: gmv.toString(),
+        commissionPending: commissionPending.toString(),
+        commissionSettled: commissionSettled.toString(),
+        refunded: (refundAgg._sum.amount ?? new Prisma.Decimal(0)).toString(),
+        netPlatformRevenue: netPlatformRevenue.toString(),
+        bookingCount: bookingAgg._count._all,
+      },
+      groupBy,
+      series,
+      comparison,
+    };
+  };
+
+  // Chuỗi thời gian GMV + hoa hồng toàn sàn theo kỳ (raw SQL vì Prisma không group theo date_trunc được).
+  private buildPlatformSeries = async (groupBy: 'day' | 'month', from?: Date, toExclusive?: Date) => {
+    const trunc = groupBy === 'day' ? 'day' : 'month'; // whitelist, không phải input tự do
+    const fmt = groupBy === 'day' ? 'YYYY-MM-DD' : 'YYYY-MM';
+    const fromParam = from ?? null;
+    const toParam = toExclusive ?? null;
+
+    const gmvRows = await prisma.$queryRawUnsafe<{ period: string; bookingCount: number; gmv: string }[]>(
+      `SELECT to_char(date_trunc('${trunc}', created_at), '${fmt}') AS period,
+              count(*)::int AS "bookingCount",
+              coalesce(sum(total_amount), 0)::text AS gmv
+       FROM bookings
+       WHERE status IN ('confirmed', 'checked_in', 'checked_out')
+         AND ($1::timestamptz IS NULL OR created_at >= $1)
+         AND ($2::timestamptz IS NULL OR created_at < $2)
+       GROUP BY 1`,
+      fromParam,
+      toParam
+    );
+    const commissionRows = await prisma.$queryRawUnsafe<{ period: string; commission: string }[]>(
+      `SELECT to_char(date_trunc('${trunc}', created_at), '${fmt}') AS period,
+              coalesce(sum(commission_amount), 0)::text AS commission
+       FROM platform_commissions
+       WHERE ($1::timestamptz IS NULL OR created_at >= $1)
+         AND ($2::timestamptz IS NULL OR created_at < $2)
+       GROUP BY 1`,
+      fromParam,
+      toParam
+    );
+
+    const commissionByPeriod = new Map(commissionRows.map((r) => [r.period, r.commission]));
+    return gmvRows
+      .sort((a, b) => a.period.localeCompare(b.period))
+      .map((r) => {
+        const commission = new Prisma.Decimal(commissionByPeriod.get(r.period) ?? 0);
+        return {
+          period: r.period,
+          gmv: new Prisma.Decimal(r.gmv).toString(),
+          commission: commission.toString(),
+          netPlatformRevenue: commission.toString(),
+          bookingCount: r.bookingCount,
+        };
+      });
+  };
+
+  // So sánh với kỳ trước liền kề (cùng độ dài, dịch lùi). Chỉ tính khi có đủ from + to.
+  private buildPeriodComparison = async (
+    from: Date | undefined,
+    toExclusive: Date | undefined,
+    curGmv: Prisma.Decimal,
+    curNet: Prisma.Decimal
+  ) => {
+    if (!from || !toExclusive) return null;
+    const windowMs = toExclusive.getTime() - from.getTime();
+    const prevFrom = new Date(from.getTime() - windowMs);
+    const prevToExclusive = from; // kỳ trước kết thúc ngay khi kỳ này bắt đầu
+    const prevWhere = this.buildDateWhere(prevFrom, prevToExclusive);
+
+    const [prevBooking, prevCommission] = await prisma.$transaction([
+      prisma.booking.aggregate({
+        _sum: { totalAmount: true },
+        where: { status: { in: ['confirmed', 'checked_in', 'checked_out'] }, ...prevWhere },
+      }),
+      prisma.platformCommission.aggregate({
+        _sum: { commissionAmount: true },
+        where: { status: { in: ['pending', 'settled'] }, ...prevWhere },
+      }),
+    ]);
+    const prevGmv = prevBooking._sum.totalAmount ?? new Prisma.Decimal(0);
+    const prevNet = prevCommission._sum.commissionAmount ?? new Prisma.Decimal(0);
+
+    return {
+      previous: { gmv: prevGmv.toString(), netPlatformRevenue: prevNet.toString() },
+      change: {
+        gmvPct: this.pctChange(curGmv, prevGmv),
+        netRevenuePct: this.pctChange(curNet, prevNet),
+      },
+    };
+  };
+
+  // % thay đổi so kỳ trước; null nếu kỳ trước = 0 (không chia được / không có nền so sánh).
+  private pctChange = (current: Prisma.Decimal, previous: Prisma.Decimal): number | null => {
+    if (previous.isZero()) return null;
+    return current.sub(previous).div(previous).mul(100).toDecimalPlaces(2).toNumber();
+  };
+
+  private buildDateWhere = (from?: Date, toExclusive?: Date) => {
+    if (!from && !toExclusive) return {};
+    const createdAt: Prisma.DateTimeFilter = {};
+    if (from) createdAt.gte = from;
+    if (toExclusive) createdAt.lt = toExclusive;
+    return { createdAt };
   };
 
   // ===== Pha 3 — Hoa hồng / payout =====
