@@ -14,5 +14,6 @@ export { housekeepingController } from './housekeeping.controller';
 export { conversationController } from './conversation.controller';
 export { reviewController } from './review.controller';
 export { jobController } from './job.controller';
+export { revenueController } from './revenue.controller';
 export { adminController } from './admin.controller';
 export { platformManagerController } from './platform-manager.controller';
