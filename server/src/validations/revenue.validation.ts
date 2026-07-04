@@ -22,3 +22,13 @@ export const getHotelWallet = {
     page: Joi.number().integer().min(1),
   }),
 };
+
+export const getHotelAnalytics = {
+  params: Joi.object().keys({
+    hotelId: Joi.string().uuid().required(),
+  }),
+  query: Joi.object().keys({
+    from: Joi.date().iso(),
+    to: Joi.date().iso().greater(Joi.ref('from')),
+  }),
+};

@@ -18,6 +18,13 @@ export class RevenueController {
     const result = await revenueService.getHotelWallet(req.params.hotelId as string, req.user as User, options);
     res.send(result);
   });
+
+  // [Chủ KS / manager] Analytics vận hành + điểm số của khách sạn
+  getHotelAnalytics = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const options = pick(req.query, ['from', 'to']);
+    const result = await revenueService.getHotelAnalytics(req.params.hotelId as string, req.user as User, options);
+    res.send(result);
+  });
 }
 
 export const revenueController = new RevenueController();

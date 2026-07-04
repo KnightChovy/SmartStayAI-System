@@ -2,6 +2,7 @@ import { Prisma } from '@prisma/client';
 import type { User, WalletTransactionType } from '@prisma/client';
 import prisma from '../config/prisma';
 import { hotelService } from './hotel.service';
+import { platformManagerService } from './platform-manager.service';
 
 // Booking được tính doanh thu = đã chốt (giống rule GMV toàn sàn ở admin.service.getOverview)
 const REVENUE_STATUSES: Prisma.BookingWhereInput['status'] = {
@@ -171,6 +172,16 @@ export class RevenueService {
         totalResults,
       },
     };
+  };
+
+  /**
+   * [Chủ KS / manager] Analytics vận hành của khách sạn mình: occupancy, cancellation, rating,
+   * tốc độ phản hồi và điểm số tổng. Tái dùng đúng logic chấm điểm ở platform-manager
+   * (getHotelPerformance) nhưng đổi tầng quyền từ platform sang chủ khách sạn (getOperableHotel).
+   */
+  getHotelAnalytics = async (hotelId: string, currentUser: User, query: { from?: Date; to?: Date }) => {
+    await hotelService.getOperableHotel(hotelId, currentUser);
+    return platformManagerService.getHotelPerformance(hotelId, query);
   };
 
   private buildDateFilter = (from?: Date, toExclusive?: Date): Prisma.DateTimeFilter | undefined => {

@@ -45,6 +45,7 @@ router.get('/:hotelId/manage', auth(), validate(hotelValidation.getHotel), hotel
 // Báo cáo doanh thu + ví của khách sạn (chủ KS / manager; service kiểm quyền qua getOperableHotel).
 router.get('/:hotelId/revenue', auth(), validate(revenueValidation.getHotelRevenue), revenueController.getHotelRevenue);
 router.get('/:hotelId/wallet', auth(), validate(revenueValidation.getHotelWallet), revenueController.getHotelWallet);
+router.get('/:hotelId/analytics', auth(), validate(revenueValidation.getHotelAnalytics), revenueController.getHotelAnalytics);
 
 // Partner tự bật/tắt mở bán (publish) khách sạn của mình — chủ KS hoặc quyền manageHotels (service tự kiểm)
 router.patch(
