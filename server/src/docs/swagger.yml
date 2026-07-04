@@ -660,6 +660,39 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /internal/jobs/settle-commissions:
+    post:
+      summary: Auto-settle eligible commissions (cron)
+      description: >
+        Called by an external scheduler (suggested daily). Settles every pending commission whose
+        booking has checked out and passed the reconciliation hold period, moving the hotel's net from
+        the wallet's pending to available balance. Protected by x-cron-secret. Idempotent — conditional
+        updates prevent double-settlement.
+      tags: [Internal]
+      parameters:
+        - in: header
+          name: x-cron-secret
+          required: true
+          schema:
+            type: string
+          description: Must equal the server's CRON_SECRET
+      responses:
+        "200":
+          description: Number of commissions settled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  settled:
+                    type: integer
+        "401":
+          description: Missing or wrong cron secret
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /auth/send-otp:
     post:
       summary: Send OTP verification code
