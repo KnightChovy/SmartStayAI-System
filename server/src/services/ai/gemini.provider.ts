@@ -9,6 +9,8 @@ const GEMINI_MODEL = 'gemini-2.5-flash-lite';
 // Model đổi chữ → vector (free). Nếu lỗi 404, đổi tên theo docs Gemini hiện hành.
 const EMBED_MODEL = 'gemini-embedding-001';
 const MAX_TOOL_ROUNDS = 5;
+// Trần token đầu ra mỗi lần gọi — chặn chi phí/lạm dụng: câu trả lời concierge không cần dài hơn.
+const MAX_OUTPUT_TOKENS = 800;
 const TYPE_MAP: Record<string, Type> = {
   string: Type.STRING,
   number: Type.NUMBER,
@@ -67,7 +69,7 @@ export class GeminiProvider implements AiProvider {
       this.client.models.generateContent({
         model: GEMINI_MODEL,
         contents,
-        config: { systemInstruction: systemPrompt },
+        config: { systemInstruction: systemPrompt, maxOutputTokens: MAX_OUTPUT_TOKENS, temperature: 0.3 },
       })
     );
 
@@ -103,7 +105,12 @@ export class GeminiProvider implements AiProvider {
         this.client.models.generateContent({
           model: GEMINI_MODEL,
           contents,
-          config: { systemInstruction: systemPrompt, tools: [{ functionDeclarations }] },
+          config: {
+            systemInstruction: systemPrompt,
+            tools: [{ functionDeclarations }],
+            maxOutputTokens: MAX_OUTPUT_TOKENS,
+            temperature: 0.3,
+          },
         })
       );
 
@@ -151,7 +158,12 @@ export class GeminiProvider implements AiProvider {
         this.client.models.generateContentStream({
           model: GEMINI_MODEL,
           contents,
-          config: { systemInstruction: systemPrompt, tools: [{ functionDeclarations }] },
+          config: {
+            systemInstruction: systemPrompt,
+            tools: [{ functionDeclarations }],
+            maxOutputTokens: MAX_OUTPUT_TOKENS,
+            temperature: 0.3,
+          },
         })
       );
 
