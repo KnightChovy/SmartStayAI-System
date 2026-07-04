@@ -148,6 +148,78 @@ paths:
         "403":
           $ref: '#/components/responses/Forbidden'
 
+  /admin/revenue:
+    get:
+      summary: Platform revenue report (admin/platform_manager)
+      description: >
+        viewPlatformStats. Platform-wide revenue over [from, to]: GMV (total of settled bookings —
+        confirmed/checked_in/checked_out), commission pending/settled, total refunded, and
+        netPlatformRevenue (= pending + settled commission — the platform's actual earnings).
+        Includes a day/month time series and, when BOTH from and to are given, a % comparison against
+        the immediately preceding period of equal length. All money values are strings.
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: from
+          schema: { type: string, format: date }
+          description: Inclusive start date (YYYY-MM-DD). Omit for all-time (comparison then null).
+        - in: query
+          name: to
+          schema: { type: string, format: date }
+          description: Inclusive end date (YYYY-MM-DD). Omit for all-time.
+        - in: query
+          name: groupBy
+          schema: { type: string, enum: [day, month], default: month }
+      responses:
+        "200":
+          description: Platform revenue summary + time series + period comparison
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  summary:
+                    type: object
+                    properties:
+                      gmv: { type: string, example: '125000000' }
+                      commissionPending: { type: string, example: '5000000' }
+                      commissionSettled: { type: string, example: '13750000' }
+                      refunded: { type: string, example: '2000000' }
+                      netPlatformRevenue: { type: string, example: '18750000' }
+                      bookingCount: { type: integer, example: 250 }
+                  groupBy: { type: string, example: month }
+                  series:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        period: { type: string, example: '2026-07' }
+                        gmv: { type: string }
+                        commission: { type: string }
+                        netPlatformRevenue: { type: string }
+                        bookingCount: { type: integer }
+                  comparison:
+                    nullable: true
+                    description: Present only when both from and to are supplied; otherwise null.
+                    type: object
+                    properties:
+                      previous:
+                        type: object
+                        properties:
+                          gmv: { type: string }
+                          netPlatformRevenue: { type: string }
+                      change:
+                        type: object
+                        properties:
+                          gmvPct: { type: number, nullable: true, example: 12.5 }
+                          netRevenuePct: { type: number, nullable: true, example: 8.3 }
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+
   /admin/commissions:
     get:
       summary: List platform commissions (admin)
