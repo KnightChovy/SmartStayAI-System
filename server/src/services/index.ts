@@ -16,6 +16,7 @@ export { staffService } from './staff.service';
 export { housekeepingService } from './housekeeping.service';
 export { conversationService } from './conversation.service';
 export { reviewService } from './review.service';
+export { revenueService } from './revenue.service';
 export { adminService } from './admin.service';
 export { platformManagerService } from './platform-manager.service';
 export { auditService } from './audit.service';
