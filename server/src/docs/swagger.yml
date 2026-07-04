@@ -17,6 +17,8 @@ tags:
     description: VNPay payment — create payment URL and handle gateway callbacks
   - name: HotelManagement
     description: Partner management of room types, rooms, pricing rules and staff (hotel owner or manageHotels right)
+  - name: Revenue
+    description: Per-hotel revenue report & wallet (balances + transaction ledger) for the hotel owner/manager
   - name: Amenities
     description: Amenity catalog (list public, create by partner/admin)
   - name: Chatbot
@@ -1746,6 +1748,127 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Hotel' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /hotels/{hotelId}/revenue:
+    get:
+      summary: Hotel revenue report (owner/manager)
+      description: >
+        Auth. Revenue for ONE hotel over [from, to]. gross = total of settled bookings
+        (confirmed/checked_in/checked_out); commission = platform commission; net = gross − commission;
+        refunded = total refunded. Includes a day/month time series. All money values are strings.
+        Access is limited to the hotel owner, a manager, or assigned staff (checked in-service).
+      tags: [Revenue]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: query
+          name: from
+          schema: { type: string, format: date }
+          description: Inclusive start date (YYYY-MM-DD). Omit for all-time.
+        - in: query
+          name: to
+          schema: { type: string, format: date }
+          description: Inclusive end date (YYYY-MM-DD). Omit for all-time.
+        - in: query
+          name: groupBy
+          schema: { type: string, enum: [day, month], default: day }
+      responses:
+        '200':
+          description: Revenue summary + time series
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  summary:
+                    type: object
+                    properties:
+                      gross: { type: string, example: '12500000' }
+                      commission: { type: string, example: '1875000' }
+                      net: { type: string, example: '10625000' }
+                      refunded: { type: string, example: '500000' }
+                      bookingCount: { type: integer, example: 25 }
+                  groupBy: { type: string, example: day }
+                  series:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        period: { type: string, example: '2026-07-01' }
+                        gross: { type: string }
+                        commission: { type: string }
+                        net: { type: string }
+                        bookingCount: { type: integer }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /hotels/{hotelId}/wallet:
+    get:
+      summary: Hotel wallet balance + transactions (owner/manager)
+      description: >
+        Auth. Wallet balances (available/pending) and the paginated transaction ledger for ONE hotel.
+        A hotel with no transactions yet returns a zero-balance wallet instead of 404.
+        Money values are strings. Access checked in-service (owner/manager/assigned staff).
+      tags: [Revenue]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: query
+          name: type
+          schema: { type: string, enum: [earning, commission, payout, refund, adjustment] }
+          description: Filter transactions by type.
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1, default: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+      responses:
+        '200':
+          description: Wallet balances + paginated transactions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  wallet:
+                    type: object
+                    properties:
+                      balanceAvailable: { type: string, example: '10625000' }
+                      balancePending: { type: string, example: '0' }
+                      currency: { type: string, example: VND }
+                  transactions:
+                    type: object
+                    properties:
+                      results:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id: { type: string, format: uuid }
+                            type: { type: string, example: earning }
+                            amount: { type: string, example: '850000' }
+                            balanceAfter: { type: string, example: '850000' }
+                            bookingId: { type: string, format: uuid, nullable: true }
+                            commissionId: { type: string, format: uuid, nullable: true }
+                            description: { type: string, nullable: true }
+                            createdAt: { type: string, format: date-time }
+                      page: { type: integer }
+                      limit: { type: integer }
+                      totalPages: { type: integer }
+                      totalResults: { type: integer }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
