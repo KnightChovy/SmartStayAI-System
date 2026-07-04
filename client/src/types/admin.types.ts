@@ -197,6 +197,47 @@ export interface AdminOverview {
   };
 }
 
+export interface AdminRevenueParams {
+  from?: string;
+  to?: string;
+  groupBy?: 'day' | 'month';
+}
+
+export interface AdminRevenueSummary {
+  gmv: string;
+  commissionPending: string;
+  commissionSettled: string;
+  refunded: string;
+  netPlatformRevenue: string;
+  bookingCount: number;
+}
+
+export interface AdminRevenueSeriesPoint {
+  period: string;
+  gmv: string;
+  commission: string;
+  netPlatformRevenue: string;
+  bookingCount: number;
+}
+
+export interface AdminRevenueComparison {
+  previous: {
+    gmv: string;
+    netPlatformRevenue: string;
+  };
+  change: {
+    gmvPct: number | null;
+    netRevenuePct: number | null;
+  };
+}
+
+export interface AdminPlatformRevenue {
+  summary: AdminRevenueSummary;
+  groupBy: 'day' | 'month';
+  series: AdminRevenueSeriesPoint[];
+  comparison: AdminRevenueComparison | null;
+}
+
 export type AdminCommissionStatus = 'pending' | 'settled' | 'disputed';
 
 export interface AdminCommissionsParams {
