@@ -3,6 +3,7 @@ import type { Prisma, User, CommissionStatus, PaymentStatus, PaymentMethod } fro
 import prisma from '../config/prisma';
 import ApiError from '../utils/ApiError';
 import { auditService } from './audit.service';
+import { walletService } from './wallet.service';
 
 export class AdminService {
   /**
@@ -115,16 +116,25 @@ export class AdminService {
 
   /** [Admin/PM] Đánh dấu đã tất toán (payout) 1 khoản hoa hồng. Chỉ khoản chưa settled mới được. */
   settleCommission = async (commissionId: string, currentUser: User) => {
-    const commission = await prisma.platformCommission.findUnique({ where: { id: commissionId } });
+    const commission = await prisma.platformCommission.findUnique({
+      where: { id: commissionId },
+      include: { booking: { select: { hotelId: true, totalAmount: true } } },
+    });
     if (!commission) {
       throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy khoản hoa hồng');
     }
     if (commission.status === 'settled') {
       throw new ApiError(httpStatus.BAD_REQUEST, 'Khoản hoa hồng này đã được tất toán');
     }
-    const updated = await prisma.platformCommission.update({
-      where: { id: commissionId },
-      data: { status: 'settled', settledAt: new Date() },
+    // Net khách sạn thực nhận = tổng booking − hoa hồng; tất toán chuyển khoản này pending → available
+    const net = commission.booking.totalAmount.sub(commission.commissionAmount);
+    const updated = await prisma.$transaction(async (tx) => {
+      const settled = await tx.platformCommission.update({
+        where: { id: commissionId },
+        data: { status: 'settled', settledAt: new Date() },
+      });
+      await walletService.settle(tx, commission.booking.hotelId, net, commissionId);
+      return settled;
     });
     await auditService.log({
       userId: currentUser.id,
