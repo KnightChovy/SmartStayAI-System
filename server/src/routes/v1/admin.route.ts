@@ -9,6 +9,9 @@ const router = express.Router();
 // Tổng quan toàn sàn — admin / platform_manager (viewPlatformStats)
 router.get('/overview', auth('viewPlatformStats'), adminController.getOverview);
 
+// Doanh thu nền tảng (GMV, hoa hồng, net, so sánh kỳ trước) — viewPlatformStats
+router.get('/revenue', auth('viewPlatformStats'), validate(adminValidation.getPlatformRevenue), adminController.getPlatformRevenue);
+
 // ===== Pha 3 — Hoa hồng / payout (manageCommissions) =====
 router.get('/commissions', auth('manageCommissions'), validate(adminValidation.listCommissions), adminController.listCommissions);
 router.patch(

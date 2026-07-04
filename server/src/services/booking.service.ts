@@ -19,6 +19,7 @@ import type {
   CheckInBookingDto,
   CheckOutBookingDto,
 } from '../dto/booking.dto';
+import { walletService } from './wallet.service';
 
 // Đặt tối đa bao nhiêu đêm cho một booking (chặn khoảng ngày vô lý)
 const MAX_NIGHTS = 30;
@@ -48,16 +49,13 @@ const oversightBookingInclude = {
 } satisfies Prisma.BookingInclude;
 
 // Mã booking dễ đọc cho khách; cột booking_code có unique constraint chặn trùng
-const generateBookingCode = (): string =>
-  `BK${Date.now().toString(36)}${randomBytes(3).toString('hex')}`.toUpperCase();
+const generateBookingCode = (): string => `BK${Date.now().toString(36)}${randomBytes(3).toString('hex')}`.toUpperCase();
 
 // Số hoá đơn duy nhất phát hành khi check-out; cột invoice_number có unique constraint
-const generateInvoiceNumber = (): string =>
-  `INV${Date.now().toString(36)}${randomBytes(2).toString('hex')}`.toUpperCase();
+const generateInvoiceNumber = (): string => `INV${Date.now().toString(36)}${randomBytes(2).toString('hex')}`.toUpperCase();
 
 // Mã e-voucher duy nhất; cột voucher_code có unique constraint
-const generateVoucherCode = (): string =>
-  `VC${Date.now().toString(36)}${randomBytes(3).toString('hex')}`.toUpperCase();
+const generateVoucherCode = (): string => `VC${Date.now().toString(36)}${randomBytes(3).toString('hex')}`.toUpperCase();
 
 /**
  * Chính sách huỷ/hoàn tiền — kiểu "free-cancel tới hạn chót" (giống giá linh hoạt của OTA).
@@ -353,6 +351,9 @@ export class BookingService {
           const retained = paidPayment.amount.sub(refundAmount);
           const newCommission = retained.mul(booking.commission.commissionRate).div(100).toDecimalPlaces(2);
           await tx.platformCommission.update({ where: { bookingId }, data: { commissionAmount: newCommission } });
+          const oldNet = paidPayment.amount.sub(booking.commission.commissionAmount);
+          const newNet = retained.sub(newCommission);
+          await walletService.recordRefund(tx, booking.hotelId, bookingId, oldNet.sub(newNet));
         }
       }
 
@@ -552,12 +553,7 @@ export class BookingService {
    * confirmed→checked_in (có điều kiện), gán MỘT phòng vật lý trống đúng loại (giành phòng có
    * điều kiện để hai quầy check-in không gán trùng phòng), đánh dấu voucher đã dùng.
    */
-  checkInBooking = async (
-    hotelId: string,
-    bookingId: string,
-    currentUser: User,
-    payload: CheckInBookingDto
-  ) => {
+  checkInBooking = async (hotelId: string, bookingId: string, currentUser: User, payload: CheckInBookingDto) => {
     await hotelService.getOperableHotel(hotelId, currentUser);
     const booking = await prisma.booking.findFirst({
       where: { id: bookingId, hotelId },
@@ -627,12 +623,7 @@ export class BookingService {
    * checked_in→checked_out (có điều kiện), trả phòng về 'cleaning' để housekeeping dọn,
    * và phát hành hoá đơn (Invoice) gồm phụ thu phát sinh nếu có.
    */
-  checkOutBooking = async (
-    hotelId: string,
-    bookingId: string,
-    currentUser: User,
-    payload: CheckOutBookingDto
-  ) => {
+  checkOutBooking = async (hotelId: string, bookingId: string, currentUser: User, payload: CheckOutBookingDto) => {
     await hotelService.getOperableHotel(hotelId, currentUser);
     const booking = await prisma.booking.findFirst({
       where: { id: bookingId, hotelId },
@@ -728,6 +719,10 @@ export class BookingService {
           status: 'pending',
         },
       });
+
+      // Tiền mặt vừa về → ghi net (total − hoa hồng) vào balancePending của ví khách sạn
+      const net = booking.totalAmount.sub(commissionAmount);
+      await walletService.recordEarning(tx, hotelId, bookingId, net);
 
       return tx.booking.findUniqueOrThrow({ where: { id: bookingId }, include: staffBookingInclude });
     });

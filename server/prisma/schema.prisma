@@ -143,6 +143,14 @@ enum CommissionStatus {
   disputed
 }
 
+enum WalletTransactionType {
+  earning     // KS nhận tiền (net) khi booking thanh toán thành công
+  commission  // phần hoa hồng platform cắt
+  payout      // chi trả về bank của partner
+  refund      // hoàn tiền (âm)
+  adjustment  // điều chỉnh thủ công
+}
+
 enum SentimentLabel {
   positive
   neutral
@@ -594,6 +602,7 @@ model Hotel {
   policies              HotelPolicy[]
   nearbyPlaces          HotelNearbyPlace[]
   payouts               Payout[]
+  wallet                Wallet?
 
   @@map("hotels")
 }
@@ -924,6 +933,41 @@ model PlatformCommission {
   updatedAt        DateTime         @default(now()) @updatedAt @map("updated_at")
 
   @@map("platform_commissions")
+}
+
+// Ví per-hotel: mỗi khách sạn có 1 ví. Payout thực tế đi về bank cấp partner,
+// cộng dồn số dư available từ ví các hotel thuộc partner đó.
+model Wallet {
+  id               String   @id @default(uuid()) @db.Uuid
+  hotelId          String   @unique @map("hotel_id") @db.Uuid
+  hotel            Hotel    @relation(fields: [hotelId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  balanceAvailable Decimal  @default(0) @map("balance_available") @db.Decimal(14, 2)
+  balancePending   Decimal  @default(0) @map("balance_pending") @db.Decimal(14, 2)
+  currency         String   @default("VND")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @default(now()) @updatedAt @map("updated_at")
+
+  transactions WalletTransaction[]
+
+  @@map("wallets")
+}
+
+model WalletTransaction {
+  id           String                @id @default(uuid()) @db.Uuid
+  walletId     String                @map("wallet_id") @db.Uuid
+  wallet       Wallet                @relation(fields: [walletId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  type         WalletTransactionType
+  amount       Decimal               @db.Decimal(14, 2) // có dấu: + earning, − payout/refund
+  balanceAfter Decimal               @map("balance_after") @db.Decimal(14, 2)
+  bookingId    String?               @map("booking_id") @db.Uuid
+  commissionId String?               @map("commission_id") @db.Uuid
+  status       String                @default("completed")
+  description  String?
+  createdAt    DateTime              @default(now()) @map("created_at")
+
+  @@index([walletId])
+  @@index([bookingId])
+  @@map("wallet_transactions")
 }
 
 model Review {
