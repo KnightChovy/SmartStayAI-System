@@ -26,7 +26,12 @@ import { formatCurrency } from '@/utils/formatCurrency';
 /** Trạng thái còn cho phép hủy / đổi. */
 const CANCELLABLE = new Set(['pending', 'confirmed']);
 /** Trạng thái còn cho phép yêu cầu hoàn tiền (đã thanh toán). */
-const REFUNDABLE = new Set(['confirmed', 'checked_in', 'checked_out', 'cancelled']);
+const REFUNDABLE = new Set([
+  'confirmed',
+  'checked_in',
+  'checked_out',
+  'cancelled',
+]);
 
 export default function BookingDetailPage() {
   const { bookingId = '' } = useParams();
@@ -54,7 +59,11 @@ export default function BookingDetailPage() {
     return (
       <div className="rounded-2xl border border-outline-variant/30 bg-surface p-10 text-center">
         <p className="text-on-surface-variant">Booking not found.</p>
-        <Button className="mt-4" variant="outline" onClick={() => navigate(ROUTES.accountBookings)}>
+        <Button
+          className="mt-4"
+          variant="outline"
+          onClick={() => navigate(ROUTES.accountBookings)}
+        >
           Back to my bookings
         </Button>
       </div>
@@ -67,7 +76,10 @@ export default function BookingDetailPage() {
   const canReview = booking.status === 'checked_out';
 
   const openModify = () => {
-    setModifyRange({ checkIn: booking.checkInDate.slice(0, 10), checkOut: booking.checkOutDate.slice(0, 10) });
+    setModifyRange({
+      checkIn: booking.checkInDate.slice(0, 10),
+      checkOut: booking.checkOutDate.slice(0, 10),
+    });
     setModifyGuests(booking.numGuests);
     setModifySent(false);
     setShowModify(true);
@@ -77,7 +89,10 @@ export default function BookingDetailPage() {
   const downloadInvoice = () => window.print();
 
   const handleCancel = async () => {
-    await cancelBooking.mutateAsync({ bookingId: booking.id, reason: reason || undefined });
+    await cancelBooking.mutateAsync({
+      bookingId: booking.id,
+      reason: reason || undefined,
+    });
     setShowCancel(false);
   };
 
@@ -102,7 +117,9 @@ export default function BookingDetailPage() {
             </div>
             <p className="mt-2 flex items-center gap-1.5 text-sm text-on-surface-variant">
               <MapPin className="size-4" />
-              {[booking.hotel?.address, booking.hotel?.city].filter(Boolean).join(', ')}
+              {[booking.hotel?.address, booking.hotel?.city]
+                .filter(Boolean)
+                .join(', ')}
             </p>
 
             <dl className="mt-5 grid gap-4 sm:grid-cols-2">
@@ -122,8 +139,12 @@ export default function BookingDetailPage() {
 
             {booking.specialRequests && (
               <div className="mt-4 rounded-xl bg-surface-container-low p-3 text-sm">
-                <span className="font-semibold text-on-surface">Special requests: </span>
-                <span className="text-on-surface-variant">{booking.specialRequests}</span>
+                <span className="font-semibold text-on-surface">
+                  Special requests:{' '}
+                </span>
+                <span className="text-on-surface-variant">
+                  {booking.specialRequests}
+                </span>
               </div>
             )}
 
@@ -142,7 +163,11 @@ export default function BookingDetailPage() {
               </Button>
             )}
             {canRefund && (
-              <Button variant="outline" size="lg" onClick={() => setShowRefund(true)}>
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={() => setShowRefund(true)}
+              >
                 <Receipt className="size-4" /> Request refund
               </Button>
             )}
@@ -150,12 +175,20 @@ export default function BookingDetailPage() {
               <Download className="size-4" /> Invoice
             </Button>
             {canCancel && (
-              <Button variant="destructive" size="lg" onClick={() => setShowCancel(true)}>
+              <Button
+                variant="destructive"
+                size="lg"
+                onClick={() => setShowCancel(true)}
+              >
                 <XCircle className="size-4" /> Cancel booking
               </Button>
             )}
             {canReview && (
-              <Button asChild size="lg" className="bg-on-surface text-white hover:bg-primary">
+              <Button
+                asChild
+                size="lg"
+                className="bg-on-surface text-white hover:bg-primary"
+              >
                 <Link to={ROUTES.accountReviews}>Write a review</Link>
               </Button>
             )}
@@ -164,11 +197,13 @@ export default function BookingDetailPage() {
           {/* Modify reservation (mock — gửi yêu cầu) */}
           {showModify && (
             <div className="rounded-2xl border border-outline-variant/30 bg-surface p-5">
-              <h3 className="font-be-vietnam font-semibold text-on-surface">Modify reservation</h3>
+              <h3 className="font-be-vietnam font-semibold text-on-surface">
+                Modify reservation
+              </h3>
               {modifySent ? (
                 <p className="mt-3 flex items-center gap-2 rounded-xl bg-emerald-500/10 px-3 py-2 text-sm text-emerald-700">
-                  <CheckCircle2 className="size-4" /> Modification request sent. The property will confirm
-                  availability shortly.
+                  <CheckCircle2 className="size-4" /> Modification request sent.
+                  The property will confirm availability shortly.
                 </p>
               ) : (
                 <>
@@ -182,10 +217,17 @@ export default function BookingDetailPage() {
                       onChange={setModifyRange}
                       className="flex-1"
                     />
-                    <GuestSelector value={modifyGuests} onChange={setModifyGuests} className="sm:w-40" />
+                    <GuestSelector
+                      value={modifyGuests}
+                      onChange={setModifyGuests}
+                      className="sm:w-40"
+                    />
                   </div>
                   <div className="mt-3 flex gap-3">
-                    <Button variant="outline" onClick={() => setShowModify(false)}>
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowModify(false)}
+                    >
                       Cancel
                     </Button>
                     <Button
@@ -203,17 +245,21 @@ export default function BookingDetailPage() {
           {/* Request refund (mock — gửi yêu cầu, DB có Refund) */}
           {showRefund && (
             <div className="rounded-2xl border border-outline-variant/30 bg-surface p-5">
-              <h3 className="font-be-vietnam font-semibold text-on-surface">Request a refund</h3>
+              <h3 className="font-be-vietnam font-semibold text-on-surface">
+                Request a refund
+              </h3>
               {refundSent ? (
                 <p className="mt-3 flex items-center gap-2 rounded-xl bg-emerald-500/10 px-3 py-2 text-sm text-emerald-700">
-                  <CheckCircle2 className="size-4" /> Refund request submitted for{' '}
-                  {formatCurrency(booking.totalAmount)}. Our team will review it within 3–5 business days.
+                  <CheckCircle2 className="size-4" /> Refund request submitted
+                  for {formatCurrency(booking.totalAmount)}. Our team will
+                  review it within 3–5 business days.
                 </p>
               ) : (
                 <>
                   <p className="mt-1 text-sm text-on-surface-variant">
-                    Refundable amount: <strong>{formatCurrency(booking.totalAmount)}</strong>. Tell us why
-                    you’re requesting a refund.
+                    Refundable amount:{' '}
+                    <strong>{formatCurrency(booking.totalAmount)}</strong>. Tell
+                    us why you’re requesting a refund.
                   </p>
                   <textarea
                     rows={3}
@@ -223,7 +269,10 @@ export default function BookingDetailPage() {
                     className="mt-3 w-full rounded-xl border border-outline-variant/40 bg-surface px-3 py-2 text-sm outline-none focus:border-primary"
                   />
                   <div className="mt-3 flex gap-3">
-                    <Button variant="outline" onClick={() => setShowRefund(false)}>
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowRefund(false)}
+                    >
                       Cancel
                     </Button>
                     <Button
@@ -242,9 +291,12 @@ export default function BookingDetailPage() {
           {/* Cancel form */}
           {showCancel && (
             <div className="rounded-2xl border border-error/30 bg-error/5 p-5">
-              <h3 className="font-semibold text-on-surface">Cancel this booking?</h3>
+              <h3 className="font-semibold text-on-surface">
+                Cancel this booking?
+              </h3>
               <p className="mt-1 text-sm text-on-surface-variant">
-                Tell us why you’re cancelling (optional). This action can’t be undone.
+                Tell us why you’re cancelling (optional). This action can’t be
+                undone.
               </p>
               <textarea
                 rows={3}
@@ -254,14 +306,22 @@ export default function BookingDetailPage() {
                 className="mt-3 w-full rounded-xl border border-outline-variant/40 bg-surface px-3 py-2 text-sm outline-none focus:border-primary"
               />
               {cancelBooking.isError && (
-                <p className="mt-2 text-sm text-error">Could not cancel. Please try again.</p>
+                <p className="mt-2 text-sm text-error">
+                  Could not cancel. Please try again.
+                </p>
               )}
               <div className="mt-3 flex gap-3">
                 <Button variant="outline" onClick={() => setShowCancel(false)}>
                   Keep booking
                 </Button>
-                <Button variant="destructive" disabled={cancelBooking.isPending} onClick={handleCancel}>
-                  {cancelBooking.isPending ? 'Cancelling…' : 'Confirm cancellation'}
+                <Button
+                  variant="destructive"
+                  disabled={cancelBooking.isPending}
+                  onClick={handleCancel}
+                >
+                  {cancelBooking.isPending
+                    ? 'Cancelling…'
+                    : 'Confirm cancellation'}
                 </Button>
               </div>
             </div>
@@ -272,12 +332,20 @@ export default function BookingDetailPage() {
         <aside className="lg:w-80 lg:shrink-0">
           <div className="space-y-6 lg:sticky lg:top-24">
             <div className="rounded-2xl border border-outline-variant/30 bg-surface p-6">
-              <h3 className="mb-4 font-be-vietnam font-semibold text-on-surface">Price details</h3>
+              <h3 className="mb-4 font-be-vietnam font-semibold text-on-surface">
+                Price details
+              </h3>
               <PriceSummary
                 lines={[
                   { label: 'Subtotal', value: booking.subtotal },
                   ...(Number(booking.discountAmount) > 0
-                    ? [{ label: 'Discount', value: booking.discountAmount, negative: true }]
+                    ? [
+                        {
+                          label: 'Discount',
+                          value: booking.discountAmount,
+                          negative: true,
+                        },
+                      ]
                     : []),
                 ]}
                 total={booking.totalAmount}
@@ -303,7 +371,15 @@ export default function BookingDetailPage() {
   );
 }
 
-function Detail({ label, value, icon }: { label: string; value: string; icon?: React.ReactNode }) {
+function Detail({
+  label,
+  value,
+  icon,
+}: {
+  label: string;
+  value: string;
+  icon?: React.ReactNode;
+}) {
   return (
     <div>
       <dt className="flex items-center gap-1.5 text-xs text-on-surface-variant">

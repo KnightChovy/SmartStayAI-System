@@ -26,7 +26,12 @@ export type BookingStatus =
   | 'cancelled'
   | 'no_show';
 
-export type BookingSource = 'website' | 'mobile_app' | 'chatbot' | 'walk_in' | 'staff';
+export type BookingSource =
+  | 'website'
+  | 'mobile_app'
+  | 'chatbot'
+  | 'walk_in'
+  | 'staff';
 
 /** Tóm tắt khách sạn/loại phòng đính kèm trong booking (backend include sẵn). */
 export interface BookingHotelSummary {

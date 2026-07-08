@@ -28,7 +28,9 @@ const skipAuthRetry = { _retry: true } as unknown as AxiosRequestConfig;
 /** Drop empty fields from the query string. */
 function cleanParams<T extends object>(params: T): Record<string, unknown> {
   return Object.fromEntries(
-    Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== '')
+    Object.entries(params).filter(
+      ([, v]) => v !== undefined && v !== null && v !== ''
+    )
   );
 }
 
@@ -54,7 +56,10 @@ export const staffService = {
 
     const probes = await Promise.allSettled(
       hotels.map(hotel =>
-        api.get(`/hotels/${hotel.id}/bookings`, { params: { limit: 1 }, ...skipAuthRetry })
+        api.get(`/hotels/${hotel.id}/bookings`, {
+          params: { limit: 1 },
+          ...skipAuthRetry,
+        })
       )
     );
 
@@ -68,14 +73,20 @@ export const staffService = {
     hotelId: string,
     params: HotelBookingsParams = {}
   ): Promise<HotelBookingsResponse> {
-    const { data } = await api.get<HotelBookingsResponse>(`/hotels/${hotelId}/bookings`, {
-      params: cleanParams(params),
-    });
+    const { data } = await api.get<HotelBookingsResponse>(
+      `/hotels/${hotelId}/bookings`,
+      {
+        params: cleanParams(params),
+      }
+    );
     return data;
   },
 
   /** Detail of a single booking (`GET /hotels/:hotelId/bookings/:bookingId`). */
-  async getBooking(hotelId: string, bookingId: string): Promise<HotelBookingDetail> {
+  async getBooking(
+    hotelId: string,
+    bookingId: string
+  ): Promise<HotelBookingDetail> {
     const { data } = await api.get<HotelBookingDetail>(
       `/hotels/${hotelId}/bookings/${bookingId}`
     );
@@ -83,10 +94,16 @@ export const staffService = {
   },
 
   /** Tra booking từ mã QR/e-voucher (`GET .../bookings/lookup?voucherCode=`). */
-  async lookupBooking(hotelId: string, voucherCode: string): Promise<HotelBookingDetail> {
-    const { data } = await api.get<HotelBookingDetail>(`/hotels/${hotelId}/bookings/lookup`, {
-      params: { voucherCode },
-    });
+  async lookupBooking(
+    hotelId: string,
+    voucherCode: string
+  ): Promise<HotelBookingDetail> {
+    const { data } = await api.get<HotelBookingDetail>(
+      `/hotels/${hotelId}/bookings/lookup`,
+      {
+        params: { voucherCode },
+      }
+    );
     return data;
   },
 
@@ -117,7 +134,10 @@ export const staffService = {
   },
 
   /** Record a cash payment for a pay-at-hotel booking (`POST .../record-cash-payment`). */
-  async recordCashPayment(hotelId: string, bookingId: string): Promise<HotelBooking> {
+  async recordCashPayment(
+    hotelId: string,
+    bookingId: string
+  ): Promise<HotelBooking> {
     const { data } = await api.post<HotelBooking>(
       `/hotels/${hotelId}/bookings/${bookingId}/record-cash-payment`
     );
@@ -139,14 +159,20 @@ export const staffService = {
     hotelId: string,
     status?: HousekeepingTaskStatus
   ): Promise<HousekeepingTask[]> {
-    const { data } = await api.get<HousekeepingTask[]>(`/hotels/${hotelId}/housekeeping`, {
-      params: cleanParams({ status }),
-    });
+    const { data } = await api.get<HousekeepingTask[]>(
+      `/hotels/${hotelId}/housekeeping`,
+      {
+        params: cleanParams({ status }),
+      }
+    );
     return data;
   },
 
   /** Complete a housekeeping task (`POST .../complete`). */
-  async completeHousekeeping(hotelId: string, taskId: string): Promise<HousekeepingTask> {
+  async completeHousekeeping(
+    hotelId: string,
+    taskId: string
+  ): Promise<HousekeepingTask> {
     const { data } = await api.post<HousekeepingTask>(
       `/hotels/${hotelId}/housekeeping/${taskId}/complete`
     );
@@ -157,7 +183,9 @@ export const staffService = {
 
   /** Physical room list (`GET /hotels/:hotelId/rooms`). */
   async listRooms(hotelId: string): Promise<StaffRoom[]> {
-    const { data } = await api.get<StaffRoomsResponse>(`/hotels/${hotelId}/rooms`);
+    const { data } = await api.get<StaffRoomsResponse>(
+      `/hotels/${hotelId}/rooms`
+    );
     return data.results;
   },
 
@@ -167,9 +195,12 @@ export const staffService = {
     roomId: string,
     status: RoomStatus
   ): Promise<StaffRoom> {
-    const { data } = await api.patch<StaffRoom>(`/hotels/${hotelId}/rooms/${roomId}/status`, {
-      status,
-    });
+    const { data } = await api.patch<StaffRoom>(
+      `/hotels/${hotelId}/rooms/${roomId}/status`,
+      {
+        status,
+      }
+    );
     return data;
   },
 };

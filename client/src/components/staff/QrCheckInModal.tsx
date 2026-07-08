@@ -30,7 +30,12 @@ function extractVoucherCode(scanned: string): string {
  * Modal check-in kiểu "quầy vé rạp phim": quét QR bằng camera trình duyệt (html5-qrcode)
  * hoặc nhập tay mã e-voucher, tra ra booking rồi báo lên cho FrontDeskPage điều hướng.
  */
-export function QrCheckInModal({ open, onClose, hotelId, onFound }: QrCheckInModalProps) {
+export function QrCheckInModal({
+  open,
+  onClose,
+  hotelId,
+  onFound,
+}: QrCheckInModalProps) {
   const [code, setCode] = useState('');
   const [cameraError, setCameraError] = useState<string | null>(null);
   const lookup = useLookupBooking(hotelId);
@@ -55,7 +60,6 @@ export function QrCheckInModal({ open, onClose, hotelId, onFound }: QrCheckInMod
   // Camera lifecycle: start when the modal opens, always stop/clear on close/unmount.
   useEffect(() => {
     if (!open) return;
-    setCameraError(null);
     const scanner = new Html5Qrcode(SCANNER_ELEMENT_ID);
     scannerRef.current = scanner;
     let cameraStarted = false;
@@ -69,8 +73,13 @@ export function QrCheckInModal({ open, onClose, hotelId, onFound }: QrCheckInMod
       )
       .then(() => {
         cameraStarted = true;
+        setCameraError(null);
       })
-      .catch(() => setCameraError('Không truy cập được camera. Kiểm tra quyền trình duyệt.'));
+      .catch(() =>
+        setCameraError(
+          'Không truy cập được camera. Kiểm tra quyền trình duyệt.'
+        )
+      );
 
     return () => {
       scannerRef.current = null;
@@ -93,7 +102,11 @@ export function QrCheckInModal({ open, onClose, hotelId, onFound }: QrCheckInMod
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="w-full max-w-sm rounded-2xl bg-white shadow-2xl" role="dialog" aria-modal="true">
+      <div
+        className="w-full max-w-sm rounded-2xl bg-white shadow-2xl"
+        role="dialog"
+        aria-modal="true"
+      >
         <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
           <div className="flex items-center gap-2">
             <QrCode className="size-4 text-slate-500" />
@@ -111,7 +124,10 @@ export function QrCheckInModal({ open, onClose, hotelId, onFound }: QrCheckInMod
 
         <div className="px-5 py-4">
           <div className="relative mx-auto aspect-square w-full overflow-hidden rounded-xl bg-slate-900">
-            <div id={SCANNER_ELEMENT_ID} className="h-full w-full [&_video]:h-full [&_video]:w-full [&_video]:object-cover" />
+            <div
+              id={SCANNER_ELEMENT_ID}
+              className="h-full w-full [&_video]:h-full [&_video]:w-full [&_video]:object-cover"
+            />
             {cameraError && (
               <div className="absolute inset-0 flex items-center justify-center bg-slate-900 px-4 text-center text-xs text-slate-300">
                 {cameraError}
@@ -126,7 +142,10 @@ export function QrCheckInModal({ open, onClose, hotelId, onFound }: QrCheckInMod
 
           {lookup.isError && (
             <p className="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-600">
-              {errorMessage(lookup.error, 'Không tìm thấy booking khớp mã voucher này.')}
+              {errorMessage(
+                lookup.error,
+                'Không tìm thấy booking khớp mã voucher này.'
+              )}
             </p>
           )}
 
@@ -156,7 +175,11 @@ export function QrCheckInModal({ open, onClose, hotelId, onFound }: QrCheckInMod
                 'disabled:opacity-50'
               )}
             >
-              {lookup.isPending ? <Loader2 className="size-4 animate-spin" /> : <Search className="size-4" />}
+              {lookup.isPending ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Search className="size-4" />
+              )}
               Tra cứu booking
             </button>
           </div>

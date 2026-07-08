@@ -30,7 +30,9 @@ export function formatTime(date: Date): string {
 }
 
 /** Format ngày từ chuỗi ISO/Date về dạng "12 Jun 2026"; trả "—" nếu rỗng/không hợp lệ. */
-export function formatDateShort(value: string | Date | null | undefined): string {
+export function formatDateShort(
+  value: string | Date | null | undefined
+): string {
   if (!value) return '—';
   const date = typeof value === 'string' ? new Date(value) : value;
   if (Number.isNaN(date.getTime())) return '—';
@@ -42,7 +44,10 @@ export function formatDateShort(value: string | Date | null | undefined): string
 }
 
 /** Số đêm giữa hai mốc ngày (chuỗi YYYY-MM-DD hoặc ISO). 0 nếu không hợp lệ. */
-export function nightsBetween(checkIn?: string | null, checkOut?: string | null): number {
+export function nightsBetween(
+  checkIn?: string | null,
+  checkOut?: string | null
+): number {
   if (!checkIn || !checkOut) return 0;
   const start = new Date(checkIn);
   const end = new Date(checkOut);
