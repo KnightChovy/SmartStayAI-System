@@ -69,7 +69,10 @@ export default function BookingSuccessPage() {
               )}
             </div>
 
-            <QRVoucher data={booking?.bookingCode ?? bookingId} label={booking?.bookingCode} />
+            <QRVoucher
+              data={booking?.voucher?.qrData ?? booking?.bookingCode ?? bookingId}
+              label={booking?.bookingCode}
+            />
           </div>
 
           <div className="flex flex-col gap-3 border-t border-outline-variant/30 p-6 sm:flex-row">

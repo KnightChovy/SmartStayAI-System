@@ -82,6 +82,14 @@ export const staffService = {
     return data;
   },
 
+  /** Tra booking từ mã QR/e-voucher (`GET .../bookings/lookup?voucherCode=`). */
+  async lookupBooking(hotelId: string, voucherCode: string): Promise<HotelBookingDetail> {
+    const { data } = await api.get<HotelBookingDetail>(`/hotels/${hotelId}/bookings/lookup`, {
+      params: { voucherCode },
+    });
+    return data;
+  },
+
   /** Check in a guest (`POST .../check-in`). */
   async checkIn(
     hotelId: string,

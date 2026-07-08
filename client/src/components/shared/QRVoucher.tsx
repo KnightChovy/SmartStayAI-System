@@ -1,7 +1,7 @@
 import { cn } from '@/lib/cn';
 
 interface QRVoucherProps {
-  /** Dữ liệu mã hóa vào QR (vd booking code / voucher code). */
+  /** Dữ liệu mã hóa vào QR — phải là `booking.voucher.qrData` (staff quét theo voucherCode). */
   data: string;
   label?: string;
   size?: number;
@@ -10,8 +10,7 @@ interface QRVoucherProps {
 
 /**
  * Hiển thị mã QR cho e-voucher. Dùng dịch vụ ảnh QR công khai để render
- * (không cần thư viện QR phía client). Backend `BookingVoucher.qrData` sẽ
- * thay vào `data` khi có API.
+ * (không cần thư viện QR phía client).
  */
 export default function QRVoucher({ data, label, size = 180, className }: QRVoucherProps) {
   const src = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(

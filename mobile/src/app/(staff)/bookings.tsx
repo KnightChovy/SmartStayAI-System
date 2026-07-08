@@ -10,13 +10,17 @@ import {
 } from '@/components/staff';
 import { useGetBookings, useStaffHotelId } from '@/hooks/staff';
 import { cn } from '@/lib/cn';
+import { toDateKey, todayKey } from '@/utils/formatDate';
 import type { BookingStatus } from '@/types/bookings.type';
 
-/** Bộ lọc nhanh theo trạng thái (undefined = tất cả). */
-const FILTERS: { label: string; value: BookingStatus | undefined }[] = [
+/** Bộ lọc nhanh; `'checkout_today'` là bộ lọc client-side riêng (phòng cần trả hôm nay). */
+type FilterValue = BookingStatus | 'checkout_today' | undefined;
+
+const FILTERS: { label: string; value: FilterValue }[] = [
   { label: 'Tất cả', value: undefined },
   { label: 'Đã xác nhận', value: 'confirmed' },
   { label: 'Đang ở', value: 'checked_in' },
+  { label: 'Trả phòng hôm nay', value: 'checkout_today' },
   { label: 'Đã trả phòng', value: 'checked_out' },
   { label: 'No-show', value: 'no_show' },
 ];
@@ -24,13 +28,19 @@ const FILTERS: { label: string; value: BookingStatus | undefined }[] = [
 export default function StaffBookingsScreen() {
   const router = useRouter();
   const hotelId = useStaffHotelId();
-  const [status, setStatus] = useState<BookingStatus | undefined>(undefined);
+  const [filter, setFilter] = useState<FilterValue>(undefined);
 
+  // "Trả phòng hôm nay" chỉ có thể là booking đang ở → lọc theo checked_in rồi
+  // tự lọc tiếp checkOutDate = hôm nay (BE không có filter theo checkOutDate).
+  const status = filter === 'checkout_today' ? 'checked_in' : filter;
   const { data, isLoading, isError, refetch, isRefetching } = useGetBookings(
     hotelId ?? '',
     { status }
   );
-  const bookings = data?.results ?? [];
+  const bookings =
+    filter === 'checkout_today'
+      ? (data?.results ?? []).filter((b) => toDateKey(b.checkOutDate) === todayKey())
+      : (data?.results ?? []);
 
   return (
     <View className="flex-1 bg-gray-50">
@@ -44,11 +54,11 @@ export default function StaffBookingsScreen() {
           contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}
         >
           {FILTERS.map((f) => {
-            const active = f.value === status;
+            const active = f.value === filter;
             return (
               <Pressable
                 key={f.label}
-                onPress={() => setStatus(f.value)}
+                onPress={() => setFilter(f.value)}
                 className={cn(
                   'rounded-full px-4 py-1.5 border',
                   active ? 'bg-white border-white' : 'border-white/30'

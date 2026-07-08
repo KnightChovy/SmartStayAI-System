@@ -34,6 +34,12 @@
             "imageWidth": 76
           }
         }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "SmartStay Staff cần quyền camera để quét mã QR check-in của khách."
+        }
       ]
     ],
     "experiments": {

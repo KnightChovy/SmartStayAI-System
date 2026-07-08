@@ -85,7 +85,7 @@ export default function BookingSuccessScreen() {
           {/* Check-in QR */}
           {booking?.bookingCode ? (
             <View className="items-center py-3 border-y border-dashed border-gray-200 mb-4">
-              <QRVoucher data={booking.bookingCode} />
+              <QRVoucher data={booking.voucher?.qrData ?? booking.bookingCode} />
               <Text size="2xs" className="text-gray-400 mt-2">Scan at the front desk</Text>
             </View>
           ) : null}

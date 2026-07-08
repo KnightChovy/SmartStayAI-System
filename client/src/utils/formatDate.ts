@@ -1,5 +1,5 @@
 /**
- * Ngày dạng `dd/MM/yyyy` — formatter ngày dùng chung của app.
+ * Ngày dạng `dd-MM-yyyy` — formatter ngày dùng chung của app.
  * Nhận ISO string / Date / null; trả "—" nếu rỗng hoặc không hợp lệ.
  */
 export function formatDate(value: string | Date | null | undefined): string {
@@ -9,7 +9,7 @@ export function formatDate(value: string | Date | null | undefined): string {
   const dd = String(date.getDate()).padStart(2, '0');
   const mm = String(date.getMonth() + 1).padStart(2, '0');
   const yyyy = date.getFullYear();
-  return `${dd}/${mm}/${yyyy}`;
+  return `${dd}-${mm}-${yyyy}`;
 }
 
 /** Ngày dạng dài "July 01, 2026" — dùng cho đồng hồ realtime ở Admin. */

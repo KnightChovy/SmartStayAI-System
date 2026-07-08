@@ -290,7 +290,10 @@ export default function BookingDetailPage() {
                 <h3 className="mb-4 text-center font-be-vietnam font-semibold text-on-surface">
                   Your e-voucher
                 </h3>
-                <QRVoucher data={booking.bookingCode} label={booking.bookingCode} />
+                <QRVoucher
+                  data={booking.voucher?.qrData ?? booking.bookingCode}
+                  label={booking.bookingCode}
+                />
               </div>
             )}
           </div>

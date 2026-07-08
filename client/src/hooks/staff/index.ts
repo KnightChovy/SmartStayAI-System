@@ -2,6 +2,7 @@ export { staffKeys } from './keys';
 export { useStaffHotels } from './use-staff-hotels';
 export { useHotelBookings } from './use-hotel-bookings';
 export { useHotelBooking } from './use-hotel-booking';
+export { useLookupBooking } from './use-lookup-booking';
 export { useCheckIn } from './use-check-in';
 export { useCheckOut } from './use-check-out';
 export { useRecordCashPayment } from './use-record-cash-payment';

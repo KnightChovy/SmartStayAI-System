@@ -6,6 +6,19 @@ This file tracks the accomplished tasks, resolved user requests, and visual/func
 
 ## Completed Tasks Checklist
 
+### July 8, 2026
+
+- [x] **Staff QR check-in (rạp-chiếu-phim style) — sửa data QR sai + thêm quét camera thật trên web**:
+  - **Bug đã fix (FE lẫn BE)**: `QRVoucher` (guest e-voucher hiển thị ở `BookingSuccessPage`/`account/BookingDetailPage`) mã hoá `booking.bookingCode` — sai với thiết kế backend, vì endpoint tra cứu staff (`GET /hotels/:id/bookings/lookup?voucherCode=`) chỉ nhận `voucherCode`, không nhận `bookingCode`. Đồng thời backend guest-facing `bookingInclude` (`server/src/services/booking.service.ts`) **không include `voucher`** nên guest booking response còn thiếu cả `voucherCode`/`qrData` để FE dùng. Đã thêm `voucher: { voucherCode, qrData, usedAt }` vào `bookingInclude`; FE thêm `BookingVoucherSummary`/`voucher?` vào `Booking` (`types/booking.types.ts`); `QRVoucher` giờ encode `booking.voucher?.qrData ?? booking.bookingCode` (fallback khi voucher null, vd booking legacy/no-payment).
+  - **Quét QR thật cho staff (trước là chỉ có ô nhập tay)**: thêm `staffService.lookupBooking` (`GET .../bookings/lookup?voucherCode=`) + hook `useLookupBooking` (`hooks/staff/use-lookup-booking.ts`, theo đúng convention 1 endpoint/1 file). Thêm `QrCheckInModal` (`components/staff/QrCheckInModal.tsx`) dùng `html5-qrcode` (cài mới, không có React-specific peer dep nên an toàn với React 19) quét camera trình duyệt song song với ô nhập tay mã e-voucher; parse chuỗi quét theo định dạng `SMARTSTAY|<voucherCode>|<bookingCode>` (khớp `BookingVoucher.qrData` ở BE), fallback dùng nguyên chuỗi nếu không đúng định dạng. Nút **"Scan check-in"** mới ở `FrontDeskPage` mở modal; tra được booking → điều hướng `ROUTES.staffBookingDetail(bookingId)`.
+  - `npx tsc -p tsconfig.app.json --noEmit`: 21 lỗi, không đổi so với baseline pre-existing (0 lỗi mới ở mọi file đụng tới).
+
+- [x] **`formatDate` (dd/MM/yyyy → dd-MM-yyyy)**:
+  - Đổi separator của formatter dùng chung `utils/formatDate.ts` từ gạch chéo sang gạch ngang theo yêu cầu — áp dụng toàn app (mọi nơi đã dùng `formatDate()` tự động nhận định dạng mới, không phải sửa từng chỗ gọi).
+
+- [x] **Audit "fix responsive tất cả role" — không tìm thấy bảng nào thiếu responsive**:
+  - Rà lại toàn bộ 9 file render `<table>` thật trong `pages/admin|hotel-partner|manager|staff` + component liên quan: **tất cả** đều đã bọc `overflow-x-auto` qua component dùng chung (`AdminTable.tsx`, `DataTable.tsx`) hoặc trực tiếp trong file. Nhận định "6 trang thiếu responsive" từ lần rà soát trước đó là sai (rà theo file riêng lẻ, bỏ sót việc bảng delegate qua wrapper dùng chung). Không sửa gì thêm ở mục này — chưa có bằng chứng cụ thể (màn hình/breakpoint nào đang vỡ) để tránh sửa mò.
+
 ### July 2, 2026
 
 - [x] **Hotel Partner — chặn dùng tính năng khi chưa verify khách sạn (gate + popup)**:

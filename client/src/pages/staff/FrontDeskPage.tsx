@@ -1,5 +1,5 @@
 import { useMemo, useState, type ComponentType } from 'react';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import {
   Search,
   ChevronRight,
@@ -11,12 +11,14 @@ import {
   CheckCircle2,
   AlertCircle,
   Loader2,
+  QrCode,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/cn';
 import { useHotelBookings, useCheckIn, useCheckOut } from '@/hooks/staff';
 import { useStaffHotelStore } from '@/stores/staffHotelStore';
 import { BookingStatusBadge } from '@/components/staff/StatusBadge';
+import { QrCheckInModal } from '@/components/staff/QrCheckInModal';
 import type { HotelBooking } from '@/types/staff.types';
 import { ROUTES } from '@/constants/routes';
 import { formatCurrency } from '@/utils/formatCurrency';
@@ -35,10 +37,12 @@ function canCheckIn(b: HotelBooking, today: string): boolean {
 }
 
 export default function FrontDeskPage() {
+  const navigate = useNavigate();
   const hotel = useStaffHotelStore(state => state.hotel);
   const [bucket, setBucket] = useState<Bucket>('checkin');
   const [query, setQuery] = useState('');
   const [feedback, setFeedback] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
+  const [scanOpen, setScanOpen] = useState(false);
 
   // Fetch all bookings, then bucket them client-side to show counts per task to do.
   const { data, isLoading, isError } = useHotelBookings(hotel?.id, { limit: 100 });
@@ -119,10 +123,29 @@ export default function FrontDeskPage() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-xl font-semibold text-slate-900">Front desk</h1>
-        <p className="text-sm text-slate-500">{hotel?.name}</p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-semibold text-slate-900">Front desk</h1>
+          <p className="text-sm text-slate-500">{hotel?.name}</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setScanOpen(true)}
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-2 text-xs font-medium text-white hover:bg-slate-800"
+        >
+          <QrCode className="size-3.5" /> Scan check-in
+        </button>
       </div>
+
+      <QrCheckInModal
+        open={scanOpen}
+        onClose={() => setScanOpen(false)}
+        hotelId={hotel?.id}
+        onFound={bookingId => {
+          setScanOpen(false);
+          navigate(ROUTES.staffBookingDetail(bookingId));
+        }}
+      />
 
       {/* Filters by task to do */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">

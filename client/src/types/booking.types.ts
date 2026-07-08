@@ -46,6 +46,13 @@ export interface BookingRoomTypeSummary {
   maxOccupancy: number;
 }
 
+/** E-voucher đính kèm booking (backend include sẵn) — dùng để render QR check-in. */
+export interface BookingVoucherSummary {
+  voucherCode: string;
+  qrData: string;
+  usedAt?: string | null;
+}
+
 /** Booking trả về từ backend. Decimal serialize thành string qua JSON. */
 export interface Booking {
   id: string;
@@ -72,6 +79,7 @@ export interface Booking {
   updatedAt: string;
   hotel?: BookingHotelSummary;
   roomType?: BookingRoomTypeSummary;
+  voucher?: BookingVoucherSummary | null;
 }
 
 /** Payload tạo booking — giá do server tự tính, client KHÔNG gửi tiền. */
