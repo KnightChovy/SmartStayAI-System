@@ -14,6 +14,8 @@ import type {
   AdminOverview,
   AdminPaymentsParams,
   AdminPaymentsResponse,
+  AdminPlatformRevenue,
+  AdminRevenueParams,
   AdminReviewVerificationPayload,
   AdminUpdateHotelFlagsPayload,
   AdminUpdateUserPayload,
@@ -41,6 +43,15 @@ export const adminService = {
 
   async getOverview(): Promise<AdminOverview> {
     const { data } = await api.get<AdminOverview>('/admin/overview');
+    return data;
+  },
+
+  async getPlatformRevenue(
+    params: AdminRevenueParams = {}
+  ): Promise<AdminPlatformRevenue> {
+    const { data } = await api.get<AdminPlatformRevenue>('/admin/revenue', {
+      params: cleanParams(params),
+    });
     return data;
   },
 
