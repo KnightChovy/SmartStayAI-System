@@ -13,7 +13,6 @@ import internalRoute from './internal.route';
 import adminRoute from './admin.route';
 import platformManagerRoute from './platform-manager.route';
 import docsRoute from './docs.route';
-import config from '../../config/config';
 
 const router = express.Router();
 
@@ -73,11 +72,8 @@ const defaultRoutes = [
     path: '/platform-manager',
     route: platformManagerRoute,
   },
-];
-
-const devRoutes = [
-  // routes available only in development mode
   {
+    // Swagger UI — bật ở MỌI môi trường (kể cả production) để FE/hội đồng xem tài liệu API khi deploy
     path: '/docs',
     route: docsRoute,
   },
@@ -86,12 +82,5 @@ const devRoutes = [
 defaultRoutes.forEach((route) => {
   router.use(route.path, route.route);
 });
-
-/* istanbul ignore next */
-if (config.env === 'development') {
-  devRoutes.forEach((route) => {
-    router.use(route.path, route.route);
-  });
-}
 
 export default router;
