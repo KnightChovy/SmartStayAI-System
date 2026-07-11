@@ -51,6 +51,14 @@ if (config.env !== 'test') {
   app.use('/v1/auth', authLimiter);
 }
 
+// Health-check: Render ping '/' để xác định service sống — trả 200 (tránh spam log 404 ở root)
+app.get('/', (_req: Request, res: Response) => {
+  res.send({ status: 'ok', service: 'SmartStay AI API', docs: '/v1/docs' });
+});
+app.get('/health', (_req: Request, res: Response) => {
+  res.send({ status: 'ok' });
+});
+
 // v1 api routes
 app.use('/v1', routes);
 
