@@ -1,7 +1,7 @@
 import httpStatus from 'http-status';
 import { randomBytes } from 'crypto';
 import { Prisma } from '@prisma/client';
-import type { User } from '@prisma/client';
+import type { User, BookingStatus } from '@prisma/client';
 import prisma from '../config/prisma';
 import ApiError from '../utils/ApiError';
 import { roleRights } from '../config/roles';
@@ -14,9 +14,12 @@ import type {
   BookingFilter,
   BookingQueryOptions,
   HotelBookingFilter,
+  PlatformBookingFilter,
+  PartnerBookingFilter,
   CheckInBookingDto,
   CheckOutBookingDto,
 } from '../dto/booking.dto';
+import { walletService } from './wallet.service';
 
 // Đặt tối đa bao nhiêu đêm cho một booking (chặn khoảng ngày vô lý)
 const MAX_NIGHTS = 30;
@@ -38,17 +41,21 @@ const staffBookingInclude = {
   voucher: { select: { voucherCode: true, usedAt: true } },
 } satisfies Prisma.BookingInclude;
 
+// Quan hệ kèm theo cho màn GIÁM SÁT (PM toàn sàn / partner theo đối tác): kèm khách + khách sạn + loại phòng
+const oversightBookingInclude = {
+  customer: { select: { id: true, fullName: true, email: true, phone: true } },
+  hotel: { select: { id: true, name: true, city: true } },
+  roomType: { select: { id: true, name: true } },
+} satisfies Prisma.BookingInclude;
+
 // Mã booking dễ đọc cho khách; cột booking_code có unique constraint chặn trùng
-const generateBookingCode = (): string =>
-  `BK${Date.now().toString(36)}${randomBytes(3).toString('hex')}`.toUpperCase();
+const generateBookingCode = (): string => `BK${Date.now().toString(36)}${randomBytes(3).toString('hex')}`.toUpperCase();
 
 // Số hoá đơn duy nhất phát hành khi check-out; cột invoice_number có unique constraint
-const generateInvoiceNumber = (): string =>
-  `INV${Date.now().toString(36)}${randomBytes(2).toString('hex')}`.toUpperCase();
+const generateInvoiceNumber = (): string => `INV${Date.now().toString(36)}${randomBytes(2).toString('hex')}`.toUpperCase();
 
 // Mã e-voucher duy nhất; cột voucher_code có unique constraint
-const generateVoucherCode = (): string =>
-  `VC${Date.now().toString(36)}${randomBytes(3).toString('hex')}`.toUpperCase();
+const generateVoucherCode = (): string => `VC${Date.now().toString(36)}${randomBytes(3).toString('hex')}`.toUpperCase();
 
 /**
  * Chính sách huỷ/hoàn tiền — kiểu "free-cancel tới hạn chót" (giống giá linh hoạt của OTA).
@@ -344,6 +351,9 @@ export class BookingService {
           const retained = paidPayment.amount.sub(refundAmount);
           const newCommission = retained.mul(booking.commission.commissionRate).div(100).toDecimalPlaces(2);
           await tx.platformCommission.update({ where: { bookingId }, data: { commissionAmount: newCommission } });
+          const oldNet = paidPayment.amount.sub(booking.commission.commissionAmount);
+          const newNet = retained.sub(newCommission);
+          await walletService.recordRefund(tx, booking.hotelId, bookingId, oldNet.sub(newNet));
         }
       }
 
@@ -375,6 +385,70 @@ export class BookingService {
     ]);
 
     return { results, page, limit, totalPages: Math.ceil(totalResults / limit), totalResults };
+  };
+
+  // Truy vấn phân trang dùng chung cho các màn GIÁM SÁT booking (PM toàn sàn / partner theo đối tác)
+  private queryOversightBookings = async (where: Prisma.BookingWhereInput, options: BookingQueryOptions) => {
+    const limit = options.limit || 20;
+    const page = options.page || 1;
+    const skip = (page - 1) * limit;
+
+    let orderBy: Prisma.BookingOrderByWithRelationInput = { createdAt: 'desc' };
+    if (options.sortBy) {
+      const [field, direction] = options.sortBy.split(':');
+      orderBy = { [field]: direction === 'desc' ? 'desc' : 'asc' };
+    }
+
+    const [results, totalResults] = await prisma.$transaction([
+      prisma.booking.findMany({ where, skip, take: limit, orderBy, include: oversightBookingInclude }),
+      prisma.booking.count({ where }),
+    ]);
+    return { results, page, limit, totalPages: Math.ceil(totalResults / limit), totalResults };
+  };
+
+  // Ghép điều kiện lọc chung cho màn giám sát (trạng thái / ngày nhận phòng / tìm kiếm)
+  private applyOversightFilters = (
+    where: Prisma.BookingWhereInput,
+    filter: { status?: BookingStatus; fromDate?: Date; toDate?: Date; search?: string }
+  ) => {
+    if (filter.status) where.status = filter.status;
+    if (filter.fromDate || filter.toDate) {
+      where.checkInDate = {
+        ...(filter.fromDate && { gte: toUtcDate(filter.fromDate) }),
+        ...(filter.toDate && { lte: toUtcDate(filter.toDate) }),
+      };
+    }
+    if (filter.search) {
+      where.OR = [
+        { bookingCode: { contains: filter.search, mode: 'insensitive' } },
+        { customer: { fullName: { contains: filter.search, mode: 'insensitive' } } },
+        { customer: { email: { contains: filter.search, mode: 'insensitive' } } },
+      ];
+    }
+    return where;
+  };
+
+  /**
+   * [Platform Manager] Liệt kê TOÀN BỘ booking toàn sàn — lọc theo trạng thái / khách sạn / đối tác /
+   * khoảng ngày nhận phòng + tìm theo mã booking hoặc tên/email khách. Kèm khách + khách sạn + loại phòng.
+   */
+  listPlatformBookings = async (filter: PlatformBookingFilter, options: BookingQueryOptions) => {
+    const where: Prisma.BookingWhereInput = {};
+    if (filter.hotelId) where.hotelId = filter.hotelId;
+    if (filter.partnerId) where.hotel = { partnerId: filter.partnerId };
+    this.applyOversightFilters(where, filter);
+    return this.queryOversightBookings(where, options);
+  };
+
+  /**
+   * [Partner] Liệt kê booking của MỌI khách sạn của partner đang đăng nhập (suy partnerId từ token),
+   * tuỳ chọn thu hẹp theo 1 khách sạn. Cùng bộ lọc & shape với bản giám sát của PM.
+   */
+  listPartnerBookings = async (userId: string, filter: PartnerBookingFilter, options: BookingQueryOptions) => {
+    const where: Prisma.BookingWhereInput = { hotel: { partner: { ownerId: userId } } };
+    if (filter.hotelId) where.hotelId = filter.hotelId;
+    this.applyOversightFilters(where, filter);
+    return this.queryOversightBookings(where, options);
   };
 
   /** Chi tiết một booking (chủ booking hoặc người có quyền manageBookings). */
@@ -479,12 +553,7 @@ export class BookingService {
    * confirmed→checked_in (có điều kiện), gán MỘT phòng vật lý trống đúng loại (giành phòng có
    * điều kiện để hai quầy check-in không gán trùng phòng), đánh dấu voucher đã dùng.
    */
-  checkInBooking = async (
-    hotelId: string,
-    bookingId: string,
-    currentUser: User,
-    payload: CheckInBookingDto
-  ) => {
+  checkInBooking = async (hotelId: string, bookingId: string, currentUser: User, payload: CheckInBookingDto) => {
     await hotelService.getOperableHotel(hotelId, currentUser);
     const booking = await prisma.booking.findFirst({
       where: { id: bookingId, hotelId },
@@ -554,12 +623,7 @@ export class BookingService {
    * checked_in→checked_out (có điều kiện), trả phòng về 'cleaning' để housekeeping dọn,
    * và phát hành hoá đơn (Invoice) gồm phụ thu phát sinh nếu có.
    */
-  checkOutBooking = async (
-    hotelId: string,
-    bookingId: string,
-    currentUser: User,
-    payload: CheckOutBookingDto
-  ) => {
+  checkOutBooking = async (hotelId: string, bookingId: string, currentUser: User, payload: CheckOutBookingDto) => {
     await hotelService.getOperableHotel(hotelId, currentUser);
     const booking = await prisma.booking.findFirst({
       where: { id: bookingId, hotelId },
@@ -655,6 +719,10 @@ export class BookingService {
           status: 'pending',
         },
       });
+
+      // Tiền mặt vừa về → ghi net (total − hoa hồng) vào balancePending của ví khách sạn
+      const net = booking.totalAmount.sub(commissionAmount);
+      await walletService.recordEarning(tx, hotelId, bookingId, net);
 
       return tx.booking.findUniqueOrThrow({ where: { id: bookingId }, include: staffBookingInclude });
     });

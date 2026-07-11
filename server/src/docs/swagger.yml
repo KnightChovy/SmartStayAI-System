@@ -17,6 +17,8 @@ tags:
     description: VNPay payment — create payment URL and handle gateway callbacks
   - name: HotelManagement
     description: Partner management of room types, rooms, pricing rules and staff (hotel owner or manageHotels right)
+  - name: Revenue
+    description: Per-hotel revenue report & wallet (balances + transaction ledger) for the hotel owner/manager
   - name: Amenities
     description: Amenity catalog (list public, create by partner/admin)
   - name: Chatbot
@@ -141,6 +143,78 @@ paths:
             application/json:
               schema:
                 type: object
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/revenue:
+    get:
+      summary: Platform revenue report (admin/platform_manager)
+      description: >
+        viewPlatformStats. Platform-wide revenue over [from, to]: GMV (total of settled bookings —
+        confirmed/checked_in/checked_out), commission pending/settled, total refunded, and
+        netPlatformRevenue (= pending + settled commission — the platform's actual earnings).
+        Includes a day/month time series and, when BOTH from and to are given, a % comparison against
+        the immediately preceding period of equal length. All money values are strings.
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: from
+          schema: { type: string, format: date }
+          description: Inclusive start date (YYYY-MM-DD). Omit for all-time (comparison then null).
+        - in: query
+          name: to
+          schema: { type: string, format: date }
+          description: Inclusive end date (YYYY-MM-DD). Omit for all-time.
+        - in: query
+          name: groupBy
+          schema: { type: string, enum: [day, month], default: month }
+      responses:
+        "200":
+          description: Platform revenue summary + time series + period comparison
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  summary:
+                    type: object
+                    properties:
+                      gmv: { type: string, example: '125000000' }
+                      commissionPending: { type: string, example: '5000000' }
+                      commissionSettled: { type: string, example: '13750000' }
+                      refunded: { type: string, example: '2000000' }
+                      netPlatformRevenue: { type: string, example: '18750000' }
+                      bookingCount: { type: integer, example: 250 }
+                  groupBy: { type: string, example: month }
+                  series:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        period: { type: string, example: '2026-07' }
+                        gmv: { type: string }
+                        commission: { type: string }
+                        netPlatformRevenue: { type: string }
+                        bookingCount: { type: integer }
+                  comparison:
+                    nullable: true
+                    description: Present only when both from and to are supplied; otherwise null.
+                    type: object
+                    properties:
+                      previous:
+                        type: object
+                        properties:
+                          gmv: { type: string }
+                          netPlatformRevenue: { type: string }
+                      change:
+                        type: object
+                        properties:
+                          gmvPct: { type: number, nullable: true, example: 12.5 }
+                          netRevenuePct: { type: number, nullable: true, example: 8.3 }
         "401":
           $ref: '#/components/responses/Unauthorized'
         "403":
@@ -342,6 +416,54 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
 
+  /platform-manager/bookings:
+    get:
+      summary: List all platform bookings (Platform Manager)
+      description: >
+        Platform_manager/admin (viewPlatformStats). Lists every booking platform-wide, filtered by status,
+        hotel, partner and check-in date range, plus a search over booking code / customer name / email.
+      tags: [PlatformManager]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: status
+          schema: { type: string, enum: [pending, confirmed, checked_in, checked_out, cancelled, no_show] }
+        - in: query
+          name: hotelId
+          schema: { type: string, format: uuid }
+        - in: query
+          name: partnerId
+          schema: { type: string, format: uuid }
+          description: Narrow to bookings of one partner's hotels
+        - in: query
+          name: fromDate
+          schema: { type: string, format: date }
+        - in: query
+          name: toDate
+          schema: { type: string, format: date }
+        - in: query
+          name: search
+          schema: { type: string }
+          description: Match bookingCode / customer fullName / customer email
+        - in: query
+          name: sortBy
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100 }
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1 }
+      responses:
+        '200':
+          description: Paginated platform bookings
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PaginatedOversightBookings' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
   /platform-manager/analytics:
     get:
       summary: Platform analytics report (Platform Manager)
@@ -530,6 +652,39 @@ paths:
                 type: object
                 properties:
                   noShow:
+                    type: integer
+        "401":
+          description: Missing or wrong cron secret
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /internal/jobs/settle-commissions:
+    post:
+      summary: Auto-settle eligible commissions (cron)
+      description: >
+        Called by an external scheduler (suggested daily). Settles every pending commission whose
+        booking has checked out and passed the reconciliation hold period, moving the hotel's net from
+        the wallet's pending to available balance. Protected by x-cron-secret. Idempotent — conditional
+        updates prevent double-settlement.
+      tags: [Internal]
+      parameters:
+        - in: header
+          name: x-cron-secret
+          required: true
+          schema:
+            type: string
+          description: Must equal the server's CRON_SECRET
+      responses:
+        "200":
+          description: Number of commissions settled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  settled:
                     type: integer
         "401":
           description: Missing or wrong cron secret
@@ -1274,6 +1429,50 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
+  /hotel-partners/me/bookings:
+    get:
+      summary: List all bookings across my hotels (partner)
+      description: >
+        Auth (partner). Lists bookings of ALL hotels owned by the logged-in partner (partner derived from
+        token). Optionally narrow to one of their hotels via hotelId. Same shape as the platform oversight list.
+      tags: [HotelPartners]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: status
+          schema: { type: string, enum: [pending, confirmed, checked_in, checked_out, cancelled, no_show] }
+        - in: query
+          name: hotelId
+          schema: { type: string, format: uuid }
+          description: Narrow to one of the partner's hotels
+        - in: query
+          name: fromDate
+          schema: { type: string, format: date }
+        - in: query
+          name: toDate
+          schema: { type: string, format: date }
+        - in: query
+          name: search
+          schema: { type: string }
+          description: Match bookingCode / customer fullName / customer email
+        - in: query
+          name: sortBy
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100 }
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1 }
+      responses:
+        '200':
+          description: Paginated bookings across the partner's hotels
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PaginatedOversightBookings' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
   /hotel-partners/registrations:
     post:
       summary: Submit a hotel partner registration
@@ -1654,6 +1853,190 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Hotel' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /hotels/{hotelId}/revenue:
+    get:
+      summary: Hotel revenue report (owner/manager)
+      description: >
+        Auth. Revenue for ONE hotel over [from, to]. gross = total of settled bookings
+        (confirmed/checked_in/checked_out); commission = platform commission; net = gross − commission;
+        refunded = total refunded. Includes a day/month time series. All money values are strings.
+        Access is limited to the hotel owner, a manager, or assigned staff (checked in-service).
+      tags: [Revenue]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: query
+          name: from
+          schema: { type: string, format: date }
+          description: Inclusive start date (YYYY-MM-DD). Omit for all-time.
+        - in: query
+          name: to
+          schema: { type: string, format: date }
+          description: Inclusive end date (YYYY-MM-DD). Omit for all-time.
+        - in: query
+          name: groupBy
+          schema: { type: string, enum: [day, month], default: day }
+      responses:
+        '200':
+          description: Revenue summary + time series
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  summary:
+                    type: object
+                    properties:
+                      gross: { type: string, example: '12500000' }
+                      commission: { type: string, example: '1875000' }
+                      net: { type: string, example: '10625000' }
+                      refunded: { type: string, example: '500000' }
+                      bookingCount: { type: integer, example: 25 }
+                  groupBy: { type: string, example: day }
+                  series:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        period: { type: string, example: '2026-07-01' }
+                        gross: { type: string }
+                        commission: { type: string }
+                        net: { type: string }
+                        bookingCount: { type: integer }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /hotels/{hotelId}/wallet:
+    get:
+      summary: Hotel wallet balance + transactions (owner/manager)
+      description: >
+        Auth. Wallet balances (available/pending) and the paginated transaction ledger for ONE hotel.
+        A hotel with no transactions yet returns a zero-balance wallet instead of 404.
+        Money values are strings. Access checked in-service (owner/manager/assigned staff).
+      tags: [Revenue]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: query
+          name: type
+          schema: { type: string, enum: [earning, commission, payout, refund, adjustment] }
+          description: Filter transactions by type.
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1, default: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+      responses:
+        '200':
+          description: Wallet balances + paginated transactions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  wallet:
+                    type: object
+                    properties:
+                      balanceAvailable: { type: string, example: '10625000' }
+                      balancePending: { type: string, example: '0' }
+                      currency: { type: string, example: VND }
+                  transactions:
+                    type: object
+                    properties:
+                      results:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id: { type: string, format: uuid }
+                            type: { type: string, example: earning }
+                            amount: { type: string, example: '850000' }
+                            balanceAfter: { type: string, example: '850000' }
+                            bookingId: { type: string, format: uuid, nullable: true }
+                            commissionId: { type: string, format: uuid, nullable: true }
+                            description: { type: string, nullable: true }
+                            createdAt: { type: string, format: date-time }
+                      page: { type: integer }
+                      limit: { type: integer }
+                      totalPages: { type: integer }
+                      totalResults: { type: integer }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /hotels/{hotelId}/analytics:
+    get:
+      summary: Hotel operational analytics + score (owner/manager)
+      description: >
+        Auth. Operational performance for ONE hotel over a window (default last 90 days): occupancyRate,
+        cancellationRate, avgRating, avgResponseMinutes, plus each metric normalized to 0..100 and a
+        weighted overall score (rating 40% / occupancy 25% / cancellation 20% / response 15%). Reuses the
+        platform performance logic but scoped to the hotel owner/manager (checked in-service). This is the
+        partner-facing view of the same metrics platform managers see at /platform-manager.
+      tags: [Revenue]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: query
+          name: from
+          schema: { type: string, format: date }
+          description: Window start (YYYY-MM-DD). Defaults to 90 days before "to".
+        - in: query
+          name: to
+          schema: { type: string, format: date }
+          description: Window end (YYYY-MM-DD). Defaults to today.
+      responses:
+        '200':
+          description: Hotel performance metrics + scores
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  hotelId: { type: string, format: uuid }
+                  hotelName: { type: string }
+                  city: { type: string }
+                  window:
+                    type: object
+                    properties:
+                      from: { type: string, format: date-time }
+                      to: { type: string, format: date-time }
+                  metrics:
+                    type: object
+                    properties:
+                      occupancyRate: { type: number, nullable: true, example: 0.72 }
+                      cancellationRate: { type: number, nullable: true, example: 0.08 }
+                      avgRating: { type: number, nullable: true, example: 4.3 }
+                      avgResponseMinutes: { type: number, nullable: true, example: 45 }
+                      totalBookings: { type: integer }
+                      cancelledBookings: { type: integer }
+                      reviewCount: { type: integer }
+                  scores:
+                    type: object
+                    properties:
+                      rating: { type: integer, nullable: true }
+                      occupancy: { type: integer, nullable: true }
+                      cancellation: { type: integer, nullable: true }
+                      response: { type: integer, nullable: true }
+                  score: { type: integer, nullable: true, example: 82 }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }

@@ -11,6 +11,7 @@ import {
   housekeepingValidation,
   conversationValidation,
   reviewValidation,
+  revenueValidation,
 } from '../../validations';
 import {
   hotelController,
@@ -22,6 +23,7 @@ import {
   housekeepingController,
   conversationController,
   reviewController,
+  revenueController,
 } from '../../controllers';
 
 const router = express.Router();
@@ -39,6 +41,11 @@ router.get('/:hotelId', validate(hotelValidation.getHotel), hotelController.getH
 // Chi tiết khách sạn cho chủ/manager — xem được CẢ KS chưa listed/đang chờ duyệt.
 // 2 segment nên không đụng '/:hotelId' (1 segment) hay '/mine' (literal).
 router.get('/:hotelId/manage', auth(), validate(hotelValidation.getHotel), hotelController.getHotelForManage);
+
+// Báo cáo doanh thu + ví của khách sạn (chủ KS / manager; service kiểm quyền qua getOperableHotel).
+router.get('/:hotelId/revenue', auth(), validate(revenueValidation.getHotelRevenue), revenueController.getHotelRevenue);
+router.get('/:hotelId/wallet', auth(), validate(revenueValidation.getHotelWallet), revenueController.getHotelWallet);
+router.get('/:hotelId/analytics', auth(), validate(revenueValidation.getHotelAnalytics), revenueController.getHotelAnalytics);
 
 // Partner tự bật/tắt mở bán (publish) khách sạn của mình — chủ KS hoặc quyền manageHotels (service tự kiểm)
 router.patch(

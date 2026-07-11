@@ -12,9 +12,15 @@ import type {
   AdminHotelsResponse,
   AdminManagedHotel,
   AdminOverview,
+  AdminPaymentsParams,
+  AdminPaymentsResponse,
+  AdminPlatformRevenue,
+  AdminRevenueParams,
   AdminReviewVerificationPayload,
   AdminUpdateHotelFlagsPayload,
   AdminUpdateUserPayload,
+  AdminUpdateUserRolePayload,
+  AdminUpdateUserStatusPayload,
   AdminUser,
   AdminUsersParams,
   AdminUsersResponse,
@@ -37,6 +43,15 @@ export const adminService = {
 
   async getOverview(): Promise<AdminOverview> {
     const { data } = await api.get<AdminOverview>('/admin/overview');
+    return data;
+  },
+
+  async getPlatformRevenue(
+    params: AdminRevenueParams = {}
+  ): Promise<AdminPlatformRevenue> {
+    const { data } = await api.get<AdminPlatformRevenue>('/admin/revenue', {
+      params: cleanParams(params),
+    });
     return data;
   },
 
@@ -89,6 +104,15 @@ export const adminService = {
     return data;
   },
 
+  async listPayments(
+    params: AdminPaymentsParams = {}
+  ): Promise<AdminPaymentsResponse> {
+    const { data } = await api.get<AdminPaymentsResponse>('/admin/payments', {
+      params: cleanParams(params),
+    });
+    return data;
+  },
+
   // ----- Users: /users (getUsers/manageUsers) -----
 
   async listUsers(params: AdminUsersParams = {}): Promise<AdminUsersResponse> {
@@ -103,11 +127,38 @@ export const adminService = {
     return data;
   },
 
+  async getUser(userId: string): Promise<AdminUser> {
+    const { data } = await api.get<AdminUser>(`/users/${userId}`);
+    return data;
+  },
+
   async updateUser(
     userId: string,
     payload: AdminUpdateUserPayload
   ): Promise<AdminUser> {
     const { data } = await api.patch<AdminUser>(`/users/${userId}`, payload);
+    return data;
+  },
+
+  async updateUserStatus(
+    userId: string,
+    payload: AdminUpdateUserStatusPayload
+  ): Promise<AdminUser> {
+    const { data } = await api.patch<AdminUser>(
+      `/users/${userId}/status`,
+      payload
+    );
+    return data;
+  },
+
+  async updateUserRole(
+    userId: string,
+    payload: AdminUpdateUserRolePayload
+  ): Promise<AdminUser> {
+    const { data } = await api.patch<AdminUser>(
+      `/users/${userId}/role`,
+      payload
+    );
     return data;
   },
 

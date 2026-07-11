@@ -1,48 +1,45 @@
-import { useEffect } from 'react';
-import { Headphones, MessageCircle, Phone, ShieldCheck, X } from 'lucide-react';
-import { formatDateLong, formatTime } from '@/utils/formatDate';
+import { useEffect, useState } from 'react';
+import { Headphones, Mail, MessageCircle, Phone, X } from 'lucide-react';
 
 interface AdminSupportModalProps {
   currentTime: Date;
   onClose: () => void;
 }
 
+const SUPPORT_EMAIL = 'support@smartstay.ai';
+
 const channels = [
   {
+    icon: Mail,
+    label: 'Email Support',
+    detail: SUPPORT_EMAIL,
+  },
+  {
     icon: MessageCircle,
-    label: 'Live Chat',
-    response: '< 2 min',
-    status: 'Online',
+    label: 'Internal Docs',
+    detail: 'See team wiki / runbooks',
   },
   {
     icon: Phone,
-    label: 'Incident Hotline',
-    response: '24/7',
-    status: 'Available',
-  },
-  {
-    icon: ShieldCheck,
-    label: 'Security Desk',
-    response: '< 10 min',
-    status: 'Monitoring',
+    label: 'On-call Escalation',
+    detail: 'Contact your platform lead',
   },
 ];
 
-export function AdminSupportModal({
-  currentTime,
-  onClose,
-}: AdminSupportModalProps) {
+export function AdminSupportModal({ onClose }: AdminSupportModalProps) {
+  const [message, setMessage] = useState('');
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onClose();
-      }
+      if (event.key === 'Escape') onClose();
     };
-
     window.addEventListener('keydown', handleKeyDown);
-
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
+
+  const mailtoHref = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(
+    'Admin support request'
+  )}&body=${encodeURIComponent(message)}`;
 
   return (
     <div
@@ -62,13 +59,10 @@ export function AdminSupportModal({
           <div>
             <div className="flex items-center gap-2">
               <Headphones className="size-5 text-rose-600" />
-              <h2 className="text-xl font-bold text-slate-950">
-                Support Center
-              </h2>
+              <h2 className="text-xl font-bold text-slate-950">Support Center</h2>
             </div>
             <p className="mt-1 text-xs font-semibold text-muted-foreground">
-              Live status {formatDateLong(currentTime)} |{' '}
-              {formatTime(currentTime)}
+              No live ticketing system yet — this opens an email draft
             </p>
           </div>
           <button
@@ -93,15 +87,8 @@ export function AdminSupportModal({
                 <div className="flex size-11 items-center justify-center rounded-2xl bg-white text-rose-600 shadow-sm">
                   <Icon className="size-5" />
                 </div>
-                <h3 className="mt-4 text-sm font-bold text-slate-950">
-                  {channel.label}
-                </h3>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Response {channel.response}
-                </p>
-                <span className="mt-4 inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-600">
-                  {channel.status}
-                </span>
+                <h3 className="mt-4 text-sm font-bold text-slate-950">{channel.label}</h3>
+                <p className="mt-1 text-xs text-muted-foreground">{channel.detail}</p>
               </article>
             );
           })}
@@ -110,14 +97,16 @@ export function AdminSupportModal({
         <div className="border-t border-outline-variant/40 p-4 sm:p-6">
           <textarea
             className="min-h-28 w-full resize-none rounded-[22px] border border-outline-variant/50 bg-white p-4 text-sm outline-none focus:border-blue-500 focus:ring-3 focus:ring-blue-500/20"
+            onChange={event => setMessage(event.target.value)}
             placeholder="Describe the support request..."
+            value={message}
           />
-          <button
+          <a
             className="mt-3 inline-flex h-11 w-full items-center justify-center rounded-full bg-slate-950 text-sm font-bold text-white hover:bg-slate-800"
-            type="button"
+            href={mailtoHref}
           >
-            Open Support Ticket
-          </button>
+            Email Support
+          </a>
         </div>
       </section>
     </div>

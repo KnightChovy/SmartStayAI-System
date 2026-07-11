@@ -788,6 +788,42 @@ components:
             - $ref: '#/components/schemas/BookingVoucher'
           nullable: true
 
+    OversightBooking:
+      type: object
+      description: Booking item for oversight lists (platform-wide or partner-wide) with customer + hotel + room type.
+      properties:
+        id: { type: string, format: uuid }
+        bookingCode: { type: string }
+        customerId: { type: string, format: uuid }
+        hotelId: { type: string, format: uuid }
+        roomTypeId: { type: string, format: uuid }
+        checkInDate: { type: string, format: date }
+        checkOutDate: { type: string, format: date }
+        numNights: { type: integer }
+        numGuests: { type: integer }
+        totalAmount: { type: string, description: Decimal as string }
+        status: { type: string, enum: [pending, confirmed, checked_in, checked_out, cancelled, no_show] }
+        source: { type: string, enum: [website, mobile_app, walk_in, ota] }
+        createdAt: { type: string, format: date-time }
+        customer:
+          type: object
+          properties:
+            id: { type: string, format: uuid }
+            fullName: { type: string }
+            email: { type: string, format: email }
+            phone: { type: string, nullable: true }
+        hotel:
+          type: object
+          properties:
+            id: { type: string, format: uuid }
+            name: { type: string }
+            city: { type: string }
+        roomType:
+          type: object
+          properties:
+            id: { type: string, format: uuid }
+            name: { type: string }
+
     # ===== Hoa hồng / payout =====
     Commission:
       type: object
@@ -1132,6 +1168,13 @@ components:
         - type: object
           properties:
             results: { type: array, items: { $ref: '#/components/schemas/StaffBooking' } }
+
+    PaginatedOversightBookings:
+      allOf:
+        - $ref: '#/components/schemas/Pagination'
+        - type: object
+          properties:
+            results: { type: array, items: { $ref: '#/components/schemas/OversightBooking' } }
 
     PaginatedReviews:
       allOf:

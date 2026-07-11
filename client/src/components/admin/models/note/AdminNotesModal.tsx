@@ -1,6 +1,7 @@
-import { useEffect } from 'react';
-import { NotebookText, Pin, Plus, Search, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { NotebookText, Pin, Plus, Search, Trash2, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { useAdminNotes } from '@/hooks/admin-tools';
 import { formatDateLong, formatTime } from '@/utils/formatDate';
 
 interface AdminNotesModalProps {
@@ -8,39 +9,30 @@ interface AdminNotesModalProps {
   onClose: () => void;
 }
 
-const notes = [
-  {
-    title: 'VIP arrivals',
-    body: 'Confirm welcome amenity and late checkout requests before 3 PM.',
-    pinned: true,
-  },
-  {
-    title: 'Marketing follow-up',
-    body: 'Review generated winter campaign copy before scheduling.',
-    pinned: false,
-  },
-  {
-    title: 'Ops handoff',
-    body: 'Share occupancy spike details with front desk supervisors.',
-    pinned: false,
-  },
-];
+export function AdminNotesModal({ currentTime, onClose }: AdminNotesModalProps) {
+  const { notes, addNote, togglePin, removeNote } = useAdminNotes();
+  const [search, setSearch] = useState('');
+  const [title, setTitle] = useState('');
+  const [body, setBody] = useState('');
 
-export function AdminNotesModal({
-  currentTime,
-  onClose,
-}: AdminNotesModalProps) {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onClose();
-      }
+      if (event.key === 'Escape') onClose();
     };
-
     window.addEventListener('keydown', handleKeyDown);
-
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
+
+  const filteredNotes = notes.filter(note =>
+    `${note.title} ${note.body}`.toLowerCase().includes(search.trim().toLowerCase())
+  );
+
+  const handleAddNote = () => {
+    if (!body.trim()) return;
+    addNote(title, body);
+    setTitle('');
+    setBody('');
+  };
 
   return (
     <div
@@ -63,7 +55,7 @@ export function AdminNotesModal({
               <h2 className="text-xl font-bold text-slate-950">Notes</h2>
             </div>
             <p className="mt-1 text-xs font-semibold text-muted-foreground">
-              Updated {formatDateLong(currentTime)} | {formatTime(currentTime)}
+              {notes.length} note{notes.length === 1 ? '' : 's'} · saved on this device
             </p>
           </div>
           <button
@@ -82,27 +74,51 @@ export function AdminNotesModal({
               <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
               <Input
                 className="h-10 rounded-full bg-slate-50 pl-9 text-xs"
+                onChange={event => setSearch(event.target.value)}
                 placeholder="Search notes..."
+                value={search}
               />
             </div>
 
-            <div className="mt-4 grid gap-3">
-              {notes.map(note => (
+            <div className="mt-4 grid max-h-100 gap-3 overflow-y-auto">
+              {filteredNotes.length === 0 && (
+                <p className="py-6 text-center text-sm text-muted-foreground">
+                  {notes.length === 0 ? 'No notes yet.' : 'No notes match your search.'}
+                </p>
+              )}
+              {filteredNotes.map(note => (
                 <article
                   className="rounded-[22px] border border-outline-variant/40 bg-slate-50 p-4"
-                  key={note.title}
+                  key={note.id}
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <h3 className="text-sm font-bold text-slate-950">
-                      {note.title}
-                    </h3>
-                    {note.pinned ? (
-                      <Pin className="size-4 text-purple-600" />
-                    ) : null}
+                    <h3 className="text-sm font-bold text-slate-950">{note.title}</h3>
+                    <div className="flex shrink-0 items-center gap-1">
+                      <button
+                        aria-label={note.pinned ? 'Unpin note' : 'Pin note'}
+                        className={`inline-flex size-7 items-center justify-center rounded-full hover:bg-white ${
+                          note.pinned ? 'text-purple-600' : 'text-slate-400'
+                        }`}
+                        onClick={() => togglePin(note.id)}
+                        type="button"
+                      >
+                        <Pin className="size-4" />
+                      </button>
+                      <button
+                        aria-label="Delete note"
+                        className="inline-flex size-7 items-center justify-center rounded-full text-slate-400 hover:bg-white hover:text-red-600"
+                        onClick={() => removeNote(note.id)}
+                        type="button"
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    </div>
                   </div>
-                  <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                    {note.body}
-                  </p>
+                  {note.body && (
+                    <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-muted-foreground">
+                      {note.body}
+                    </p>
+                  )}
                 </article>
               ))}
             </div>
@@ -112,12 +128,25 @@ export function AdminNotesModal({
             <p className="text-xs font-bold uppercase tracking-wide text-white/60">
               Quick Note
             </p>
+            <p className="mt-1 text-[11px] text-white/45">
+              {formatDateLong(currentTime)} | {formatTime(currentTime)}
+            </p>
+            <Input
+              className="mt-3 h-9 border-white/10 bg-white/10 text-sm text-white placeholder:text-white/45"
+              onChange={event => setTitle(event.target.value)}
+              placeholder="Title"
+              value={title}
+            />
             <textarea
-              className="mt-3 min-h-36 w-full resize-none rounded-2xl border border-white/10 bg-white/10 p-3 text-sm text-white outline-none placeholder:text-white/45"
+              className="mt-2 min-h-32 w-full resize-none rounded-2xl border border-white/10 bg-white/10 p-3 text-sm text-white outline-none placeholder:text-white/45"
+              onChange={event => setBody(event.target.value)}
               placeholder="Write an admin note..."
+              value={body}
             />
             <button
-              className="mt-3 inline-flex h-10 w-full items-center justify-center gap-2 rounded-full bg-white text-sm font-bold text-slate-950 hover:bg-white/90"
+              className="mt-3 inline-flex h-10 w-full items-center justify-center gap-2 rounded-full bg-white text-sm font-bold text-slate-950 hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={!body.trim()}
+              onClick={handleAddNote}
               type="button"
             >
               <Plus className="size-4" />

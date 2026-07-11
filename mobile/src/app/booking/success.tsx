@@ -8,6 +8,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Text } from '@/components/ui/text';
 import { Heading } from '@/components/ui/heading';
 import { BookingStatusBadge } from '@/components/shared/BookingStatusBadge';
+import { QRVoucher } from '@/components/shared/QRVoucher';
 import { useGetBooking } from '@/hooks/bookings';
 import { useCreateVnpayPayment } from '@/hooks/payments';
 import { formatVnd } from '@/utils/formatCurrency';
@@ -81,13 +82,13 @@ export default function BookingSuccessScreen() {
             {booking && <BookingStatusBadge status={booking.status} size="md" />}
           </View>
 
-          {/* Faux QR */}
-          <View className="items-center py-3 border-y border-dashed border-gray-200 mb-4">
-            <View className="w-32 h-32 rounded-xl bg-navy items-center justify-center">
-              <Ionicons name="qr-code" size={88} color="#fff" />
+          {/* Check-in QR */}
+          {booking?.bookingCode ? (
+            <View className="items-center py-3 border-y border-dashed border-gray-200 mb-4">
+              <QRVoucher data={booking.bookingCode} />
+              <Text size="2xs" className="text-gray-400 mt-2">Scan at the front desk</Text>
             </View>
-            <Text size="2xs" className="text-gray-400 mt-2">Scan at the front desk</Text>
-          </View>
+          ) : null}
 
           {booking?.hotel && (
             <Row icon="business-outline" text={booking.hotel.name} />

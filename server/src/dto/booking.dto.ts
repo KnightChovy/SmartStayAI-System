@@ -34,6 +34,25 @@ export interface HotelBookingFilter {
   toDate?: Date;
 }
 
+/** Bộ lọc khi Platform Manager xem TOÀN BỘ booking toàn sàn (lọc thêm theo KS/đối tác + tìm kiếm). */
+export interface PlatformBookingFilter {
+  status?: BookingStatus;
+  hotelId?: string;
+  partnerId?: string;
+  fromDate?: Date;
+  toDate?: Date;
+  search?: string; // mã booking / tên / email khách
+}
+
+/** Bộ lọc khi partner xem booking của MỌI khách sạn của mình (tuỳ chọn thu hẹp theo 1 KS). */
+export interface PartnerBookingFilter {
+  status?: BookingStatus;
+  hotelId?: string;
+  fromDate?: Date;
+  toDate?: Date;
+  search?: string;
+}
+
 /** Payload check-in: gán phòng vật lý cụ thể (tuỳ chọn) + mã voucher để đối chiếu (tuỳ chọn). */
 export interface CheckInBookingDto {
   roomId?: string;

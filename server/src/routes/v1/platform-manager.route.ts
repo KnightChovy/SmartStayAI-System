@@ -1,8 +1,8 @@
 import express from 'express';
 import auth from '../../middlewares/auth';
 import validate from '../../middlewares/validate';
-import { platformManagerValidation } from '../../validations';
-import { platformManagerController } from '../../controllers';
+import { platformManagerValidation, bookingValidation } from '../../validations';
+import { platformManagerController, bookingController } from '../../controllers';
 
 const router = express.Router();
 
@@ -14,6 +14,14 @@ router.get(
   auth('viewPlatformStats'),
   validate(platformManagerValidation.listPartners),
   platformManagerController.listPartners
+);
+
+// Toàn bộ booking toàn sàn (lọc theo KS/đối tác/trạng thái/ngày + tìm kiếm)
+router.get(
+  '/bookings',
+  auth('viewPlatformStats'),
+  validate(bookingValidation.listPlatformBookings),
+  bookingController.listPlatformBookings
 );
 
 // Báo cáo analytics toàn sàn

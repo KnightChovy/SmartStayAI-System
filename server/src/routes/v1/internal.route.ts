@@ -8,5 +8,6 @@ const router = express.Router();
 // bảo vệ bằng header x-cron-secret (cronAuth). Dùng POST để crawler/prefetch không vô tình kích job.
 router.post('/jobs/release-holds', cronAuth, jobController.releaseHolds);
 router.post('/jobs/sweep-no-shows', cronAuth, jobController.sweepNoShows);
+router.post('/jobs/settle-commissions', cronAuth, jobController.settleCommissions);
 
 export default router;

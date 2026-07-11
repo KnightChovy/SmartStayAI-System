@@ -7,6 +7,7 @@ import {
   Building2,
   CalendarDays,
   CreditCard,
+  DollarSign,
   HelpCircle,
   LayoutDashboard,
   Settings,
@@ -17,11 +18,11 @@ import CommonNavbar from '@/common/navbar/Navbar';
 import CommonSidebar from '@/common/sidebar/Sidebar';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+import { AdminActivityModal } from './models/activity/AdminActivityModal';
 import { AdminCalendarModal } from './models/calendar/AdminCalendarModal';
 import { AdminCreateUserModal } from './models/user/AdminCreateUserModal';
 import { AdminFileManagerModal } from './models/file-manager/AdminFileManagerModal';
 import { AdminMaintenanceModal } from './models/maintenance/AdminMaintenanceModal';
-import { AdminMessagesModal } from './models/message/AdminMessagesModal';
 import { AdminModalProvider } from './models/AdminModalContext';
 import { AdminNotesModal } from './models/note/AdminNotesModal';
 import { AdminReportModal } from './models/report/AdminReportModal';
@@ -33,6 +34,7 @@ const adminNavItems = [
   { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
   { name: 'Users', href: '/admin/users', icon: Users },
   { name: 'Payments', href: '/admin/payments', icon: CreditCard },
+  { name: 'Revenue', href: '/admin/revenue', icon: DollarSign },
   { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
   { name: 'AI Settings', href: '/admin/ai-settings', icon: Bot },
   { name: 'Properties', href: '/admin/properties', icon: Building2 },
@@ -180,7 +182,7 @@ export function AdminLayout() {
           ) : null}
 
           {isMessagesOpen ? (
-            <AdminMessagesModal
+            <AdminActivityModal
               currentTime={currentTime}
               onClose={() => setIsMessagesOpen(false)}
             />
@@ -230,7 +232,7 @@ export function AdminLayout() {
                   <CalendarDays className="size-3.5" />
                 </button>
                 <button
-                  aria-label="Open messages"
+                  aria-label="Open recent activity"
                   className="inline-flex size-8 items-center justify-center rounded-full border border-outline-variant/40"
                   onClick={handleOpenMessages}
                   type="button"

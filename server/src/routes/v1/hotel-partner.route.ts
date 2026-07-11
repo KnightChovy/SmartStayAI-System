@@ -1,10 +1,13 @@
 import express from 'express';
 import auth from '../../middlewares/auth';
 import validate from '../../middlewares/validate';
-import { hotelPartnerValidation } from '../../validations';
-import { hotelPartnerController } from '../../controllers';
+import { hotelPartnerValidation, bookingValidation } from '../../validations';
+import { hotelPartnerController, bookingController } from '../../controllers';
 
 const router = express.Router();
+
+// Partner xem TOÀN BỘ booking của mọi khách sạn của mình ('/me/bookings' literal — đặt sớm cho rõ)
+router.get('/me/bookings', auth(), validate(bookingValidation.listPartnerBookings), bookingController.listMyPartnerBookings);
 
 router
   .route('/registrations')

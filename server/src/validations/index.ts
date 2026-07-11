@@ -14,5 +14,6 @@ export * as staffValidation from './staff.validation';
 export * as housekeepingValidation from './housekeeping.validation';
 export * as conversationValidation from './conversation.validation';
 export * as reviewValidation from './review.validation';
+export * as revenueValidation from './revenue.validation';
 export * as adminValidation from './admin.validation';
 export * as platformManagerValidation from './platform-manager.validation';

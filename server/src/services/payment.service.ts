@@ -8,6 +8,7 @@ import logger from '../config/logger';
 import ApiError from '../utils/ApiError';
 import { emailService } from './email.service';
 import type { VnpayParams, VnpayResult } from '../dto/payment.dto';
+import { walletService } from './wallet.service';
 
 // Định dạng ngày VNPay yêu cầu: yyyyMMddHHmmss (giờ máy chủ)
 const formatVnpDate = (date: Date): string => {
@@ -83,11 +84,7 @@ export class PaymentService {
    * Mỗi lần gọi sinh một mã giao dịch (vnp_TxnRef) mới + một bản ghi Payment pending
    * để callback tra cứu lại được.
    */
-  createVnpayPaymentUrl = async (
-    bookingId: string,
-    currentUser: User,
-    ipAddr: string
-  ): Promise<{ paymentUrl: string }> => {
+  createVnpayPaymentUrl = async (bookingId: string, currentUser: User, ipAddr: string): Promise<{ paymentUrl: string }> => {
     this.assertConfigured();
 
     const booking = await prisma.booking.findUnique({ where: { id: bookingId } });
@@ -213,7 +210,9 @@ export class PaymentService {
         data: { status: 'confirmed', holdExpiresAt: null },
       });
       if (updated.count === 0) {
-        logger.warn(`[VNPay] Đã nhận tiền cho booking ${bookingId} nhưng booking không còn pending — cần hoàn tiền thủ công`);
+        logger.warn(
+          `[VNPay] Đã nhận tiền cho booking ${bookingId} nhưng booking không còn pending — cần hoàn tiền thủ công`
+        );
         return { confirmed: false as const, emailTo: null };
       }
 
@@ -238,7 +237,8 @@ export class PaymentService {
           status: 'pending',
         },
       });
-
+      const net = booking.totalAmount.sub(commissionAmount);
+      await walletService.recordEarning(tx, booking.hotelId, booking.id, net);
       const voucherCode = generateVoucherCode();
       await tx.bookingVoucher.create({
         data: {
