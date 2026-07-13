@@ -19,7 +19,7 @@ export const promotionService = {
         id: 'p2',
         name: 'Welcome gift',
         code: 'WELCOME200',
-        description: 'Flat 200,000₫ off your first booking.',
+        description: 'Flat 200,000 VNĐ off your first booking.',
         discountType: 'fixed_amount',
         discountValue: 200000,
         endDate: '2026-12-31T23:59:59Z',
