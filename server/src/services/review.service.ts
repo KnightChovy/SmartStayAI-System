@@ -12,6 +12,14 @@ const reviewInclude = {
   images: { orderBy: { uploadedAt: 'asc' } },
 } satisfies Prisma.ReviewInclude;
 
+// Include cho trang "đánh giá của tôi": kèm tên khách sạn + mã booking để hiển thị.
+// Không cần 'customer' (chính là người đang xem); managerResponse/status là cột nên tự trả về.
+const myReviewInclude = {
+  hotel: { select: { id: true, name: true } },
+  booking: { select: { bookingCode: true } },
+  images: { orderBy: { uploadedAt: 'asc' } },
+} satisfies Prisma.ReviewInclude;
+
 export class ReviewService {
   /**
    * Khách viết đánh giá sau khi đã trả phòng. Chỉ chính chủ của booking đã 'checked_out' mới được
@@ -72,6 +80,31 @@ export class ReviewService {
 
     const [results, totalResults] = await prisma.$transaction([
       prisma.review.findMany({ where, skip, take: limit, orderBy, include: reviewInclude }),
+      prisma.review.count({ where }),
+    ]);
+
+    return { results, page, limit, totalPages: Math.ceil(totalResults / limit), totalResults };
+  };
+
+  /**
+   * Danh sách đánh giá của CHÍNH khách đang đăng nhập, mới nhất trước. Trả về MỌI trạng thái
+   * (kể cả pending/hidden) vì đây là đánh giá của chính họ; kèm tên khách sạn + mã booking.
+   */
+  getMyReviews = async (currentUser: User, options: ReviewQueryOptions) => {
+    const limit = options.limit || 20;
+    const page = options.page || 1;
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.ReviewWhereInput = { customerId: currentUser.id };
+
+    let orderBy: Prisma.ReviewOrderByWithRelationInput = { createdAt: 'desc' };
+    if (options.sortBy) {
+      const [field, direction] = options.sortBy.split(':');
+      orderBy = { [field]: direction === 'desc' ? 'desc' : 'asc' };
+    }
+
+    const [results, totalResults] = await prisma.$transaction([
+      prisma.review.findMany({ where, skip, take: limit, orderBy, include: myReviewInclude }),
       prisma.review.count({ where }),
     ]);
 
