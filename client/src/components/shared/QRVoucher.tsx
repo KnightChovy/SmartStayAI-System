@@ -1,17 +1,12 @@
 import { cn } from '@/lib/cn';
 
 interface QRVoucherProps {
-  /** Dữ liệu mã hóa vào QR — phải là `booking.voucher.qrData` (staff quét theo voucherCode). */
   data: string;
   label?: string;
   size?: number;
   className?: string;
 }
 
-/**
- * Hiển thị mã QR cho e-voucher. Dùng dịch vụ ảnh QR công khai để render
- * (không cần thư viện QR phía client).
- */
 export default function QRVoucher({
   data,
   label,

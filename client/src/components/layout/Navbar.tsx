@@ -1,6 +1,11 @@
 import { Link, useLocation } from 'react-router';
-import { ChevronDown, LayoutDashboard, LogOut, User as UserIcon } from 'lucide-react';
-import { useLogout} from '../../hooks/auth';
+import {
+  ChevronDown,
+  LayoutDashboard,
+  LogOut,
+  User as UserIcon,
+} from 'lucide-react';
+import { useLogout } from '../../hooks/auth';
 import { useAuthStore } from '../../stores/authStore';
 import { getLandingPathForRole, UserRole } from '@/constants/roles';
 import {
@@ -29,8 +34,8 @@ export default function Navbar() {
   const user = useAuthStore(state => state.user);
   const { mutateAsync: logout, isPending: isLoggingOut } = useLogout();
 
-  const initials = (user?.name || user?.email || 'US')
-    .slice(0, 2)
+  const initials = (user?.fullName || user?.email || 'US')
+    .slice(0, 1)
     .toUpperCase();
   const dashboardPath = user ? getLandingPathForRole(user.role) : '/';
   const hasDashboard = dashboardPath !== '/';
@@ -86,77 +91,77 @@ export default function Navbar() {
           <div className="flex items-center gap-3">
             {isAuthenticated && user ? (
               <>
-              <NotificationBell />
-              <DropdownMenu>
-                <DropdownMenuTrigger className="flex items-center gap-2 rounded-full p-1 pr-2 hover:bg-surface-container-low transition-colors outline-none cursor-pointer data-[state=open]:bg-surface-container-low">
-                  {user.avatarUrl ? (
-                    <img
-                      src={user.avatarUrl}
-                      alt={user?.name || 'User'}
-                      className="size-8 rounded-full object-cover border border-outline-variant"
-                    />
-                  ) : (
-                    <div className="size-8 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-bold text-xs">
-                      {initials}
-                    </div>
-                  )}
-                  <ChevronDown className="size-4 text-on-surface-variant" />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-64">
-                  {/* User info header */}
-                  <div className="flex items-center gap-3 px-2 py-2.5">
+                <NotificationBell />
+                <DropdownMenu>
+                  <DropdownMenuTrigger className="flex items-center gap-2 rounded-full p-1 pr-2 hover:bg-surface-container-low transition-colors outline-none cursor-pointer data-[state=open]:bg-surface-container-low">
                     {user.avatarUrl ? (
                       <img
                         src={user.avatarUrl}
-                        alt={user?.name || 'User'}
-                        className="size-10 rounded-full object-cover border border-outline-variant"
+                        alt={user?.fullName || 'User'}
+                        className="size-8 rounded-full object-cover border border-outline-variant"
                       />
                     ) : (
-                      <div className="size-10 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-bold text-sm">
+                      <div className="size-8 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-bold text-xs">
                         {initials}
                       </div>
                     )}
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-on-surface truncate">
-                        {user?.name || 'User'}
-                      </p>
-                      <p className="text-xs text-on-surface-variant truncate">
-                        {user?.email}
-                      </p>
+                    <ChevronDown className="size-4 text-on-surface-variant" />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-64">
+                    {/* User info header */}
+                    <div className="flex items-center gap-3 px-2 py-2.5">
+                      {user.avatarUrl ? (
+                        <img
+                          src={user.avatarUrl}
+                          alt={user?.fullName || 'User'}
+                          className="size-10 rounded-full object-cover border border-outline-variant"
+                        />
+                      ) : (
+                        <div className="size-10 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-bold text-sm">
+                          {initials}
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-on-surface truncate">
+                          {user?.fullName || 'User'}
+                        </p>
+                        <p className="text-xs text-on-surface-variant truncate">
+                          {user?.email}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="px-2 pb-1.5">
-                    <span className="inline-block rounded-full bg-secondary-container/60 text-on-secondary-container text-[11px] font-semibold px-2 py-0.5">
-                      {ROLE_LABELS[user.role] ?? user.role}
-                    </span>
-                  </div>
-                  <DropdownMenuSeparator />
-                  {hasDashboard && (
+                    <div className="px-2 pb-1.5">
+                      <span className="inline-block rounded-full bg-secondary-container/60 text-on-secondary-container text-[11px] font-semibold px-2 py-0.5">
+                        {ROLE_LABELS[user.role] ?? user.role}
+                      </span>
+                    </div>
+                    <DropdownMenuSeparator />
+                    {hasDashboard && (
+                      <DropdownMenuItem asChild>
+                        <Link to={dashboardPath} className="cursor-pointer">
+                          <LayoutDashboard className="size-4" />
+                          Dashboard
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem asChild>
-                      <Link to={dashboardPath} className="cursor-pointer">
-                        <LayoutDashboard className="size-4" />
-                        Dashboard
+                      <Link to="/account/profile" className="cursor-pointer">
+                        <UserIcon className="size-4" />
+                        My Account
                       </Link>
                     </DropdownMenuItem>
-                  )}
-                  <DropdownMenuItem asChild>
-                    <Link to="/account/profile" className="cursor-pointer">
-                      <UserIcon className="size-4" />
-                      My Account
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    variant="destructive"
-                    disabled={isLoggingOut}
-                    onSelect={() => logout()}
-                    className="cursor-pointer"
-                  >
-                    <LogOut className="size-4" />
-                    {isLoggingOut ? 'Logging out...' : 'Log out'}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      variant="destructive"
+                      disabled={isLoggingOut}
+                      onSelect={() => logout()}
+                      className="cursor-pointer"
+                    >
+                      <LogOut className="size-4" />
+                      {isLoggingOut ? 'Logging out...' : 'Log out'}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </>
             ) : (
               <>

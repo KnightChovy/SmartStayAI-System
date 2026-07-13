@@ -6,11 +6,8 @@ import {
   Sparkles,
   Building2,
   RefreshCw,
-  Bell,
-  HelpCircle,
 } from 'lucide-react';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import CommonSidebar from '@/common/sidebar/Sidebar';
 import CommonNavbar from '@/common/navbar/Navbar';
@@ -39,7 +36,7 @@ export function StaffLayout() {
   const { data: assignedHotels } = useStaffHotels();
   const canSwitchHotel = (assignedHotels?.length ?? 0) > 1;
 
-  const userName = user?.name ?? 'Staff';
+  const userName = user?.fullName ?? 'Staff';
 
   return (
     <SidebarProvider>
@@ -55,15 +52,19 @@ export function StaffLayout() {
         <CommonNavbar
           searchPlaceholder="Search bookings, rooms, guests..."
           userName={userName}
-          rightContent={
+          leadingActions={
             <>
               <div className="hidden items-center gap-2 text-sm sm:flex">
                 <Building2 className="size-4 text-slate-400" />
                 {hotel ? (
-                  <span className="font-medium text-slate-900">
-                    {hotel.name}
-                    <span className="ml-1.5 text-slate-400">· {hotel.city}</span>
-                  </span>
+                  <div className="flex max-w-40 flex-col leading-tight">
+                    <span className="truncate font-medium text-slate-900">
+                      {hotel.name}
+                    </span>
+                    <span className="truncate text-xs text-slate-400">
+                      {hotel.city}
+                    </span>
+                  </div>
                 ) : (
                   <span className="text-slate-400">No hotel selected</span>
                 )}
@@ -83,25 +84,6 @@ export function StaffLayout() {
                 )}
               </div>
               <div className="hidden h-6 w-px bg-outline-variant/40 sm:block" />
-              <button
-                className="inline-flex size-8 items-center justify-center rounded-full border border-outline-variant/40"
-                type="button"
-              >
-                <Bell className="size-3.5" />
-              </button>
-              <button
-                className="inline-flex size-8 items-center justify-center rounded-full border border-outline-variant/40"
-                type="button"
-              >
-                <HelpCircle className="size-3.5" />
-              </button>
-              <div className="h-6 w-px bg-outline-variant/40" />
-              <div className="flex items-center gap-2">
-                <Avatar className="size-8 rounded-full bg-surface-container">
-                  <AvatarFallback>{userName.slice(0, 2).toUpperCase()}</AvatarFallback>
-                </Avatar>
-                <p className="hidden text-sm font-semibold sm:block">{userName}</p>
-              </div>
             </>
           }
         />
