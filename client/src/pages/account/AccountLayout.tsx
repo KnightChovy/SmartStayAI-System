@@ -8,7 +8,7 @@ import AccountSidebar from '@/components/account/AccountSidebar';
  */
 export default function AccountLayout() {
   const user = useAuthStore(state => state.user);
-  const initials = (user?.name || user?.email || 'US').slice(0, 2).toUpperCase();
+  const initials = (user?.fullName || user?.email || 'US').slice(0, 2).toUpperCase();
 
   return (
     <div className="w-full py-10">
@@ -18,7 +18,7 @@ export default function AccountLayout() {
           {user?.avatarUrl ? (
             <img
               src={user.avatarUrl}
-              alt={user?.name || 'User'}
+              alt={user?.fullName || 'User'}
               className="size-14 rounded-full border border-outline-variant object-cover"
             />
           ) : (
@@ -29,7 +29,7 @@ export default function AccountLayout() {
           <div>
             <p className="text-sm text-on-surface-variant">Welcome back,</p>
             <h1 className="font-be-vietnam text-2xl font-bold text-on-surface">
-              {user?.name || 'Guest'}
+              {user?.fullName || 'Guest'}
             </h1>
           </div>
         </div>

@@ -1,4 +1,3 @@
-﻿import React from 'react';
 import { Building, CalendarDays, DollarSign, TrendingUp, Warehouse } from 'lucide-react';
 
 export function DashboardStats() {
