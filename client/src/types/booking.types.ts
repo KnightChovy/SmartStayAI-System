@@ -87,6 +87,22 @@ export interface Booking {
   voucher?: BookingVoucherSummary | null;
 }
 
+/**
+ * Payload viết đánh giá sau khi trả phòng (`POST /reviews`).
+ * BE chỉ cần `bookingId` (tự suy ra hotel + kiểm quyền/điều kiện), không cần hotelName/bookingCode.
+ */
+export interface CreateReviewPayload {
+  bookingId: string;
+  overallRating: number;
+  cleanlinessRating: number;
+  serviceRating: number;
+  locationRating: number;
+  valueRating: number;
+  title?: string;
+  content: string;
+  images?: string[];
+}
+
 /** Payload tạo booking — giá do server tự tính, client KHÔNG gửi tiền. */
 export interface CreateBookingPayload {
   hotelId: string;
