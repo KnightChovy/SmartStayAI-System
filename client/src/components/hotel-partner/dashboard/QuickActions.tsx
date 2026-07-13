@@ -1,4 +1,3 @@
-﻿import React from 'react';
 import { PlusCircle, Package, TrendingUp, Hotel } from 'lucide-react';
 
 export function QuickActions() {

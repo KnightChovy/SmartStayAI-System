@@ -1,4 +1,3 @@
-import React from 'react';
 import { BadgeCheck, CalendarCheck, Wallet } from "lucide-react";
 
 export function VerificationBenefitsCard() {
