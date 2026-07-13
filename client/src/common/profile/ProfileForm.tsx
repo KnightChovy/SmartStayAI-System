@@ -133,7 +133,7 @@ export function ProfileForm({ initial }: { initial: UserProfile }) {
             value={form.dateOfBirth ?? ''}
             min={MIN_DOB}
             max={TODAY}
-            placeholder="Chọn ngày sinh"
+            placeholder="Select your date of birth"
             onChange={v => set('dateOfBirth', v || null)}
             className="h-8 bg-surface"
           />

@@ -1,15 +1,16 @@
 import Joi from 'joi';
 import { password } from './custom.validation';
 
-// Chủ KS tạo + gán nhân viên vào khách sạn
+// Chủ KS thêm nhân viên vào KS: tạo mới (cần name+password) HOẶC gán lại staff đã có (chỉ cần email)
 export const addStaff = {
   params: Joi.object().keys({
     hotelId: Joi.string().uuid().required(),
   }),
   body: Joi.object().keys({
-    name: Joi.string().required(),
+    // name + password chỉ bắt buộc khi TẠO MỚI (service tự kiểm); gán lại thì bỏ qua
+    name: Joi.string(),
     email: Joi.string().email().required(),
-    password: Joi.string().required().custom(password),
+    password: Joi.string().custom(password),
     phone: Joi.string().allow('', null),
     assignedRole: Joi.string().valid('staff').default('staff'),
   }),

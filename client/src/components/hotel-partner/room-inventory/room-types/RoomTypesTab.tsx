@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Layers, Pencil, ImageIcon, Tags, Power, PowerOff, Users, Trash2 } from 'lucide-react';
+import { Plus, Layers, Pencil, ImageIcon, Tags, Power, PowerOff, Users, Trash2, BedDouble } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { ErrorState, EmptyState } from '@/components/hotel-partner/shared/states';
@@ -15,6 +15,7 @@ import type { ManagedRoomType } from '@/types/hotel-management.types';
 import { RoomTypeFormModal } from './RoomTypeFormModal';
 import { RoomTypeImagesModal } from './RoomTypeImagesModal';
 import { RoomTypeAmenitiesModal } from './RoomTypeAmenitiesModal';
+import { RoomTypeBedsModal } from '@/components/hotel-partner/property/RoomTypeBedsModal';
 
 interface RoomTypesTabProps {
   hotelId: string;
@@ -58,6 +59,7 @@ export function RoomTypesTab({ hotelId }: RoomTypesTabProps) {
   const [editing, setEditing] = useState<ManagedRoomType | null>(null);
   const [imagesTarget, setImagesTarget] = useState<ManagedRoomType | null>(null);
   const [amenitiesTarget, setAmenitiesTarget] = useState<ManagedRoomType | null>(null);
+  const [bedsTarget, setBedsTarget] = useState<ManagedRoomType | null>(null);
   const [deleting, setDeleting] = useState<ManagedRoomType | null>(null);
 
   const openCreate = () => {
@@ -139,6 +141,7 @@ export function RoomTypesTab({ hotelId }: RoomTypesTabProps) {
             { label: 'Edit', icon: Pencil, onClick: () => { setEditing(rt); setFormOpen(true); } },
             { label: 'Manage images', icon: ImageIcon, onClick: () => setImagesTarget(rt) },
             { label: 'Manage amenities', icon: Tags, onClick: () => setAmenitiesTarget(rt) },
+            { label: 'Manage beds', icon: BedDouble, onClick: () => setBedsTarget(rt) },
             {
               label: rt.isActive ? 'Deactivate' : 'Activate',
               icon: rt.isActive ? PowerOff : Power,
@@ -203,6 +206,15 @@ export function RoomTypesTab({ hotelId }: RoomTypesTabProps) {
           onClose={() => setAmenitiesTarget(null)}
           hotelId={hotelId}
           roomType={amenitiesTarget}
+        />
+      )}
+      {bedsTarget && (
+        <RoomTypeBedsModal
+          open={!!bedsTarget}
+          onClose={() => setBedsTarget(null)}
+          hotelId={hotelId}
+          roomTypeId={bedsTarget.id}
+          roomTypeName={bedsTarget.name}
         />
       )}
 
