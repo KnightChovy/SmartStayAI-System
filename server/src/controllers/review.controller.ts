@@ -20,6 +20,13 @@ export class ReviewController {
     res.send(result);
   });
 
+  // Đánh giá của chính khách đang đăng nhập (mọi trạng thái)
+  getMyReviews = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const options = pick(req.query, ['sortBy', 'limit', 'page']);
+    const result = await reviewService.getMyReviews(req.user as User, options);
+    res.send(result);
+  });
+
   // [Partner] Đánh giá của chính khách sạn mình (mọi trạng thái)
   getHotelReviewsForPartner = catchAsync(async (req: Request, res: Response): Promise<void> => {
     const filter = pick(req.query, ['status']);
