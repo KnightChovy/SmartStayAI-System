@@ -359,7 +359,7 @@ export default function BookingDetailPage() {
                   Your e-voucher
                 </h3>
                 <QRVoucher
-                  data={booking.voucher?.qrData ?? booking.bookingCode}
+                  data={booking.voucher?.qrData}
                   label={booking.bookingCode}
                 />
               </div>
