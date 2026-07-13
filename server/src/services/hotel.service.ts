@@ -114,6 +114,25 @@ export class HotelService {
   };
 
   /**
+   * Danh sách khách sạn mà STAFF đang đăng nhập được phân công (bản "của staff" tương tự getHotelsByOwner).
+   * Lấy theo hotel_staff_assignments còn hiệu lực (unassignedAt = null) — để màn quản lý của staff biết
+   * mình thuộc khách sạn nào rồi gọi tiếp các API vận hành (booking / room status / check-in-out).
+   */
+  getHotelsForStaff = async (userId: string) => {
+    return prisma.hotel.findMany({
+      where: {
+        deletedAt: null,
+        staffAssignments: { some: { userId, unassignedAt: null } },
+      },
+      include: {
+        images: { where: { isPrimary: true }, take: 1 },
+        _count: { select: { roomTypes: true, rooms: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  };
+
+  /**
    * Partner tự BẬT/TẮT mở bán (publish) khách sạn của mình. Quyền kiểm qua getManagedHotel
    * (chỉ chủ KS hoặc manageHotels). Khi BẬT (isListed=true): khách sạn phải đã được duyệt (isActive)
    * và có ít nhất một loại phòng đang bật — tránh lên sàn khi chưa có phòng để bán. Khi TẮT: không ràng buộc.

@@ -2101,6 +2101,26 @@ paths:
                 items: { $ref: '#/components/schemas/HotelSummary' }
         '401': { $ref: '#/components/responses/Unauthorized' }
 
+  /hotels/staff/mine:
+    get:
+      summary: List hotels the current staff is assigned to
+      description: >
+        Auth (staff). Returns hotels the LOGGED-IN staff is currently assigned to (via
+        hotel_staff_assignments, unassignedAt = null). The staff portal uses this to know which hotel(s)
+        to operate on (bookings / room status / check-in-out). Staff id is taken from the token.
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Array of assigned hotels (each with primary image + _count of roomTypes/rooms)
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/HotelSummary' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
   /hotels/{hotelId}/images:
     post:
       summary: Add hotel images (partner)
