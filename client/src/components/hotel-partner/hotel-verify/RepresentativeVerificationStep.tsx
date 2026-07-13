@@ -5,17 +5,28 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DatePicker } from '@/components/ui/date-picker';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
 import { FileUploadDropzone } from '@/components/ui/file-upload';
-import { representativeSchema, type RepresentativeFormValues } from '@/validations/hotel-verify.validation';
+import {
+  representativeSchema,
+  type RepresentativeFormValues,
+} from '@/validations/hotel-verify.validation';
 import { hotelVerifyService } from '@/services/hotel-verify.service';
 import { useHotelVerifyStore } from '@/stores/hotel-verify.store';
 import { toDateInputValue } from '@/utils/formatDate';
 
 // Người đại diện phải đủ 18 tuổi và không quá 120 tuổi.
 const now = new Date();
-const MAX_DOB = toDateInputValue(new Date(now.getFullYear() - 18, now.getMonth(), now.getDate()));
+const MAX_DOB = toDateInputValue(
+  new Date(now.getFullYear() - 18, now.getMonth(), now.getDate())
+);
 const MIN_DOB = toDateInputValue(new Date(now.getFullYear() - 120, 0, 1));
 
 export function RepresentativeVerificationStep({
@@ -107,9 +118,12 @@ export function RepresentativeVerificationStep({
   return (
     <div className="w-full bg-white rounded-2xl p-6 md:p-8 border border-slate-200 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] mt-4">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-slate-900 mb-2">Representative Verification</h2>
+        <h2 className="text-2xl font-bold text-slate-900 mb-2">
+          Representative Verification
+        </h2>
         <p className="text-slate-600">
-          Provide the personal details and identity documents of the legal representative.
+          Provide the personal details and identity documents of the legal
+          representative.
         </p>
       </div>
 
@@ -138,7 +152,9 @@ export function RepresentativeVerificationStep({
                 {...register('fullName')}
               />
               {errors.fullName && (
-                <span className="text-xs text-red-500">{errors.fullName.message}</span>
+                <span className="text-xs text-red-500">
+                  {errors.fullName.message}
+                </span>
               )}
             </div>
 
@@ -148,7 +164,7 @@ export function RepresentativeVerificationStep({
               </Label>
               <Select
                 defaultValue={draft.representative?.role}
-                onValueChange={(val) =>
+                onValueChange={val =>
                   setValue('role', val as RepresentativeFormValues['role'], {
                     shouldValidate: true,
                   })
@@ -159,13 +175,19 @@ export function RepresentativeVerificationStep({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="owner">Owner</SelectItem>
-                  <SelectItem value="general_manager">General Manager</SelectItem>
-                  <SelectItem value="legal_representative">Legal Representative</SelectItem>
+                  <SelectItem value="general_manager">
+                    General Manager
+                  </SelectItem>
+                  <SelectItem value="legal_representative">
+                    Legal Representative
+                  </SelectItem>
                   <SelectItem value="director">Director</SelectItem>
                 </SelectContent>
               </Select>
               {errors.role && (
-                <span className="text-xs text-red-500">{errors.role.message}</span>
+                <span className="text-xs text-red-500">
+                  {errors.role.message}
+                </span>
               )}
             </div>
 
@@ -183,13 +205,15 @@ export function RepresentativeVerificationStep({
                     onChange={field.onChange}
                     min={MIN_DOB}
                     max={MAX_DOB}
-                    placeholder="Chọn ngày sinh"
+                    placeholder="Select your date of birth"
                     ariaInvalid={!!errors.dob}
                   />
                 )}
               />
               {errors.dob && (
-                <span className="text-xs text-red-500">{errors.dob.message}</span>
+                <span className="text-xs text-red-500">
+                  {errors.dob.message}
+                </span>
               )}
             </div>
 
@@ -204,7 +228,9 @@ export function RepresentativeVerificationStep({
                 {...register('idNumber')}
               />
               {errors.idNumber && (
-                <span className="text-xs text-red-500">{errors.idNumber.message}</span>
+                <span className="text-xs text-red-500">
+                  {errors.idNumber.message}
+                </span>
               )}
             </div>
 
@@ -219,7 +245,9 @@ export function RepresentativeVerificationStep({
                 {...register('phone')}
               />
               {errors.phone && (
-                <span className="text-xs text-red-500">{errors.phone.message}</span>
+                <span className="text-xs text-red-500">
+                  {errors.phone.message}
+                </span>
               )}
             </div>
 
@@ -234,7 +262,9 @@ export function RepresentativeVerificationStep({
                 {...register('address')}
               />
               {errors.address && (
-                <span className="text-xs text-red-500">{errors.address.message}</span>
+                <span className="text-xs text-red-500">
+                  {errors.address.message}
+                </span>
               )}
             </div>
           </div>
@@ -246,8 +276,8 @@ export function RepresentativeVerificationStep({
             2. Identity Document
           </h3>
           <p className="text-sm text-slate-500">
-            Please upload clear photos of your ID Card or Passport. Make sure all details are
-            readable.
+            Please upload clear photos of your ID Card or Passport. Make sure
+            all details are readable.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -282,7 +312,10 @@ export function RepresentativeVerificationStep({
           <Button
             type="button"
             variant="outline"
-            onClick={() => { setRepresentative(getValues()); onBack?.(); }}
+            onClick={() => {
+              setRepresentative(getValues());
+              onBack?.();
+            }}
             className="h-11 px-6 bg-white border-slate-300 text-slate-700 hover:bg-slate-50 cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4 mr-2" /> Back
