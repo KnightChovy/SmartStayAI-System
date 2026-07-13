@@ -158,9 +158,11 @@ export default function FrontDeskPage() {
         open={scanOpen}
         onClose={() => setScanOpen(false)}
         hotelId={hotel?.id}
-        onFound={bookingId => {
+        onFound={(bookingId, voucherCode) => {
           setScanOpen(false);
-          navigate(ROUTES.staffBookingDetail(bookingId));
+          navigate(ROUTES.staffBookingDetail(bookingId), {
+            state: { autoCheckIn: true, voucherCode },
+          });
         }}
       />
 
