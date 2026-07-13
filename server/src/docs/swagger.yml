@@ -2722,6 +2722,62 @@ paths:
                 $ref: '#/components/schemas/Review'
         '404':
           $ref: '#/components/responses/NotFound'
+    patch:
+      summary: Update my own review
+      description: >
+        The review's author edits their own review. Only the owner can update it. Ratings, title,
+        content and images are editable (all fields optional, at least one required); bookingId,
+        hotelId and status cannot be changed. Sending `images` (even an empty array) replaces the
+        whole image set with the new list.
+      tags: [Reviews]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: reviewId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateReviewRequest'
+      responses:
+        '200':
+          description: Updated review
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      summary: Delete my own review
+      description: >
+        The review's author deletes their own review. Only the owner can delete it. Attached images
+        are removed automatically (cascade).
+      tags: [Reviews]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: reviewId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Review deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
   /hotels/{hotelId}/bookings:
     get:
