@@ -18,6 +18,32 @@ export const createReview = {
   }),
 };
 
+// Khách sửa đánh giá của chính mình — mọi trường tuỳ chọn nhưng phải có ít nhất một
+export const updateMyReview = {
+  params: Joi.object().keys({
+    reviewId: Joi.string().uuid().required(),
+  }),
+  body: Joi.object()
+    .keys({
+      overallRating: Joi.number().integer().min(1).max(5),
+      cleanlinessRating: Joi.number().integer().min(1).max(5),
+      serviceRating: Joi.number().integer().min(1).max(5),
+      locationRating: Joi.number().integer().min(1).max(5),
+      valueRating: Joi.number().integer().min(1).max(5),
+      title: Joi.string().max(200).allow('', null),
+      content: Joi.string().max(2000),
+      images: Joi.array().items(Joi.string().uri()).max(10),
+    })
+    .min(1),
+};
+
+// Khách xoá đánh giá của chính mình
+export const deleteMyReview = {
+  params: Joi.object().keys({
+    reviewId: Joi.string().uuid().required(),
+  }),
+};
+
 // Liệt kê đánh giá công khai của một khách sạn (?hotelId=...)
 export const getHotelReviews = {
   query: Joi.object().keys({

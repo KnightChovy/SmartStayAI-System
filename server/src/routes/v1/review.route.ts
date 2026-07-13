@@ -19,4 +19,8 @@ router.get('/me', auth(), validate(reviewValidation.getMyReviews), reviewControl
 // Chi tiết một đánh giá — public
 router.get('/:reviewId', validate(reviewValidation.getReview), reviewController.getReview);
 
+// Khách sửa / xoá đánh giá của CHÍNH mình (kiểm quyền sở hữu trong service)
+router.patch('/:reviewId', auth(), validate(reviewValidation.updateMyReview), reviewController.updateMyReview);
+router.delete('/:reviewId', auth(), validate(reviewValidation.deleteMyReview), reviewController.deleteMyReview);
+
 export default router;
