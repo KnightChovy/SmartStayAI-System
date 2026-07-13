@@ -1,0 +1,94 @@
+{
+  "hero": {
+    "title": "Find your next stay",
+    "subtitle": "Experience curated sanctuaries powered by intelligent discovery.",
+    "destination": "Destination",
+    "destinationPlaceholder": "Where are you going?",
+    "checkIn": "Check-in",
+    "checkOut": "Check-out",
+    "guests": "Guests"
+  },
+  "whyChoose": {
+    "title": "Why choose SmartStay?",
+    "freeCancellation": {
+      "title": "Free Cancellation",
+      "desc": "Flexible stays for peace of mind in changing times"
+    },
+    "support": {
+      "title": "24/7 Support",
+      "desc": "Global assistance whenever you need a helping hand"
+    },
+    "reviews": {
+      "title": "Verified Reviews",
+      "desc": "Authentic experiences only from real luxury travelers"
+    },
+    "bestPrice": {
+      "title": "Best Price",
+      "desc": "Guaranteed exclusive rates for our intelligent members"
+    }
+  },
+  "promotions": {
+    "summer": {
+      "badge": "Early Bird",
+      "title": "Summer Solstice Escapes",
+      "desc": "Book 30 days in advance for 20% off.",
+      "cta": "Claim Offer"
+    },
+    "member": {
+      "badge": "Members Only",
+      "title": "Exclusive Sanctuary Rates",
+      "desc": "Unlock hidden prices for our Gold members.",
+      "cta": "Sign In to See"
+    }
+  },
+  "accommodationTypes": {
+    "title": "Search by type of accommodation",
+    "hotels": "Hotels",
+    "apartments": "Apartments",
+    "resorts": "Resorts",
+    "villas": "Villas",
+    "cabins": "Cabins",
+    "unique": "Unique Stays"
+  },
+  "trending": {
+    "title": "Trending Destinations",
+    "properties_one": "{{count}} Property",
+    "properties_other": "{{count}} Properties"
+  },
+  "discover": {
+    "title": "Discover Vietnam",
+    "subtitle": "Curated \"Quiet Luxury\" escapes in the heart of the East.",
+    "viewAll": "View all destinations",
+    "stays_one": "{{count}} stay available",
+    "stays_other": "{{count}} stays available"
+  },
+  "weekend": {
+    "title": "Featured Stays",
+    "subtitle": "Handpicked hotels available to book right now",
+    "viewAll": "View all stays",
+    "from": "From",
+    "perNight": "/ night",
+    "star": "{{count}}-star"
+  },
+  "loyalty": {
+    "title": "Travel more, spend less.",
+    "subtitle": "Join SmartStay Rewards and earn points on every booking. Gold status is just a few stays away.",
+    "pointsBack": "10% Points Back",
+    "freeUpgrades": "Free Upgrades",
+    "prioritySupport": "Priority Support",
+    "joinRewards": "Join Rewards",
+    "learnMore": "Learn More"
+  },
+  "popular": {
+    "title": "Popular with tourists from Vietnam",
+    "singapore": { "name": "Singapore", "desc": "Modern luxury & shopping" },
+    "thailand": { "name": "Thailand", "desc": "Beaches & vibrant culture" },
+    "korea": { "name": "South Korea", "desc": "K-Wave, cosmetic & historic palaces" },
+    "japan": { "name": "Japan", "desc": "Cherry blossoms & serene hot springs" }
+  },
+  "guestFavorites": {
+    "badge": "Guest Reviews",
+    "title": "The guest's favorite accommodation",
+    "subtitle": "Real words from travelers who found their perfect stay with SmartStay AI."
+  }
+}

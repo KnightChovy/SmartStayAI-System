@@ -115,6 +115,23 @@ components:
           maxItems: 10
           items: { type: string, format: uri }
 
+    UpdateReviewRequest:
+      type: object
+      minProperties: 1
+      description: All fields optional; at least one required. Sending `images` replaces the whole set.
+      properties:
+        overallRating: { type: integer, minimum: 1, maximum: 5 }
+        cleanlinessRating: { type: integer, minimum: 1, maximum: 5 }
+        serviceRating: { type: integer, minimum: 1, maximum: 5 }
+        locationRating: { type: integer, minimum: 1, maximum: 5 }
+        valueRating: { type: integer, minimum: 1, maximum: 5 }
+        title: { type: string, maxLength: 200, nullable: true }
+        content: { type: string, maxLength: 2000 }
+        images:
+          type: array
+          maxItems: 10
+          items: { type: string, format: uri }
+
     Review:
       type: object
       properties:

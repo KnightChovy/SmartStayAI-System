@@ -133,7 +133,6 @@ export default function CommonNavbar({
                   <ChevronDown className="size-4 text-muted-foreground" />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-60">
-                  {/* Thông tin người dùng */}
                   <div className="flex items-center gap-3 px-2 py-2.5">
                     <Avatar className="size-10 rounded-full bg-surface-container">
                       {user?.avatarUrl ? (
@@ -145,9 +144,9 @@ export default function CommonNavbar({
                       <p className="truncate text-sm font-semibold">
                         {displayName}
                       </p>
-                      {user?.email ? (
+                      {user?.fullName ? (
                         <p className="truncate text-xs text-muted-foreground">
-                          {user.email}
+                          {user.fullName}
                         </p>
                       ) : null}
                     </div>

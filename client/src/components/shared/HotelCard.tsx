@@ -2,7 +2,7 @@ import { Link } from 'react-router';
 import { MapPin } from 'lucide-react';
 import type { HotelSearchResult } from '@/types/hotel.types';
 import { ROUTES } from '@/constants/routes';
-import { formatCurrency } from '@/utils/formatCurrency';
+import { useMoney } from '@/hooks/currency';
 import StarRating from './StarRating';
 
 const FALLBACK_IMAGE =
@@ -16,6 +16,7 @@ interface HotelCardProps {
 
 /** Thẻ khách sạn trong trang kết quả tìm kiếm. */
 export default function HotelCard({ hotel, searchQuery = '' }: HotelCardProps) {
+  const { format } = useMoney();
   const cover = hotel.images?.[0]?.url ?? FALLBACK_IMAGE;
   const detailUrl = `${ROUTES.hotelDetail(hotel.id)}${searchQuery}`;
 
@@ -58,7 +59,7 @@ export default function HotelCard({ hotel, searchQuery = '' }: HotelCardProps) {
           <div>
             <p className="text-xs text-on-surface-variant">From</p>
             <p className="font-be-vietnam text-xl font-bold text-on-surface">
-              {formatCurrency(hotel.minPrice)}
+              {format(hotel.minPrice)}
               <span className="text-sm font-normal text-on-surface-variant"> / night</span>
             </p>
           </div>

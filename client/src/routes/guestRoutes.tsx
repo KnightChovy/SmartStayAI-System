@@ -4,6 +4,7 @@ import HomePage from '@/pages/guest/HomePage';
 import DestinationsPage from '@/pages/guest/DestinationsPage';
 import DealsPage from '@/pages/guest/DealsPage';
 import AccommodationTypesPage from '@/pages/guest/AccommodationTypesPage';
+import PartnerLandingPage from '@/pages/guest/PartnerLandingPage';
 import RoomDetailPage from '@/pages/guest/RoomDetailPage';
 import BookingInformationPage from '@/pages/guest/BookingInformationPage';
 import SearchResultsPage from '@/pages/guest/SearchResultsPage';
@@ -34,6 +35,7 @@ export const guestRoutes: RouteObject[] = [
       { path: 'destinations', element: <DestinationsPage /> },
       { path: 'deals', element: <DealsPage /> },
       { path: 'accommodation-types', element: <AccommodationTypesPage /> },
+      { path: 'list-your-property', element: <PartnerLandingPage /> },
       { path: 'room/executive-penthouse', element: <RoomDetailPage /> },
       { path: 'booking-information', element: <BookingInformationPage /> },
       { path: 'booking', element: <BookingCheckoutPage /> },

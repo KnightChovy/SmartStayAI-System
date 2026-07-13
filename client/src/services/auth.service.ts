@@ -2,6 +2,7 @@ import { api } from '../lib/api';
 import type {
   AuthResponse,
   LoginPayload,
+  RegisterPartnerPayload,
   RegisterPayload,
   ResetPasswordPayload,
 } from '@/types/auth.types';
@@ -14,6 +15,16 @@ export const authService = {
 
   register: async (payload: RegisterPayload) => {
     const response = await api.post('/auth/register', payload);
+    return response.data;
+  },
+
+  registerPartner: async (
+    payload: RegisterPartnerPayload
+  ): Promise<AuthResponse> => {
+    const response = await api.post<AuthResponse>(
+      '/auth/register-partner',
+      payload
+    );
     return response.data;
   },
 

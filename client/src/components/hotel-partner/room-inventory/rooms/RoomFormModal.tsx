@@ -123,7 +123,15 @@ export function RoomFormModal({ open, onClose, hotelId, roomTypes, room }: RoomF
 
           <div className="grid grid-cols-2 gap-4">
             <TextField<RoomFormValues> name="roomNumber" label="Room number" required placeholder="201" />
-            <TextField<RoomFormValues> name="floor" label="Floor" type="number" placeholder="2" />
+            <TextField<RoomFormValues>
+              name="floor"
+              label="Floor"
+              type="number"
+              min={0}
+              max={200}
+              step="1"
+              placeholder="2"
+            />
           </div>
 
           <SelectField<RoomFormValues>

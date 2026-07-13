@@ -56,6 +56,13 @@ export interface RegisterPayload {
   marketingOptIn?: boolean;
 }
 
+export interface RegisterPartnerPayload {
+  email: string;
+  password: string;
+  name: string;
+  verificationCode: string;
+}
+
 export interface LoginPayload {
   email: string;
   password?: string;

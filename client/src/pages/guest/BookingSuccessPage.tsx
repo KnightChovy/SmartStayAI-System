@@ -81,9 +81,7 @@ export default function BookingSuccessPage() {
             </div>
 
             <QRVoucher
-              data={
-                booking?.voucher?.qrData ?? booking?.bookingCode ?? bookingId
-              }
+              data={booking?.voucher?.qrData}
               label={booking?.bookingCode}
             />
           </div>

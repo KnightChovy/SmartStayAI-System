@@ -6,6 +6,15 @@ This file tracks the accomplished tasks, resolved user requests, and visual/func
 
 ## Completed Tasks Checklist
 
+### July 14, 2026
+
+- [x] **Đa ngôn ngữ (i18n vi/en) + đổi tiền tệ VND/USD trên giao diện (LanguageSwitcher + CurrencySwitcher)**:
+  - **Tiền tệ (quy đổi hiển thị, base = VND)**: `stores/currencyStore.ts` (Zustand persist `app-currency`: `currency` + `vndPerUsd` mặc định 25400). `utils/formatCurrency.ts` thêm `formatMoney(vnd, currency, rate)` — BE luôn trả giá VND, USD chỉ chia tỷ giá lúc hiển thị. Hook `hooks/currency/use-money.ts` (`useMoney()` → `{ currency, format }`, tự đọc store). `components/shared/CurrencySwitcher.tsx` (dropdown ₫ VND / $ USD). **Đã migrate giá guest**: `HotelCard`, `RoomTypeCard` dùng `useMoney().format(...)` → đổi tiền tệ là giá tự quy đổi. **Lưu ý**: chỉ đổi hiển thị, booking/VNPay vẫn gửi VND gốc; revenue back-office (partner/manager/admin) giữ `formatCurrency` VND.
+  - **i18n (react-i18next)**: cài `i18next` + `react-i18next` + `i18next-browser-languagedetector`. `src/i18n/index.ts` (detector localStorage `app-lang` → navigator, fallback `vi`, namespace `common`+`auth`), `i18next.d.ts` type-safe key. Locale `src/i18n/locales/{vi,en}/{common,auth}.json`. Import `./i18n` ở `main.tsx`. `components/shared/LanguageSwitcher.tsx` (dropdown VI/EN, `i18n.changeLanguage` tự lưu localStorage).
+  - **Wiring + demo migrate**: guest `components/layout/Navbar.tsx` — thay 2 button tĩnh USD/EN bằng `CurrencySwitcher` + `LanguageSwitcher`, dịch toàn bộ nav (Home/Deals/Destinations/Stays/List your property/Log in/Register/Dashboard/My Account/Log out). Migrate trang partner-signup làm mẫu đầy đủ (`PartnerAccountStep`/`PartnerOtpStep`/`PartnerSignupBrandPanel`, namespace `auth`; `StepBackButton` nhận `label`).
+  - **Chưa làm (mở rộng sau)**: message validation zod và message lỗi API vẫn tiếng Anh (cần map key riêng); các portal partner/manager/admin chưa migrate chữ — chỉ mới common + auth. Tỷ giá đang tĩnh (có thể nối API `/exchange-rate` sau).
+  - `tsc -p tsconfig.app.json --noEmit`: **exit 0, sạch hoàn toàn** cho mọi file mới/đụng tới.
+
 ### July 8, 2026
 
 - [x] **Staff QR check-in (rạp-chiếu-phim style) — sửa data QR sai + thêm quét camera thật trên web**:
@@ -19,6 +28,13 @@ This file tracks the accomplished tasks, resolved user requests, and visual/func
 - [x] **Audit "fix responsive tất cả role" — không tìm thấy bảng nào thiếu responsive**:
   - Rà lại toàn bộ 9 file render `<table>` thật trong `pages/admin|hotel-partner|manager|staff` + component liên quan: **tất cả** đều đã bọc `overflow-x-auto` qua component dùng chung (`AdminTable.tsx`, `DataTable.tsx`) hoặc trực tiếp trong file. Nhận định "6 trang thiếu responsive" từ lần rà soát trước đó là sai (rà theo file riêng lẻ, bỏ sót việc bảng delegate qua wrapper dùng chung). Không sửa gì thêm ở mục này — chưa có bằng chứng cụ thể (màn hình/breakpoint nào đang vỡ) để tránh sửa mò.
 ### July 13, 2026
+
+- [x] **QR check-in — hardening FE để hết "quét not found" (giữ voucherCode, KHÔNG đụng BE/mobile)**:
+  - **Kết luận rà soát**: contract QR check-in đã ĐÚNG và nhất quán ở cả BE + web + mobile — QR mã hoá `voucher.qrData` (`SMARTSTAY|<voucherCode>|<bookingCode>`), staff quét tách `parts[1]`=voucherCode rồi tra `GET /hotels/:id/bookings/lookup?voucherCode=`. BE **chỉ có** endpoint tra theo `voucherCode` (không có lookup theo `bookingCode`), nên hướng "đổi voucherCode→bookingCode" là ngược — sẽ làm hỏng. FE giữ nguyên voucherCode.
+  - **Nguyên nhân "not found"**: booking chưa phát voucher (đơn VNPay chưa thanh toán / data cũ) → `QRVoucher` **fallback về `bookingCode`** sinh ra QR "chết" (quét ra bookingCode → lookup theo voucherCode → 404). (Voucher chỉ phát khi: booking tiền mặt tạo xong, hoặc VNPay thanh toán thành công.)
+  - **Fix (chỉ web client)**: `components/shared/QRVoucher.tsx` — `data` nhận `string | null | undefined`, **bỏ hẳn fallback bookingCode**; khi chưa có `qrData` thì hiện ô thông báo "Mã QR sẽ hiển thị sau khi đơn được xác nhận / thanh toán" thay vì QR không quét được (thêm prop `emptyHint`). `BookingSuccessPage` + `account/BookingDetailPage` giờ chỉ truyền `booking.voucher?.qrData`.
+  - **Test data thật (DB Postgres, mô phỏng đúng thứ mobile làm khi quét)**: script duyệt 8/8 voucher → mọi QR đúng format, `extractVoucherCode(qrData)` (giống hệt mobile `scan.tsx` + web `QrCheckInModal`) == voucherCode, và lookup theo giá trị trích được → ra đúng booking. QR chỉ chứa bookingCode → NOT FOUND (tái hiện đúng lỗi). **8 pass / 0 fail.**
+  - `npx tsc -p tsconfig.app.json --noEmit`: 0 lỗi ở 3 file đụng tới (QRVoucher/BookingSuccessPage/BookingDetailPage); các lỗi còn lại là pre-existing không liên quan.
 
 - [x] **Hotel Partner — nối 3 API per-hotel còn thiếu (`GET /hotels/:id/revenue` + `/wallet` + `/analytics`): biến 2 trang ComingSoon (`/partner/revenue`, `/partner/analytics`) thành trang thật**:
   - **Bối cảnh**: đối chiếu swagger deploy (`/v1/docs`) với client → nhóm per-hotel Revenue/Wallet/Analytics (tag `Revenue`) BE đã có nhưng FE chưa nối; `/partner/revenue` + `/partner/analytics` đang là `ComingSoonPage`.
