@@ -7,9 +7,11 @@ import { Ionicons } from '@expo/vector-icons';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { Redirect, Tabs } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { STAFF_GRADIENT } from '@/constants/staffTheme';
 
-const NAVY = '#0F766E'; // staff-700 — màu thương hiệu portal staff (teal)
+const NAVY = '#0F766E'; // staff-700 — staff portal brand (teal)
 const GRAY = '#9CA3AF';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
@@ -24,15 +26,15 @@ const TAB_CONFIG: Record<
     center?: boolean;
   }
 > = {
+  dashboard: {
+    active: 'grid',
+    inactive: 'grid-outline',
+    label: 'Home',
+  },
   bookings: {
     active: 'calendar',
     inactive: 'calendar-outline',
     label: 'Bookings',
-  },
-  inbox: {
-    active: 'chatbubbles',
-    inactive: 'chatbubbles-outline',
-    label: 'Inbox',
   },
   scan: {
     active: 'qr-code',
@@ -40,7 +42,11 @@ const TAB_CONFIG: Record<
     label: 'Check-in',
     center: true,
   },
-  refunds: { active: 'cash', inactive: 'cash-outline', label: 'Refunds' },
+  inbox: {
+    active: 'chatbubbles',
+    inactive: 'chatbubbles-outline',
+    label: 'Inbox',
+  },
   profile: { active: 'person', inactive: 'person-outline', label: 'Account' },
 };
 
@@ -52,11 +58,16 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
       style={{
         flexDirection: 'row',
         backgroundColor: '#FFFFFF',
-        borderTopWidth: 1,
-        borderTopColor: '#F3F4F6',
-        paddingTop: 8,
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        paddingTop: 10,
         paddingBottom: bottom + 8,
         paddingHorizontal: 8,
+        shadowColor: '#0F172A',
+        shadowOpacity: 0.08,
+        shadowRadius: 16,
+        shadowOffset: { width: 0, height: -6 },
+        elevation: 16,
       }}
     >
       {state.routes.map((route, index) => {
@@ -86,26 +97,28 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
                 justifyContent: 'flex-start',
               }}
             >
-              <View
+              <LinearGradient
+                colors={STAFF_GRADIENT}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
                 style={{
-                  width: 58,
-                  height: 58,
-                  borderRadius: 29,
-                  backgroundColor: NAVY,
+                  width: 60,
+                  height: 60,
+                  borderRadius: 22,
                   alignItems: 'center',
                   justifyContent: 'center',
-                  marginTop: -24,
+                  marginTop: -26,
                   borderWidth: 4,
                   borderColor: '#FFFFFF',
-                  shadowColor: '#000',
-                  shadowOpacity: 0.2,
-                  shadowRadius: 8,
-                  shadowOffset: { width: 0, height: 4 },
-                  elevation: 6,
+                  shadowColor: '#0F766E',
+                  shadowOpacity: 0.4,
+                  shadowRadius: 10,
+                  shadowOffset: { width: 0, height: 5 },
+                  elevation: 8,
                 }}
               >
                 <Ionicons name="qr-code" size={26} color="#FFFFFF" />
-              </View>
+              </LinearGradient>
               <Text
                 style={{
                   fontSize: 11,
@@ -192,10 +205,10 @@ export default function StaffTabsLayout() {
       tabBar={(props) => <CustomTabBar {...props} />}
       screenOptions={{ headerShown: false }}
     >
+      <Tabs.Screen name="dashboard" />
       <Tabs.Screen name="bookings" />
-      <Tabs.Screen name="inbox" />
       <Tabs.Screen name="scan" />
-      <Tabs.Screen name="refunds" />
+      <Tabs.Screen name="inbox" />
       <Tabs.Screen name="profile" />
     </Tabs>
   );

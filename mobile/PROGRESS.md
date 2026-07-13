@@ -151,6 +151,35 @@ This file tracks the accomplished tasks, resolved user requests, and structural/
   - **Wire `(tabs)/profile.tsx`**: chuyển `BENEFIT_ITEMS`/`FINANCE_ITEMS`/`SETTING_ITEMS` từ hằng số tĩnh (không `onPress`) thành mảng dựng trong component (cần `router`), mỗi item trỏ đúng route tương ứng; nút quick-action "SmartStay Plus" → `/profile/rewards`; "Notifications" trỏ thẳng route `/notifications` đã có sẵn từ trước (chỉ chưa được liên kết) — màn này vốn đã lấy dữ liệu thật từ booking, không phải mock.
   - `npx tsc --noEmit`: sạch ở toàn bộ file mới/sửa (chỉ còn các lỗi pre-existing của scaffolding `components/ui/*` gluestack).
 
+### July 13, 2026
+
+- [x] **Đối chiếu Swagger deploy (onrender) — sửa path lấy KS staff cho đúng endpoint BE đã ship**:
+  - Đọc Swagger live `https://smartstayai-system.onrender.com/v1/docs` + route BE đã đồng bộ trong repo. BE **đã bổ sung** endpoint lấy KS staff được phân công, nhưng đặt là **`GET /hotels/staff/mine`** (không phải `/hotels/me/assignments` mà mobile đoán trước đó).
+  - **Fix mismatch**: `staffService.listMyHotels` đổi path `/hotels/me/assignments` → **`/hotels/staff/mine`**. Nhờ đó luồng tự lấy `hotelId` sau login (`useMyStaffHotels` → `staffStore`) chạy thật thay vì 404 rồi rơi về env.
+  - **Đối chiếu đủ 15 API vận hành staff** (bookings list/lookup/detail/check-in/check-out/no-show/record-cash-payment, housekeeping list/complete, rooms list + update-status, conversations list/detail/reply/resolve) — mobile đã wire đủ, method khớp Swagger (check-in/out là POST, housekeeping complete là POST). **Không còn API staff nào thiếu** ở tầng vận hành. Nhóm quản lý tài khoản nhân viên (`GET/POST /hotels/:id/staff`, `GET/DELETE /hotels/:id/staff/:userId`) là của chủ KS/manager (web), ngoài phạm vi app staff mobile.
+  - `npx tsc --noEmit`: sạch (chỉ còn lỗi pre-existing của `components/ui/*`).
+
+- [x] **Fix crash gluestack Input + Camera QR thật cho tab Check-in**:
+  - **Crash "animation style to function component View"**: gluestack `Input`/`Textarea` (`components/ui/input|textarea`) không tương thích css-interop trong setup này (InputGroup truyền animated style vào View thuần). Thay hết bằng `TextInput` thuần + NativeWind (đúng convention `profile/edit.tsx`) ở 4 màn staff: `scan`, `check-in/[id]`, `bookings/[id]`, `conversation/[id]`.
+  - **Camera QR**: cài `expo-camera` (`npx expo install`), thêm plugin + `cameraPermission` vào `app.json`. `scan.tsx` dùng `CameraView` + `useCameraPermissions` + `barcodeScannerSettings={{ barcodeTypes: ['qr'] }}`: xin quyền camera, quét QR trong khung ngắm, khoá `handlingRef` chống bắn trùng. Parse QR backend `SMARTSTAY|<voucherCode>|<bookingCode>` → lấy `voucherCode` (fallback mã trần) rồi gọi `lookupBooking` → mở booking. Vẫn giữ ô nhập tay.
+  - ⚠️ Cần **restart Metro** (`npx expo start -c`) sau khi thêm native module. Camera trên **emulator** là camera ảo, khó quét QR thật → nên test quét trên **máy thật** (Expo Go) hoặc dùng ô nhập mã tay khi chạy emulator.
+  - `npx tsc --noEmit`: sạch ở các màn staff.
+
+- [x] **Refactor UI staff theo chuẩn senior mobile hiện đại + chuyển toàn bộ text sang tiếng Anh**:
+  - **Design system mới**: cài `expo-linear-gradient`. `constants/staffTheme.ts` bổ sung `STAFF_GRADIENT` (teal 3 stop) + `CARD_SHADOW` (elevation mềm) + label trạng thái tiếng Anh + `dot` color cho mỗi status.
+  - **Component dùng chung mới/nâng cấp** (`components/staff/*`): `Card` (surface trắng bo `rounded-3xl` + shadow mềm, chuẩn hoá mọi khối), `FilterChips` (chip lọc đặt trên gradient header), `StatusPill` (thêm chấm màu), `StaffButton` (thêm size sm/md + shadow theo màu cho nút filled + `style` prop), `StaffEmptyState` (icon trong vòng tròn tint), `StaffScreenHeader` (**đổi sang LinearGradient teal**, bo góc dưới 28px, hỗ trợ `children` để nhúng chip/stat + `large` cho hero title), `StaffBookingCard`/`ConversationCard` (avatar chữ cái, divider, icon tint, layout gọn).
+  - **Màn hình**: `bookings`/`inbox` (hero gradient + FilterChips lồng trong header), `bookings/[id]` (hero khách + các Card nhóm thông tin có section title + Card tổng tiền nền teal + action bar), `check-in/[id]` (Card khách + voucher + chọn phòng chip), `conversation/[id]` (bong bóng bo góc bất đối xứng, badge "AI assistant", composer bo tròn nút gửi), `scan` (nền **gradient teal immersive** + khung QR bo 32px), `profile` (avatar bo góc + Card info, hiển thị **tên khách sạn** thật qua `useMyStaffHotels`), `refunds` (empty state).
+  - **Tab bar** (`(staff)/_layout`): bo góc trên + shadow nổi, nút Check-in giữa đổi thành **hình vuông bo góc gradient teal**.
+  - **Toàn bộ chữ hiển thị đã sang tiếng Anh** (labels, filter, empty/error, alert, placeholder). Grep xác nhận không còn chuỗi tiếng Việt trong UI staff (chỉ còn comment code).
+  - `npx tsc --noEmit`: **0 lỗi** ngoài scaffolding `components/ui/*` pre-existing. ⚠️ Vừa thêm native module (`expo-linear-gradient`) → cần **restart Metro** (`npx expo start -c`).
+
+- [x] **Bỏ tab Refunds → thêm Dashboard cho staff (chuẩn senior mobile)**:
+  - **Xoá Refunds**: xoá `(staff)/refunds.tsx` + folder `(staff)/refunds/`, bỏ khỏi tab bar.
+  - **Tab bar mới** (`(staff)/_layout`): thứ tự **Home · Bookings · Check-in (center) · Inbox · Account** (Check-in vẫn ở giữa). `STAFF_HOME` đổi sang `/(staff)/dashboard` — sau login staff vào thẳng dashboard.
+  - **Component KPI mới** (`components/staff/*`): `StatCard` (icon trong ô tint + số lớn + nhãn + tone teal/blue/amber/emerald/rose, optional onPress) và `QuickAction` (tile hành động nhanh + badge số).
+  - **Màn `dashboard.tsx`**: hero gradient (greeting theo giờ + tên nhân viên + tên KS thật + ngày + 2 hero stat *Arrivals today* / *In-house*); hàng **Quick actions** (Check-in / Bookings / Inbox có badge escalated); lưới **Overview** 2×2 (Departures today, Rooms available `free/total`, Rooms to clean, Needs takeover) tính từ `useGetBookings`(confirmed+checked_in), `useHotelRooms`, `useHousekeepingTasks`(pending), `useConversations`(escalated); danh sách **Today's arrivals** (lọc `checkInDate == hôm nay`) dùng `StaffBookingCard`, có pull-to-refresh + empty state. Tiếng Anh toàn bộ.
+  - `npx tsc --noEmit`: 0 lỗi ngoài `components/ui/*`.
+
 ---
 
-_Last Updated: 2026-07-01_
+_Last Updated: 2026-07-13_
