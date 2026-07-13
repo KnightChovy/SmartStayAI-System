@@ -9,13 +9,18 @@ import {
   FilterChips,
 } from '@/components/staff';
 import { useGetBookings, useStaffHotelId } from '@/hooks/staff';
+import { toDateKey, todayKey } from '@/utils/formatDate';
 import type { BookingStatus } from '@/types/bookings.type';
 import type { FilterChip } from '@/components/staff/FilterChips';
+
+/** Chip value = booking status, or the synthetic "checkout_today" bucket. */
+type FilterValue = BookingStatus | 'checkout_today' | undefined;
 
 const FILTERS: FilterChip[] = [
   { label: 'All', value: undefined },
   { label: 'Confirmed', value: 'confirmed' },
   { label: 'Staying', value: 'checked_in' },
+  { label: 'Checkout today', value: 'checkout_today' },
   { label: 'Completed', value: 'checked_out' },
   { label: 'No-show', value: 'no_show' },
 ];
@@ -23,21 +28,33 @@ const FILTERS: FilterChip[] = [
 export default function StaffBookingsScreen() {
   const router = useRouter();
   const hotelId = useStaffHotelId();
-  const [status, setStatus] = useState<BookingStatus | undefined>(undefined);
+  const [filter, setFilter] = useState<FilterValue>(undefined);
 
+  // "Trả phòng hôm nay" chỉ có thể là booking đang ở → lọc theo checked_in rồi
+  // tự lọc tiếp checkOutDate = hôm nay (BE không có filter theo checkOutDate).
+  const status = filter === 'checkout_today' ? 'checked_in' : filter;
   const { data, isLoading, isError, refetch, isRefetching } = useGetBookings(
     hotelId ?? '',
-    { status }
+    { status },
   );
-  const bookings = data?.results ?? [];
+  const bookings =
+    filter === 'checkout_today'
+      ? (data?.results ?? []).filter(
+          (b) => toDateKey(b.checkOutDate) === todayKey(),
+        )
+      : (data?.results ?? []);
 
   return (
     <View className="flex-1 bg-gray-50">
-      <StaffScreenHeader title="Bookings" subtitle="Front desk operations" large>
+      <StaffScreenHeader
+        title="Bookings"
+        subtitle="Front desk operations"
+        large
+      >
         <FilterChips
           options={FILTERS}
-          value={status}
-          onChange={(v) => setStatus(v as BookingStatus | undefined)}
+          value={filter}
+          onChange={(v) => setFilter(v as FilterValue)}
         />
       </StaffScreenHeader>
 

@@ -132,7 +132,7 @@ export default function BookingDetailScreen() {
 
           {booking.status !== 'cancelled' && (
             <View className="items-center pt-4 mt-1 border-t border-dashed border-gray-200">
-              <QRVoucher data={booking.bookingCode} label={booking.bookingCode} />
+              <QRVoucher data={booking.voucher?.qrData ?? booking.bookingCode} label={booking.bookingCode} />
               <Text size="2xs" className="text-gray-400 mt-2">Show this QR code at check-in</Text>
             </View>
           )}

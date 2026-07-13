@@ -177,9 +177,29 @@ This file tracks the accomplished tasks, resolved user requests, and structural/
   - **Xoá Refunds**: xoá `(staff)/refunds.tsx` + folder `(staff)/refunds/`, bỏ khỏi tab bar.
   - **Tab bar mới** (`(staff)/_layout`): thứ tự **Home · Bookings · Check-in (center) · Inbox · Account** (Check-in vẫn ở giữa). `STAFF_HOME` đổi sang `/(staff)/dashboard` — sau login staff vào thẳng dashboard.
   - **Component KPI mới** (`components/staff/*`): `StatCard` (icon trong ô tint + số lớn + nhãn + tone teal/blue/amber/emerald/rose, optional onPress) và `QuickAction` (tile hành động nhanh + badge số).
-  - **Màn `dashboard.tsx`**: hero gradient (greeting theo giờ + tên nhân viên + tên KS thật + ngày + 2 hero stat *Arrivals today* / *In-house*); hàng **Quick actions** (Check-in / Bookings / Inbox có badge escalated); lưới **Overview** 2×2 (Departures today, Rooms available `free/total`, Rooms to clean, Needs takeover) tính từ `useGetBookings`(confirmed+checked_in), `useHotelRooms`, `useHousekeepingTasks`(pending), `useConversations`(escalated); danh sách **Today's arrivals** (lọc `checkInDate == hôm nay`) dùng `StaffBookingCard`, có pull-to-refresh + empty state. Tiếng Anh toàn bộ.
+  - **Màn `dashboard.tsx`**: hero gradient (greeting theo giờ + tên nhân viên + tên KS thật + ngày + 2 hero stat _Arrivals today_ / _In-house_); hàng **Quick actions** (Check-in / Bookings / Inbox có badge escalated); lưới **Overview** 2×2 (Departures today, Rooms available `free/total`, Rooms to clean, Needs takeover) tính từ `useGetBookings`(confirmed+checked_in), `useHotelRooms`, `useHousekeepingTasks`(pending), `useConversations`(escalated); danh sách **Today's arrivals** (lọc `checkInDate == hôm nay`) dùng `StaffBookingCard`, có pull-to-refresh + empty state. Tiếng Anh toàn bộ.
   - `npx tsc --noEmit`: 0 lỗi ngoài `components/ui/*`.
 
 ---
 
 _Last Updated: 2026-07-13_
+
+### July 8, 2026
+
+- [x] **QR check-in thật bằng camera (`expo-camera`) ở tab Scan (thay khung placeholder) + sửa data QR sai**:
+  - **Bug đã fix (đồng bộ với web + backend)**: `QRVoucher` (`booking/success.tsx`, `booking/[id].tsx`) đang mã hoá `booking.bookingCode` — staff quét ra sẽ **không tra được** vì endpoint `GET .../bookings/lookup?voucherCode=` chỉ nhận `voucherCode`. Thêm `BookingVoucherSummary`/`voucher?` vào `types/bookings.type.ts` (khớp backend `bookingInclude` giờ đã include voucher — xem `server` + `client` PROGRESS), đổi cả 2 màn sang `booking.voucher?.qrData ?? booking.bookingCode`.
+  - **Camera thật**: cài `expo-camera` (`npx expo install expo-camera`, ra bản `~17.0.10` khớp SDK 54 thực tế của project — lưu ý AGENTS.md ghi "SDK 56" nhưng `package.json` đang là `~54.0.35`, đã cài đúng theo bản thật). Thêm quyền camera vào `app.json` (`plugins: ["expo-camera", { cameraPermission: "..." }]`) — `npx expo-doctor` 18/18 sạch sau khi thêm.
+  - `(staff)/scan.tsx`: thay khung giữ chỗ bằng `<CameraView>` thật (`useCameraPermissions` xin quyền khi chưa cấp, tap để request; `barcodeScannerSettings={{barcodeTypes:['qr']}}`). `onBarcodeScanned` parse chuỗi quét theo định dạng `SMARTSTAY|<voucherCode>|<bookingCode>` (khớp `BookingVoucher.qrData` BE) lấy `voucherCode`, fallback dùng nguyên chuỗi nếu không đúng định dạng; có khoá `scanLocked` chống bắn trùng khi đang tra cứu, mở khoá lại sau khi tra xong (thành công điều hướng sang booking detail, thất bại hiện Alert rồi mở khoá để quét lại). Ô nhập tay giữ nguyên, dùng chung logic tra cứu.
+  - `npx tsc --noEmit`: 0 lỗi mới ở mọi file đụng tới (chỉ còn lỗi pre-existing của scaffolding `components/ui/*` gluestack).
+
+- [x] **`formatDate` số (dd-MM-yyyy) + fix `StaffBookingCard` bỏ qua formatter**:
+  - Mobile trước đây **chưa có** hàm format ngày dạng số (chỉ có `formatDateShort`/`formatDateLong` dạng chữ "21 Aug 2026") — không phải trùng lặp nên thêm mới `formatDate()` (dd-MM-yyyy) vào `utils/formatDate.ts`, khớp tên + định dạng với `formatDate` bên client (client đổi từ dd/MM/yyyy sang dd-MM-yyyy cùng đợt).
+  - `StaffBookingCard.tsx` trước đó tự `booking.checkInDate.slice(0, 10)` (ra thẳng `yyyy-mm-dd` thô từ ISO, bỏ qua mọi formatter) — đổi sang gọi `formatDate()`.
+
+- [x] **Staff Bookings — thêm bộ lọc "Trả phòng hôm nay" (room lấy theo checkout)**:
+  - `(staff)/bookings.tsx` trước chỉ lọc theo `BookingStatus` thô (Tất cả/Đã xác nhận/Đang ở/Đã trả phòng/No-show), không có cách nào xem nhanh "phòng nào cần trả hôm nay" — khác biệt so với web `FrontDeskPage` vốn đã có bucket "Departing today". Backend không filter được theo `checkOutDate` (chỉ filter `checkInDate`), nên thêm filter client-side: chip mới **"Trả phòng hôm nay"** gọi API với `status=checked_in` rồi tự lọc tiếp `toDateKey(checkOutDate) === todayKey()`.
+  - `npx tsc --noEmit`: sạch ở file đã sửa.
+
+---
+
+_Last Updated: 2026-07-08_

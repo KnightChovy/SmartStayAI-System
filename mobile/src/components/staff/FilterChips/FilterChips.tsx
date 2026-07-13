@@ -29,7 +29,7 @@ export function FilterChips({ options, value, onChange }: FilterChipsProps) {
             onPress={() => onChange(opt.value)}
             className={cn(
               'rounded-full px-4 py-2 border',
-              active ? 'bg-white border-white' : 'bg-white/10 border-white/25'
+              active ? 'bg-white border-white' : 'bg-white/10 border-white/25',
             )}
           >
             <Text

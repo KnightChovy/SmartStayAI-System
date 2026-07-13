@@ -56,7 +56,8 @@ export function StaffBookingCard({ booking, onPress }: StaffBookingCardProps) {
         <View className="flex-row items-center gap-1.5">
           <Ionicons name="calendar-outline" size={15} color="#0F766E" />
           <Text size="sm" className="text-gray-600">
-            {formatDateShort(booking.checkInDate)} → {formatDateShort(booking.checkOutDate)}
+            {formatDateShort(booking.checkInDate)} →{' '}
+            {formatDateShort(booking.checkOutDate)}
             {'  ·  '}
             {booking.numNights} night{booking.numNights > 1 ? 's' : ''}
           </Text>

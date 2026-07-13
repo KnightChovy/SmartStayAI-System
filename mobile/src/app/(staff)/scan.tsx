@@ -50,7 +50,10 @@ export default function StaffScanScreen() {
       },
       onError: () => {
         handlingRef.current = false;
-        Alert.alert('Not found', 'No booking at this hotel matches that voucher code.');
+        Alert.alert(
+          'Not found',
+          'No booking at this hotel matches that voucher code.',
+        );
       },
     });
   }
@@ -76,10 +79,19 @@ export default function StaffScanScreen() {
   const granted = permission?.granted ?? false;
 
   return (
-    <LinearGradient colors={STAFF_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ flex: 1 }}>
+    <LinearGradient
+      colors={STAFF_GRADIENT}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={{ flex: 1 }}
+    >
       <SafeAreaView className="flex-1" edges={['top']}>
         <ScrollView
-          contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 24, paddingBottom: 32 }}
+          contentContainerStyle={{
+            paddingHorizontal: 24,
+            paddingTop: 24,
+            paddingBottom: 32,
+          }}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
@@ -89,7 +101,8 @@ export default function StaffScanScreen() {
             Check-in
           </Heading>
           <Text className="text-teal-50/90 mt-1">
-            Scan the guest QR or enter the e-voucher code to pull up their booking.
+            Scan the guest QR or enter the e-voucher code to pull up their
+            booking.
           </Text>
 
           {/* Camera / QR scanner — khung vuông nhỏ, căn giữa */}
@@ -103,12 +116,21 @@ export default function StaffScanScreen() {
                   style={StyleSheet.absoluteFill}
                   facing="back"
                   barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
-                  onBarcodeScanned={lookup.isPending ? undefined : handleScanned}
+                  onBarcodeScanned={
+                    lookup.isPending ? undefined : handleScanned
+                  }
                 />
               ) : (
                 <View className="flex-1 items-center justify-center px-4">
-                  <Ionicons name="camera-outline" size={52} color="rgba(255,255,255,0.7)" />
-                  <Text size="xs" className="text-teal-50 text-center mt-2 leading-4">
+                  <Ionicons
+                    name="camera-outline"
+                    size={52}
+                    color="rgba(255,255,255,0.7)"
+                  />
+                  <Text
+                    size="xs"
+                    className="text-teal-50 text-center mt-2 leading-4"
+                  >
                     {permission && !permission.canAskAgain
                       ? 'Camera is blocked. Enable it in Settings.'
                       : 'Camera access is needed to scan QR codes.'}
