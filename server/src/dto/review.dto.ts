@@ -15,6 +15,22 @@ export interface CreateReviewDto {
   images?: string[];
 }
 
+/**
+ * Payload khách sửa lại đánh giá của CHÍNH mình. Mọi trường đều tuỳ chọn (sửa phần nào gửi phần đó),
+ * nhưng phải có ít nhất một trường. bookingId/hotelId/status KHÔNG cho sửa. Khi gửi `images` (kể cả
+ * mảng rỗng) server thay toàn bộ ảnh hiện có bằng danh sách mới.
+ */
+export interface UpdateReviewDto {
+  overallRating?: number;
+  cleanlinessRating?: number;
+  serviceRating?: number;
+  locationRating?: number;
+  valueRating?: number;
+  title?: string | null;
+  content?: string;
+  images?: string[];
+}
+
 /** Bộ lọc khi liệt kê đánh giá công khai của một khách sạn. */
 export interface ReviewFilter {
   hotelId: string;

@@ -4,7 +4,13 @@ import type { User } from '@prisma/client';
 import prisma from '../config/prisma';
 import ApiError from '../utils/ApiError';
 import { hotelService } from './hotel.service';
-import type { CreateReviewDto, ReviewFilter, PartnerReviewFilter, ReviewQueryOptions } from '../dto/review.dto';
+import type {
+  CreateReviewDto,
+  UpdateReviewDto,
+  ReviewFilter,
+  PartnerReviewFilter,
+  ReviewQueryOptions,
+} from '../dto/review.dto';
 
 // Quan hệ kèm theo khi trả review về client (kèm người viết + ảnh)
 const reviewInclude = {
@@ -109,6 +115,51 @@ export class ReviewService {
     ]);
 
     return { results, page, limit, totalPages: Math.ceil(totalResults / limit), totalResults };
+  };
+
+  /**
+   * Khách sửa lại đánh giá của CHÍNH mình. Chỉ chủ đánh giá mới sửa được (kiểm bằng customerId).
+   * Cho sửa điểm/tiêu đề/nội dung/ảnh; KHÔNG cho đổi booking/khách sạn/trạng thái. Khi client gửi
+   * `images` (kể cả mảng rỗng) thì thay toàn bộ ảnh cũ bằng danh sách mới trong cùng một lần cập nhật.
+   */
+  updateMyReview = async (currentUser: User, reviewId: string, payload: UpdateReviewDto) => {
+    const review = await prisma.review.findUnique({
+      where: { id: reviewId },
+      select: { id: true, customerId: true },
+    });
+    if (!review || review.customerId !== currentUser.id) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy đánh giá của bạn');
+    }
+
+    const data: Prisma.ReviewUpdateInput = {
+      ...(payload.overallRating !== undefined && { overallRating: payload.overallRating }),
+      ...(payload.cleanlinessRating !== undefined && { cleanlinessRating: payload.cleanlinessRating }),
+      ...(payload.serviceRating !== undefined && { serviceRating: payload.serviceRating }),
+      ...(payload.locationRating !== undefined && { locationRating: payload.locationRating }),
+      ...(payload.valueRating !== undefined && { valueRating: payload.valueRating }),
+      ...(payload.title !== undefined && { title: payload.title || null }),
+      ...(payload.content !== undefined && { content: payload.content }),
+      ...(payload.images !== undefined && {
+        images: { deleteMany: {}, create: payload.images.map((url) => ({ url })) },
+      }),
+    };
+
+    return prisma.review.update({ where: { id: reviewId }, data, include: myReviewInclude });
+  };
+
+  /**
+   * Khách xoá đánh giá của CHÍNH mình. Chỉ chủ đánh giá mới xoá được. Ảnh kèm theo tự xoá theo
+   * ràng buộc onDelete: Cascade trên ReviewImage.
+   */
+  deleteMyReview = async (currentUser: User, reviewId: string) => {
+    const review = await prisma.review.findUnique({
+      where: { id: reviewId },
+      select: { id: true, customerId: true },
+    });
+    if (!review || review.customerId !== currentUser.id) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy đánh giá của bạn');
+    }
+    await prisma.review.delete({ where: { id: reviewId } });
   };
 
   /**

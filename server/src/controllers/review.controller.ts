@@ -27,6 +27,18 @@ export class ReviewController {
     res.send(result);
   });
 
+  // Khách sửa đánh giá của chính mình
+  updateMyReview = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const review = await reviewService.updateMyReview(req.user as User, req.params.reviewId as string, req.body);
+    res.send(review);
+  });
+
+  // Khách xoá đánh giá của chính mình
+  deleteMyReview = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    await reviewService.deleteMyReview(req.user as User, req.params.reviewId as string);
+    res.status(httpStatus.NO_CONTENT).send();
+  });
+
   // [Partner] Đánh giá của chính khách sạn mình (mọi trạng thái)
   getHotelReviewsForPartner = catchAsync(async (req: Request, res: Response): Promise<void> => {
     const filter = pick(req.query, ['status']);
