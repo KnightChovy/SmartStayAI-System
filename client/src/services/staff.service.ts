@@ -1,6 +1,4 @@
-import type { AxiosRequestConfig } from 'axios';
 import { api } from '@/lib/api';
-import type { Paginated } from '@/types/api.types';
 import type {
   CheckInPayload,
   CheckOutPayload,
@@ -16,14 +14,6 @@ import type {
   StaffRoom,
   StaffRoomsResponse,
 } from '@/types/staff.types';
-
-/**
- * Axios config that sets the interceptor's `_retry` flag (see `lib/api.ts`). On a 401/403 the
- * shared response interceptor normally tries to refresh the token (and can log the user out on
- * repeated failures). For the hotel-access probes below, 403 is an EXPECTED answer, so we set
- * `_retry: true` to make the interceptor skip its refresh branch and just reject cleanly.
- */
-const skipAuthRetry = { _retry: true } as unknown as AxiosRequestConfig;
 
 /** Drop empty fields from the query string. */
 function cleanParams<T extends object>(params: T): Record<string, unknown> {
@@ -41,29 +31,15 @@ function cleanParams<T extends object>(params: T): Record<string, unknown> {
  */
 export const staffService = {
   /**
-   * Hotels the logged-in staff member can actually operate.
+   * Hotels the logged-in staff member is assigned to (`GET /hotels/staff/mine`).
    *
-   * The backend exposes no endpoint that lists a staff member's assigned hotels (and we can't add
-   * one), so we discover them client-side: list the public hotels, then probe each staff-operable
-   * endpoint (guarded by `getOperableHotel`) and keep only the ones that don't return 403. The
-   * probes use `skipAuthRetry` so the expected 403s never trigger the token-refresh interceptor.
+   * Backend đọc staff id từ access token và trả về các khách sạn đang được phân công
+   * (`hotel_staff_assignments`, `unassignedAt = null`), kèm ảnh primary + `_count` loại phòng/phòng.
+   * Trả cả khách sạn chưa mở bán — đúng hơn cách probe cũ (vốn chỉ thấy khách sạn public).
    */
   async listMyHotels(): Promise<StaffHotel[]> {
-    const { data } = await api.get<Paginated<StaffHotel>>('/hotels', {
-      params: { limit: 100 },
-    });
-    const hotels = data.results;
-
-    const probes = await Promise.allSettled(
-      hotels.map(hotel =>
-        api.get(`/hotels/${hotel.id}/bookings`, {
-          params: { limit: 1 },
-          ...skipAuthRetry,
-        })
-      )
-    );
-
-    return hotels.filter((_, i) => probes[i].status === 'fulfilled');
+    const { data } = await api.get<StaffHotel[]>('/hotels/staff/mine');
+    return data;
   },
 
   // ----- Booking / front desk -----
