@@ -18,6 +18,7 @@ import PriceSummary from '@/components/shared/PriceSummary';
 import QRVoucher from '@/components/shared/QRVoucher';
 import DateRangePicker from '@/components/shared/DateRangePicker';
 import GuestSelector from '@/components/shared/GuestSelector';
+import ReviewModal from '@/components/account/ReviewModal';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { formatDateShort } from '@/utils/formatDate';
@@ -50,6 +51,7 @@ export default function BookingDetailPage() {
   const [modifyRange, setModifyRange] = useState({ checkIn: '', checkOut: '' });
   const [modifyGuests, setModifyGuests] = useState(1);
   const [modifySent, setModifySent] = useState(false);
+  const [showReview, setShowReview] = useState(false);
 
   if (isLoading) {
     return <Skeleton className="h-96 w-full rounded-3xl" />;
@@ -185,11 +187,11 @@ export default function BookingDetailPage() {
             )}
             {canReview && (
               <Button
-                asChild
                 size="lg"
                 className="bg-on-surface text-white hover:bg-primary"
+                onClick={() => setShowReview(true)}
               >
-                <Link to={ROUTES.accountReviews}>Write a review</Link>
+                <PencilLine className="size-4" /> Write a review
               </Button>
             )}
           </div>
@@ -327,6 +329,17 @@ export default function BookingDetailPage() {
             </div>
           )}
         </div>
+
+        {/* Write review modal (mở ngay tại trang, điền sẵn hotel + booking code) */}
+        {canReview && (
+          <ReviewModal
+            open={showReview}
+            onClose={() => setShowReview(false)}
+            bookingId={booking.id}
+            hotelName={booking.hotel?.name ?? 'Hotel'}
+            bookingCode={booking.bookingCode}
+          />
+        )}
 
         {/* Sidebar: price + voucher */}
         <aside className="lg:w-80 lg:shrink-0">
