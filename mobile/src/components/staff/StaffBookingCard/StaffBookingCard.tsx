@@ -3,6 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Text } from '@/components/ui/text';
 import { BookingStatusBadge } from '@/components/shared/BookingStatusBadge';
 import { formatVnd } from '@/utils/formatCurrency';
+import { formatDate } from '@/utils/formatDate';
 import type { StaffBooking } from '@/types/staff.type';
 
 export interface StaffBookingCardProps {
@@ -45,7 +46,7 @@ export function StaffBookingCard({ booking, onPress }: StaffBookingCardProps) {
       <View className="flex-row items-center gap-1.5 mb-1.5">
         <Ionicons name="calendar-outline" size={14} color="#6B7280" />
         <Text size="sm" className="text-gray-600">
-          {booking.checkInDate.slice(0, 10)} → {booking.checkOutDate.slice(0, 10)} ·{' '}
+          {formatDate(booking.checkInDate)} → {formatDate(booking.checkOutDate)} ·{' '}
           {booking.numNights} đêm
         </Text>
       </View>
