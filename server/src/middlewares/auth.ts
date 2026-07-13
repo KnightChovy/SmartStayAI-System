@@ -34,4 +34,18 @@ const auth =
       .catch((err) => next(err));
   };
 
+/**
+ * Xác thực TUỲ CHỌN: nếu request kèm JWT hợp lệ thì gắn `req.user`; nếu thiếu/không hợp lệ/hết hạn
+ * thì KHÔNG chặn — cho đi tiếp như KHÁCH VÃNG LAI (`req.user` để trống). Dùng cho chatbot: khách chưa
+ * đăng nhập vẫn hỏi được (chế độ chỉ-đọc), khách đã đăng nhập có thêm quyền tra đơn/đặt/huỷ phòng.
+ */
+export const optionalAuth = (req: Request, res: Response, next: NextFunction): void => {
+  passport.authenticate('jwt', { session: false }, (_err: Error | null, user: User | false): void => {
+    if (user) {
+      req.user = user;
+    }
+    next();
+  })(req, res, next);
+};
+
 export default auth;

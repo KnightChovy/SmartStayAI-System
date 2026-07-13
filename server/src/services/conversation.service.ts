@@ -35,6 +35,10 @@ const HANDOFF_NOTICE = 'Cảm ơn bạn, yêu cầu đang được chuyển tớ
 // đúng cả khi khách cố "bẻ" lời nhắc hệ thống (vì nó chặn theo SỐ LƯỢT, không phụ thuộc nội dung).
 const DAILY_AI_MESSAGE_LIMIT = 50;
 
+// Khách VÃNG LAI không có danh tính để đếm theo ngày ⇒ chặn theo TỪNG hội thoại (cộng với rate-limit
+// theo IP ở tầng route). Đặt thấp hơn: khách chưa đăng nhập chỉ nên hỏi-đáp tư vấn, không thao tác đơn.
+const GUEST_CONVERSATION_MESSAGE_LIMIT = 20;
+
 // #1: cache embedding FAQ theo hotelId — embed 1 lần rồi dùng lại (tránh embed lại 31 câu mỗi tin).
 //     Lưu ý: nếu FAQ của KS đổi giữa lúc server đang chạy, cache sẽ cũ tới khi restart.
 const faqEmbedCache = new Map<string, { question: string; answer: string; vector: number[] }[]>();
@@ -49,7 +53,8 @@ export class ConversationService {
       checkInTime: string | null;
       checkOutTime: string | null;
     },
-    faqs: { question: string; answer: string }[]
+    faqs: { question: string; answer: string }[],
+    isAuthenticated: boolean
   ): string => {
     const lines = [
       `Bạn là trợ lý ảo của khách sạn "${hotel.name}" tại ${hotel.city}.`,
@@ -62,15 +67,26 @@ export class ConversationService {
       lines.push('', 'Câu hỏi thường gặp của khách sạn (ưu tiên dùng để trả lời):');
       faqs.forEach((f) => lines.push(`- Hỏi: ${f.question} → Đáp: ${f.answer}`));
     }
-    // Luật cho HÀNH ĐỘNG GHI (đặt/huỷ): bắt buộc 2 bước có CỔNG XÁC NHẬN để không đặt/huỷ nhầm cho khách
-    lines.push(
-      '',
-      'Bạn CÓ THỂ giúp khách ĐẶT PHÒNG và HUỶ PHÒNG (không chỉ tư vấn). Quy trình BẮT BUỘC:',
-      '1) Gọi prepare_booking (đặt) hoặc prepare_cancellation (huỷ) để lấy TÓM TẮT — bước này CHƯA thay đổi gì thật.',
-      '2) Đọc tóm tắt cho khách và HỎI khách có đồng ý không.',
-      '3) CHỈ khi khách đồng ý rõ ràng ở lượt sau (vâng/ok/đặt đi/huỷ đi...) mới gọi confirm_action (không cần tham số) để thực hiện.',
-      'TUYỆT ĐỐI không gọi confirm_action khi khách chưa đồng ý. Mỗi lần đặt/huỷ phải prepare lại trước.'
-    );
+    if (isAuthenticated) {
+      // Luật cho HÀNH ĐỘNG GHI (đặt/huỷ): bắt buộc 2 bước có CỔNG XÁC NHẬN để không đặt/huỷ nhầm cho khách
+      lines.push(
+        '',
+        'Bạn CÓ THỂ giúp khách ĐẶT PHÒNG và HUỶ PHÒNG (không chỉ tư vấn). Quy trình BẮT BUỘC:',
+        '1) Gọi prepare_booking (đặt) hoặc prepare_cancellation (huỷ) để lấy TÓM TẮT — bước này CHƯA thay đổi gì thật.',
+        '2) Đọc tóm tắt cho khách và HỎI khách có đồng ý không.',
+        '3) CHỈ khi khách đồng ý rõ ràng ở lượt sau (vâng/ok/đặt đi/huỷ đi...) mới gọi confirm_action (không cần tham số) để thực hiện.',
+        'TUYỆT ĐỐI không gọi confirm_action khi khách chưa đồng ý. Mỗi lần đặt/huỷ phải prepare lại trước.'
+      );
+    } else {
+      // Khách CHƯA đăng nhập: chỉ được tư vấn. Đặt/huỷ/tra đơn cần danh tính ⇒ mời khách đăng nhập,
+      // không được hứa hay tự thực hiện (các tool đó cũng KHÔNG được cấp cho khách vãng lai).
+      lines.push(
+        '',
+        'Khách hiện CHƯA ĐĂNG NHẬP. Bạn chỉ tư vấn: phòng trống, giá, tiện nghi, thông tin & chính sách khách sạn.',
+        'Nếu khách muốn ĐẶT PHÒNG, HUỶ PHÒNG hoặc TRA CỨU ĐƠN của họ, hãy LỊCH SỰ mời khách ĐĂNG NHẬP/ĐĂNG KÝ trước — ' +
+          'bạn KHÔNG tự làm và KHÔNG hứa làm các việc này cho khách chưa đăng nhập.'
+      );
+    }
     // Rào phạm vi: giữ bot đúng việc khách sạn, chống bị "mượn" làm trợ lý đa năng đốt quota API key.
     lines.push(
       '',
@@ -114,7 +130,9 @@ export class ConversationService {
   };
 
   // (B) Khai báo các tool chatbot được phép gọi — ĐÓNG KÍN theo hotelId + currentUser (bảo mật)
-  private buildTools = (hotelId: string, currentUser: User, conversationId: string): AiTool[] => [
+  private buildTools = (hotelId: string, currentUser: User | null, conversationId: string): AiTool[] => {
+    // Tool CÔNG KHAI: khách vãng lai cũng dùng được — chỉ ĐỌC thông tin công khai, không đụng dữ liệu cá nhân.
+    const publicTools: AiTool[] = [
     {
       name: 'search_rooms',
       description:
@@ -147,37 +165,6 @@ export class ConversationService {
             : `- ${rt.name}: hết phòng`;
         });
         return lines.join('\n');
-      },
-    },
-    {
-      name: 'get_booking_status',
-      description:
-        'Tra trạng thái một booking của khách theo mã booking (bookingCode). ' +
-        'Gọi khi khách hỏi về tình trạng đặt phòng / đơn của họ.',
-      parameters: {
-        type: 'object',
-        properties: {
-          bookingCode: { type: 'string', description: 'Mã booking, ví dụ BK1A2B3C' },
-        },
-        required: ['bookingCode'],
-      },
-      execute: async (args) => {
-        // Chỉ tra booking CỦA CHÍNH khách này tại đúng khách sạn này (bảo mật)
-        const booking = await prisma.booking.findFirst({
-          where: { bookingCode: String(args.bookingCode), hotelId, customerId: currentUser.id },
-          include: { roomType: { select: { name: true } } },
-        });
-        if (!booking) {
-          return 'Không tìm thấy booking với mã này (hoặc không thuộc về bạn).';
-        }
-        const fmt = (d: Date) => d.toISOString().slice(0, 10);
-        return [
-          `Mã: ${booking.bookingCode}`,
-          `Trạng thái: ${booking.status}`,
-          `Loại phòng: ${booking.roomType.name}`,
-          `Nhận: ${fmt(booking.checkInDate)} → Trả: ${fmt(booking.checkOutDate)}`,
-          `Tổng tiền: ${booking.totalAmount} VND`,
-        ].join('\n');
       },
     },
     {
@@ -229,6 +216,46 @@ export class ConversationService {
           data: { status: 'escalated' },
         });
         return `Đã chuyển cuộc trò chuyện cho lễ tân (lý do: ${String(args.reason)}). Nhân viên sẽ liên hệ với bạn sớm.`;
+      },
+    },
+    ];
+
+    // Chưa đăng nhập ⇒ dừng ở đây: các việc dưới (tra đơn, đặt, huỷ) cần danh tính khách.
+    if (!currentUser) {
+      return publicTools;
+    }
+
+    // Tool THÀNH VIÊN: chỉ khách đã đăng nhập — thao tác trên dữ liệu cá nhân (đơn của chính họ).
+    const memberTools: AiTool[] = [
+    {
+      name: 'get_booking_status',
+      description:
+        'Tra trạng thái một booking của khách theo mã booking (bookingCode). ' +
+        'Gọi khi khách hỏi về tình trạng đặt phòng / đơn của họ.',
+      parameters: {
+        type: 'object',
+        properties: {
+          bookingCode: { type: 'string', description: 'Mã booking, ví dụ BK1A2B3C' },
+        },
+        required: ['bookingCode'],
+      },
+      execute: async (args) => {
+        // Chỉ tra booking CỦA CHÍNH khách này tại đúng khách sạn này (bảo mật)
+        const booking = await prisma.booking.findFirst({
+          where: { bookingCode: String(args.bookingCode), hotelId, customerId: currentUser.id },
+          include: { roomType: { select: { name: true } } },
+        });
+        if (!booking) {
+          return 'Không tìm thấy booking với mã này (hoặc không thuộc về bạn).';
+        }
+        const fmt = (d: Date) => d.toISOString().slice(0, 10);
+        return [
+          `Mã: ${booking.bookingCode}`,
+          `Trạng thái: ${booking.status}`,
+          `Loại phòng: ${booking.roomType.name}`,
+          `Nhận: ${fmt(booking.checkInDate)} → Trả: ${fmt(booking.checkOutDate)}`,
+          `Tổng tiền: ${booking.totalAmount} VND`,
+        ].join('\n');
       },
     },
     {
@@ -383,24 +410,40 @@ export class ConversationService {
         }
       },
     },
-  ];
+    ];
 
-  // Chặn khi khách đã dùng hết hạn mức tin/ngày. Đếm tin do CHÍNH khách gửi trong hôm nay (mọi hội thoại).
-  private assertWithinDailyQuota = async (userId: string): Promise<void> => {
-    const startOfDay = new Date();
-    startOfDay.setHours(0, 0, 0, 0);
-    const usedToday = await prisma.message.count({
-      where: { senderType: 'user', senderId: userId, createdAt: { gte: startOfDay } },
+    return [...publicTools, ...memberTools];
+  };
+
+  // Chặn khi khách đã dùng hết hạn mức. Khách ĐÃ ĐĂNG NHẬP: đếm theo tài khoản trong hôm nay (mọi hội thoại).
+  // Khách VÃNG LAI: không có danh tính ⇒ đếm theo TỪNG hội thoại (cộng với rate-limit theo IP ở tầng route).
+  private assertWithinQuota = async (currentUser: User | null, conversationId: string): Promise<void> => {
+    if (currentUser) {
+      const startOfDay = new Date();
+      startOfDay.setHours(0, 0, 0, 0);
+      const usedToday = await prisma.message.count({
+        where: { senderType: 'user', senderId: currentUser.id, createdAt: { gte: startOfDay } },
+      });
+      if (usedToday >= DAILY_AI_MESSAGE_LIMIT) {
+        throw new ApiError(
+          httpStatus.TOO_MANY_REQUESTS,
+          'Bạn đã đạt giới hạn tin nhắn với trợ lý trong hôm nay. Vui lòng thử lại vào ngày mai hoặc liên hệ lễ tân.'
+        );
+      }
+      return;
+    }
+    const usedInConversation = await prisma.message.count({
+      where: { conversationId, senderType: 'user' },
     });
-    if (usedToday >= DAILY_AI_MESSAGE_LIMIT) {
+    if (usedInConversation >= GUEST_CONVERSATION_MESSAGE_LIMIT) {
       throw new ApiError(
         httpStatus.TOO_MANY_REQUESTS,
-        'Bạn đã đạt giới hạn tin nhắn với trợ lý trong hôm nay. Vui lòng thử lại vào ngày mai hoặc liên hệ lễ tân.'
+        'Cuộc trò chuyện đã đạt giới hạn tin nhắn cho khách chưa đăng nhập. Vui lòng ĐĂNG NHẬP để tiếp tục hoặc liên hệ lễ tân.'
       );
     }
   };
 
-  sendMessage = async (hotelId: string, conversationId: string | undefined, currentUser: User, text: string) => {
+  sendMessage = async (hotelId: string, conversationId: string | undefined, currentUser: User | null, text: string) => {
     // (1) Tìm khách sạn
     const hotel = await prisma.hotel.findFirst({
       where: { id: hotelId, deletedAt: null },
@@ -410,27 +453,29 @@ export class ConversationService {
       throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy khách sạn');
     }
 
-    // (2) Lấy hội thoại cũ, hoặc tạo mới nếu chưa có
+    // (2) Lấy hội thoại cũ, hoặc tạo mới nếu chưa có. Lọc theo userId (null cho khách vãng lai) để
+    //     khách chưa đăng nhập KHÔNG nối tiếp được hội thoại của một tài khoản (và ngược lại).
+    const ownerId = currentUser?.id ?? null;
     let conversation = conversationId
-      ? await prisma.conversation.findFirst({ where: { id: conversationId, hotelId, userId: currentUser.id } })
+      ? await prisma.conversation.findFirst({ where: { id: conversationId, hotelId, userId: ownerId } })
       : null;
     if (!conversation) {
       conversation = await prisma.conversation.create({
-        data: { hotelId, userId: currentUser.id, channel: 'chatbot', status: 'active' },
+        data: { hotelId, userId: ownerId, channel: 'chatbot', status: 'active' },
       });
     }
 
-    // Trần cứng theo ngày: chỉ áp cho lượt CẦN gọi AI ('escalated' không tốn LLM, xử lý ở (3b))
+    // Trần cứng: chỉ áp cho lượt CẦN gọi AI ('escalated' không tốn LLM, xử lý ở (3b))
     if (conversation.status !== 'escalated') {
-      await this.assertWithinDailyQuota(currentUser.id);
+      await this.assertWithinQuota(currentUser, conversation.id);
     }
 
-    // (3) Lưu tin nhắn của khách
+    // (3) Lưu tin nhắn của khách (senderId null cho khách vãng lai)
     await prisma.message.create({
       data: {
         conversationId: conversation.id,
         senderType: 'user',
-        senderId: currentUser.id,
+        senderId: ownerId,
         content: text,
         messageType: 'text',
       },
@@ -461,7 +506,7 @@ export class ConversationService {
       // RAG: chọn vài FAQ gần nghĩa nhất với câu khách vừa hỏi (thay vì nhét toàn bộ)
       const topFaqs = await this.retrieveFaqs(hotelId, text, hotel.faqKnowledge);
       reply = await aiProvider.chatWithTools(
-        this.buildSystemPrompt(hotel, topFaqs),
+        this.buildSystemPrompt(hotel, topFaqs, !!currentUser),
         messages,
         this.buildTools(hotelId, currentUser, conversation.id)
       );
@@ -485,7 +530,7 @@ export class ConversationService {
   streamMessage = async (
     hotelId: string,
     conversationId: string | undefined,
-    currentUser: User,
+    currentUser: User | null,
     text: string
   ): Promise<{ conversationId: string; stream: AsyncGenerator<string> }> => {
     // (1)-(4): y hệt sendMessage — tìm KS+FAQ, lấy/tạo hội thoại, lưu tin khách, đọc lịch sử
@@ -497,22 +542,24 @@ export class ConversationService {
       throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy khách sạn');
     }
 
+    // userId null cho khách vãng lai — không nối tiếp được hội thoại của tài khoản khác (xem sendMessage)
+    const ownerId = currentUser?.id ?? null;
     let conversation = conversationId
-      ? await prisma.conversation.findFirst({ where: { id: conversationId, hotelId, userId: currentUser.id } })
+      ? await prisma.conversation.findFirst({ where: { id: conversationId, hotelId, userId: ownerId } })
       : null;
     if (!conversation) {
       conversation = await prisma.conversation.create({
-        data: { hotelId, userId: currentUser.id, channel: 'chatbot', status: 'active' },
+        data: { hotelId, userId: ownerId, channel: 'chatbot', status: 'active' },
       });
     }
 
-    // Trần cứng theo ngày: chỉ áp cho lượt CẦN gọi AI ('escalated' không tốn LLM, xử lý ở (3b))
+    // Trần cứng: chỉ áp cho lượt CẦN gọi AI ('escalated' không tốn LLM, xử lý ở (3b))
     if (conversation.status !== 'escalated') {
-      await this.assertWithinDailyQuota(currentUser.id);
+      await this.assertWithinQuota(currentUser, conversation.id);
     }
 
     await prisma.message.create({
-      data: { conversationId: conversation.id, senderType: 'user', senderId: currentUser.id, content: text, messageType: 'text' },
+      data: { conversationId: conversation.id, senderType: 'user', senderId: ownerId, content: text, messageType: 'text' },
     });
 
     // (3b) BÀN GIAO: hội thoại 'escalated' ⇒ bot im, chỉ phát một mẩu báo chờ nhân viên (xem sendMessage)
@@ -538,7 +585,7 @@ export class ConversationService {
 
     // (5) chuẩn bị sẵn prompt + tools để generator dùng
     const topFaqs = await this.retrieveFaqs(hotelId, text, hotel.faqKnowledge);
-    const systemPrompt = this.buildSystemPrompt(hotel, topFaqs);
+    const systemPrompt = this.buildSystemPrompt(hotel, topFaqs, !!currentUser);
     const tools = this.buildTools(hotelId, currentUser, conversation.id);
     const convId = conversation.id;
 
