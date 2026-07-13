@@ -1,12 +1,24 @@
-import type { ComponentType } from 'react';
-import { Link } from 'react-router';
+import { useMemo, type ComponentType } from 'react';
+import { Link, useNavigate } from 'react-router';
 import { LogIn, LogOut, BedDouble, Clock, ArrowRight } from 'lucide-react';
 import { useHotelBookings } from '@/hooks/staff';
 import { useStaffHotelStore } from '@/stores/staffHotelStore';
 import { BookingStatusBadge } from '@/components/staff/StatusBadge';
+import { DataTable, type Column } from '@/components/hotel-partner/shared/DataTable';
+import { TableSkeleton } from '@/components/shared/skeletons';
+import { Skeleton } from '@/components/ui/skeleton';
+import { ChartCard, ChartEmpty } from '@/components/staff/dashboard/ChartCard';
+import { RevenueBookingsChart } from '@/components/staff/dashboard/RevenueBookingsChart';
+import { BookingStatusDonut } from '@/components/staff/dashboard/BookingStatusDonut';
+import { BookingsByRoomTypeChart } from '@/components/staff/dashboard/BookingsByRoomTypeChart';
+import {
+  buildDailySeries,
+  buildStatusSlices,
+  buildRoomTypeBars,
+} from '@/components/staff/dashboard/helpers';
 import type { HotelBooking } from '@/types/staff.types';
 import { ROUTES } from '@/constants/routes';
-import { formatDateShort } from '@/utils/formatDate';
+import { formatDate } from '@/utils/formatDate';
 
 /** Same day (compares the date part, ignoring time). */
 function isSameDay(iso: string, ref: Date): boolean {
@@ -23,19 +35,59 @@ interface StatCardProps {
   value: number;
   icon: ComponentType<{ className?: string }>;
   tone: string;
+  loading?: boolean;
 }
 
-function StatCard({ label, value, icon: Icon, tone }: StatCardProps) {
+function StatCard({ label, value, icon: Icon, tone, loading }: StatCardProps) {
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4">
-      <div className={`mb-2 flex size-9 items-center justify-center rounded-lg ${tone}`}>
+      <div className={`mb-3 flex size-9 items-center justify-center rounded-lg ${tone}`}>
         <Icon className="size-5" />
       </div>
-      <p className="text-2xl font-semibold text-slate-900">{value}</p>
-      <p className="text-xs text-slate-500">{label}</p>
+      {loading ? (
+        <Skeleton className="h-8 w-10" />
+      ) : (
+        <p className="text-2xl font-bold text-slate-900">{value}</p>
+      )}
+      <p className="mt-0.5 text-xs text-slate-500">{label}</p>
     </div>
   );
 }
+
+const columns: Column<HotelBooking>[] = [
+  {
+    id: 'guest',
+    header: 'Guest',
+    cell: b => (
+      <div className="min-w-0">
+        <p className="font-semibold text-slate-900">{b.customer.fullName}</p>
+        <p className="font-mono text-xs text-slate-400">{b.bookingCode}</p>
+      </div>
+    ),
+  },
+  {
+    id: 'roomType',
+    header: 'Room type',
+    className: 'hidden sm:table-cell',
+    cell: b => <span className="text-slate-600">{b.roomType.name}</span>,
+  },
+  {
+    id: 'dates',
+    header: 'Check-in → Check-out',
+    className: 'hidden md:table-cell',
+    cell: b => (
+      <span className="text-slate-600">
+        {formatDate(b.checkInDate)} → {formatDate(b.checkOutDate)}
+      </span>
+    ),
+  },
+  {
+    id: 'status',
+    header: 'Status',
+    align: 'right',
+    cell: b => <BookingStatusBadge status={b.status} />,
+  },
+];
 
 export default function StaffDashboardPage() {
   const hotel = useStaffHotelStore(state => state.hotel);
@@ -53,75 +105,128 @@ export default function StaffDashboardPage() {
   const inHouse = bookings.filter(b => b.status === 'checked_in');
   const pendingPayment = bookings.filter(b => b.status === 'pending');
 
+  const dailySeries = useMemo(() => buildDailySeries(bookings, 14), [bookings]);
+  const statusSlices = useMemo(() => buildStatusSlices(bookings), [bookings]);
+  const roomTypeBars = useMemo(() => buildRoomTypeBars(bookings), [bookings]);
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-semibold text-slate-900">Today's overview</h1>
+        <h1 className="text-lg font-bold text-slate-900">Today's overview</h1>
         <p className="text-sm text-slate-500">{hotel?.name}</p>
       </div>
 
       {isError && (
-        <div className="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+        <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
           Could not load booking data. You may not be assigned to this hotel — click “Change” in
           the top bar to select another one.
         </div>
       )}
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <StatCard label="Arrivals today" value={arrivals.length} icon={LogIn} tone="bg-blue-100 text-blue-700" />
-        <StatCard label="Departures" value={departures.length} icon={LogOut} tone="bg-amber-100 text-amber-700" />
-        <StatCard label="In-house" value={inHouse.length} icon={BedDouble} tone="bg-emerald-100 text-emerald-700" />
-        <StatCard label="Awaiting payment" value={pendingPayment.length} icon={Clock} tone="bg-rose-100 text-rose-700" />
+        <StatCard label="Arrivals today" value={arrivals.length} icon={LogIn} tone="bg-blue-100 text-blue-700" loading={isLoading} />
+        <StatCard label="Departures" value={departures.length} icon={LogOut} tone="bg-amber-100 text-amber-700" loading={isLoading} />
+        <StatCard label="In-house" value={inHouse.length} icon={BedDouble} tone="bg-emerald-100 text-emerald-700" loading={isLoading} />
+        <StatCard label="Awaiting payment" value={pendingPayment.length} icon={Clock} tone="bg-rose-100 text-rose-700" loading={isLoading} />
       </div>
 
-      {isLoading && <p className="text-sm text-slate-500">Loading…</p>}
+      {/* Charts */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        <ChartCard
+          title="Revenue & bookings"
+          subtitle="Last 14 days"
+          className="lg:col-span-3"
+        >
+          {isLoading ? (
+            <Skeleton className="h-70 w-full" />
+          ) : (
+            <RevenueBookingsChart data={dailySeries} />
+          )}
+        </ChartCard>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <ArrivalsCard title="Arrivals today" items={arrivals} empty="No arrivals today." />
-        <ArrivalsCard title="Departures today" items={departures} empty="No departures today." />
+        <ChartCard title="Booking status" subtitle="Current mix">
+          {isLoading ? (
+            <Skeleton className="h-65 w-full" />
+          ) : statusSlices.length === 0 ? (
+            <ChartEmpty />
+          ) : (
+            <BookingStatusDonut data={statusSlices} />
+          )}
+        </ChartCard>
+
+        <ChartCard title="Bookings by room type" subtitle="All bookings" className="lg:col-span-2">
+          {isLoading ? (
+            <Skeleton className="h-65 w-full" />
+          ) : roomTypeBars.length === 0 ? (
+            <ChartEmpty />
+          ) : (
+            <BookingsByRoomTypeChart data={roomTypeBars} />
+          )}
+        </ChartCard>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <BookingSection
+          title="Arrivals today"
+          items={arrivals}
+          empty="No arrivals today."
+          loading={isLoading}
+        />
+        <BookingSection
+          title="Departures today"
+          items={departures}
+          empty="No departures today."
+          loading={isLoading}
+        />
       </div>
     </div>
   );
 }
 
-function ArrivalsCard({
+function BookingSection({
   title,
   items,
   empty,
+  loading,
 }: {
   title: string;
   items: HotelBooking[];
   empty: string;
+  loading?: boolean;
 }) {
+  const navigate = useNavigate();
   return (
-    <div className="rounded-xl border border-slate-200 bg-white">
-      <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-        <h2 className="text-sm font-semibold text-slate-900">{title}</h2>
+    <section>
+      <div className="mb-3 flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-bold text-slate-900">{title}</h2>
+          <p className="text-sm text-slate-500">
+            {loading ? 'Loading…' : `${items.length} booking${items.length === 1 ? '' : 's'}`}
+          </p>
+        </div>
         <Link
           to={ROUTES.staffFrontDesk}
-          className="flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+          className="flex shrink-0 items-center gap-1 text-xs font-semibold text-primary hover:underline"
         >
-          Front desk <ArrowRight className="size-3" />
+          Front desk <ArrowRight className="size-3.5" />
         </Link>
       </div>
-      <div className="divide-y divide-slate-100">
-        {items.length === 0 && <p className="px-4 py-6 text-center text-sm text-slate-400">{empty}</p>}
-        {items.map(b => (
-          <Link
-            key={b.id}
-            to={ROUTES.staffBookingDetail(b.id)}
-            className="flex items-center justify-between px-4 py-3 hover:bg-slate-50"
-          >
-            <div>
-              <p className="text-sm font-medium text-slate-900">{b.customer.fullName}</p>
-              <p className="text-xs text-slate-500">
-                {b.roomType.name} · {formatDateShort(b.checkInDate)} → {formatDateShort(b.checkOutDate)}
-              </p>
-            </div>
-            <BookingStatusBadge status={b.status} />
-          </Link>
-        ))}
-      </div>
-    </div>
+
+      {loading ? (
+        <TableSkeleton columns={4} rows={3} />
+      ) : items.length === 0 ? (
+        <div className="rounded-xl border border-slate-200 bg-white px-4 py-10 text-center text-sm text-slate-400">
+          {empty}
+        </div>
+      ) : (
+        <DataTable
+          columns={columns}
+          rows={items}
+          rowKey={b => b.id}
+          minWidthClass="min-w-[320px]"
+          onRowClick={b => navigate(ROUTES.staffBookingDetail(b.id))}
+        />
+      )}
+    </section>
   );
 }
