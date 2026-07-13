@@ -104,8 +104,11 @@ export interface AppNotification {
 }
 
 // ----- Reviews -----
+export type ReviewStatus = 'pending' | 'published' | 'hidden';
+
 export interface ReviewItem {
   id: string;
+  bookingId: string;
   hotelName: string;
   bookingCode: string;
   overallRating: number;
@@ -117,21 +120,29 @@ export interface ReviewItem {
   content: string;
   images: string[];
   managerResponse?: string | null;
+  status: ReviewStatus;
   createdAt: string;
 }
 
-export interface CreateReviewInput {
-  hotelName: string;
-  bookingCode: string;
+/** Shape thô 1 review trả về từ `GET /reviews/me` (Decimal đã serialize thành string). */
+export interface MyReviewRaw {
+  id: string;
+  bookingId: string;
   overallRating: number;
   cleanlinessRating: number;
   serviceRating: number;
   locationRating: number;
   valueRating: number;
-  title?: string;
+  title: string | null;
   content: string;
-  images: string[];
+  managerResponse: string | null;
+  status: ReviewStatus;
+  createdAt: string;
+  hotel: { id: string; name: string };
+  booking: { bookingCode: string };
+  images: { url: string }[];
 }
+
 
 // ----- Promotions / Vouchers -----
 export type DiscountType = 'percentage' | 'fixed_amount' | 'free_night';

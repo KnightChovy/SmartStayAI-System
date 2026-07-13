@@ -10,8 +10,8 @@ interface QrCheckInModalProps {
   open: boolean;
   onClose: () => void;
   hotelId: string | undefined;
-  /** Gọi khi tra được booking (nhận về bookingId để điều hướng sang trang chi tiết). */
-  onFound: (bookingId: string) => void;
+  /** Gọi khi tra được booking (bookingId để điều hướng + voucherCode đã quét để check-in). */
+  onFound: (bookingId: string, voucherCode: string) => void;
 }
 
 const SCANNER_ELEMENT_ID = 'staff-qr-check-in-reader';
@@ -49,7 +49,7 @@ export function QrCheckInModal({
       onSuccess: booking => {
         busyRef.current = false;
         setCode('');
-        onFound(booking.id);
+        onFound(booking.id, voucherCode);
       },
       onError: () => {
         busyRef.current = false;

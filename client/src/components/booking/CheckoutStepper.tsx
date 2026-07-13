@@ -10,8 +10,9 @@ export default function CheckoutStepper({ current }: { current: number }) {
       {STEPS.map((label, i) => {
         const done = i < current;
         const active = i === current;
+        const isLast = i === STEPS.length - 1;
         return (
-          <li key={label} className="flex flex-1 items-center gap-2">
+          <li key={label} className={cn('flex items-center gap-2', !isLast && 'flex-1')}>
             <div
               className={cn(
                 'flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-bold transition-colors',

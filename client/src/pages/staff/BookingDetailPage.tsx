@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { Link, useParams } from 'react-router';
+import { Link, useParams, useLocation } from 'react-router';
 import {
   ArrowLeft,
   LogIn,
@@ -25,13 +25,24 @@ import {
 } from '@/hooks/staff';
 import { useStaffHotelStore } from '@/stores/staffHotelStore';
 import { BookingStatusBadge, PaymentStatusBadge } from '@/components/staff/StatusBadge';
+import { CheckInConfirmModal } from '@/components/staff/CheckInConfirmModal';
 import { ROUTES } from '@/constants/routes';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { formatDateShort, toUtcDateKey, todayUtcKey } from '@/utils/formatDate';
 import { errorMessage } from '@/utils/errorMessage';
 
+interface CheckInNavState {
+  autoCheckIn?: boolean;
+  voucherCode?: string;
+}
+
 export default function BookingDetailPage() {
   const { bookingId } = useParams<{ bookingId: string }>();
+  const location = useLocation();
+  const navState = (location.state as CheckInNavState | null) ?? {};
+  // Đến từ luồng quét QR → tự mở modal xác nhận check-in.
+  const [showCheckInConfirm, setShowCheckInConfirm] = useState(!!navState.autoCheckIn);
+  const scanVoucher = navState.voucherCode ?? '';
   const hotel = useStaffHotelStore(state => state.hotel);
   const { data: booking, isLoading, isError } = useHotelBooking(hotel?.id, bookingId);
   const { data: rooms } = useHotelRooms(hotel?.id);
@@ -87,6 +98,22 @@ export default function BookingDetailPage() {
 
   const busy =
     checkIn.isPending || checkOut.isPending || recordCash.isPending || noShow.isPending;
+
+  // Xác nhận check-in từ modal (quét QR): BE tự gán phòng trống, redeem voucher đã quét.
+  const handleConfirmCheckIn = async () => {
+    setFeedback(null);
+    try {
+      await checkIn.mutateAsync({
+        bookingId: booking.id,
+        payload: { ...(scanVoucher ? { voucherCode: scanVoucher } : {}) },
+      });
+      setFeedback({ type: 'ok', msg: 'Guest checked in successfully.' });
+    } catch (err) {
+      setFeedback({ type: 'err', msg: errorMessage(err, 'Check-in failed.') });
+    } finally {
+      setShowCheckInConfirm(false);
+    }
+  };
 
   return (
     <div className="space-y-5">
@@ -334,6 +361,28 @@ export default function BookingDetailPage() {
           </div>
         </div>
       </div>
+
+      {booking.status === 'confirmed' && (
+        <CheckInConfirmModal
+          open={showCheckInConfirm}
+          onClose={() => setShowCheckInConfirm(false)}
+          onConfirm={handleConfirmCheckIn}
+          isPending={checkIn.isPending}
+          disabled={beforeWindow}
+          guestName={booking.customer.fullName}
+          bookingCode={booking.bookingCode}
+          roomTypeName={booking.roomType.name}
+          checkInDate={booking.checkInDate}
+          checkOutDate={booking.checkOutDate}
+          numNights={booking.numNights}
+          voucherCode={scanVoucher || booking.voucher?.voucherCode}
+          warning={
+            beforeWindow
+              ? `The check-in date (${formatDateShort(booking.checkInDate)}) has not arrived yet.`
+              : null
+          }
+        />
+      )}
     </div>
   );
 }

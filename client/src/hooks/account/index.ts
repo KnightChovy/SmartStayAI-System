@@ -5,5 +5,4 @@ export { useNotifications } from './use-notifications';
 export { useMarkNotificationRead } from './use-mark-notification-read';
 export { useMarkAllNotificationsRead } from './use-mark-all-notifications-read';
 export { useMyReviews } from './use-my-reviews';
-export { useCreateReview } from './use-create-review';
 export { useAvailablePromotions } from './use-available-promotions';
