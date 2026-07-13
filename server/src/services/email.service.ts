@@ -2,11 +2,21 @@ import nodemailer from 'nodemailer';
 import config from '../config/config';
 import logger from '../config/logger';
 
+const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
+
 export class EmailService {
   public transport: nodemailer.Transporter;
 
+  // Có BREVO_API_KEY thì gửi qua Brevo transactional API (HTTPS 443) — dùng cho môi trường chặn cổng
+  // SMTP như Render. Không có key thì fallback về SMTP (tiện chạy local với Gmail/Mailtrap).
+  private readonly useBrevo = Boolean(config.email.brevoApiKey);
+
   constructor() {
     this.transport = nodemailer.createTransport(config.email.smtp);
+    if (this.useBrevo) {
+      logger.info('Email provider: Brevo transactional API');
+      return;
+    }
     /* istanbul ignore next */
     if (config.env !== 'test') {
       this.transport
@@ -15,6 +25,30 @@ export class EmailService {
         .catch(() => logger.warn('Unable to connect to email server. Make sure you have configured the SMTP options in .env'));
     }
   }
+
+  // Gửi email qua Brevo REST API. Ném lỗi kèm status + body để lớp gọi (đã bọc try/catch) log rõ nguyên nhân.
+  private sendViaBrevo = async (to: string, subject: string, text: string, html?: string) => {
+    const body: Record<string, unknown> = {
+      sender: { email: config.email.from, name: 'SmartStay AI' },
+      to: [{ email: to }],
+      subject,
+      textContent: text,
+    };
+    if (html) body.htmlContent = html;
+
+    const res = await fetch(BREVO_API_URL, {
+      method: 'POST',
+      headers: {
+        'api-key': config.email.brevoApiKey as string,
+        'content-type': 'application/json',
+        accept: 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      throw new Error(`Brevo send failed (${res.status}): ${await res.text()}`);
+    }
+  };
 
   // Premium email templates wrapping function helper
   private getEmailWrapperHtml = (title: string, contentHtml: string) => {
@@ -147,6 +181,10 @@ export class EmailService {
    * @returns {Promise<void>}
    */
   sendEmail = async (to: string, subject: string, text: string, html?: string) => {
+    if (this.useBrevo) {
+      await this.sendViaBrevo(to, subject, text, html);
+      return;
+    }
     const msg = { from: config.email.from, to, subject, text, html };
     await this.transport.sendMail(msg);
   };
