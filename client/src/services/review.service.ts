@@ -10,6 +10,7 @@ export const reviewService = {
     });
     return data.results.map(r => ({
       id: r.id,
+      bookingId: r.bookingId,
       hotelName: r.hotel?.name ?? '—',
       bookingCode: r.booking?.bookingCode ?? '—',
       overallRating: r.overallRating,

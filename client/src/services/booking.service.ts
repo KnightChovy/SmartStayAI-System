@@ -4,6 +4,7 @@ import type {
   Booking,
   CreateBookingPayload,
   CreateReviewPayload,
+  UpdateReviewPayload,
   MyBookingsParams,
 } from '@/types/booking.types';
 
@@ -44,5 +45,10 @@ export const bookingService = {
   /** Viết đánh giá cho booking đã trả phòng (`POST /reviews`). */
   async createReview(payload: CreateReviewPayload): Promise<void> {
     await api.post('/reviews', payload);
+  },
+
+  /** Sửa đánh giá của chính mình (`PATCH /reviews/:reviewId`). */
+  async updateReview(reviewId: string, payload: UpdateReviewPayload): Promise<void> {
+    await api.patch(`/reviews/${reviewId}`, payload);
   },
 };

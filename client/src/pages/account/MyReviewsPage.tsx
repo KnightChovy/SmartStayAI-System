@@ -1,9 +1,13 @@
-import { MessageSquareQuote, Star } from 'lucide-react';
+import { useState } from 'react';
+import { MessageSquareQuote, PencilLine, Star } from 'lucide-react';
 import { useMyReviews } from '@/hooks/account';
 import StarRating from '@/components/shared/StarRating';
 import EmptyState from '@/components/shared/EmptyState';
+import ReviewModal from '@/components/account/ReviewModal';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 import { formatDateShort } from '@/utils/formatDate';
+import type { ReviewItem } from '@/types/account.types';
 
 const STATUS_LABEL: Record<string, { label: string; className: string }> = {
   pending: { label: 'Pending review', className: 'bg-amber-500/10 text-amber-700' },
@@ -12,6 +16,7 @@ const STATUS_LABEL: Record<string, { label: string; className: string }> = {
 
 export default function MyReviewsPage() {
   const { data, isLoading } = useMyReviews();
+  const [editing, setEditing] = useState<ReviewItem | null>(null);
 
   return (
     <div>
@@ -38,20 +43,31 @@ export default function MyReviewsPage() {
             const badge = STATUS_LABEL[r.status];
             return (
               <div key={r.id} className="rounded-2xl border border-outline-variant/30 bg-surface p-5">
-                <div className="flex items-center justify-between gap-3">
-                  <h3 className="font-be-vietnam font-semibold text-on-surface">{r.hotelName}</h3>
-                  <StarRating value={r.overallRating} size={16} />
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h3 className="font-be-vietnam font-semibold text-on-surface">{r.hotelName}</h3>
+                    <p className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-on-surface-variant">
+                      <span>
+                        {r.bookingCode} · {formatDateShort(r.createdAt)}
+                      </span>
+                      {badge && (
+                        <span className={`rounded-full px-2 py-0.5 font-medium ${badge.className}`}>
+                          {badge.label}
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-3">
+                    <StarRating value={r.overallRating} size={16} />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setEditing(r)}
+                    >
+                      <PencilLine className="size-3.5" /> Edit feedback
+                    </Button>
+                  </div>
                 </div>
-                <p className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-on-surface-variant">
-                  <span>
-                    {r.bookingCode} · {formatDateShort(r.createdAt)}
-                  </span>
-                  {badge && (
-                    <span className={`rounded-full px-2 py-0.5 font-medium ${badge.className}`}>
-                      {badge.label}
-                    </span>
-                  )}
-                </p>
                 {r.title && <p className="mt-2 font-medium text-on-surface">{r.title}</p>}
                 <p className="mt-1 text-sm text-on-surface-variant">{r.content}</p>
 
@@ -77,6 +93,16 @@ export default function MyReviewsPage() {
           })
         )}
       </div>
+
+      {/* Edit feedback modal */}
+      <ReviewModal
+        open={!!editing}
+        onClose={() => setEditing(null)}
+        bookingId={editing?.bookingId ?? ''}
+        hotelName={editing?.hotelName ?? ''}
+        bookingCode={editing?.bookingCode ?? ''}
+        existingReview={editing}
+      />
     </div>
   );
 }

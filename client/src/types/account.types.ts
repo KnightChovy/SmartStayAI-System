@@ -108,6 +108,7 @@ export type ReviewStatus = 'pending' | 'published' | 'hidden';
 
 export interface ReviewItem {
   id: string;
+  bookingId: string;
   hotelName: string;
   bookingCode: string;
   overallRating: number;
@@ -126,6 +127,7 @@ export interface ReviewItem {
 /** Shape thô 1 review trả về từ `GET /reviews/me` (Decimal đã serialize thành string). */
 export interface MyReviewRaw {
   id: string;
+  bookingId: string;
   overallRating: number;
   cleanlinessRating: number;
   serviceRating: number;

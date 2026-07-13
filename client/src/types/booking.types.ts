@@ -103,6 +103,18 @@ export interface CreateReviewPayload {
   images?: string[];
 }
 
+/** Sửa đánh giá của chính mình (`PATCH /reviews/:reviewId`) — mọi field optional. */
+export interface UpdateReviewPayload {
+  overallRating?: number;
+  cleanlinessRating?: number;
+  serviceRating?: number;
+  locationRating?: number;
+  valueRating?: number;
+  title?: string;
+  content?: string;
+  images?: string[];
+}
+
 /** Payload tạo booking — giá do server tự tính, client KHÔNG gửi tiền. */
 export interface CreateBookingPayload {
   hotelId: string;

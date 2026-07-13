@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { ImagePlus, Star, X } from 'lucide-react';
+import { ImagePlus, PencilLine, Star, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { useCreateReview } from '@/hooks/bookings';
+import { useCreateReview, useUpdateReview } from '@/hooks/bookings';
 import StarRating from '@/components/shared/StarRating';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import type { ReviewItem } from '@/types/account.types';
 
 interface ReviewModalProps {
   open: boolean;
@@ -14,6 +15,8 @@ interface ReviewModalProps {
   /** Hiển thị (read-only) để khách yên tâm đang đánh giá đúng chuyến — KHÔNG gửi lên BE. */
   hotelName: string;
   bookingCode: string;
+  /** Có review sẵn cho booking này → modal chuyển sang chế độ sửa (PATCH). */
+  existingReview?: ReviewItem | null;
 }
 
 const SUBSCORES = [
@@ -54,18 +57,32 @@ export default function ReviewModal({
   bookingId,
   hotelName,
   bookingCode,
+  existingReview,
 }: ReviewModalProps) {
   const createReview = useCreateReview();
+  const updateReview = useUpdateReview();
+  const isEdit = !!existingReview;
   const [form, setForm] = useState(EMPTY);
   const [imageUrl, setImageUrl] = useState('');
 
-  // Reset form mỗi lần mở lại.
+  // Mở lại: chế độ sửa → điền từ review cũ; chế độ tạo → form trống.
   useEffect(() => {
-    if (open) {
-      setForm(EMPTY);
-      setImageUrl('');
-    }
-  }, [open]);
+    if (!open) return;
+    setForm(
+      existingReview
+        ? {
+            cleanlinessRating: existingReview.cleanlinessRating,
+            serviceRating: existingReview.serviceRating,
+            locationRating: existingReview.locationRating,
+            valueRating: existingReview.valueRating,
+            title: existingReview.title ?? '',
+            content: existingReview.content,
+            images: existingReview.images,
+          }
+        : EMPTY
+    );
+    setImageUrl('');
+  }, [open, existingReview]);
 
   // Đóng bằng phím Esc.
   useEffect(() => {
@@ -92,22 +109,42 @@ export default function ReviewModal({
     }
   };
 
+  const isPending = createReview.isPending || updateReview.isPending;
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.content.trim()) return;
     try {
-      await createReview.mutateAsync({
-        bookingId,
-        overallRating,
-        cleanlinessRating: form.cleanlinessRating,
-        serviceRating: form.serviceRating,
-        locationRating: form.locationRating,
-        valueRating: form.valueRating,
-        title: form.title.trim() || undefined,
-        content: form.content.trim(),
-        images: form.images.length ? form.images : undefined,
-      });
-      toast.success('Thank you! Your review has been published.');
+      if (existingReview) {
+        // Sửa: gửi toàn bộ field hiện tại (title '' → BE tự set null; images [] → xoá hết ảnh).
+        await updateReview.mutateAsync({
+          reviewId: existingReview.id,
+          payload: {
+            overallRating,
+            cleanlinessRating: form.cleanlinessRating,
+            serviceRating: form.serviceRating,
+            locationRating: form.locationRating,
+            valueRating: form.valueRating,
+            title: form.title.trim(),
+            content: form.content.trim(),
+            images: form.images,
+          },
+        });
+        toast.success('Your review has been updated.');
+      } else {
+        await createReview.mutateAsync({
+          bookingId,
+          overallRating,
+          cleanlinessRating: form.cleanlinessRating,
+          serviceRating: form.serviceRating,
+          locationRating: form.locationRating,
+          valueRating: form.valueRating,
+          title: form.title.trim() || undefined,
+          content: form.content.trim(),
+          images: form.images.length ? form.images : undefined,
+        });
+        toast.success('Thank you! Your review has been published.');
+      }
       onClose();
     } catch (err) {
       toast.error(errorMessage(err, 'Could not submit your review. Please try again.'));
@@ -130,7 +167,9 @@ export default function ReviewModal({
         {/* Header */}
         <div className="flex items-start justify-between gap-4 border-b border-outline-variant/30 px-6 py-4">
           <div>
-            <h2 className="font-be-vietnam text-lg font-bold text-on-surface">Write a review</h2>
+            <h2 className="font-be-vietnam text-lg font-bold text-on-surface">
+              {isEdit ? 'Edit feedback' : 'Write a review'}
+            </h2>
             <p className="mt-0.5 text-xs text-on-surface-variant">
               {hotelName} · {bookingCode}
             </p>
@@ -263,10 +302,18 @@ export default function ReviewModal({
           <Button
             type="submit"
             className="bg-primary text-on-primary hover:bg-primary/90"
-            disabled={createReview.isPending || !form.content.trim()}
+            disabled={isPending || !form.content.trim()}
           >
-            {createReview.isPending ? (
-              'Publishing…'
+            {isPending ? (
+              isEdit ? (
+                'Saving…'
+              ) : (
+                'Publishing…'
+              )
+            ) : isEdit ? (
+              <>
+                <PencilLine className="size-4" /> Save changes
+              </>
             ) : (
               <>
                 <Star className="size-4" /> Publish review

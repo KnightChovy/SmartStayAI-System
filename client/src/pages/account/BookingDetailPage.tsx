@@ -12,6 +12,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { useBooking, useCancelBooking } from '@/hooks/bookings';
+import { useMyReviews } from '@/hooks/account';
 import { ROUTES } from '@/constants/routes';
 import BookingStatusBadge from '@/components/shared/BookingStatusBadge';
 import PriceSummary from '@/components/shared/PriceSummary';
@@ -39,6 +40,9 @@ export default function BookingDetailPage() {
   const navigate = useNavigate();
   const { data: booking, isLoading } = useBooking(bookingId);
   const cancelBooking = useCancelBooking();
+  // Review đã có cho booking này (nếu có) → cho phép sửa thay vì tạo mới.
+  const { data: myReviews } = useMyReviews();
+  const existingReview = myReviews?.find(r => r.bookingId === bookingId) ?? null;
 
   const [showCancel, setShowCancel] = useState(false);
   const [reason, setReason] = useState('');
@@ -191,7 +195,8 @@ export default function BookingDetailPage() {
                 className="bg-on-surface text-white hover:bg-primary"
                 onClick={() => setShowReview(true)}
               >
-                <PencilLine className="size-4" /> Write a review
+                <PencilLine className="size-4" />
+                {existingReview ? 'Edit feedback' : 'Write a review'}
               </Button>
             )}
           </div>
@@ -338,6 +343,7 @@ export default function BookingDetailPage() {
             bookingId={booking.id}
             hotelName={booking.hotel?.name ?? 'Hotel'}
             bookingCode={booking.bookingCode}
+            existingReview={existingReview}
           />
         )}
 
