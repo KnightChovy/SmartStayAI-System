@@ -35,15 +35,18 @@ paths:
     post:
       summary: Send a message to a hotel's chatbot
       description: >
-        Authenticated guest sends one message to a hotel's AI chatbot. If conversationId is omitted a
-        new conversation is created; otherwise the message continues that conversation (the full history
-        is replayed to the LLM each turn). Returns the bot reply and the conversationId to reuse next turn.
-        The assistant is agentic: besides answering FAQs and searching rooms, it can place and cancel
-        bookings on the guest's behalf via a two-step confirm-gate (it proposes a summary, then only acts
-        after the guest explicitly agrees). No extra request fields are needed — this is driven in-chat.
+        Send one message to a hotel's AI chatbot. Authentication is OPTIONAL. Anonymous visitors (no token)
+        get a read-only assistant: FAQs, room/price search and general hotel info only. Authenticated guests
+        additionally get personal actions — look up their own bookings and place/cancel bookings on their
+        behalf via a two-step confirm-gate (the bot proposes a summary, then acts only after explicit
+        agreement). If conversationId is omitted a new conversation is created; otherwise the message
+        continues that conversation (the full history is replayed to the LLM each turn). An anonymous
+        conversation cannot be resumed with a token and vice versa. Returns the bot reply and the
+        conversationId to reuse next turn. No extra request fields are needed — this is driven in-chat.
       tags: [Chatbot]
       security:
         - bearerAuth: []
+        - {}
       requestBody:
         required: true
         content:
@@ -80,21 +83,23 @@ paths:
                     format: uuid
                   reply:
                     type: string
-        "401":
-          $ref: '#/components/responses/Unauthorized'
         "404":
           $ref: '#/components/responses/NotFound'
+        "429":
+          description: Rate limit or daily/conversation message quota exceeded
 
   /conversations/messages/stream:
     post:
       summary: Send a message and stream the reply (SSE)
       description: >
-        Same body as /conversations/messages, but the reply is streamed token-by-token over
+        Same body and OPTIONAL-auth behaviour as /conversations/messages (anonymous = read-only,
+        authenticated = personal booking actions), but the reply is streamed token-by-token over
         Server-Sent Events. Emits an "meta" event with the conversationId, then "chunk" events with
         partial text, then a "done" event. The full reply is saved to the DB after streaming ends.
       tags: [Chatbot]
       security:
         - bearerAuth: []
+        - {}
       requestBody:
         required: true
         content:
@@ -121,10 +126,10 @@ paths:
             text/event-stream:
               schema:
                 type: string
-        "401":
-          $ref: '#/components/responses/Unauthorized'
         "404":
           $ref: '#/components/responses/NotFound'
+        "429":
+          description: Rate limit or daily/conversation message quota exceeded
 
   /admin/overview:
     get:

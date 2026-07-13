@@ -1,4 +1,3 @@
-﻿import React from 'react';
 import { Calendar, CalendarX2, Star } from 'lucide-react';
 
 export function RecentActivities() {
