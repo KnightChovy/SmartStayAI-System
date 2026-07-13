@@ -1,7 +1,9 @@
+import { useTranslation } from 'react-i18next';
 import { TestimonialsColumn } from '../blocks/testimonials-columns-1';
 import { useLandingTestimonials } from '@/hooks/reviews';
 
 export default function GuestFavorites() {
+  const { t } = useTranslation('home');
   const { testimonials, isLoading } = useLandingTestimonials();
 
   // Chia đều review thật thành 3 cột marquee.
@@ -18,14 +20,13 @@ export default function GuestFavorites() {
     <section className="max-w-7xl mx-auto px-margin-mobile md:px-8 mb-section-gap w-full">
       <div className="flex flex-col items-center text-center mb-10">
         <span className="rounded-full border border-outline-variant/30 px-4 py-1 text-xs font-semibold uppercase tracking-widest text-primary font-be-vietnam">
-          Guest Reviews
+          {t('guestFavorites.badge')}
         </span>
         <h2 className="font-be-vietnam text-2xl md:text-3xl font-bold text-on-surface mt-4">
-          The guest's favorite accommodation
+          {t('guestFavorites.title')}
         </h2>
         <p className="text-on-surface-variant text-sm font-medium font-be-vietnam mt-2 max-w-lg">
-          Real words from travelers who found their perfect stay with SmartStay
-          AI.
+          {t('guestFavorites.subtitle')}
         </p>
       </div>
 

@@ -5,7 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DatePicker } from '@/components/ui/date-picker';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
 import { FileUploadDropzone } from '@/components/ui/file-upload';
 import {
@@ -16,7 +22,7 @@ import { hotelVerifyService } from '@/services/hotel-verify.service';
 import { useHotelVerifyStore } from '@/stores/hotel-verify.store';
 import { toDateInputValue } from '@/utils/formatDate';
 
-/** Hôm nay (YYYY-MM-DD) — chặn chọn ngày cấp giấy tờ trong tương lai. */
+/** Hôm nay (YYYY-MM-DD) — chặn Select issue date giấy tờ trong tương lai. */
 const TODAY = toDateInputValue(new Date());
 
 type UploadState = { uploading: boolean; error: string | null };
@@ -24,9 +30,12 @@ type UploadState = { uploading: boolean; error: string | null };
 function useUploadZone(
   fieldPath: string,
   setValue: (path: string, val: string, opts?: object) => void,
-  persist: () => void,
+  persist: () => void
 ) {
-  const [state, setState] = useState<UploadState>({ uploading: false, error: null });
+  const [state, setState] = useState<UploadState>({
+    uploading: false,
+    error: null,
+  });
 
   const handleChange = async (files: File[]) => {
     if (files.length === 0) return;
@@ -70,9 +79,18 @@ export function AccommodationCertificateStep({
   } = useForm<AccommodationCertificateFormValues>({
     resolver: zodResolver(accommodationCertificateSchema),
     defaultValues: draft.certificates ?? {
-      operatingLicense: { licenseNumber: '', issueDate: '', authority: '', documentFileUrl: '' },
+      operatingLicense: {
+        licenseNumber: '',
+        issueDate: '',
+        authority: '',
+        documentFileUrl: '',
+      },
       fireSafety: { certificateNumber: '', issueDate: '', documentFileUrl: '' },
-      securityOrder: { certificateNumber: '', issueDate: '', documentFileUrl: '' },
+      securityOrder: {
+        certificateNumber: '',
+        issueDate: '',
+        documentFileUrl: '',
+      },
       classification: { starRating: '', ratingCertificateFileUrl: '' },
     },
   });
@@ -84,10 +102,22 @@ export function AccommodationCertificateStep({
   // Lưu toàn bộ form hiện tại vào draft để reload không mất các URL đã upload.
   const persist = () => setCertificates(getValues());
 
-  const opLic = useUploadZone('operatingLicense.documentFileUrl', setVal, persist);
+  const opLic = useUploadZone(
+    'operatingLicense.documentFileUrl',
+    setVal,
+    persist
+  );
   const fire = useUploadZone('fireSafety.documentFileUrl', setVal, persist);
-  const security = useUploadZone('securityOrder.documentFileUrl', setVal, persist);
-  const classification = useUploadZone('classification.ratingCertificateFileUrl', setVal, persist);
+  const security = useUploadZone(
+    'securityOrder.documentFileUrl',
+    setVal,
+    persist
+  );
+  const classification = useUploadZone(
+    'classification.ratingCertificateFileUrl',
+    setVal,
+    persist
+  );
 
   // URL đã upload (giữ trong draft) — hiển thị lại sau reload.
   const opLicUrl = watch('operatingLicense.documentFileUrl');
@@ -107,15 +137,22 @@ export function AccommodationCertificateStep({
     onContinue?.();
   };
 
-  const anyUploading = opLic.uploading || fire.uploading || security.uploading || classification.uploading;
+  const anyUploading =
+    opLic.uploading ||
+    fire.uploading ||
+    security.uploading ||
+    classification.uploading;
   const isPending = isSubmitting || anyUploading;
 
   return (
     <div className="w-full bg-white rounded-2xl p-6 md:p-8 border border-slate-200 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] mt-4">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-slate-900 mb-2">Accommodation Certificate</h2>
+        <h2 className="text-2xl font-bold text-slate-900 mb-2">
+          Accommodation Certificate
+        </h2>
         <p className="text-slate-600">
-          Provide your operating licenses and safety certificates to comply with local regulations.
+          Provide your operating licenses and safety certificates to comply with
+          local regulations.
         </p>
       </div>
 
@@ -123,10 +160,16 @@ export function AccommodationCertificateStep({
 
       <form className="space-y-10" onSubmit={handleSubmit(onSubmit)}>
         {/* Hidden URL fields */}
-        <input type="hidden" {...register('operatingLicense.documentFileUrl')} />
+        <input
+          type="hidden"
+          {...register('operatingLicense.documentFileUrl')}
+        />
         <input type="hidden" {...register('fireSafety.documentFileUrl')} />
         <input type="hidden" {...register('securityOrder.documentFileUrl')} />
-        <input type="hidden" {...register('classification.ratingCertificateFileUrl')} />
+        <input
+          type="hidden"
+          {...register('classification.ratingCertificateFileUrl')}
+        />
 
         {/* 1. Accommodation Operating License */}
         <div className="space-y-4">
@@ -163,7 +206,7 @@ export function AccommodationCertificateStep({
                     value={field.value}
                     onChange={field.onChange}
                     max={TODAY}
-                    placeholder="Chọn ngày cấp"
+                    placeholder="Select issue date"
                     ariaInvalid={!!errors.operatingLicense?.issueDate}
                   />
                 )}
@@ -197,7 +240,9 @@ export function AccommodationCertificateStep({
             accept=".pdf,.jpg,.jpeg,.png"
             onFilesChange={opLic.handleChange}
             isUploading={opLic.uploading}
-            error={opLic.error ?? errors.operatingLicense?.documentFileUrl?.message}
+            error={
+              opLic.error ?? errors.operatingLicense?.documentFileUrl?.message
+            }
             existingUrls={opLicUrl ? [opLicUrl] : []}
             onRemoveExisting={opLic.remove}
           />
@@ -238,7 +283,7 @@ export function AccommodationCertificateStep({
                     value={field.value}
                     onChange={field.onChange}
                     max={TODAY}
-                    placeholder="Chọn ngày cấp"
+                    placeholder="Select issue date"
                     ariaInvalid={!!errors.fireSafety?.issueDate}
                   />
                 )}
@@ -291,7 +336,7 @@ export function AccommodationCertificateStep({
                     value={field.value}
                     onChange={field.onChange}
                     max={TODAY}
-                    placeholder="Chọn ngày cấp"
+                    placeholder="Select issue date"
                     ariaInvalid={!!errors.securityOrder?.issueDate}
                   />
                 )}
@@ -328,7 +373,7 @@ export function AccommodationCertificateStep({
               <Label>Star Rating</Label>
               <Select
                 defaultValue={draft.certificates?.classification?.starRating}
-                onValueChange={(val) =>
+                onValueChange={val =>
                   setValue('classification.starRating' as never, val as never, {
                     shouldValidate: true,
                   })
@@ -364,7 +409,10 @@ export function AccommodationCertificateStep({
           <Button
             type="button"
             variant="outline"
-            onClick={() => { setCertificates(getValues()); onBack?.(); }}
+            onClick={() => {
+              setCertificates(getValues());
+              onBack?.();
+            }}
             className="h-11 px-6 bg-white border-slate-300 text-slate-700 hover:bg-slate-50 cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4 mr-2" /> Back

@@ -1,0 +1,23 @@
+{
+  "nav": {
+    "home": "Trang chủ",
+    "deals": "Ưu đãi",
+    "destinations": "Điểm đến",
+    "stays": "Chỗ nghỉ",
+    "listProperty": "Đăng chỗ nghỉ",
+    "login": "Đăng nhập",
+    "register": "Đăng ký",
+    "logout": "Đăng xuất",
+    "loggingOut": "Đang đăng xuất...",
+    "dashboard": "Bảng điều khiển",
+    "myAccount": "Tài khoản của tôi"
+  },
+  "language": {
+    "label": "Ngôn ngữ",
+    "vi": "Tiếng Việt",
+    "en": "English"
+  },
+  "currency": {
+    "label": "Tiền tệ"
+  }
+}

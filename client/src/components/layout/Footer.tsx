@@ -1,21 +1,21 @@
 import { Link } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { ROUTES } from '@/constants/routes';
 
-const supportLinks = [
-  { label: 'Help Center', to: ROUTES.helpCenter },
-  { label: 'Safety Information', to: ROUTES.safety },
-  { label: 'Cancellation Options', to: ROUTES.cancellationOptions },
-  { label: 'Report Concern', to: ROUTES.reportConcern },
-];
-
-const companyLinks = [
-  { label: 'About Us', to: ROUTES.about },
-  { label: 'Careers', to: ROUTES.careers },
-  { label: 'Press', to: ROUTES.press },
-  { label: 'Blog', to: ROUTES.blog },
-];
-
 export default function Footer() {
+  const { t } = useTranslation('footer');
+  const supportLinks = [
+    { label: t('links.helpCenter'), to: ROUTES.helpCenter },
+    { label: t('links.safety'), to: ROUTES.safety },
+    { label: t('links.cancellation'), to: ROUTES.cancellationOptions },
+    { label: t('links.report'), to: ROUTES.reportConcern },
+  ];
+  const companyLinks = [
+    { label: t('links.about'), to: ROUTES.about },
+    { label: t('links.careers'), to: ROUTES.careers },
+    { label: t('links.press'), to: ROUTES.press },
+    { label: t('links.blog'), to: ROUTES.blog },
+  ];
   return (
     <footer className="bg-surface border-t border-outline-variant/30 pt-section-gap pb-12 w-full mt-auto">
       <div className="max-w-7xl mx-auto px-margin-mobile md:px-8">
@@ -26,14 +26,13 @@ export default function Footer() {
               Smart Stay AI
             </span>
             <p className="text-sm text-on-surface-variant leading-relaxed max-w-sm">
-              Revolutionizing luxury travel through intelligent discovery and
-              seamless experiences.
+              {t('tagline')}
             </p>
           </div>
           {/* Support Column */}
           <div>
             <h5 className="text-xs font-bold text-on-surface uppercase tracking-widest mb-6">
-              Support
+              {t('support')}
             </h5>
             <ul className="space-y-4">
               {supportLinks.map(link => (
@@ -51,7 +50,7 @@ export default function Footer() {
           {/* Company Column */}
           <div>
             <h5 className="text-xs font-bold text-on-surface uppercase tracking-widest mb-6">
-              Company
+              {t('company')}
             </h5>
             <ul className="space-y-4">
               {companyLinks.map(link => (
@@ -70,20 +69,20 @@ export default function Footer() {
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-outline-variant/20 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-xs text-on-surface-variant">
-            © {new Date().getFullYear()} Smart Stay AI. All rights reserved.
+            © {new Date().getFullYear()} Smart Stay AI. {t('rights')}
           </p>
           <div className="flex gap-8">
             <a
               className="text-xs text-on-surface-variant hover:text-primary transition-colors"
               href="#"
             >
-              Privacy Policy
+              {t('privacy')}
             </a>
             <a
               className="text-xs text-on-surface-variant hover:text-primary transition-colors"
               href="#"
             >
-              Terms of Service
+              {t('terms')}
             </a>
           </div>
         </div>
