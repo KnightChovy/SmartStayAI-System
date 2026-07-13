@@ -18,6 +18,13 @@ import { Label } from '@/components/ui/label';
 import { formatDateShort, nightsBetween } from '@/utils/formatDate';
 import type { HotelSearchResult, RoomType } from '@/types/hotel.types';
 
+const PAYMENT_LABELS: Record<PaymentMethod, string> = {
+  vnpay: 'VNPAY',
+  sepay: 'SePay',
+  stripe: 'Credit / Debit card',
+  cash: 'Pay at property',
+};
+
 interface CheckoutState {
   hotel?: HotelSearchResult | null;
   roomType?: RoomType;
@@ -121,15 +128,15 @@ export default function BookingCheckoutPage() {
           <ArrowLeft className="size-4" /> Back
         </button>
 
-        <h1 className="font-be-vietnam text-3xl font-bold text-on-surface">Complete your booking</h1>
-
-        <div className="mt-6 max-w-xl">
-          <CheckoutStepper current={step} />
-        </div>
+        <h1 className="font-be-vietnam text-[60px] font-bold text-on-surface">Complete your booking</h1>
 
         <div className="mt-8 flex flex-col gap-8 lg:flex-row">
           {/* Main */}
           <div className="min-w-0 flex-1">
+            <div className="mb-8">
+              <CheckoutStepper current={step} />
+            </div>
+
             {/* Step 1 — Guest details */}
             {step === 0 && (
               <form
@@ -210,16 +217,26 @@ export default function BookingCheckoutPage() {
                     <dd className="font-medium text-on-surface">{form.getValues('fullName')}</dd>
                   </div>
                   <div>
-                    <dt className="text-on-surface-variant">Contact</dt>
+                    <dt className="text-on-surface-variant">Email</dt>
                     <dd className="font-medium text-on-surface">{form.getValues('email')}</dd>
                   </div>
                   <div>
-                    <dt className="text-on-surface-variant">Payment</dt>
-                    <dd className="font-medium uppercase text-on-surface">VNPAY</dd>
+                    <dt className="text-on-surface-variant">Phone</dt>
+                    <dd className="font-medium text-on-surface">{form.getValues('phone')}</dd>
                   </div>
                   <div>
                     <dt className="text-on-surface-variant">Guests</dt>
                     <dd className="font-medium text-on-surface">{guests}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-on-surface-variant">Payment</dt>
+                    <dd className="font-medium text-on-surface">{PAYMENT_LABELS[payment]}</dd>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <dt className="text-on-surface-variant">Special requests</dt>
+                    <dd className="font-medium text-on-surface">
+                      {form.getValues('specialRequests')?.trim() || '—'}
+                    </dd>
                   </div>
                 </dl>
                 {createBooking.isError && (
