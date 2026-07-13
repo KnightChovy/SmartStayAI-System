@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import httpStatus from 'http-status';
 import bcrypt from 'bcryptjs';
-import type { User } from '@prisma/client';
+import type { User, UserRole } from '@prisma/client';
 import { tokenService, AuthTokens } from './token.service';
 import { userService } from './user.service';
 import type { CreateUserDto } from '../dto/user.dto';
@@ -185,9 +185,10 @@ export class AuthService {
    * Register a user after verifying the OTP code
    * @param {RegisterUserDto} userBody
    * @param {string} verificationCode
+   * @param {UserRole} role - Vai trò tài khoản tạo ra (mặc định 'customer'; 'hotel_partner' cho luồng đăng ký đối tác)
    * @returns {Promise<{ user: Omit<User, 'passwordHash'>; tokens: AuthTokens }>}
    */
-  registerUser = async (userBody: RegisterUserDto, verificationCode: string) => {
+  registerUser = async (userBody: RegisterUserDto, verificationCode: string, role: UserRole = 'customer') => {
     // 1. Find the (non-expired) OTP record for this email
     const otpRecord = await prisma.verificationToken.findFirst({
       where: {
@@ -232,6 +233,7 @@ export class AuthService {
       preferredLanguage: userBody.preferredLanguage,
       preferredCurrency: userBody.preferredCurrency,
       marketingOptIn: userBody.marketingOptIn,
+      role,
     });
 
     // 5. Mark email as verified

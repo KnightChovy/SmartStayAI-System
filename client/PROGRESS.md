@@ -6,6 +6,18 @@ This file tracks the accomplished tasks, resolved user requests, and visual/func
 
 ## Completed Tasks Checklist
 
+### July 8, 2026
+
+- [x] **Staff QR check-in (rạp-chiếu-phim style) — sửa data QR sai + thêm quét camera thật trên web**:
+  - **Bug đã fix (FE lẫn BE)**: `QRVoucher` (guest e-voucher hiển thị ở `BookingSuccessPage`/`account/BookingDetailPage`) mã hoá `booking.bookingCode` — sai với thiết kế backend, vì endpoint tra cứu staff (`GET /hotels/:id/bookings/lookup?voucherCode=`) chỉ nhận `voucherCode`, không nhận `bookingCode`. Đồng thời backend guest-facing `bookingInclude` (`server/src/services/booking.service.ts`) **không include `voucher`** nên guest booking response còn thiếu cả `voucherCode`/`qrData` để FE dùng. Đã thêm `voucher: { voucherCode, qrData, usedAt }` vào `bookingInclude`; FE thêm `BookingVoucherSummary`/`voucher?` vào `Booking` (`types/booking.types.ts`); `QRVoucher` giờ encode `booking.voucher?.qrData ?? booking.bookingCode` (fallback khi voucher null, vd booking legacy/no-payment).
+  - **Quét QR thật cho staff (trước là chỉ có ô nhập tay)**: thêm `staffService.lookupBooking` (`GET .../bookings/lookup?voucherCode=`) + hook `useLookupBooking` (`hooks/staff/use-lookup-booking.ts`, theo đúng convention 1 endpoint/1 file). Thêm `QrCheckInModal` (`components/staff/QrCheckInModal.tsx`) dùng `html5-qrcode` (cài mới, không có React-specific peer dep nên an toàn với React 19) quét camera trình duyệt song song với ô nhập tay mã e-voucher; parse chuỗi quét theo định dạng `SMARTSTAY|<voucherCode>|<bookingCode>` (khớp `BookingVoucher.qrData` ở BE), fallback dùng nguyên chuỗi nếu không đúng định dạng. Nút **"Scan check-in"** mới ở `FrontDeskPage` mở modal; tra được booking → điều hướng `ROUTES.staffBookingDetail(bookingId)`.
+  - `npx tsc -p tsconfig.app.json --noEmit`: 21 lỗi, không đổi so với baseline pre-existing (0 lỗi mới ở mọi file đụng tới).
+
+- [x] **`formatDate` (dd/MM/yyyy → dd-MM-yyyy)**:
+  - Đổi separator của formatter dùng chung `utils/formatDate.ts` từ gạch chéo sang gạch ngang theo yêu cầu — áp dụng toàn app (mọi nơi đã dùng `formatDate()` tự động nhận định dạng mới, không phải sửa từng chỗ gọi).
+
+- [x] **Audit "fix responsive tất cả role" — không tìm thấy bảng nào thiếu responsive**:
+  - Rà lại toàn bộ 9 file render `<table>` thật trong `pages/admin|hotel-partner|manager|staff` + component liên quan: **tất cả** đều đã bọc `overflow-x-auto` qua component dùng chung (`AdminTable.tsx`, `DataTable.tsx`) hoặc trực tiếp trong file. Nhận định "6 trang thiếu responsive" từ lần rà soát trước đó là sai (rà theo file riêng lẻ, bỏ sót việc bảng delegate qua wrapper dùng chung). Không sửa gì thêm ở mục này — chưa có bằng chứng cụ thể (màn hình/breakpoint nào đang vỡ) để tránh sửa mò.
 ### July 13, 2026
 
 - [x] **Hotel Partner — nối 3 API per-hotel còn thiếu (`GET /hotels/:id/revenue` + `/wallet` + `/analytics`): biến 2 trang ComingSoon (`/partner/revenue`, `/partner/analytics`) thành trang thật**:
@@ -52,7 +64,6 @@ This file tracks the accomplished tasks, resolved user requests, and visual/func
   - **Tách component** `components/manager/hotel-partners/BookingActivitiesTab.tsx` (bỏ prop mock, tự fetch `usePlatformBookings({ limit: 100, sortBy: 'createdAt:desc' })`): stat cards Confirmed/Checked-out/Pending/Cancelled đếm từ dữ liệu thật; filter search (client, theo mã/khách/KS) + select trạng thái (đủ 6 status) + select khách sạn (suy từ danh sách booking); bảng Booking ID (`bookingCode`) · Hotel (name + city) · Guest (`fullName ?? email`) · Check-in · Check-out · Amount (`formatCurrency`) · Status (badge 6 màu) · Created. **Ngày format `dd/MM/yyyy` bằng `formatDate` dùng chung** (`utils/formatDate.ts`). Có `TableSkeleton` loading / error + Try again / empty.
   - `HotelPartnersPage.tsx` giờ render `<BookingActivitiesTab />` và **xoá toàn bộ mock** (`mockPartners`, `mockBookings`, interface `HotelPartner`/`BookingActivity`, `bookingStatusConfig`, import `ChevronDown`).
   - `npx tsc -p tsconfig.app.json --noEmit`: mọi file mới/đụng tới đều sạch; tổng vẫn 21 lỗi pre-existing không liên quan.
-
 ### July 2, 2026
 
 - [x] **Platform Manager · Hotel Partners — nối API hiệu suất thật (`/performance` + `/hotels/:id/performance`), bỏ mock tab Platform Performance**:

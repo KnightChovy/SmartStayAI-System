@@ -1,4 +1,3 @@
-﻿import React from 'react';
 import { BedDouble } from 'lucide-react';
 
 const topRooms = [

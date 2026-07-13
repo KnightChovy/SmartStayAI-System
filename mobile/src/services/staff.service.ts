@@ -22,15 +22,8 @@ import type {
 export const staffService = {
   /* ---------- Khách sạn được phân công ---------- */
 
-  /**
-   * `GET /hotels/me/assignments` — KS mà staff đang đăng nhập được phân công vận hành.
-   * App dùng để tự xác định `hotelId` ngay sau login (lấy phần tử đầu).
-   *
-   * ⚠️ Endpoint này CẦN backend bổ sung (đọc `hotel_staff_assignments` theo user trong token).
-   * Trước khi BE ship, mảng sẽ rỗng → app rơi về `EXPO_PUBLIC_STAFF_HOTEL_ID` (xem `useStaffHotelId`).
-   */
   async listMyHotels(): Promise<StaffAssignedHotel[]> {
-    const { data } = await api.get<StaffAssignedHotel[]>('/hotels/me/assignments');
+    const { data } = await api.get<StaffAssignedHotel[]>('/hotels/staff/mine');
     return data;
   },
 

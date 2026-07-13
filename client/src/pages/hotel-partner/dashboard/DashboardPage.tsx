@@ -1,4 +1,3 @@
-import React from 'react';
 import { DashboardHeader } from '../../../components/hotel-partner/dashboard/DashboardHeader';
 import { DashboardStats } from '../../../components/hotel-partner/dashboard/DashboardStats';
 import { RevenueBookingChart } from '../../../components/hotel-partner/dashboard/RevenueBookingChart';

@@ -27,6 +27,8 @@ export interface CommonNavbarProps {
   searchPlaceholder?: string;
   onSearch?: (value: string) => void;
   rightContent?: React.ReactNode;
+  /** Rendered before the default actions (bell + avatar). Kept even when the default block is used. */
+  leadingActions?: React.ReactNode;
   showDate?: boolean;
   userName?: string;
 }
@@ -37,13 +39,14 @@ export default function CommonNavbar({
   searchPlaceholder = 'Search...',
   onSearch,
   rightContent,
+  leadingActions,
   showDate = true,
   userName = 'User',
 }: CommonNavbarProps) {
   const [searchValue, setSearchValue] = React.useState('');
   const user = useAuthStore(state => state.user);
   const displayName = user?.fullName || userName;
-  const initials = (displayName || 'U').slice(0, 2).toUpperCase();
+  const initials = (displayName || 'U').slice(0, 1).toUpperCase();
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchValue(e.target.value);
@@ -102,6 +105,7 @@ export default function CommonNavbar({
         </div>
 
         <div className="flex items-center gap-2">
+          {leadingActions}
           {rightContent || (
             <>
               <button

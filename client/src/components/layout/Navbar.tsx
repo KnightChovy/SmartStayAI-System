@@ -37,7 +37,7 @@ export default function Navbar() {
   const { mutateAsync: logout, isPending: isLoggingOut } = useLogout();
 
   const initials = (user?.fullName || user?.email || 'US')
-    .slice(0, 2)
+    .slice(0, 1)
     .toUpperCase();
   const dashboardPath = user ? getLandingPathForRole(user.role) : '/';
   const hasDashboard = dashboardPath !== '/';

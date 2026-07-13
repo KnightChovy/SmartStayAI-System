@@ -4,7 +4,7 @@ import { Text } from '@/components/ui/text';
 import { cn } from '@/lib/cn';
 
 interface QRVoucherProps {
-  /** Dữ liệu mã hóa vào QR (booking code) dùng để check-in tại lễ tân. */
+  /** Dữ liệu mã hóa vào QR — phải là `booking.voucher.qrData` (staff quét theo voucherCode). */
   data: string;
   label?: string;
   size?: number;
