@@ -1,15 +1,18 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../ui/button';
 import { useSearchHotels } from '@/hooks/hotels/use-search-hotels';
 import { ROUTES } from '@/constants/routes';
-import { formatCurrency } from '@/utils/formatCurrency';
+import { useMoney } from '@/hooks/currency';
 
 const FALLBACK_IMAGE =
   'https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=1200&auto=format&fit=crop';
 
 export default function WeekendDeals() {
   const navigate = useNavigate();
+  const { t } = useTranslation('home');
+  const { format } = useMoney();
   const [favorites, setFavorites] = useState<string[]>([]);
   const { data, isLoading } = useSearchHotels({ limit: 6 });
 
@@ -30,10 +33,10 @@ export default function WeekendDeals() {
       <div className="flex justify-between items-end mb-8">
         <div>
           <h2 className="font-be-vietnam text-2xl font-bold text-on-surface">
-            Featured Stays
+            {t('weekend.title')}
           </h2>
           <p className="text-on-surface-variant text-sm font-medium font-be-vietnam">
-            Handpicked hotels available to book right now
+            {t('weekend.subtitle')}
           </p>
         </div>
         <Button
@@ -41,7 +44,7 @@ export default function WeekendDeals() {
           onClick={() => navigate('/search')}
           className="text-sm font-semibold text-primary hover:underline cursor-pointer h-auto p-0"
         >
-          View all stays
+          {t('weekend.viewAll')}
         </Button>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -96,7 +99,7 @@ export default function WeekendDeals() {
                         >
                           star
                         </span>
-                        {hotel.starRating}-star
+                        {t('weekend.star', { count: hotel.starRating })}
                       </div>
                     ) : null}
                   </div>
@@ -111,13 +114,13 @@ export default function WeekendDeals() {
                     </h4>
                     <div className="flex items-baseline gap-1">
                       <span className="text-sm text-on-surface-variant font-be-vietnam">
-                        From
+                        {t('weekend.from')}
                       </span>
                       <span className="font-be-vietnam font-bold text-lg text-on-surface">
-                        {formatCurrency(hotel.minPrice)}
+                        {format(hotel.minPrice)}
                         <span className="text-sm font-normal text-on-surface-variant font-be-vietnam">
                           {' '}
-                          / night
+                          {t('weekend.perNight')}
                         </span>
                       </span>
                     </div>

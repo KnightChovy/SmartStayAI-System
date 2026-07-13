@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
@@ -12,6 +13,7 @@ import {
 } from '../../validations/auth.validation';
 
 export default function ForgotPasswordPage() {
+  const { t } = useTranslation('auth');
   const {
     mutateAsync: forgotPassword,
     isPending: isSendingForgotPassword,
@@ -90,11 +92,10 @@ export default function ForgotPasswordPage() {
         >
           <div className="text-center mb-stack-lg">
             <h2 className="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-on-surface mb-stack-sm font-semibold">
-              Reset Your Password
+              {t('forgot.title')}
             </h2>
             <p className="font-body-md text-body-md text-on-surface-variant max-w-70 mx-auto">
-              Enter your email address and we'll send you a link to reset your
-              password.
+              {t('forgot.subtitle')}
             </p>
           </div>
 
@@ -103,11 +104,8 @@ export default function ForgotPasswordPage() {
               <span className="material-symbols-outlined text-green-800 text-4xl mb-2">
                 mark_email_read
               </span>
-              <p className="font-semibold">Reset Link Sent!</p>
-              <p className="text-sm mt-1">
-                If this email is registered, we have sent a password reset link
-                to it. Please check your inbox.
-              </p>
+              <p className="font-semibold">{t('forgot.successTitle')}</p>
+              <p className="text-sm mt-1">{t('forgot.successBody')}</p>
             </div>
           ) : (
             <form
@@ -117,7 +115,7 @@ export default function ForgotPasswordPage() {
               {forgotPasswordError && (
                 <div className="bg-error/10 border border-error/20 text-error p-3 rounded-xl text-sm font-semibold">
                   {(forgotPasswordError as any)?.response?.data?.message ||
-                    'Failed to send recovery email. Please try again.'}
+                    t('forgot.error')}
                 </div>
               )}
 
@@ -126,7 +124,7 @@ export default function ForgotPasswordPage() {
                   className="block font-label-lg text-label-lg text-on-surface-variant mb-2"
                   htmlFor="email"
                 >
-                  Email Address
+                  {t('forgot.email')}
                 </Label>
                 <Input
                   {...register('email')}
@@ -150,8 +148,8 @@ export default function ForgotPasswordPage() {
                 disabled={isSendingForgotPassword}
               >
                 {isSendingForgotPassword
-                  ? 'Sending Recovery Email...'
-                  : 'Send Recovery Email'}
+                  ? t('forgot.submitting')
+                  : t('forgot.submit')}
                 {!isSendingForgotPassword && (
                   <span className="material-symbols-outlined text-[18px] group-hover:translate-x-1 transition-transform">
                     arrow_forward
@@ -169,7 +167,7 @@ export default function ForgotPasswordPage() {
               <span className="material-symbols-outlined text-[18px]">
                 arrow_back
               </span>
-              Back to Login
+              {t('forgot.backToLogin')}
             </Link>
           </div>
         </div>

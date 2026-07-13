@@ -1,4 +1,5 @@
 import { Link, useLocation } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import {
   ChevronDown,
   LayoutDashboard,
@@ -17,6 +18,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
+import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
+import { CurrencySwitcher } from '@/components/shared/CurrencySwitcher';
 import NotificationBell from './NotificationBell';
 
 /** Nhãn hiển thị thân thiện cho từng role. */
@@ -32,6 +35,7 @@ const ROLE_LABELS: Record<string, string> = {
 
 export default function Navbar() {
   const location = useLocation();
+  const { t } = useTranslation();
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const user = useAuthStore(state => state.user);
   const { mutateAsync: logout, isPending: isLoggingOut } = useLogout();
@@ -57,38 +61,28 @@ export default function Navbar() {
               to="/"
               className={`hover:text-primary transition-colors ${location.pathname === '/' ? 'text-secondary font-bold' : ''}`}
             >
-              Home
+              {t('nav.home')}
             </Link>
             <Link
               to="/deals"
               className={`hover:text-primary transition-colors ${location.pathname === '/deals' ? 'text-secondary font-bold' : ''}`}
             >
-              Deals
+              {t('nav.deals')}
             </Link>
             <Link
               to="/destinations"
               className={`hover:text-primary transition-colors ${location.pathname === '/destinations' ? 'text-secondary font-bold' : ''}`}
             >
-              Destinations
+              {t('nav.destinations')}
             </Link>
             <Link
               to="/accommodation-types"
               className={`hover:text-primary transition-colors ${location.pathname === '/accommodation-types' ? 'text-secondary font-bold' : ''}`}
             >
-              Stays
+              {t('nav.stays')}
             </Link>
-            <button className="hover:text-primary transition-colors flex items-center gap-1">
-              USD{' '}
-              <span className="material-symbols-outlined text-sm">
-                expand_more
-              </span>
-            </button>
-            <button className="hover:text-primary transition-colors flex items-center gap-1">
-              EN{' '}
-              <span className="material-symbols-outlined text-sm">
-                language
-              </span>
-            </button>
+            <CurrencySwitcher />
+            <LanguageSwitcher />
           </div>
           <div className="flex items-center gap-3">
             <Link
@@ -96,7 +90,7 @@ export default function Navbar() {
               className="hidden sm:flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-role-partner-primary hover:bg-role-partner-light rounded-xl transition-colors"
             >
               <Store className="size-4" />
-              List your property
+              {t('nav.listProperty')}
             </Link>
             {isAuthenticated && user ? (
               <>
@@ -149,14 +143,14 @@ export default function Navbar() {
                       <DropdownMenuItem asChild>
                         <Link to={dashboardPath} className="cursor-pointer">
                           <LayoutDashboard className="size-4" />
-                          Dashboard
+                          {t('nav.dashboard')}
                         </Link>
                       </DropdownMenuItem>
                     )}
                     <DropdownMenuItem asChild>
                       <Link to="/account/profile" className="cursor-pointer">
                         <UserIcon className="size-4" />
-                        My Account
+                        {t('nav.myAccount')}
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
@@ -167,7 +161,7 @@ export default function Navbar() {
                       className="cursor-pointer"
                     >
                       <LogOut className="size-4" />
-                      {isLoggingOut ? 'Logging out...' : 'Log out'}
+                      {isLoggingOut ? t('nav.loggingOut') : t('nav.logout')}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -178,13 +172,13 @@ export default function Navbar() {
                   to="/login"
                   className="px-5 py-2 text-sm font-semibold text-on-surface hover:bg-surface-container-low rounded-xl transition-all text-center"
                 >
-                  Log in
+                  {t('nav.login')}
                 </Link>
                 <Link
                   to="/register"
                   className="px-5 py-2 text-sm font-semibold bg-on-surface text-white rounded-xl hover:bg-primary transition-all text-center"
                 >
-                  Register
+                  {t('nav.register')}
                 </Link>
               </>
             )}

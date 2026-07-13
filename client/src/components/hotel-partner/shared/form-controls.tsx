@@ -55,6 +55,9 @@ interface TextFieldProps<T extends FieldValues> {
   required?: boolean;
   hint?: string;
   step?: string;
+  /** Ràng buộc số cho input `type="number"` (chặn spinner/gõ ngoài khoảng). */
+  min?: number | string;
+  max?: number | string;
   className?: string;
 }
 
@@ -66,6 +69,8 @@ export function TextField<T extends FieldValues>({
   required,
   hint,
   step,
+  min,
+  max,
   className,
 }: TextFieldProps<T>) {
   const {
@@ -79,6 +84,8 @@ export function TextField<T extends FieldValues>({
         id={name}
         type={type}
         step={step}
+        min={min}
+        max={max}
         placeholder={placeholder}
         aria-invalid={!!error}
         {...register(name)}

@@ -1,4 +1,5 @@
 import { Link } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import type { FieldErrors, UseFormRegister } from 'react-hook-form';
 import { ArrowRight, Loader2, Lock, Mail, User as UserIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -31,19 +32,20 @@ export function PartnerAccountStep({
   showConfirm,
   setShowConfirm,
 }: PartnerAccountStepProps) {
+  const { t } = useTranslation('auth');
   return (
     <section className="space-y-4">
       <header className="mb-2">
-        <h2 className="text-2xl font-bold text-on-surface mb-1.5">
-          Create your partner account
+        <h2 className="text-xl sm:text-2xl font-bold text-on-surface mb-1.5">
+          {t('signup.title')}
         </h2>
         <p className="text-sm text-on-surface-variant">
-          Already have an account?{' '}
+          {t('signup.haveAccount')}{' '}
           <Link
             to={ROUTES.login}
             className="font-semibold text-role-partner-primary hover:underline"
           >
-            Sign in
+            {t('signup.signIn')}
           </Link>
         </p>
       </header>
@@ -55,20 +57,20 @@ export function PartnerAccountStep({
       )}
 
       <Field
-        label="Full name"
+        label={t('signup.fullName')}
         icon={<UserIcon className="w-4 h-4" />}
         required
         error={errors.name?.message}
       >
         <Input
           {...register('name')}
-          placeholder="e.g. Nguyen Van An"
+          placeholder={t('signup.fullNamePlaceholder')}
           className={partnerFieldClass}
         />
       </Field>
 
       <Field
-        label="Email"
+        label={t('signup.email')}
         icon={<Mail className="w-4 h-4" />}
         required
         error={errors.email?.message}
@@ -82,7 +84,7 @@ export function PartnerAccountStep({
       </Field>
 
       <Field
-        label="Password"
+        label={t('signup.password')}
         icon={<Lock className="w-4 h-4" />}
         required
         error={errors.password?.message}
@@ -102,7 +104,7 @@ export function PartnerAccountStep({
       </Field>
 
       <Field
-        label="Confirm password"
+        label={t('signup.confirmPassword')}
         icon={<Lock className="w-4 h-4" />}
         required
         error={errors.confirmPassword?.message}
@@ -129,23 +131,23 @@ export function PartnerAccountStep({
       >
         {isSubmitting ? (
           <>
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Sending code...
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" /> {t('signup.sendingCode')}
           </>
         ) : (
           <>
-            Continue
+            {t('signup.continue')}
             <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
           </>
         )}
       </Button>
 
       <p className="text-center text-sm text-on-surface-variant pt-1">
-        Just want to book stays?{' '}
+        {t('signup.travelerPrompt')}{' '}
         <Link
           to={ROUTES.register}
           className="font-semibold text-role-partner-primary hover:underline"
         >
-          Create a traveler account
+          {t('signup.createTraveler')}
         </Link>
       </p>
     </section>

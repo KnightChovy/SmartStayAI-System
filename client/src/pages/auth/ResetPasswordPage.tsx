@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '../../components/ui/button';
@@ -15,6 +16,7 @@ export default function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
   const navigate = useNavigate();
+  const { t } = useTranslation('auth');
   const {
     mutateAsync: resetPassword,
     isPending: isResettingPassword,
@@ -39,7 +41,7 @@ export default function ResetPasswordPage() {
 
   const onSubmit = async (data: ResetPasswordInput) => {
     if (!token) {
-      alert('Missing verification token! Please check your recovery email.');
+      alert(t('reset.missingToken'));
       return;
     }
     try {
@@ -91,10 +93,10 @@ export default function ResetPasswordPage() {
         >
           <div className="text-center mb-stack-lg">
             <h2 className="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-on-surface mb-stack-sm font-semibold">
-              Enter New Password
+              {t('reset.title')}
             </h2>
             <p className="font-body-md text-body-md text-on-surface-variant max-w-70 mx-auto">
-              Please enter your new password to regain access to your dashboard.
+              {t('reset.subtitle')}
             </p>
           </div>
 
@@ -103,15 +105,13 @@ export default function ResetPasswordPage() {
               <span className="material-symbols-outlined text-3xl mb-2 block">
                 error
               </span>
-              <p className="font-semibold">Invalid Recovery Link</p>
-              <p className="text-sm mt-1">
-                This token is missing or has expired. Please request a new link.
-              </p>
+              <p className="font-semibold">{t('reset.invalidTitle')}</p>
+              <p className="text-sm mt-1">{t('reset.invalidBody')}</p>
               <Link
                 to="/forgot-password"
                 className="mt-4 inline-block text-secondary font-bold hover:underline"
               >
-                Go to Forgot Password
+                {t('reset.goForgot')}
               </Link>
             </div>
           ) : resetPasswordSuccess ? (
@@ -119,11 +119,8 @@ export default function ResetPasswordPage() {
               <span className="material-symbols-outlined text-green-800 text-3xl mb-2 block">
                 check_circle
               </span>
-              <p className="font-semibold">Password Reset Successful!</p>
-              <p className="text-sm mt-1">
-                Your password has been changed successfully. Redirecting you to
-                login...
-              </p>
+              <p className="font-semibold">{t('reset.successTitle')}</p>
+              <p className="text-sm mt-1">{t('reset.successBody')}</p>
             </div>
           ) : (
             <form
@@ -133,7 +130,7 @@ export default function ResetPasswordPage() {
               {resetPasswordError && (
                 <div className="bg-error/10 border border-error/20 text-error p-3 rounded-xl text-sm font-semibold">
                   {(resetPasswordError as any)?.response?.data?.message ||
-                    'Failed to reset password. Please try again.'}
+                    t('reset.error')}
                 </div>
               )}
 
@@ -142,7 +139,7 @@ export default function ResetPasswordPage() {
                   className="block font-label-lg text-label-lg text-on-surface-variant mb-2"
                   htmlFor="password"
                 >
-                  New Password
+                  {t('reset.newPassword')}
                 </Label>
                 <Input
                   {...register('password')}
@@ -165,7 +162,7 @@ export default function ResetPasswordPage() {
                   className="block font-label-lg text-label-lg text-on-surface-variant mb-2"
                   htmlFor="confirmPassword"
                 >
-                  Confirm Password
+                  {t('reset.confirmPassword')}
                 </Label>
                 <Input
                   {...register('confirmPassword')}
@@ -189,8 +186,8 @@ export default function ResetPasswordPage() {
                 disabled={isResettingPassword}
               >
                 {isResettingPassword
-                  ? 'Resetting Password...'
-                  : 'Reset Password'}
+                  ? t('reset.submitting')
+                  : t('reset.submit')}
                 {!isResettingPassword && (
                   <span className="material-symbols-outlined text-[18px] group-hover:translate-x-1 transition-transform">
                     arrow_forward
@@ -208,7 +205,7 @@ export default function ResetPasswordPage() {
               <span className="material-symbols-outlined text-[18px]">
                 arrow_back
               </span>
-              Back to Login
+              {t('reset.backToLogin')}
             </Link>
           </div>
         </div>

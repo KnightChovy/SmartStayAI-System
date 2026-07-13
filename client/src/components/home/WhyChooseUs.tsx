@@ -1,24 +1,27 @@
+import { useTranslation } from 'react-i18next';
+
 export default function WhyChooseUs() {
+  const { t } = useTranslation('home');
   const cards = [
     {
       icon: 'event_busy',
-      title: 'Free Cancellation',
-      desc: 'Flexible stays for peace of mind in changing times',
+      title: t('whyChoose.freeCancellation.title'),
+      desc: t('whyChoose.freeCancellation.desc'),
     },
     {
       icon: 'support_agent',
-      title: '24/7 Support',
-      desc: 'Global assistance whenever you need a helping hand',
+      title: t('whyChoose.support.title'),
+      desc: t('whyChoose.support.desc'),
     },
     {
       icon: 'verified_user',
-      title: 'Verified Reviews',
-      desc: 'Authentic experiences only from real luxury travelers',
+      title: t('whyChoose.reviews.title'),
+      desc: t('whyChoose.reviews.desc'),
     },
     {
       icon: 'payments',
-      title: 'Best Price',
-      desc: 'Guaranteed exclusive rates for our intelligent members',
+      title: t('whyChoose.bestPrice.title'),
+      desc: t('whyChoose.bestPrice.desc'),
     },
   ];
 
@@ -26,7 +29,7 @@ export default function WhyChooseUs() {
     <section className="max-w-7xl mx-auto px-margin-mobile md:px-8 mb-section-gap w-full">
       <div className="text-center mb-12 mt-12">
         <h2 className="font-be-vietnam text-4xl font-bold text-on-surface">
-          Why choose SmartStay?
+          {t('whyChoose.title')}
         </h2>
       </div>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">

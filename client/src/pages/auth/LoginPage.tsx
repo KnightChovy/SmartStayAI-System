@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '../../components/ui/button';
@@ -21,6 +22,7 @@ interface LoginRedirectState {
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useTranslation('auth');
   const redirect = (location.state as LoginRedirectState | null) ?? {};
   const {
     mutateAsync: login,
@@ -93,7 +95,7 @@ export default function LoginPage() {
             to="/"
             className="flex items-center gap-1 px-4 py-2 rounded-full bg-white/15 backdrop-blur-sm border border-white/20 text-white font-label-sm text-label-sm hover:bg-white/25 transition-colors"
           >
-            Back to website
+            {t('login.backToWebsite')}
             <span className="material-symbols-outlined text-[18px]">
               arrow_forward
             </span>
@@ -102,7 +104,7 @@ export default function LoginPage() {
         {/* Bottom: tagline + carousel dots */}
         <div className="relative z-10">
           <h2 className="font-headline-lg text-headline-lg text-white max-w-xs">
-            Your Stay, Elevated by Intelligence
+            {t('login.tagline')}
           </h2>
           <div className="mt-6 flex items-center gap-2">
             <span className="h-1.5 w-4 rounded-full bg-white/40" />
@@ -117,18 +119,18 @@ export default function LoginPage() {
         <div className="w-full max-w-sm mx-auto">
           <div className="mb-stack-lg">
             <h2 className="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface mb-stack-sm font-semibold">
-              Welcome Back
+              {t('login.welcome')}
             </h2>
             {/* Sign in / Sign up segmented toggle */}
             <div className="flex p-1 bg-surface-container-low rounded-full">
               <span className="flex-1 text-center py-2.5 rounded-full font-label-lg text-label-lg bg-surface text-on-surface shadow-sm">
-                Sign In
+                {t('login.signIn')}
               </span>
               <Link
                 to="/register"
                 className="flex-1 text-center py-2.5 rounded-full font-label-lg text-label-lg text-on-surface-variant hover:text-on-surface transition-colors"
               >
-                Sign Up
+                {t('login.signUp')}
               </Link>
             </div>
           </div>
@@ -141,7 +143,7 @@ export default function LoginPage() {
             {loginError && (
               <div className="bg-error/10 border border-error/20 text-error p-3 rounded-xl text-sm font-semibold">
                 {(loginError as any)?.response?.data?.message ||
-                  'Login failed. Please verify your credentials.'}
+                  t('login.error')}
               </div>
             )}
 
@@ -158,7 +160,7 @@ export default function LoginPage() {
                 className="font-label-sm text-label-sm text-on-surface-variant block mb-stack-sm uppercase"
                 htmlFor="email"
               >
-                Email Address
+                {t('login.email')}
               </Label>
               <Input
                 {...register('email')}
@@ -189,13 +191,13 @@ export default function LoginPage() {
                   className="font-label-sm text-label-sm text-on-surface-variant uppercase"
                   htmlFor="password"
                 >
-                  Password
+                  {t('login.password')}
                 </Label>
                 <Link
                   className="font-label-sm text-label-sm text-secondary hover:text-on-secondary-container transition-colors"
                   to="/forgot-password"
                 >
-                  Forgot Password?
+                  {t('login.forgotPassword')}
                 </Link>
               </div>
               <div className="relative">
@@ -231,14 +233,14 @@ export default function LoginPage() {
               type="submit"
               disabled={isLoggingIn}
             >
-              {isLoggingIn ? 'Logging in...' : 'Login'}
+              {isLoggingIn ? t('login.submitting') : t('login.submit')}
             </Button>
           </form>
 
           <div className="relative flex items-center py-stack-md">
             <div className="grow border-t border-outline-variant/30"></div>
             <span className="shrink mx-4 font-label-sm text-label-sm text-outline uppercase tracking-widest">
-              Or login with
+              {t('login.orLoginWith')}
             </span>
             <div className="grow border-t border-outline-variant/30"></div>
           </div>
@@ -266,15 +268,15 @@ export default function LoginPage() {
                 fill="#EA4335"
               ></path>
             </svg>
-            Login with Google
+            {t('login.google')}
           </Button>
           <p className="font-body-md text-body-md text-on-surface-variant mt-5">
-            Don't have an account?{' '}
+            {t('login.noAccount')}{' '}
             <Link
               className="text-secondary font-semibold hover:underline transition-all"
               to="/register"
             >
-              Register
+              {t('login.registerLink')}
             </Link>
           </p>
 
@@ -287,7 +289,7 @@ export default function LoginPage() {
                 alert('Legal info...');
               }}
             >
-              LEGAL
+              {t('login.legal')}
             </a>
             <a
               className="font-label-sm text-label-sm text-on-surface-variant uppercase hover:text-primary tracking-widest outline-none cursor-pointer"
@@ -297,7 +299,7 @@ export default function LoginPage() {
                 alert('Privacy policy...');
               }}
             >
-              PRIVACY
+              {t('login.privacy')}
             </a>
           </div>
         </div>

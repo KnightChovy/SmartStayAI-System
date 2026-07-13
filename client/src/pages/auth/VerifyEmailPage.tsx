@@ -1,8 +1,10 @@
 import { useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { useVerifyEmail } from '../../hooks/auth';
 
 export default function VerifyEmailPage() {
+  const { t } = useTranslation('auth');
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
   const {
@@ -49,10 +51,10 @@ export default function VerifyEmailPage() {
         <div className="glass-card w-full p-stack-lg rounded-[16px] shadow-[0_20px_40px_rgba(0,0,0,0.08)] flex flex-col items-center text-center">
           <div className="mb-stack-lg">
             <h2 className="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-on-surface mb-stack-sm font-semibold">
-              Email Verification
+              {t('verifyEmail.title')}
             </h2>
             <p className="font-body-md text-body-md text-on-surface-variant max-w-[280px] mx-auto">
-              Xác thực email của bạn để kích hoạt đầy đủ tính năng concierge.
+              {t('verifyEmail.subtitle')}
             </p>
           </div>
 
@@ -61,16 +63,17 @@ export default function VerifyEmailPage() {
               <span className="material-symbols-outlined text-error text-5xl mb-4">
                 error
               </span>
-              <p className="font-semibold text-lg text-error">Missing Token</p>
+              <p className="font-semibold text-lg text-error">
+                {t('verifyEmail.missingTitle')}
+              </p>
               <p className="text-sm text-on-surface-variant mt-2 max-w-[300px]">
-                Mã xác minh không tồn tại hoặc không hợp lệ. Vui lòng kiểm tra
-                lại liên kết trong email của bạn.
+                {t('verifyEmail.missingBody')}
               </p>
               <Link
                 to="/"
                 className="mt-6 px-6 py-2.5 bg-primary text-on-primary rounded-full font-label-lg hover:bg-primary/90 transition-all uppercase tracking-wider"
               >
-                Go to Home
+                {t('verifyEmail.goHome')}
               </Link>
             </div>
           ) : isVerifyingEmail ? (
@@ -78,10 +81,11 @@ export default function VerifyEmailPage() {
               <span className="material-symbols-outlined text-secondary text-5xl mb-4 animate-spin">
                 progress_activity
               </span>
-              <p className="font-semibold text-lg">Verifying Your Email...</p>
+              <p className="font-semibold text-lg">
+                {t('verifyEmail.verifying')}
+              </p>
               <p className="text-sm text-on-surface-variant mt-2">
-                Hệ thống đang tiến hành kiểm tra mã xác thực của bạn. Vui lòng
-                chờ trong giây lát.
+                {t('verifyEmail.verifyingBody')}
               </p>
             </div>
           ) : verifyEmailSuccess ? (
@@ -90,17 +94,16 @@ export default function VerifyEmailPage() {
                 check_circle
               </span>
               <p className="font-semibold text-lg text-green-700">
-                Email Verified Successfully!
+                {t('verifyEmail.successTitle')}
               </p>
               <p className="text-sm text-on-surface-variant mt-2 max-w-[300px]">
-                Tài khoản của bạn đã được kích hoạt thành công. Bạn hiện có thể
-                đăng nhập để trải nghiệm SmartStay AI.
+                {t('verifyEmail.successBody')}
               </p>
               <Link
                 to="/login"
                 className="mt-6 px-8 py-3 bg-primary text-on-primary rounded-full font-label-lg hover:bg-primary/90 active:scale-[0.98] transition-all uppercase tracking-wider shadow-md"
               >
-                Log In Now
+                {t('verifyEmail.loginNow')}
               </Link>
             </div>
           ) : (
@@ -109,17 +112,17 @@ export default function VerifyEmailPage() {
                 cancel
               </span>
               <p className="font-semibold text-lg text-error">
-                Verification Failed
+                {t('verifyEmail.failedTitle')}
               </p>
               <p className="text-sm text-on-surface-variant mt-2 max-w-[300px]">
                 {(verifyEmailError as any)?.response?.data?.message ||
-                  'Mã xác thực đã hết hạn hoặc không chính xác. Vui lòng yêu cầu gửi lại email xác thực.'}
+                  t('verifyEmail.failedBody')}
               </p>
               <Link
                 to="/login"
                 className="mt-6 px-6 py-2.5 bg-primary text-on-primary rounded-full font-label-lg hover:bg-primary/90 transition-all uppercase tracking-wider"
               >
-                Back to Login
+                {t('verifyEmail.backToLogin')}
               </Link>
             </div>
           )}

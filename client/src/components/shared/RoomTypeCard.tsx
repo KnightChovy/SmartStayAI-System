@@ -1,6 +1,6 @@
 import { Bed, BedDouble, Eye, Maximize, Users } from 'lucide-react';
 import type { RoomType } from '@/types/hotel.types';
-import { formatCurrency } from '@/utils/formatCurrency';
+import { useMoney } from '@/hooks/currency';
 import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/button';
 
@@ -16,6 +16,7 @@ interface RoomTypeCardProps {
 
 /** Thẻ loại phòng trong trang chi tiết khách sạn. */
 export default function RoomTypeCard({ roomType, onSelect, selectable = false }: RoomTypeCardProps) {
+  const { format } = useMoney();
   const image = roomType.images?.[0]?.url ?? FALLBACK_IMAGE;
   const amenities = roomType.amenities?.map(a => a.amenity) ?? [];
   const hasStayQuote = roomType.totalPrice !== undefined;
@@ -93,7 +94,7 @@ export default function RoomTypeCard({ roomType, onSelect, selectable = false }:
                   {roomType.numNights} night{roomType.numNights === 1 ? '' : 's'} total
                 </p>
                 <p className="font-be-vietnam text-xl font-bold text-on-surface">
-                  {formatCurrency(roomType.totalPrice)}
+                  {format(roomType.totalPrice)}
                   <span className="text-sm font-normal text-on-surface-variant"> total</span>
                 </p>
               </>
@@ -101,7 +102,7 @@ export default function RoomTypeCard({ roomType, onSelect, selectable = false }:
               <>
                 <p className="text-xs text-on-surface-variant">From</p>
                 <p className="font-be-vietnam text-xl font-bold text-on-surface">
-                  {formatCurrency(roomType.basePrice)}
+                  {format(roomType.basePrice)}
                   <span className="text-sm font-normal text-on-surface-variant"> / night</span>
                 </p>
               </>

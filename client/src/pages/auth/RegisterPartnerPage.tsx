@@ -60,8 +60,8 @@ export default function RegisterPartnerPage() {
       <PartnerSignupBrandPanel />
 
       {/* Right form panel */}
-      <div className="min-h-screen flex flex-col justify-center px-margin-mobile md:px-16 lg:px-20 py-10 overflow-y-auto">
-        <div className="w-full max-w-md mx-auto">
+      <div className="min-h-screen flex flex-col px-5 sm:px-8 md:px-16 lg:px-20 py-8 sm:py-12 overflow-y-auto">
+        <div className="w-full max-w-md mx-auto my-auto">
           {!otpSent ? (
             <PartnerAccountStep
               register={register}

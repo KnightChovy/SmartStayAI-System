@@ -1,15 +1,12 @@
 import { Link } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { ArrowRight, BadgeCheck, Building2 } from 'lucide-react';
 import { ROUTES } from '@/constants/routes';
 
-const PERKS = [
-  'Free to list — no upfront or monthly fees',
-  'Reach millions of travelers instantly',
-  'AI tools for bookings, pricing & payouts',
-];
-
 /** Cột trái thương hiệu + lợi ích (chỉ hiện từ lg trở lên). */
 export function PartnerSignupBrandPanel() {
+  const { t } = useTranslation('auth');
+  const perks = [t('brand.perk1'), t('brand.perk2'), t('brand.perk3')];
   return (
     <div
       className="relative hidden lg:flex flex-col justify-between p-10 min-h-screen bg-cover bg-center"
@@ -30,19 +27,19 @@ export function PartnerSignupBrandPanel() {
           to={ROUTES.listYourProperty}
           className="flex items-center gap-1 px-4 py-2 rounded-full bg-white/15 backdrop-blur-sm border border-white/20 text-white text-sm hover:bg-white/25 transition-colors"
         >
-          Learn more
+          {t('brand.learnMore')}
           <ArrowRight className="w-4 h-4" />
         </Link>
       </div>
       <div className="relative z-10 text-white">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 border border-white/20 px-3 py-1 text-xs font-semibold mb-5">
-          <Building2 className="w-3.5 h-3.5" /> Partner registration
+          <Building2 className="w-3.5 h-3.5" /> {t('brand.badge')}
         </span>
         <h2 className="text-3xl font-bold max-w-sm leading-tight mb-6">
-          Grow your property with Smart Stay AI
+          {t('brand.title')}
         </h2>
         <ul className="space-y-3 text-sm text-white/90 max-w-sm">
-          {PERKS.map(item => (
+          {perks.map(item => (
             <li key={item} className="flex items-center gap-2.5">
               <BadgeCheck className="w-5 h-5 shrink-0" />
               {item}

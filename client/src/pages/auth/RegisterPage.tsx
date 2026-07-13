@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '../../components/ui/button';
@@ -13,6 +14,7 @@ import {
 
 export default function RegisterPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation('auth');
   const {
     mutateAsync: sendOtp,
     isPending: isSendingOtp,
@@ -82,7 +84,7 @@ export default function RegisterPage() {
             to="/"
             className="flex items-center gap-1 px-4 py-2 rounded-full bg-white/15 backdrop-blur-sm border border-white/20 text-white font-label-sm text-label-sm hover:bg-white/25 transition-colors"
           >
-            Back to website
+            {t('register.backToWebsite')}
             <span className="material-symbols-outlined text-[18px]">
               arrow_forward
             </span>
@@ -91,7 +93,7 @@ export default function RegisterPage() {
         {/* Bottom: tagline + carousel dots */}
         <div className="relative z-10">
           <h2 className="font-headline-lg text-headline-lg text-white max-w-xs">
-            Capturing Moments, Creating Memories
+            {t('register.tagline')}
           </h2>
           <div className="mt-6 flex items-center gap-2">
             <span className="h-1.5 w-4 rounded-full bg-white/40" />
@@ -106,7 +108,7 @@ export default function RegisterPage() {
         <div className="w-full max-w-sm mx-auto">
           <header className="mb-2.5">
             <h2 className="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface mb-stack-sm">
-              Create an account
+              {t('register.title')}
             </h2>
             {/* Sign in / Sign up segmented toggle */}
             <div className="flex p-1 bg-surface-container-low rounded-full">
@@ -114,10 +116,10 @@ export default function RegisterPage() {
                 to="/login"
                 className="flex-1 text-center py-2.5 rounded-full font-label-lg text-label-lg text-on-surface-variant hover:text-on-surface transition-colors"
               >
-                Sign In
+                {t('register.signIn')}
               </Link>
               <span className="flex-1 text-center py-2.5 rounded-full font-label-lg text-label-lg bg-surface text-on-surface shadow-sm">
-                Sign Up
+                {t('register.signUp')}
               </span>
             </div>
           </header>
@@ -129,18 +131,18 @@ export default function RegisterPage() {
             {sendOtpError && (
               <div className="bg-error/10 border border-error/20 text-error p-3 rounded-xl text-sm font-semibold">
                 {(sendOtpError as any)?.response?.data?.message ||
-                  'Failed to send OTP code. Please try again.'}
+                  t('register.error')}
               </div>
             )}
             <div className="space-y-2 ">
               <Label className="font-label-lg text-label-sm text-on-surface-variant uppercase">
-                Full Name
+                {t('register.fullName')}
               </Label>
               <div className="relative">
                 <Input
                   {...register('name')}
                   className="w-full h-11 px-2 bg-surface-container-low/50 border border-outline-variant/60 rounded-xl font-body-md text-body-md focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-outline outline-none"
-                  placeholder="John Doe"
+                  placeholder={t('register.fullNamePlaceholder')}
                   type="text"
                 />
               </div>
@@ -154,13 +156,13 @@ export default function RegisterPage() {
             {/* Email */}
             <div className="space-y-2">
               <Label className="font-label-lg text-label-sm text-on-surface-variant uppercase">
-                Email Address
+                {t('register.email')}
               </Label>
               <div className="relative">
                 <Input
                   {...register('email')}
                   className="w-full h-11 px-2 bg-surface-container-low/50 border border-outline-variant/60 rounded-xl font-body-md text-body-md focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-outline outline-none"
-                  placeholder="name@example.com"
+                  placeholder={t('register.emailPlaceholder')}
                   type="email"
                 />
               </div>
@@ -173,7 +175,7 @@ export default function RegisterPage() {
 
             <div className="space-y-2">
               <Label className="font-label-lg text-label-sm text-on-surface-variant uppercase">
-                Password
+                {t('register.password')}
               </Label>
               <div className="relative">
                 <Input
@@ -202,7 +204,7 @@ export default function RegisterPage() {
 
             <div className="space-y-2">
               <Label className="font-label-lg text-label-sm text-on-surface-variant uppercase">
-                Confirm Password
+                {t('register.confirmPassword')}
               </Label>
               <div className="relative">
                 <Input
@@ -234,7 +236,7 @@ export default function RegisterPage() {
                 type="submit" 
                 disabled={isSendingOtp}
               >
-                {isSendingOtp ? 'Sending OTP Code...' : 'Create Account'}
+                {isSendingOtp ? t('register.submitting') : t('register.submit')}
                 {!isSendingOtp && (
                   <span className="material-symbols-outlined text-[20px] group-hover:translate-x-1 transition-transform">
                     arrow_forward
@@ -245,7 +247,7 @@ export default function RegisterPage() {
             <div className="flex items-center gap-4 my-stack-md">
               <div className="h-px flex-1 bg-outline-variant/30"></div>
               <span className="font-label-sm text-label-sm text-on-surface-variant uppercase">
-                Or register with
+                {t('register.orRegisterWith')}
               </span>
               <div className="h-px flex-1 bg-outline-variant/30"></div>
             </div>
@@ -273,16 +275,16 @@ export default function RegisterPage() {
                   fill="#EA4335"
                 ></path>
               </svg>
-              Register with Google
+              {t('register.google')}
             </Button>
           </form>
           <p className="font-body-md text-body-md text-on-surface-variant mt-5">
-            Already have an account?{' '}
+            {t('register.haveAccount')}{' '}
             <Link
               className="text-secondary font-semibold hover:underline transition-all"
               to="/login"
             >
-              Log in
+              {t('register.loginLink')}
             </Link>
           </p>
           <div className="mt-stack-md pt-4 border-t border-outline-variant/30 flex items-center justify-center gap-6">
@@ -294,7 +296,7 @@ export default function RegisterPage() {
                 alert('Legal information...');
               }}
             >
-              Legal
+              {t('register.legal')}
             </a>
             <a
               className="font-label-sm text-label-sm text-on-surface-variant uppercase hover:text-primary"
@@ -304,7 +306,7 @@ export default function RegisterPage() {
                 alert('Privacy policy...');
               }}
             >
-              Privacy
+              {t('register.privacy')}
             </a>
           </div>
         </div>

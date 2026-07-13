@@ -50,14 +50,20 @@ export function PwToggle({
 }
 
 /** Nút quay lại step trước. */
-export function StepBackButton({ onClick }: { onClick: () => void }) {
+export function StepBackButton({
+  onClick,
+  label = 'Back',
+}: {
+  onClick: () => void;
+  label?: string;
+}) {
   return (
     <button
       type="button"
       onClick={onClick}
       className="flex items-center gap-1.5 text-sm text-on-surface-variant hover:text-on-surface mb-6 cursor-pointer"
     >
-      <ArrowLeft className="w-4 h-4" /> Back
+      <ArrowLeft className="w-4 h-4" /> {label}
     </button>
   );
 }

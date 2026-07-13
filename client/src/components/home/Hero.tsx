@@ -2,6 +2,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useNavigate } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { Minus, Plus } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -18,6 +19,7 @@ type HeroSearchFormValues = z.infer<typeof heroSearchSchema>;
 
 export default function Hero() {
   const navigate = useNavigate();
+  const { t } = useTranslation('home');
   const { register, handleSubmit, setValue, watch } = useForm<HeroSearchFormValues>({
     resolver: zodResolver(heroSearchSchema),
     defaultValues: {
@@ -74,10 +76,10 @@ export default function Hero() {
       />
       <div className="relative z-10 max-w-4xl mx-auto text-center mb-12">
         <h1 className="font-be-vietnam text-display-lg md:text-6xl text-on-surface mb-6 font-bold leading-tight">
-          Find your next stay
+          {t('hero.title')}
         </h1>
         <p className="font-be-vietnam text-lg text-on-surface-variant max-w-xl mx-auto">
-          Experience curated sanctuaries powered by intelligent discovery.
+          {t('hero.subtitle')}
         </p>
       </div>
       {/* Search Bar Area */}
@@ -88,19 +90,19 @@ export default function Hero() {
         >
           <div className="w-full md:flex-[1.5] px-6 py-3 flex flex-col group">
             <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">
-              Destination
+              {t('hero.destination')}
             </label>
             <Input
               {...register('destination')}
               className="w-full bg-transparent border-none p-0 focus:ring-0 focus-visible:ring-0 text-sm placeholder:text-outline/50 font-medium outline-none mt-1 shadow-none h-auto"
-              placeholder="Where are you going?"
+              placeholder={t('hero.destinationPlaceholder')}
               type="text"
             />
           </div>
           <div className="hidden md:block w-px h-8 bg-outline-variant/30"></div>
           <div className="w-full md:flex-1 px-6 py-3 flex flex-col">
             <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">
-              Check-in
+              {t('hero.checkIn')}
             </label>
             <input
               type="date"
@@ -113,7 +115,7 @@ export default function Hero() {
           <div className="hidden md:block w-px h-8 bg-outline-variant/30"></div>
           <div className="w-full md:flex-1 px-6 py-3 flex flex-col">
             <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">
-              Check-out
+              {t('hero.checkOut')}
             </label>
             <input
               type="date"
@@ -126,7 +128,7 @@ export default function Hero() {
           <div className="hidden md:block w-px h-8 bg-outline-variant/30"></div>
           <div className="w-full md:flex-1 px-6 py-3 flex flex-col">
             <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">
-              Guests
+              {t('hero.guests')}
             </label>
             <div className="mt-1 flex items-center justify-between">
               <button

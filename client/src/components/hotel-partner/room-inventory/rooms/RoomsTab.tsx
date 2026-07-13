@@ -22,11 +22,21 @@ interface RoomsTabProps {
 
 const PAGE_SIZE = 20;
 const ALL = 'all';
+const DEFAULT_SORT = 'roomNumber:asc';
+
+/** Sắp xếp server-side theo số phòng hoặc tầng (BE nhận "field:asc|desc"). */
+const SORT_OPTIONS = [
+  { label: 'Room number (A–Z)', value: 'roomNumber:asc' },
+  { label: 'Room number (Z–A)', value: 'roomNumber:desc' },
+  { label: 'Floor (low → high)', value: 'floor:asc' },
+  { label: 'Floor (high → low)', value: 'floor:desc' },
+];
 
 export function RoomsTab({ hotelId }: RoomsTabProps) {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<RoomStatus | typeof ALL>(ALL);
   const [roomTypeFilter, setRoomTypeFilter] = useState<string>(ALL);
+  const [sortBy, setSortBy] = useState<string>(DEFAULT_SORT);
   const [page, setPage] = useState(1);
 
   const [formOpen, setFormOpen] = useState(false);
@@ -41,6 +51,7 @@ export function RoomsTab({ hotelId }: RoomsTabProps) {
     limit: PAGE_SIZE,
     status: statusFilter === ALL ? undefined : statusFilter,
     roomTypeId: roomTypeFilter === ALL ? undefined : roomTypeFilter,
+    sortBy,
   };
   const { data, isLoading, isError } = useRooms(hotelId, params);
 
@@ -62,6 +73,7 @@ export function RoomsTab({ hotelId }: RoomsTabProps) {
     setSearch('');
     setStatusFilter(ALL);
     setRoomTypeFilter(ALL);
+    setSortBy(DEFAULT_SORT);
     setPage(1);
   };
 
@@ -163,6 +175,9 @@ export function RoomsTab({ hotelId }: RoomsTabProps) {
           category={roomTypeFilter}
           onCategoryChange={v => resetPageThen(() => setRoomTypeFilter(v))}
           categoryOptions={roomTypeOptions}
+          sort={sortBy}
+          onSortChange={v => resetPageThen(() => setSortBy(v))}
+          sortOptions={SORT_OPTIONS}
           onReset={resetFilters}
         />
       </div>

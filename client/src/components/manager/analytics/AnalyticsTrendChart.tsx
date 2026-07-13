@@ -10,18 +10,19 @@ import {
   Legend,
 } from 'recharts';
 import type { PlatformAnalytics } from '@/types/analytics.types';
-import { MIN_TREND_POINTS, formatNumber, type ChartTooltipProps } from './helpers';
+import { formatNumber, type ChartTooltipProps } from './helpers';
 
 interface AnalyticsTrendChartProps {
   timeSeries: PlatformAnalytics['timeSeries'];
 }
 
 export function AnalyticsTrendChart({ timeSeries }: AnalyticsTrendChartProps) {
-  // A2: đủ điểm khác 0 mới vẽ xu hướng
-  const nonZeroPoints = timeSeries.filter(
+  // Một đường xu hướng chỉ cần ≥2 mốc thời gian là vẽ được; chỉ chặn khi
+  // toàn bộ đều bằng 0 (chưa có hoạt động nào) hoặc chỉ có 1 điểm duy nhất.
+  const hasActivity = timeSeries.some(
     p => p.bookings > 0 || p.confirmedBookings > 0 || p.newUsers > 0
-  ).length;
-  const canShowTrend = nonZeroPoints >= MIN_TREND_POINTS;
+  );
+  const canShowTrend = timeSeries.length >= 2 && hasActivity;
 
   return (
     <div className="bg-white rounded-xl border border-slate-200 p-6">
@@ -72,7 +73,7 @@ function LowDataBlock() {
       </div>
       <p className="text-sm font-medium text-slate-500">Not enough data to show a trend yet</p>
       <p className="text-xs mt-1 max-w-xs">
-        Trends appear once there are at least {MIN_TREND_POINTS} periods with activity.
+        Trends appear once there are at least 2 time periods with activity.
       </p>
     </div>
   );

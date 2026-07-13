@@ -16,6 +16,23 @@ export function formatCurrency(
   }).format(amount);
 }
 
+/**
+ * Quy đổi số tiền **VND (gốc)** sang tiền tệ hiển thị rồi format.
+ * BE luôn trả giá bằng VND; USD chỉ là lớp hiển thị (chia cho tỷ giá).
+ */
+export function formatMoney(
+  vndValue: string | number | null | undefined,
+  currency: 'VND' | 'USD',
+  vndPerUsd: number
+): string {
+  if (vndValue === null || vndValue === undefined || vndValue === '') return '—';
+  const vnd = typeof vndValue === 'string' ? Number(vndValue) : vndValue;
+  if (Number.isNaN(vnd)) return '—';
+
+  const amount = currency === 'USD' && vndPerUsd > 0 ? vnd / vndPerUsd : vnd;
+  return formatCurrency(amount, currency);
+}
+
 /** Bỏ đuôi ".0" thừa: "4.0" → "4", "4.2" giữ nguyên. */
 function trimZero(n: string): string {
   return n.replace(/\.0$/, '');

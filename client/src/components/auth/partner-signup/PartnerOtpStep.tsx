@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ArrowRight, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { StepBackButton } from './fields';
@@ -24,6 +25,7 @@ export function PartnerOtpStep({
   isRegistering,
   apiError,
 }: PartnerOtpStepProps) {
+  const { t } = useTranslation('auth');
   const [digits, setDigits] = useState<string[]>(Array(OTP_LENGTH).fill(''));
   const [seconds, setSeconds] = useState(59);
   const inputs = useRef<(HTMLInputElement | null)[]>([]);
@@ -86,15 +88,14 @@ export function PartnerOtpStep({
 
   return (
     <section>
-      <StepBackButton onClick={onBack} />
+      <StepBackButton onClick={onBack} label={t('otp.back')} />
 
       <header className="mb-6">
-        <h2 className="text-2xl font-bold text-on-surface mb-1.5">
-          Verify your email
+        <h2 className="text-xl sm:text-2xl font-bold text-on-surface mb-1.5">
+          {t('otp.title')}
         </h2>
         <p className="text-sm text-on-surface-variant">
-          We sent a 6-digit code to{' '}
-          <span className="font-semibold text-on-surface">{email}</span>.
+          {t('otp.sentTo', { email })}
         </p>
       </header>
 
@@ -105,7 +106,7 @@ export function PartnerOtpStep({
       )}
 
       <div
-        className="grid grid-cols-6 gap-2 sm:gap-3 mb-6"
+        className="grid grid-cols-6 gap-1.5 sm:gap-3 mb-6"
         onPaste={handlePaste}
       >
         {digits.map((d, i) => (
@@ -119,7 +120,7 @@ export function PartnerOtpStep({
             onKeyDown={e => handleKeyDown(e, i)}
             inputMode="numeric"
             maxLength={1}
-            className="aspect-square w-full text-center text-2xl font-bold rounded-xl border border-slate-200 bg-slate-50 focus:border-role-partner-primary focus:bg-white focus:ring-2 focus:ring-role-partner-primary/20 outline-none transition-all"
+            className="aspect-square w-full text-center text-xl sm:text-2xl font-bold rounded-xl border border-slate-200 bg-slate-50 focus:border-role-partner-primary focus:bg-white focus:ring-2 focus:ring-role-partner-primary/20 outline-none transition-all"
           />
         ))}
       </div>
@@ -132,22 +133,23 @@ export function PartnerOtpStep({
       >
         {isRegistering ? (
           <>
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Creating
-            account...
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" /> {t('otp.creating')}
           </>
         ) : (
           <>
-            Create partner account
+            {t('otp.createAccount')}
             <ArrowRight className="w-4 h-4 ml-2" />
           </>
         )}
       </Button>
 
       <p className="text-center text-sm text-on-surface-variant mt-5">
-        Didn't receive it?{' '}
+        {t('otp.notReceived')}{' '}
         {seconds > 0 ? (
           <span className="font-semibold text-on-surface">
-            Resend in 00:{seconds < 10 ? `0${seconds}` : seconds}
+            {t('otp.resendIn', {
+              time: `00:${seconds < 10 ? `0${seconds}` : seconds}`,
+            })}
           </span>
         ) : (
           <button
@@ -156,7 +158,7 @@ export function PartnerOtpStep({
             disabled={isResending}
             className="font-semibold text-role-partner-primary hover:underline cursor-pointer"
           >
-            {isResending ? 'Sending...' : 'Resend code'}
+            {isResending ? t('otp.sending') : t('otp.resend')}
           </button>
         )}
       </p>
