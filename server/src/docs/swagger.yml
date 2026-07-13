@@ -2668,6 +2668,40 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/PaginatedReviews' }
 
+  /reviews/me:
+    get:
+      summary: List the current user's own reviews
+      description: >
+        Paginated list of reviews written by the authenticated user (newest first), across ALL hotels
+        and ALL statuses (including pending/hidden — these are the user's own). Each item includes the
+        hotel name, booking code, images, manager response and status. Replaces the client-side workaround
+        of fetching each hotel's public reviews and filtering by customerId.
+      tags: [Reviews]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: sortBy
+          schema:
+            type: string
+          description: 'field:asc|desc, e.g. createdAt:desc'
+        - in: query
+          name: limit
+          schema:
+            type: integer
+        - in: query
+          name: page
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Paginated reviews of the current user
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PaginatedReviews' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
   /reviews/{reviewId}:
     get:
       summary: Get one public review

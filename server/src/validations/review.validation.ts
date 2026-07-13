@@ -28,6 +28,15 @@ export const getHotelReviews = {
   }),
 };
 
+// Đánh giá của chính khách đang đăng nhập (mọi trạng thái)
+export const getMyReviews = {
+  query: Joi.object().keys({
+    sortBy: Joi.string(),
+    limit: Joi.number().integer().min(1).max(100),
+    page: Joi.number().integer().min(1),
+  }),
+};
+
 // [Partner] Đánh giá của chính khách sạn mình (mọi trạng thái, lọc theo status)
 export const getHotelReviewsForPartner = {
   params: Joi.object().keys({
