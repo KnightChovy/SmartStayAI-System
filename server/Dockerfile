@@ -30,4 +30,6 @@ COPY --from=build /app/prisma ./prisma
 COPY --from=build /app/prisma.config.js ./prisma.config.js
 COPY --from=build /app/package.json ./package.json
 EXPOSE 3000
-CMD ["node", "dist/index.js"]
+# `npm start` = `prisma migrate deploy && node dist/index.js` — áp migration còn thiếu (vd bảng
+# wallet) lên DB prod TRƯỚC khi phục vụ, để deploy không bao giờ chạy với schema DB lệch code.
+CMD ["npm", "start"]
