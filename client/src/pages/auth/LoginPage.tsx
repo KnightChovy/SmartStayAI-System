@@ -7,17 +7,12 @@ import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { useLogin } from '../../hooks/auth';
 import { getLandingPathForRole } from '@/constants/roles';
+
 import {
   loginSchema,
   type LoginInput,
 } from '../../validations/auth.validation';
 
-/**
- * State đính kèm khi điều hướng tới `/login`:
- * - `from`: trang muốn vào trước khi bị chặn (ProtectedRoute gửi cả location, còn
- *   nút "Book now" ở trang chi tiết gửi `{ pathname }`).
- * - `booking`: dữ liệu phòng đã chọn — chuyển tiếp sang trang checkout sau khi login.
- */
 interface LoginRedirectState {
   from?: { pathname?: string; search?: string };
   booking?: unknown;
@@ -58,8 +53,7 @@ export default function LoginPage() {
         email: data.email,
         password: data.password,
       });
-      // Quay lại trang đang muốn vào (vd /booking) kèm dữ liệu phòng đã chọn;
-      // nếu không có thì về cổng mặc định theo role.
+
       const fromPath = redirect.from?.pathname
         ? `${redirect.from.pathname}${redirect.from.search ?? ''}`
         : getLandingPathForRole(result?.user?.role);
@@ -120,7 +114,7 @@ export default function LoginPage() {
 
       {/* Right form panel */}
       <div className="min-h-screen flex flex-col justify-center px-margin-mobile md:px-16 lg:px-24 py-stack-lg overflow-y-auto">
-        <div className="w-full max-w-md mx-auto">
+        <div className="w-full max-w-sm mx-auto">
           <div className="mb-stack-lg">
             <h2 className="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface mb-stack-sm font-semibold">
               Welcome Back
@@ -168,7 +162,7 @@ export default function LoginPage() {
               </Label>
               <Input
                 {...register('email')}
-                className="w-full bg-surface-container-low border border-outline-variant/60 rounded-xl h-14 px-4 font-body-md text-body-md text-on-surface focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none"
+                className="w-full bg-surface-container-low border border-outline-variant/60 rounded-xl h-12 px-4 font-body-md text-body-md text-on-surface focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none"
                 id="email"
                 placeholder="name@example.com"
                 type="email"
@@ -207,7 +201,7 @@ export default function LoginPage() {
               <div className="relative">
                 <Input
                   {...register('password')}
-                  className="w-full bg-surface-container-low border border-outline-variant/60 rounded-xl h-14 pl-4 pr-12 font-body-md text-body-md text-on-surface focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none"
+                  className="w-full bg-surface-container-low border border-outline-variant/60 rounded-xl h-12 pl-4 pr-12 font-body-md text-body-md text-on-surface focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none"
                   id="password"
                   placeholder="••••••••"
                   type={showPassword ? 'text' : 'password'}
@@ -233,7 +227,7 @@ export default function LoginPage() {
             </div>
 
             <Button
-              className="w-full  font-label-lg text-label-lg py-4 rounded-full shadow-lg hover:bg-primary/90 active:scale-[0.98] transition-all mt-stack-md uppercase tracking-widest cursor-pointer outline-none border-none h-auto bg-black text-white "
+              className="w-full  font-label-lg text-label-lg py-3.5 rounded-full shadow-lg hover:bg-primary/90 active:scale-[0.98] transition-all mt-stack-md uppercase tracking-widest cursor-pointer outline-none border-none h-auto bg-black text-white "
               type="submit"
               disabled={isLoggingIn}
             >
@@ -250,7 +244,7 @@ export default function LoginPage() {
           </div>
 
           <Button
-            className="w-full h-14 bg-surface-container-lowest border border-outline-variant/50 text-on-surface font-label-lg text-label-lg rounded-full shadow-sm hover:bg-surface-container-low active:scale-95 transition-all flex items-center justify-center gap-3 cursor-pointer outline-none"
+            className="w-full h-12 bg-surface-container-lowest border border-outline-variant/50 text-on-surface font-label-lg text-label-lg rounded-full shadow-sm hover:bg-surface-container-low active:scale-95 transition-all flex items-center justify-center gap-3 cursor-pointer outline-none"
             type="button"
             onClick={() => alert('Connecting with Google...')}
           >
@@ -283,6 +277,7 @@ export default function LoginPage() {
               Register
             </Link>
           </p>
+
           <div className="mt-stack-md pt-4 border-t border-outline-variant/30 flex items-center justify-center gap-6">
             <a
               className="font-label-sm text-label-sm text-on-surface-variant uppercase hover:text-primary tracking-widest outline-none cursor-pointer"

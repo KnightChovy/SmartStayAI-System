@@ -8,7 +8,6 @@ import RoomInventoryPage from '@/pages/hotel-partner/room-inventory/RoomInventor
 import AmenitiesPage from '@/pages/hotel-partner/amenities/AmenitiesPage';
 import StaffManagementPage from '@/pages/hotel-partner/staff/StaffManagementPage';
 import BookingsPage from '@/pages/hotel-partner/bookings/BookingsPage';
-import AllBookingsPage from '@/pages/hotel-partner/all-bookings/AllBookingsPage';
 import RevenuePage from '@/pages/hotel-partner/revenue/RevenuePage';
 import AnalyticsPage from '@/pages/hotel-partner/analytics/AnalyticsPage';
 import ReviewsPage from '@/pages/hotel-partner/reviews/ReviewsPage';
@@ -35,7 +34,6 @@ export const partnerRoutes: RouteObject[] = [
           { path: 'amenities', element: <AmenitiesPage /> },
           { path: 'staff', element: <StaffManagementPage /> },
           { path: 'bookings', element: <BookingsPage /> },
-          { path: 'all-bookings', element: <AllBookingsPage /> },
           { path: 'profile', element: <CommonProfilePage /> },
           { path: 'revenue', element: <RevenuePage /> },
           { path: 'analytics', element: <AnalyticsPage /> },

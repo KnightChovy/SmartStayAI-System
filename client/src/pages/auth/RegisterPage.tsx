@@ -103,7 +103,7 @@ export default function RegisterPage() {
 
       {/* Right form panel */}
       <div className="min-h-screen flex flex-col justify-center px-margin-mobile md:px-16 lg:px-24 py-stack-lg overflow-y-auto">
-        <div className="w-full max-w-md mx-auto">
+        <div className="w-full max-w-sm mx-auto">
           <header className="mb-2.5">
             <h2 className="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface mb-stack-sm">
               Create an account
@@ -139,7 +139,7 @@ export default function RegisterPage() {
               <div className="relative">
                 <Input
                   {...register('name')}
-                  className="w-full h-12 px-2 bg-surface-container-low/50 border border-outline-variant/60 rounded-xl font-body-md text-body-md focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-outline outline-none"
+                  className="w-full h-11 px-2 bg-surface-container-low/50 border border-outline-variant/60 rounded-xl font-body-md text-body-md focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-outline outline-none"
                   placeholder="John Doe"
                   type="text"
                 />
@@ -159,7 +159,7 @@ export default function RegisterPage() {
               <div className="relative">
                 <Input
                   {...register('email')}
-                  className="w-full h-12 px-2 bg-surface-container-low/50 border border-outline-variant/60 rounded-xl font-body-md text-body-md focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-outline outline-none"
+                  className="w-full h-11 px-2 bg-surface-container-low/50 border border-outline-variant/60 rounded-xl font-body-md text-body-md focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-outline outline-none"
                   placeholder="name@example.com"
                   type="email"
                 />
@@ -178,7 +178,7 @@ export default function RegisterPage() {
               <div className="relative">
                 <Input
                   {...register('password')}
-                  className="w-full h-12 pl-2 pr-11 bg-surface-container-low/50 border border-outline-variant/60 rounded-xl font-body-md text-body-md focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-outline outline-none"
+                  className="w-full h-11 pl-2 pr-11 bg-surface-container-low/50 border border-outline-variant/60 rounded-xl font-body-md text-body-md focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-outline outline-none"
                   placeholder="••••••••"
                   type={showPassword ? 'text' : 'password'}
                 />
@@ -207,7 +207,7 @@ export default function RegisterPage() {
               <div className="relative">
                 <Input
                   {...register('confirmPassword')}
-                  className="w-full h-12 pl-2 pr-11 bg-surface-container-low/50 border border-outline-variant/60 rounded-xl font-body-md text-body-md focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-outline outline-none"
+                  className="w-full h-11 pl-2 pr-11 bg-surface-container-low/50 border border-outline-variant/60 rounded-xl font-body-md text-body-md focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-outline outline-none"
                   placeholder="••••••••"
                   type={showConfirmPassword ? 'text' : 'password'}
                 />
@@ -230,7 +230,7 @@ export default function RegisterPage() {
             </div>
 
               <Button
-                className="w-full h-12 font-label-lg text-label-sm rounded-full shadow-lg hover:bg-primary/90 active:scale-95 transition-all flex items-center justify-center gap-2 group cursor-pointer outline-none border-none bg-black text-white"
+                className="w-full h-11 font-label-lg text-label-sm rounded-full shadow-lg hover:bg-primary/90 active:scale-95 transition-all flex items-center justify-center gap-2 group cursor-pointer outline-none border-none bg-black text-white"
                 type="submit" 
                 disabled={isSendingOtp}
               >
@@ -251,7 +251,7 @@ export default function RegisterPage() {
             </div>
 
             <Button
-              className="w-full h-14 bg-surface-container-lowest border border-outline-variant/50 text-on-surface font-label-lg text-label-lg rounded-full shadow-sm hover:bg-surface-container-low active:scale-95 transition-all flex items-center justify-center gap-3 cursor-pointer outline-none"
+              className="w-full h-12 bg-surface-container-lowest border border-outline-variant/50 text-on-surface font-label-lg text-label-lg rounded-full shadow-sm hover:bg-surface-container-low active:scale-95 transition-all flex items-center justify-center gap-3 cursor-pointer outline-none"
               type="button"
               onClick={() => alert('Connecting with Google...')}
             >
