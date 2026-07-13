@@ -2101,6 +2101,26 @@ paths:
                 items: { $ref: '#/components/schemas/HotelSummary' }
         '401': { $ref: '#/components/responses/Unauthorized' }
 
+  /hotels/staff/mine:
+    get:
+      summary: List hotels the current staff is assigned to
+      description: >
+        Auth (staff). Returns hotels the LOGGED-IN staff is currently assigned to (via
+        hotel_staff_assignments, unassignedAt = null). The staff portal uses this to know which hotel(s)
+        to operate on (bookings / room status / check-in-out). Staff id is taken from the token.
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Array of assigned hotels (each with primary image + _count of roomTypes/rooms)
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/HotelSummary' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
   /hotels/{hotelId}/images:
     post:
       summary: Add hotel images (partner)
@@ -3244,11 +3264,13 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
     post:
-      summary: Create a staff account and assign it to the hotel (owner)
+      summary: Add a staff to a hotel — create new OR re-assign existing (owner)
       description: >
-        Hotel owner or manageHotels creates an active staff user account (no OTP — the owner vouches)
-        and assigns it to the hotel. assignedRole ("staff") also becomes the user's global role.
-        After this the staff member can log in and operate the hotel's bookings.
+        Hotel owner or manageHotels. Behavior depends on the email:
+        (1) email has NO account yet → creates a new active staff account (name + password required, no OTP —
+        the owner vouches) and assigns it; (2) email already belongs to a staff account → RE-ASSIGNS it to
+        this hotel (name/password ignored). Rule "1 staff = 1 hotel": re-assigning a staff who is currently
+        active at ANY hotel is rejected (400). assignedRole ("staff") is the user's global role.
       tags: [HotelManagement]
       security:
         - bearerAuth: []
@@ -3266,18 +3288,17 @@ paths:
             schema:
               type: object
               required:
-                - name
                 - email
-                - password
               properties:
-                name:
-                  type: string
                 email:
                   type: string
                   format: email
+                name:
+                  type: string
+                  description: Required when creating a NEW account; ignored on re-assign
                 password:
                   type: string
-                  description: Min 8 chars, at least 1 letter and 1 number
+                  description: Required when creating a NEW account (min 8, at least 1 letter and 1 number); ignored on re-assign
                 phone:
                   type: string
                 assignedRole:
@@ -3286,12 +3307,19 @@ paths:
                   default: staff
       responses:
         '201':
-          description: Staff account created and assigned (user is returned without passwordHash)
+          description: Staff created or re-assigned (user without passwordHash + assignment + reassigned flag)
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/StaffAssignment' }
+              schema:
+                type: object
+                properties:
+                  user: { $ref: '#/components/schemas/MeProfile' }
+                  assignment: { $ref: '#/components/schemas/StaffAssignment' }
+                  reassigned: { type: boolean, description: true if an existing account was re-assigned instead of created }
         '400':
-          description: Email already taken or invalid input
+          description: >
+            Email belongs to a non-staff account, staff already active at a hotel (1-staff-1-hotel),
+            or missing name/password when creating a new account
           content:
             application/json:
               schema:
