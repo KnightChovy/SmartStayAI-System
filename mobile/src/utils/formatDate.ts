@@ -48,6 +48,15 @@ export function formatDateLong(value: string | Date | null | undefined): string 
   return `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]} ${d.getFullYear()}`;
 }
 
+/** "dd-MM-yyyy" — khớp formatter dùng chung bên client (formatDate.ts). */
+export function formatDate(value: string | Date | null | undefined): string {
+  const d = toDate(value);
+  if (!d) return '—';
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  return `${dd}-${mm}-${d.getFullYear()}`;
+}
+
 /** Số đêm giữa hai mốc (tối thiểu 0). */
 export function nightsBetween(
   checkIn: string | Date | null | undefined,

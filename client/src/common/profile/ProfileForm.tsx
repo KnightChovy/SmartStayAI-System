@@ -41,7 +41,7 @@ export function ProfileForm({ initial }: { initial: UserProfile }) {
   };
 
   const initials = (form.fullName || form.email || 'US')
-    .slice(0, 2)
+    .slice(0, 1)
     .toUpperCase();
 
   return (

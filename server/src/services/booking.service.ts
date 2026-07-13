@@ -31,6 +31,7 @@ export const HOLD_MINUTES = 15;
 const bookingInclude = {
   hotel: { select: { id: true, name: true, address: true, city: true, checkInTime: true, checkOutTime: true } },
   roomType: { select: { id: true, name: true, bedType: true, viewType: true, maxOccupancy: true } },
+  voucher: { select: { voucherCode: true, qrData: true, usedAt: true } },
 } satisfies Prisma.BookingInclude;
 
 // Quan hệ kèm theo cho màn vận hành của staff/chủ KS (kèm khách, phòng đã gán, voucher)

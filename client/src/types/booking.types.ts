@@ -26,7 +26,12 @@ export type BookingStatus =
   | 'cancelled'
   | 'no_show';
 
-export type BookingSource = 'website' | 'mobile_app' | 'chatbot' | 'walk_in' | 'staff';
+export type BookingSource =
+  | 'website'
+  | 'mobile_app'
+  | 'chatbot'
+  | 'walk_in'
+  | 'staff';
 
 /** Tóm tắt khách sạn/loại phòng đính kèm trong booking (backend include sẵn). */
 export interface BookingHotelSummary {
@@ -44,6 +49,13 @@ export interface BookingRoomTypeSummary {
   bedType?: string | null;
   viewType?: string | null;
   maxOccupancy: number;
+}
+
+/** E-voucher đính kèm booking (backend include sẵn) — dùng để render QR check-in. */
+export interface BookingVoucherSummary {
+  voucherCode: string;
+  qrData: string;
+  usedAt?: string | null;
 }
 
 /** Booking trả về từ backend. Decimal serialize thành string qua JSON. */
@@ -72,6 +84,7 @@ export interface Booking {
   updatedAt: string;
   hotel?: BookingHotelSummary;
   roomType?: BookingRoomTypeSummary;
+  voucher?: BookingVoucherSummary | null;
 }
 
 /** Payload tạo booking — giá do server tự tính, client KHÔNG gửi tiền. */

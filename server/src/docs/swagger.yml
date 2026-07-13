@@ -778,6 +778,67 @@ paths:
         '400':
           $ref: '#/components/responses/DuplicateEmail'
 
+  /auth/register-partner:
+    post:
+      summary: Register as hotel partner
+      description: >
+        Đăng ký tài khoản đối tác khách sạn (role `hotel_partner`), không cần manager duyệt.
+        Yêu cầu OTP đã gửi trước qua `POST /auth/send-otp`. Tài khoản tạo ra sẵn sàng đăng nhập
+        và nộp hồ sơ khách sạn qua `POST /hotel-partners/registrations`.
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - email
+                - password
+                - verificationCode
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                  description: must be unique
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                  description: At least one number and one letter
+                verificationCode:
+                  type: string
+                  description: Mã OTP 6 số nhận qua email từ /auth/send-otp
+              example:
+                name: Nguyen Van An
+                email: owner@hotel.com
+                password: password1
+                verificationCode: '123456'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+                  tokens:
+                    $ref: '#/components/schemas/AuthTokens'
+        '400':
+          description: OTP sai/hết hạn, quá số lần thử, mật khẩu yếu, hoặc email đã tồn tại
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                message: Invalid or expired verification code
+
   /auth/login:
     post:
       summary: Login

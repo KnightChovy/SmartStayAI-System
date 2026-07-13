@@ -1,64 +1,77 @@
 import { Pressable, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Heading } from '@/components/ui/heading';
 import { Text } from '@/components/ui/text';
-import { cn } from '@/lib/cn';
+import { STAFF_GRADIENT } from '@/constants/staffTheme';
 
 export interface StaffScreenHeaderProps {
   title: string;
   subtitle?: string;
-  /** Hiện nút back (dùng cho màn chi tiết). */
+  /** Back button (detail screens). */
   onBack?: () => void;
-  /** Node tuỳ biến bên phải (vd nút, badge). */
+  /** Custom node on the right (button / badge). */
   right?: React.ReactNode;
-  /** Bỏ safe-area top khi header nằm trong màn đã có inset. */
-  flat?: boolean;
-  className?: string;
+  /** Extra content rendered below the title inside the gradient (filter chips, stats…). */
+  children?: React.ReactNode;
+  /** Larger hero title (used by the main tab screens). */
+  large?: boolean;
 }
 
-/** Header nền teal dùng chung cho mọi màn staff — đồng nhất nhận diện portal. */
+/** Gradient teal header shared by every staff screen — consistent portal identity. */
 export function StaffScreenHeader({
   title,
   subtitle,
   onBack,
   right,
-  flat = false,
-  className,
+  children,
+  large = false,
 }: StaffScreenHeaderProps) {
-  const inner = (
-    <View className="flex-row items-center px-5 pb-4 pt-3 gap-3">
-      {onBack ? (
-        <Pressable
-          onPress={onBack}
-          hitSlop={10}
-          className="h-9 w-9 items-center justify-center rounded-full bg-white/10 active:bg-white/20"
-        >
-          <Ionicons name="chevron-back" size={22} color="#FFFFFF" />
-        </Pressable>
-      ) : null}
+  const insets = useSafeAreaInsets();
 
-      <View className="flex-1">
-        <Heading size="xl" className="text-white">
-          {title}
-        </Heading>
-        {subtitle ? (
-          <Text size="sm" className="text-staff-100 mt-0.5">
-            {subtitle}
-          </Text>
+  return (
+    <LinearGradient
+      colors={STAFF_GRADIENT}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={{
+        paddingTop: insets.top + 6,
+        borderBottomLeftRadius: 28,
+        borderBottomRightRadius: 28,
+        shadowColor: '#0F766E',
+        shadowOpacity: 0.25,
+        shadowRadius: 16,
+        shadowOffset: { width: 0, height: 8 },
+        elevation: 6,
+      }}
+    >
+      <View className="flex-row items-center gap-3 px-5 pb-2 pt-2">
+        {onBack ? (
+          <Pressable
+            onPress={onBack}
+            hitSlop={10}
+            className="h-10 w-10 items-center justify-center rounded-full bg-white/15 active:bg-white/25"
+          >
+            <Ionicons name="chevron-back" size={22} color="#FFFFFF" />
+          </Pressable>
         ) : null}
+
+        <View className="flex-1">
+          <Heading size={large ? '2xl' : 'xl'} className="text-white">
+            {title}
+          </Heading>
+          {subtitle ? (
+            <Text size="sm" className="text-teal-50/90 mt-0.5">
+              {subtitle}
+            </Text>
+          ) : null}
+        </View>
+
+        {right ? <View>{right}</View> : null}
       </View>
 
-      {right ? <View>{right}</View> : null}
-    </View>
-  );
-
-  if (flat) {
-    return <View className={cn('bg-staff-800', className)}>{inner}</View>;
-  }
-  return (
-    <SafeAreaView edges={['top']} className={cn('bg-staff-800', className)}>
-      {inner}
-    </SafeAreaView>
+      {children ? <View className="pb-4">{children}</View> : <View className="pb-3" />}
+    </LinearGradient>
   );
 }

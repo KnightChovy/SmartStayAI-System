@@ -1,7 +1,7 @@
 import type { UserRole } from '@/types/auth.type';
 import type { Href } from 'expo-router';
 
-export const STAFF_HOME: Href = '/(staff)/bookings';
+export const STAFF_HOME: Href = '/(staff)/dashboard';
 export const CUSTOMER_HOME: Href = '/(tabs)';
 
 export function isStaff(role: UserRole | undefined | null): boolean {
