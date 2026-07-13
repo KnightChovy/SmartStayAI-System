@@ -9,7 +9,8 @@ export class ConversationController {
   // Khách gửi tin nhắn cho chatbot → nhận lại câu trả lời của bot
   sendMessage = catchAsync(async (req: Request, res: Response): Promise<void> => {
     const { hotelId, conversationId, message } = req.body;
-    const result = await conversationService.sendMessage(hotelId, conversationId, req.user as User, message);
+    // optionalAuth: khách vãng lai không có req.user ⇒ truyền null xuống service (chế độ chỉ-đọc)
+    const result = await conversationService.sendMessage(hotelId, conversationId, (req.user as User | undefined) ?? null, message);
     res.status(httpStatus.CREATED).send(result);
   });
 
@@ -19,7 +20,7 @@ export class ConversationController {
     const { conversationId: convId, stream } = await conversationService.streamMessage(
       hotelId,
       conversationId,
-      req.user as User,
+      (req.user as User | undefined) ?? null,
       message
     );
 
