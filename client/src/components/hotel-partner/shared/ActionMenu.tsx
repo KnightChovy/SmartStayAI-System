@@ -1,4 +1,4 @@
-import { MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal, MoreVertical } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,20 +19,36 @@ interface ActionMenuProps {
   items: ActionItem[];
   /** Nhãn cho screen reader trên nút mở menu. */
   label?: string;
+  /** Dùng icon "⋮" dọc thay cho "⋯" ngang. */
+  vertical?: boolean;
+  /** Biến thể nút mở menu (mặc định `outline`; dùng `ghost` cho trigger mờ, không viền). */
+  triggerVariant?: React.ComponentProps<typeof Button>['variant'];
 }
 
 /**
- * Menu hành động dạng "⋯" dùng chung cho mọi bảng quản trị — thay cho việc
+ * Menu hành động dạng "⋯"/"⋮" dùng chung cho mọi bảng quản trị — thay cho việc
  * xếp nhiều nút icon nằm ngang (gọn gàng, dễ mở rộng thêm action).
  */
-export function ActionMenu({ items, label = 'Open actions' }: ActionMenuProps) {
+export function ActionMenu({
+  items,
+  label = 'Open actions',
+  vertical = false,
+  triggerVariant = 'outline',
+}: ActionMenuProps) {
   if (items.length === 0) return null;
+
+  const TriggerIcon = vertical ? MoreVertical : MoreHorizontal;
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="icon" aria-label={label} onClick={e => e.stopPropagation()}>
-          <MoreHorizontal className="h-4 w-4" />
+        <Button
+          variant={triggerVariant}
+          size="icon"
+          aria-label={label}
+          onClick={e => e.stopPropagation()}
+        >
+          <TriggerIcon className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-44">

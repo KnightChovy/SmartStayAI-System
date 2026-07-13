@@ -13,7 +13,7 @@ function App() {
         theme="light"
         position="top-right"
         closeButton={false}
-        duration={1500}
+        duration={500}
       />
     </TooltipProvider>
   );
