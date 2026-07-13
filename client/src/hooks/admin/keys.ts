@@ -3,12 +3,15 @@ import type {
   AdminCommissionsParams,
   AdminHotelsParams,
   AdminPaymentsParams,
+  AdminRevenueParams,
   AdminUsersParams,
   AdminVerificationRequestsParams,
 } from '@/types/admin.types';
 
 export const adminKeys = {
   overview: ['admin', 'overview'] as const,
+  revenue: (params: AdminRevenueParams) =>
+    ['admin', 'revenue', params] as const,
   commissions: (params: AdminCommissionsParams) =>
     ['admin', 'commissions', params] as const,
   hotels: (params: AdminHotelsParams) => ['admin', 'hotels', params] as const,

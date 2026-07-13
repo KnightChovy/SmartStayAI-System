@@ -5,6 +5,11 @@ const envVarsSchema = Joi.object()
   .keys({
     NODE_ENV: Joi.string().valid('production', 'development', 'test').required(),
     PORT: Joi.number().default(3000),
+    PUBLIC_URL: Joi.string()
+      .uri()
+      .allow('')
+      .default('')
+      .description('Base URL công khai của service (vd https://xxx.onrender.com) — dùng cho server URL của Swagger khi deploy'),
     MONGODB_URL: Joi.string().description('Mongo DB url (optional, kept for legacy error typing)'),
     DATABASE_URL: Joi.string().required().description('PostgreSQL database URL'),
     JWT_SECRET: Joi.string().required().description('JWT secret key'),
@@ -61,6 +66,8 @@ if (error) {
 const config = {
   env: envVars.NODE_ENV,
   port: envVars.PORT,
+  // Base URL công khai (rỗng ở local → Swagger fallback về http://localhost:PORT)
+  publicUrl: envVars.PUBLIC_URL,
   clientUrl: envVars.CLIENT_URL,
   mongoose: {
     url: envVars.MONGODB_URL ? envVars.MONGODB_URL + (envVars.NODE_ENV === 'test' ? '-test' : '') : undefined,

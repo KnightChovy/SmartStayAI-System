@@ -1,0 +1,32 @@
+import { api } from '@/lib/api';
+import type {
+  HotelReviewsParams,
+  HotelReviewsResponse,
+  HotelReviewStats,
+} from '@/types/hotel-review.types';
+
+/** Bỏ các field undefined/null/rỗng để query string gọn gàng. */
+function cleanParams<T extends object>(params: T): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== '')
+  );
+}
+
+export const hotelReviewService = {
+  /** Danh sách review của 1 khách sạn (mọi status) — `GET /hotels/:id/reviews` (owner/manageHotels). */
+  async list(
+    hotelId: string,
+    params: HotelReviewsParams = {}
+  ): Promise<HotelReviewsResponse> {
+    const { data } = await api.get<HotelReviewsResponse>(`/hotels/${hotelId}/reviews`, {
+      params: cleanParams(params),
+    });
+    return data;
+  },
+
+  /** Thống kê tổng hợp review của 1 khách sạn — `GET /hotels/:id/reviews/stats`. */
+  async getStats(hotelId: string): Promise<HotelReviewStats> {
+    const { data } = await api.get<HotelReviewStats>(`/hotels/${hotelId}/reviews/stats`);
+    return data;
+  },
+};

@@ -15,11 +15,18 @@ import {
   Pencil,
   ImageIcon,
   Plus,
+  Contact,
+  ScrollText,
+  MapPinned,
+  Settings2,
 } from 'lucide-react';
 import { useManagedHotel } from '@/hooks/hotels';
 import { HotelProfileFormModal } from '@/components/hotel-partner/hotel-management/HotelProfileFormModal';
 import { HotelImagesModal } from '@/components/hotel-partner/hotel-management/HotelImagesModal';
 import { HotelAmenitiesModal } from '@/components/hotel-partner/hotel-management/HotelAmenitiesModal';
+import { HotelContactsModal } from '@/components/hotel-partner/property/HotelContactsModal';
+import { HotelPoliciesModal } from '@/components/hotel-partner/property/HotelPoliciesModal';
+import { HotelNearbyPlacesModal } from '@/components/hotel-partner/property/HotelNearbyPlacesModal';
 import { Button } from '@/components/ui/button';
 import {
   ErrorState,
@@ -41,6 +48,9 @@ export default function HotelDetailPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [photosOpen, setPhotosOpen] = useState(false);
   const [amenitiesOpen, setAmenitiesOpen] = useState(false);
+  const [contactsOpen, setContactsOpen] = useState(false);
+  const [policiesOpen, setPoliciesOpen] = useState(false);
+  const [nearbyOpen, setNearbyOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -241,6 +251,32 @@ export default function HotelDetailPage() {
         </Section>
       </div>
 
+      {/* Property information (contacts / policies / nearby) */}
+      <div className="mt-6">
+        <Section title="Property information">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <PropertyCard
+              icon={Contact}
+              label="Contacts"
+              description="Phone, email & departments"
+              onClick={() => setContactsOpen(true)}
+            />
+            <PropertyCard
+              icon={ScrollText}
+              label="Policies & fees"
+              description="Cancellation, tax, deposit…"
+              onClick={() => setPoliciesOpen(true)}
+            />
+            <PropertyCard
+              icon={MapPinned}
+              label="Nearby places"
+              description="Attractions, airport, transport"
+              onClick={() => setNearbyOpen(true)}
+            />
+          </div>
+        </Section>
+      </div>
+
       {/* Room types summary */}
       <div className="mt-6">
         <div className="mb-3 flex items-center justify-between">
@@ -296,7 +332,54 @@ export default function HotelDetailPage() {
         onClose={() => setAmenitiesOpen(false)}
         hotel={hotel}
       />
+      <HotelContactsModal
+        open={contactsOpen}
+        onClose={() => setContactsOpen(false)}
+        hotelId={hotel.id}
+        hotelName={hotel.name}
+      />
+      <HotelPoliciesModal
+        open={policiesOpen}
+        onClose={() => setPoliciesOpen(false)}
+        hotelId={hotel.id}
+        hotelName={hotel.name}
+      />
+      <HotelNearbyPlacesModal
+        open={nearbyOpen}
+        onClose={() => setNearbyOpen(false)}
+        hotelId={hotel.id}
+        hotelName={hotel.name}
+      />
     </Shell>
+  );
+}
+
+function PropertyCard({
+  icon: Icon,
+  label,
+  description,
+  onClick,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  description: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex items-center gap-3 rounded-xl border border-slate-200 p-3 text-left transition-colors hover:border-role-partner-primary hover:bg-role-partner-light/50"
+    >
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-role-partner-light">
+        <Icon className="h-5 w-5 text-role-partner-primary" />
+      </div>
+      <div className="min-w-0">
+        <p className="text-sm font-semibold text-slate-800">{label}</p>
+        <p className="truncate text-xs text-slate-400">{description}</p>
+      </div>
+      <Settings2 className="ml-auto h-4 w-4 shrink-0 text-slate-300" />
+    </button>
   );
 }
 

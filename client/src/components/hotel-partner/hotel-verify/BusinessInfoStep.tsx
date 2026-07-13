@@ -94,7 +94,7 @@ function AddressSearch({ onSelect }: AddressSearchProps) {
           value={query}
           onChange={handleChange}
           onFocus={() => suggestions.length > 0 && setOpen(true)}
-          placeholder="Tìm địa chỉ để điền tự động…"
+          placeholder="Search for an address to autofill..."
           className="h-11 border-slate-200 pl-9 pr-9"
         />
         {loading && (
@@ -331,7 +331,7 @@ export function BusinessInfoStep({ onContinue }: { onContinue?: () => void }) {
           </Label>
           <Input
             id="address"
-            placeholder="Số nhà, tên đường, toà nhà, tầng — hoặc dùng ô tìm kiếm bên dưới"
+            placeholder="House number, street name, building, floor — or search below."
             className="h-11 border-slate-200"
             {...register('address')}
           />
@@ -348,7 +348,8 @@ export function BusinessInfoStep({ onContinue }: { onContinue?: () => void }) {
             <Search className="w-3.5 h-3.5 text-slate-500" />
             Address Search
             <span className="text-xs text-slate-500 font-normal">
-              — tìm để tự điền địa chỉ, Tỉnh/TP, Phường/Xã và ghim bản đồ
+              — Search an address to auto-fill the address, city/province,
+              ward/commune, and map location.
             </span>
           </Label>
           <AddressSearch onSelect={handleAddressSelect} />

@@ -21,7 +21,36 @@ export class StaffService {
   addStaff = async (hotelId: string, currentUser: User, payload: AddStaffDto) => {
     await hotelService.getManagedHotel(hotelId, currentUser);
 
-    // Tạo tài khoản (băm mật khẩu + chặn email trùng nằm trong userService.createUser)
+    const existing = await userService.getUserByEmail(payload.email);
+
+    // Email ĐÃ có tài khoản → GÁN LẠI (không tạo mới, giữ nguyên thông tin/mật khẩu tài khoản cũ)
+    if (existing) {
+      if (existing.role !== 'staff') {
+        throw new ApiError(httpStatus.BAD_REQUEST, 'Email này đã thuộc một tài khoản không phải nhân viên');
+      }
+      // Luật 1 nhân viên = 1 khách sạn: chặn nếu đang có phân công còn hiệu lực
+      const active = await prisma.hotelStaffAssignment.findFirst({
+        where: { userId: existing.id, unassignedAt: null },
+      });
+      if (active) {
+        throw new ApiError(
+          httpStatus.BAD_REQUEST,
+          active.hotelId === hotelId
+            ? 'Nhân viên này đang làm việc tại khách sạn này'
+            : 'Nhân viên này đang làm việc tại một khách sạn khác (mỗi nhân viên chỉ làm 1 khách sạn)'
+        );
+      }
+      const assignment = await prisma.hotelStaffAssignment.create({
+        data: { hotelId, userId: existing.id, assignedRole: payload.assignedRole },
+        include: assignmentInclude,
+      });
+      return { user: sanitizeUser(existing), assignment, reassigned: true };
+    }
+
+    // Chưa có tài khoản → TẠO MỚI (cần name + password) rồi gán
+    if (!payload.name || !payload.password) {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Cần họ tên và mật khẩu để tạo tài khoản nhân viên mới');
+    }
     const user = await userService.createUser({
       name: payload.name,
       email: payload.email,
@@ -29,13 +58,11 @@ export class StaffService {
       phone: payload.phone ?? null,
       role: payload.assignedRole,
     });
-
     const assignment = await prisma.hotelStaffAssignment.create({
       data: { hotelId, userId: user.id, assignedRole: payload.assignedRole },
       include: assignmentInclude,
     });
-
-    return { user: sanitizeUser(user), assignment };
+    return { user: sanitizeUser(user), assignment, reassigned: false };
   };
 
   /** Danh sách nhân viên đang làm việc tại khách sạn (assignment còn hiệu lực). */

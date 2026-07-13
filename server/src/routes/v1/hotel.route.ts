@@ -35,6 +35,9 @@ router.get('/', validate(hotelValidation.searchHotels), hotelController.searchHo
 // '/mine' là literal nên PHẢI đăng ký TRƯỚC '/:hotelId' (param) để khỏi bị '/:hotelId' nuốt.
 router.get('/mine', auth(), hotelController.getMyHotels);
 
+// Khách sạn staff được phân công (bản của staff, tương tự '/mine' của partner) — literal 2 segment
+router.get('/staff/mine', auth(), hotelController.getMyStaffHotels);
+
 // Chi tiết một khách sạn cho guest — public, chỉ KS đang mở bán (isActive + isListed).
 router.get('/:hotelId', validate(hotelValidation.getHotel), hotelController.getHotel);
 

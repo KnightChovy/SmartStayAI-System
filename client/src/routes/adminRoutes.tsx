@@ -6,6 +6,7 @@ import { AdminUsersPage } from '@/pages/admin/AdminUsersPage';
 import { AdminPaymentsPage } from '@/pages/admin/AdminPaymentsPage';
 import { AdminBookingsPage } from '@/pages/admin/AdminBookingsPage';
 import { AdminAnalyticsPage } from '@/pages/admin/AdminAnalyticsPage';
+import { AdminRevenuePage } from '@/pages/admin/AdminRevenuePage';
 import { AdminAiSettingsPage } from '@/pages/admin/AdminAiSettingsPage';
 import { AdminSystemPage } from '@/pages/admin/AdminSystemPage';
 import { AdminSettingsPage } from '@/pages/admin/AdminSettingsPage';
@@ -30,6 +31,7 @@ export const adminRoutes: RouteObject[] = [
           { path: 'properties', element: <AdminPropertiesPage /> },
           { path: 'users', element: <AdminUsersPage /> },
           { path: 'payments', element: <AdminPaymentsPage /> },
+          { path: 'revenue', element: <AdminRevenuePage /> },
           { path: 'bookings', element: <AdminBookingsPage /> },
           { path: 'analytics', element: <AdminAnalyticsPage /> },
           { path: 'ai-settings', element: <AdminAiSettingsPage /> },

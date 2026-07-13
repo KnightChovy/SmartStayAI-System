@@ -30,6 +30,12 @@ export class HotelController {
     res.send(hotels);
   });
 
+  // Khách sạn mà STAFF đang đăng nhập được phân công (bản "của staff" tương tự /mine)
+  getMyStaffHotels = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const hotels = await hotelService.getHotelsForStaff((req.user as User).id);
+    res.send(hotels);
+  });
+
   // Chi tiết 1 khách sạn cho chủ/manager (xem được cả KS chưa listed)
   getHotelForManage = catchAsync(async (req: Request, res: Response): Promise<void> => {
     const hotel = await hotelService.getManagedHotelDetail(req.params.hotelId as string, req.user as User);
