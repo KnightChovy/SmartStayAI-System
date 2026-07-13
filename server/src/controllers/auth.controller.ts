@@ -12,6 +12,12 @@ export class AuthController {
     res.status(httpStatus.CREATED).send(result);
   });
 
+  registerPartner = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const { verificationCode } = req.body;
+    const result = await authService.registerUser(req.body, verificationCode, 'hotel_partner');
+    res.status(httpStatus.CREATED).send(result);
+  });
+
   sendOtp = catchAsync(async (req: Request, res: Response): Promise<void> => {
     const { email } = req.body;
     await authService.generateAndSendOtp(email);

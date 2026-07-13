@@ -19,6 +19,16 @@ export const register = {
   }),
 };
 
+// Đăng ký tài khoản đối tác (hotel_partner): giống register nhưng chỉ 4 field cốt lõi
+export const registerPartner = {
+  body: Joi.object().keys({
+    email: Joi.string().required().email(),
+    password: Joi.string().required().custom(password),
+    name: Joi.string().required(),
+    verificationCode: Joi.string().required().length(6),
+  }),
+};
+
 export const sendOtp = {
   body: Joi.object().keys({
     email: Joi.string().required().email(),
