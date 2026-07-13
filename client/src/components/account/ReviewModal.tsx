@@ -35,7 +35,6 @@ function errorMessage(err: unknown, fallback: string): string {
 }
 
 const EMPTY = {
-  overallRating: 5,
   cleanlinessRating: 5,
   serviceRating: 5,
   locationRating: 5,
@@ -81,6 +80,11 @@ export default function ReviewModal({
   const set = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) =>
     setForm(prev => ({ ...prev, [key]: value }));
 
+  // Overall = trung bình 4 tiêu chí; BE cần số nguyên 1–5 nên làm tròn khi gửi.
+  const avgRating =
+    (form.cleanlinessRating + form.serviceRating + form.locationRating + form.valueRating) / 4;
+  const overallRating = Math.round(avgRating);
+
   const addImage = () => {
     if (imageUrl.trim()) {
       set('images', [...form.images, imageUrl.trim()]);
@@ -94,7 +98,7 @@ export default function ReviewModal({
     try {
       await createReview.mutateAsync({
         bookingId,
-        overallRating: form.overallRating,
+        overallRating,
         cleanlinessRating: form.cleanlinessRating,
         serviceRating: form.serviceRating,
         locationRating: form.locationRating,
@@ -156,13 +160,16 @@ export default function ReviewModal({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label>Overall rating</Label>
-            <StarRating
-              value={form.overallRating}
-              editable
-              size={28}
-              onChange={v => set('overallRating', v)}
-            />
+            <Label>
+              Overall rating{' '}
+              <span className="font-normal text-on-surface-variant">
+                (average of the four below)
+              </span>
+            </Label>
+            <div className="flex items-center gap-2">
+              <StarRating value={overallRating} size={28} />
+              <span className="text-sm font-semibold text-on-surface">{avgRating.toFixed(1)}</span>
+            </div>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
