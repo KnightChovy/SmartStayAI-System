@@ -1,15 +1,15 @@
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView, View } from 'react-native';
+import { Alert, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Spinner } from '@/components/ui/spinner';
 import { Text } from '@/components/ui/text';
-import { Input, InputField } from '@/components/ui/input';
 import {
   StaffScreenHeader,
   StaffButton,
   StaffEmptyState,
+  Card,
 } from '@/components/staff';
 import {
   useGetBooking,
@@ -33,7 +33,7 @@ export default function StaffCheckInScreen() {
   const [voucherCode, setVoucherCode] = useState('');
   const [roomId, setRoomId] = useState<string | undefined>(undefined);
 
-  // Phòng trống đúng loại của booking → cho staff chọn tay (không chọn thì BE tự gán).
+  // Available rooms of the booking's type → staff can pick manually (or let BE auto-assign).
   const availableRooms = (roomsPage?.results ?? []).filter(
     (r) => r.roomTypeId === booking?.roomTypeId && r.status === 'available'
   );
@@ -49,78 +49,90 @@ export default function StaffCheckInScreen() {
       },
       {
         onSuccess: () => {
-          Alert.alert('Nhận phòng thành công', 'Phòng đã được gán cho khách.', [
+          Alert.alert('Checked in', 'The room has been assigned to the guest.', [
             { text: 'OK', onPress: () => router.back() },
           ]);
         },
         onError: (e) => {
           const message =
             (e as { response?: { data?: { message?: string } } })?.response?.data
-              ?.message ?? 'Không thể nhận phòng. Kiểm tra trạng thái booking.';
-          Alert.alert('Lỗi', message);
+              ?.message ?? 'Unable to check in. Check the booking status.';
+          Alert.alert('Error', message);
         },
       }
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50" edges={['bottom']}>
-      <StaffScreenHeader title="Nhận phòng" onBack={() => router.back()} />
+    <View className="flex-1 bg-gray-50">
+      <StaffScreenHeader title="Check in" onBack={() => router.back()} />
 
       {isLoading ? (
         <View className="flex-1 items-center justify-center">
           <Spinner color="#0F766E" size="large" />
         </View>
       ) : !booking ? (
-        <StaffEmptyState icon="alert-circle-outline" tone="danger" title="Không tìm thấy booking" />
+        <StaffEmptyState icon="alert-circle-outline" tone="danger" title="Booking not found" />
       ) : (
-        <>
-          <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
-            {/* Tóm tắt khách */}
-            <View className="bg-white rounded-2xl p-4 border border-gray-100">
-              <Text bold className="text-gray-900 text-lg">
-                {booking.customer?.fullName ?? 'Khách'}
-              </Text>
-              <Text size="xs" className="text-gray-400 mt-0.5">
-                #{booking.bookingCode} · {booking.roomType?.name}
-              </Text>
-              <View className="flex-row items-center gap-1.5 mt-2">
-                <Ionicons name="calendar-outline" size={14} color="#6B7280" />
+        <SafeAreaView className="flex-1" edges={['bottom']}>
+          <ScrollView
+            contentContainerStyle={{ padding: 16, gap: 16 }}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Guest summary */}
+            <Card className="p-4">
+              <View className="flex-row items-center gap-3">
+                <View className="h-12 w-12 rounded-2xl bg-staff-50 items-center justify-center">
+                  <Text bold className="text-staff-700 text-lg">
+                    {(booking.customer?.fullName ?? 'G').charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+                <View className="flex-1">
+                  <Text bold className="text-gray-900 text-base">
+                    {booking.customer?.fullName ?? 'Guest'}
+                  </Text>
+                  <Text size="xs" className="text-gray-400 mt-0.5">
+                    #{booking.bookingCode} · {booking.roomType?.name}
+                  </Text>
+                </View>
+              </View>
+              <View className="flex-row items-center gap-1.5 mt-3">
+                <Ionicons name="calendar-outline" size={15} color="#0F766E" />
                 <Text size="sm" className="text-gray-600">
                   {formatDateLong(booking.checkInDate)} → {formatDateLong(booking.checkOutDate)}
                 </Text>
               </View>
-            </View>
+            </Card>
 
-            {/* Xác thực voucher */}
-            <View className="bg-white rounded-2xl p-4 border border-gray-100">
-              <Text bold className="text-staff-800 mb-2">
-                Mã voucher (tuỳ chọn)
+            {/* Voucher verify */}
+            <Card className="p-4">
+              <Text bold className="text-gray-900 mb-2">
+                Voucher code (optional)
               </Text>
-              <Input>
-                <InputField
-                  autoCapitalize="characters"
-                  placeholder={booking.voucher?.voucherCode ?? 'Nhập / quét mã'}
-                  value={voucherCode}
-                  onChangeText={setVoucherCode}
-                />
-              </Input>
+              <TextInput
+                autoCapitalize="characters"
+                placeholder={booking.voucher?.voucherCode ?? 'Enter / scan code'}
+                placeholderTextColor="#9CA3AF"
+                value={voucherCode}
+                onChangeText={setVoucherCode}
+                className="border border-gray-200 rounded-xl px-3.5 h-11 text-gray-900 text-base"
+              />
               <Text size="2xs" className="text-gray-400 mt-1.5">
-                Bỏ trống nếu không cần đối chiếu tại quầy.
+                Leave blank if you don't need to verify at the desk.
               </Text>
-            </View>
+            </Card>
 
-            {/* Chọn phòng */}
-            <View className="bg-white rounded-2xl p-4 border border-gray-100">
-              <Text bold className="text-staff-800 mb-1">
-                Gán phòng
+            {/* Room assignment */}
+            <Card className="p-4">
+              <Text bold className="text-gray-900 mb-1">
+                Assign room
               </Text>
               <Text size="2xs" className="text-gray-400 mb-3">
-                Không chọn → hệ thống tự gán 1 phòng trống cùng loại.
+                Leave empty to auto-assign a free room of the same type.
               </Text>
               {availableRooms.length === 0 ? (
                 <Text size="sm" className="text-gray-400">
-                  Không có phòng trống cùng loại để chọn tay.
+                  No free rooms of this type to pick manually.
                 </Text>
               ) : (
                 <View className="flex-row flex-wrap gap-2">
@@ -131,7 +143,7 @@ export default function StaffCheckInScreen() {
                         key={r.id}
                         onPress={() => setRoomId(active ? undefined : r.id)}
                         className={cn(
-                          'rounded-xl px-4 py-2 border',
+                          'rounded-xl px-4 py-2.5 border',
                           active
                             ? 'bg-staff-700 border-staff-700'
                             : 'bg-white border-gray-200'
@@ -149,19 +161,19 @@ export default function StaffCheckInScreen() {
                   })}
                 </View>
               )}
-            </View>
+            </Card>
           </ScrollView>
 
           <View className="border-t border-gray-100 bg-white px-4 pt-3 pb-2">
             <StaffButton
-              label="Xác nhận nhận phòng"
+              label="Confirm check-in"
               icon="checkmark-circle-outline"
               loading={checkIn.isPending}
               onPress={handleCheckIn}
             />
           </View>
-        </>
+        </SafeAreaView>
       )}
-    </SafeAreaView>
+    </View>
   );
 }

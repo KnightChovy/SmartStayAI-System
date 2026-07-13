@@ -9,18 +9,20 @@ export interface StatusPillProps {
 }
 
 /**
- * Pill trạng thái tổng quát — nhận `StatusStyle` (class nền + chữ) từ các map trong
- * `staffTheme` (phòng, housekeeping, hội thoại). Booking status dùng `BookingStatusBadge`.
+ * Generic status pill with a leading dot — takes a `StatusStyle` (bg/text/dot classes)
+ * from the maps in `staffTheme` (room / housekeeping / conversation). Booking status uses
+ * `BookingStatusBadge`.
  */
 export function StatusPill({ style, size = 'sm' }: StatusPillProps) {
   return (
     <View
       className={cn(
-        'rounded-full self-start',
+        'flex-row items-center gap-1.5 rounded-full self-start',
         size === 'md' ? 'px-3 py-1.5' : 'px-2.5 py-1',
         style.bg
       )}
     >
+      <View className={cn('rounded-full', size === 'md' ? 'h-2 w-2' : 'h-1.5 w-1.5', style.dot)} />
       <Text size={size === 'md' ? 'xs' : '2xs'} bold className={style.text}>
         {style.label}
       </Text>
