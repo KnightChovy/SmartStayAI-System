@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { useCityDestinations } from '@/hooks/home';
 
 const FALLBACK_IMAGE =
@@ -6,6 +7,7 @@ const FALLBACK_IMAGE =
 
 export default function TrendingDestinations() {
   const navigate = useNavigate();
+  const { t } = useTranslation('home');
   const { destinations, isLoading } = useCityDestinations();
 
   // Top thành phố theo số lượng khách sạn thật đang mở bán.
@@ -17,7 +19,7 @@ export default function TrendingDestinations() {
   return (
     <section className="max-w-7xl mx-auto px-margin-mobile md:px-8 mb-section-gap w-full">
       <h2 className="font-be-vietnam text-2xl font-bold text-on-surface mb-8">
-        Trending Destinations
+        {t('trending.title')}
       </h2>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         {isLoading
@@ -47,7 +49,7 @@ export default function TrendingDestinations() {
                     {dest.city}
                   </h3>
                   <p className="text-xs font-bold opacity-80 uppercase tracking-widest font-be-vietnam">
-                    {dest.count} {dest.count === 1 ? 'Property' : 'Properties'}
+                    {t('trending.properties', { count: dest.count })}
                   </p>
                 </div>
               </div>

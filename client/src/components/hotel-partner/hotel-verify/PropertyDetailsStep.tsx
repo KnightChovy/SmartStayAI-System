@@ -5,15 +5,24 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DatePicker } from '@/components/ui/date-picker';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
 import { FileUploadDropzone } from '@/components/ui/file-upload';
-import { propertyDetailsSchema, type PropertyDetailsFormValues } from '@/validations/hotel-verify.validation';
+import {
+  propertyDetailsSchema,
+  type PropertyDetailsFormValues,
+} from '@/validations/hotel-verify.validation';
 import { hotelVerifyService } from '@/services/hotel-verify.service';
 import { useHotelVerifyStore } from '@/stores/hotel-verify.store';
 import { toDateInputValue } from '@/utils/formatDate';
 
-/** Hôm nay (YYYY-MM-DD) — chặn chọn ngày cấp phép trong tương lai. */
+/** Hôm nay (YYYY-MM-DD) — chặn Select issue date phép trong tương lai. */
 const TODAY = toDateInputValue(new Date());
 
 export function PropertyDetailsStep({
@@ -82,8 +91,12 @@ export function PropertyDetailsStep({
   return (
     <div className="w-full bg-white rounded-2xl p-6 md:p-8 border border-slate-200 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] mt-4">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-slate-900 mb-2">Business License</h2>
-        <p className="text-slate-600">Provide your legal business documentation and licensing details.</p>
+        <h2 className="text-2xl font-bold text-slate-900 mb-2">
+          Business License
+        </h2>
+        <p className="text-slate-600">
+          Provide your legal business documentation and licensing details.
+        </p>
       </div>
 
       <div className="h-px bg-slate-100 w-full mb-8" />
@@ -103,7 +116,9 @@ export function PropertyDetailsStep({
             {...register('licenseNumber')}
           />
           {errors.licenseNumber && (
-            <span className="text-xs text-red-500">{errors.licenseNumber.message}</span>
+            <span className="text-xs text-red-500">
+              {errors.licenseNumber.message}
+            </span>
           )}
         </div>
 
@@ -121,13 +136,15 @@ export function PropertyDetailsStep({
                   value={field.value}
                   onChange={field.onChange}
                   max={TODAY}
-                  placeholder="Chọn ngày cấp"
+                  placeholder="Select issue date"
                   ariaInvalid={!!errors.issueDate}
                 />
               )}
             />
             {errors.issueDate && (
-              <span className="text-xs text-red-500">{errors.issueDate.message}</span>
+              <span className="text-xs text-red-500">
+                {errors.issueDate.message}
+              </span>
             )}
           </div>
           <div className="space-y-2">
@@ -141,13 +158,15 @@ export function PropertyDetailsStep({
                   value={field.value}
                   onChange={field.onChange}
                   min={issueDate || undefined}
-                  placeholder="Chọn ngày hết hạn"
+                  placeholder="Select expiration date"
                   ariaInvalid={!!errors.expiryDate}
                 />
               )}
             />
             {errors.expiryDate && (
-              <span className="text-xs text-red-500">{errors.expiryDate.message}</span>
+              <span className="text-xs text-red-500">
+                {errors.expiryDate.message}
+              </span>
             )}
           </div>
         </div>
@@ -164,7 +183,9 @@ export function PropertyDetailsStep({
               {...register('authority')}
             />
             {errors.authority && (
-              <span className="text-xs text-red-500">{errors.authority.message}</span>
+              <span className="text-xs text-red-500">
+                {errors.authority.message}
+              </span>
             )}
           </div>
           <div className="space-y-2">
@@ -173,7 +194,7 @@ export function PropertyDetailsStep({
             </Label>
             <Select
               defaultValue={draft.businessLicense?.status ?? 'active'}
-              onValueChange={(val) =>
+              onValueChange={val =>
                 setValue('status', val as PropertyDetailsFormValues['status'], {
                   shouldValidate: true,
                 })
@@ -189,7 +210,9 @@ export function PropertyDetailsStep({
               </SelectContent>
             </Select>
             {errors.status && (
-              <span className="text-xs text-red-500">{errors.status.message}</span>
+              <span className="text-xs text-red-500">
+                {errors.status.message}
+              </span>
             )}
           </div>
         </div>
@@ -212,7 +235,10 @@ export function PropertyDetailsStep({
           <Button
             type="button"
             variant="outline"
-            onClick={() => { setBusinessLicense(getValues()); onBack?.(); }}
+            onClick={() => {
+              setBusinessLicense(getValues());
+              onBack?.();
+            }}
             className="h-11 px-6 bg-white border-slate-300 text-slate-700 hover:bg-slate-50 cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4 mr-2" /> Back

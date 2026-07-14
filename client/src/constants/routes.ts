@@ -12,6 +12,8 @@ export const ROUTES = {
   destinations: '/destinations',
   deals: '/deals',
   accommodationTypes: '/accommodation-types',
+  // Landing "List your property" — mời chủ khách sạn đăng ký làm Hotel Partner
+  listYourProperty: '/list-your-property',
   blog: '/blog',
   blogDetail: (slug: string = ':slug') => `/blog/${slug}`,
 
@@ -29,6 +31,8 @@ export const ROUTES = {
   // Auth
   login: '/login',
   register: '/register',
+  // Đăng ký tài khoản Hotel Partner (khác với đăng ký user thường)
+  partnerSignup: '/partner-signup',
   forgotPassword: '/forgot-password',
   resetPassword: '/reset-password',
   verifyEmail: '/verify-email',

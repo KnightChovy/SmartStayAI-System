@@ -180,7 +180,7 @@ export function ProfileForm({ initial }: { initial: UserProfile }) {
             }
             className="h-9 rounded-lg border border-outline-variant/40 bg-surface px-3 text-sm outline-none focus:border-primary"
           >
-            <option value="VND">VND (₫)</option>
+            <option value="VND">VNĐ</option>
             <option value="USD">USD ($)</option>
           </select>
         </Field>

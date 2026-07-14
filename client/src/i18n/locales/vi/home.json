@@ -1,0 +1,94 @@
+{
+  "hero": {
+    "title": "Tìm chỗ nghỉ tiếp theo của bạn",
+    "subtitle": "Trải nghiệm những chốn nghỉ tinh tuyển bằng khám phá thông minh.",
+    "destination": "Điểm đến",
+    "destinationPlaceholder": "Bạn muốn đi đâu?",
+    "checkIn": "Nhận phòng",
+    "checkOut": "Trả phòng",
+    "guests": "Số khách"
+  },
+  "whyChoose": {
+    "title": "Vì sao chọn SmartStay?",
+    "freeCancellation": {
+      "title": "Huỷ miễn phí",
+      "desc": "Linh hoạt cho sự an tâm trong thời điểm thay đổi"
+    },
+    "support": {
+      "title": "Hỗ trợ 24/7",
+      "desc": "Hỗ trợ toàn cầu bất cứ khi nào bạn cần"
+    },
+    "reviews": {
+      "title": "Đánh giá đã xác minh",
+      "desc": "Trải nghiệm chân thực chỉ từ những du khách thực sự"
+    },
+    "bestPrice": {
+      "title": "Giá tốt nhất",
+      "desc": "Đảm bảo mức giá độc quyền cho thành viên của chúng tôi"
+    }
+  },
+  "promotions": {
+    "summer": {
+      "badge": "Đặt sớm",
+      "title": "Kỳ nghỉ hạ chí",
+      "desc": "Đặt trước 30 ngày để được giảm 20%.",
+      "cta": "Nhận ưu đãi"
+    },
+    "member": {
+      "badge": "Chỉ thành viên",
+      "title": "Giá ưu đãi độc quyền",
+      "desc": "Mở khoá giá ẩn cho thành viên Vàng.",
+      "cta": "Đăng nhập để xem"
+    }
+  },
+  "accommodationTypes": {
+    "title": "Tìm theo loại chỗ nghỉ",
+    "hotels": "Khách sạn",
+    "apartments": "Căn hộ",
+    "resorts": "Resort",
+    "villas": "Biệt thự",
+    "cabins": "Nhà gỗ",
+    "unique": "Chỗ nghỉ độc đáo"
+  },
+  "trending": {
+    "title": "Điểm đến thịnh hành",
+    "properties_one": "{{count}} khách sạn",
+    "properties_other": "{{count}} khách sạn"
+  },
+  "discover": {
+    "title": "Khám phá Việt Nam",
+    "subtitle": "Những kỳ nghỉ \"sang trọng tĩnh lặng\" tinh tuyển giữa lòng phương Đông.",
+    "viewAll": "Xem tất cả điểm đến",
+    "stays_one": "Còn {{count}} chỗ nghỉ",
+    "stays_other": "Còn {{count}} chỗ nghỉ"
+  },
+  "weekend": {
+    "title": "Chỗ nghỉ nổi bật",
+    "subtitle": "Khách sạn tuyển chọn có thể đặt ngay bây giờ",
+    "viewAll": "Xem tất cả chỗ nghỉ",
+    "from": "Từ",
+    "perNight": "/ đêm",
+    "star": "{{count}} sao"
+  },
+  "loyalty": {
+    "title": "Đi nhiều hơn, chi ít hơn.",
+    "subtitle": "Tham gia SmartStay Rewards và tích điểm mỗi lần đặt phòng. Hạng Vàng chỉ cách bạn vài kỳ nghỉ.",
+    "pointsBack": "Hoàn 10% điểm",
+    "freeUpgrades": "Nâng hạng miễn phí",
+    "prioritySupport": "Hỗ trợ ưu tiên",
+    "joinRewards": "Tham gia Rewards",
+    "learnMore": "Tìm hiểu thêm"
+  },
+  "popular": {
+    "title": "Được du khách Việt Nam ưa chuộng",
+    "singapore": { "name": "Singapore", "desc": "Sang trọng hiện đại & mua sắm" },
+    "thailand": { "name": "Thái Lan", "desc": "Biển đẹp & văn hoá sôi động" },
+    "korea": { "name": "Hàn Quốc", "desc": "Làn sóng K, mỹ phẩm & cung điện cổ" },
+    "japan": { "name": "Nhật Bản", "desc": "Hoa anh đào & suối nước nóng thanh bình" }
+  },
+  "guestFavorites": {
+    "badge": "Đánh giá của khách",
+    "title": "Chỗ nghỉ được khách yêu thích",
+    "subtitle": "Lời thật từ những du khách đã tìm được chỗ nghỉ hoàn hảo với SmartStay AI."
+  }
+}

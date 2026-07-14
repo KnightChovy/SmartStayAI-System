@@ -1,0 +1,23 @@
+{
+  "nav": {
+    "home": "Home",
+    "deals": "Deals",
+    "destinations": "Destinations",
+    "stays": "Stays",
+    "listProperty": "List your property",
+    "login": "Log in",
+    "register": "Register",
+    "logout": "Log out",
+    "loggingOut": "Logging out...",
+    "dashboard": "Dashboard",
+    "myAccount": "My Account"
+  },
+  "language": {
+    "label": "Language",
+    "vi": "Tiếng Việt",
+    "en": "English"
+  },
+  "currency": {
+    "label": "Currency"
+  }
+}

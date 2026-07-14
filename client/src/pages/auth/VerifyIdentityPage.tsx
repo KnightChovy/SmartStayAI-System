@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { useForm } from 'react-hook-form';
@@ -13,6 +14,7 @@ import {
 export default function VerifyIdentityPage() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { t } = useTranslation('auth');
   const {
     mutateAsync: registerApi,
     isPending: isRegistering,
@@ -23,7 +25,7 @@ export default function VerifyIdentityPage() {
 
   const { email, name, password } = location.state || {};
 
-  const targetEmail = email || 'your email address';
+  const targetEmail = email || t('verify.yourEmail');
 
   const [timeLeft, setTimeLeft] = useState(59);
   const [canResend, setCanResend] = useState(false);
@@ -134,12 +136,12 @@ export default function VerifyIdentityPage() {
     ].join('');
 
     if (enteredOtp.length < 6) {
-      alert('Please enter the complete 6-digit verification code.');
+      alert(t('verify.incomplete'));
       return;
     }
 
     if (!email || !name || !password) {
-      alert('Missing registration context. Please register again.');
+      alert(t('verify.missingContext'));
       navigate('/register');
       return;
     }
@@ -217,14 +219,10 @@ export default function VerifyIdentityPage() {
           {/* Header Content */}
           <div className="text-center mb-stack-lg">
             <h2 className="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-2 font-semibold">
-              Verify Your Identity
+              {t('verify.title')}
             </h2>
             <p className="font-body-md text-body-md text-on-surface-variant max-w-[320px] mx-auto">
-              We've sent a 6-digit code to{' '}
-              <span className="font-semibold text-on-surface">
-                {targetEmail}
-              </span>
-              . Please enter it below to continue.
+              {t('verify.subtitle', { email: targetEmail })}
             </p>
           </div>
 
@@ -236,7 +234,7 @@ export default function VerifyIdentityPage() {
             {registerError && (
               <div className="bg-error/10 border border-error/20 text-error p-3 rounded-xl text-sm font-semibold mb-4 text-center">
                 {(registerError as any)?.response?.data?.message ||
-                  'Verification failed. Please check the code.'}
+                  t('verify.error')}
               </div>
             )}
 
@@ -278,11 +276,11 @@ export default function VerifyIdentityPage() {
                   <span className="material-symbols-outlined animate-spin">
                     progress_activity
                   </span>
-                  Verifying...
+                  {t('verify.submitting')}
                 </>
               ) : (
                 <>
-                  Verify Code
+                  {t('verify.submit')}
                   <span className="material-symbols-outlined text-[18px]">
                     arrow_forward
                   </span>
@@ -293,7 +291,7 @@ export default function VerifyIdentityPage() {
 
           <div className="flex flex-col items-center gap-4 w-full">
             <p className="font-label-md text-label-md text-on-surface-variant text-center">
-              Didn't receive the code?{' '}
+              {t('verify.notReceived')}{' '}
               {canResend ? (
                 <Button
                   onClick={handleResend}
@@ -301,15 +299,13 @@ export default function VerifyIdentityPage() {
                   className="text-on-background font-bold hover:underline cursor-pointer outline-none bg-transparent hover:bg-transparent border-none p-0 size-auto inline-flex"
                   type="button"
                 >
-                  {isSendingOtp ? 'Sending...' : 'Resend Code'}
+                  {isSendingOtp ? t('verify.resending') : t('verify.resend')}
                 </Button>
               ) : (
                 <span className="text-on-background font-bold">
-                  Resend (in{' '}
-                  <span id="timer">
-                    00:{timeLeft < 10 ? `0${timeLeft}` : timeLeft}
-                  </span>
-                  )
+                  {t('verify.resendIn', {
+                    time: `00:${timeLeft < 10 ? `0${timeLeft}` : timeLeft}`,
+                  })}
                 </span>
               )}
             </p>
@@ -321,7 +317,7 @@ export default function VerifyIdentityPage() {
               <span className="material-symbols-outlined text-[20px]">
                 keyboard_backspace
               </span>
-              Back to Login
+              {t('verify.backToLogin')}
             </Link>
           </div>
         </div>
@@ -330,7 +326,7 @@ export default function VerifyIdentityPage() {
       <div className="absolute bottom-10 right-10 hidden md:flex items-center gap-3 glass-effect premium-gold-border py-3 px-5 rounded-full ambient-shadow">
         <div className="w-2 h-2 rounded-full bg-tertiary-fixed-dim animate-pulse"></div>
         <span className="font-label-sm text-label-sm text-on-surface uppercase tracking-widest">
-          Secure Verification Active
+          {t('verify.secureActive')}
         </span>
       </div>
 

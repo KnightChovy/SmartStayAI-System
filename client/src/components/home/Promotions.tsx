@@ -1,6 +1,8 @@
+import { useTranslation } from 'react-i18next';
 import { Button } from '../ui/button';
 
 export default function Promotions() {
+  const { t } = useTranslation('home');
   return (
     <section className="max-w-7xl mx-auto px-margin-mobile md:px-8 mb-section-gap w-full">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -13,16 +15,16 @@ export default function Promotions() {
           />
           <div className="absolute inset-0 bg-linear-to-r from-black/60 to-transparent flex flex-col justify-center p-8">
             <span className="bg-ai-glow text-on-surface text-[10px] font-bold px-3 py-1 rounded-full w-fit mb-3 uppercase tracking-wider">
-              Early Bird
+              {t('promotions.summer.badge')}
             </span>
             <h3 className="text-white text-xl md:text-2xl font-bold mb-2 font-be-vietnam">
-              Summer Solstice Escapes
+              {t('promotions.summer.title')}
             </h3>
             <p className="text-white/80 text-sm mb-6 font-be-vietnam">
-              Book 30 days in advance for 20% off.
+              {t('promotions.summer.desc')}
             </p>
             <Button className="bg-white text-on-surface px-6 py-2 rounded-xl text-xs font-bold w-fit hover:bg-surface-variant transition-colors border-none h-auto">
-              Claim Offer
+              {t('promotions.summer.cta')}
             </Button>
           </div>
         </div>
@@ -36,16 +38,16 @@ export default function Promotions() {
           />
           <div className="absolute inset-0 bg-linear-to-r from-black/60 to-transparent flex flex-col justify-center p-8">
             <span className="bg-premium-gold text-white text-[10px] font-bold px-3 py-1 rounded-full w-fit mb-3 uppercase tracking-wider">
-              Members Only
+              {t('promotions.member.badge')}
             </span>
             <h3 className="text-white text-xl md:text-2xl font-bold mb-2 font-be-vietnam">
-              Exclusive Sanctuary Rates
+              {t('promotions.member.title')}
             </h3>
             <p className="text-white/80 text-sm mb-6 font-be-vietnam">
-              Unlock hidden prices for our Gold members.
+              {t('promotions.member.desc')}
             </p>
             <Button className="bg-white text-on-surface px-6 py-2 rounded-xl text-xs font-bold w-fit hover:bg-surface-variant transition-colors border-none h-auto">
-              Sign In to See
+              {t('promotions.member.cta')}
             </Button>
           </div>
         </div>

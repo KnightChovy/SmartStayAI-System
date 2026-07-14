@@ -1,6 +1,12 @@
 import { api } from '@/lib/api';
 import type { Paginated } from '@/types/api.types';
-import type { Booking, CreateBookingPayload, MyBookingsParams } from '@/types/booking.types';
+import type {
+  Booking,
+  CreateBookingPayload,
+  CreateReviewPayload,
+  UpdateReviewPayload,
+  MyBookingsParams,
+} from '@/types/booking.types';
 
 /** Bỏ field rỗng khỏi query string. */
 function cleanParams<T extends object>(params: T): Record<string, unknown> {
@@ -34,5 +40,15 @@ export const bookingService = {
   async cancel(bookingId: string, reason?: string): Promise<Booking> {
     const { data } = await api.patch<Booking>(`/bookings/${bookingId}/cancel`, { reason });
     return data;
+  },
+
+  /** Viết đánh giá cho booking đã trả phòng (`POST /reviews`). */
+  async createReview(payload: CreateReviewPayload): Promise<void> {
+    await api.post('/reviews', payload);
+  },
+
+  /** Sửa đánh giá của chính mình (`PATCH /reviews/:reviewId`). */
+  async updateReview(reviewId: string, payload: UpdateReviewPayload): Promise<void> {
+    await api.patch(`/reviews/${reviewId}`, payload);
   },
 };

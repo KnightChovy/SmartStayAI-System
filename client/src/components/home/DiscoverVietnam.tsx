@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../ui/button';
 import { useCityDestinations } from '@/hooks/home';
 
@@ -7,6 +8,7 @@ const FALLBACK_IMAGE =
 
 export default function DiscoverVietnam() {
   const navigate = useNavigate();
+  const { t } = useTranslation('home');
   const { destinations, isLoading } = useCityDestinations();
 
   // Điểm đến trong nước (Việt Nam) thật, tối đa 4 thành phố nhiều khách sạn nhất.
@@ -21,10 +23,10 @@ export default function DiscoverVietnam() {
       <div className="flex flex-col md:flex-row justify-between items-end mb-8 gap-4">
         <div>
           <h2 className="font-be-vietnam text-2xl font-bold text-on-surface">
-            Discover Vietnam
+            {t('discover.title')}
           </h2>
           <p className="text-on-surface-variant text-sm font-medium font-be-vietnam">
-            Curated "Quiet Luxury" escapes in the heart of the East.
+            {t('discover.subtitle')}
           </p>
         </div>
         <Button
@@ -32,7 +34,7 @@ export default function DiscoverVietnam() {
           onClick={() => navigate('/search')}
           className="text-sm font-semibold text-primary hover:underline flex items-center gap-2 cursor-pointer h-auto p-0"
         >
-          View all destinations
+          {t('discover.viewAll')}
           <span className="material-symbols-outlined text-sm font-bold">
             arrow_forward
           </span>
@@ -66,7 +68,7 @@ export default function DiscoverVietnam() {
                   {dest.city}
                 </h4>
                 <p className="text-on-surface-variant text-sm font-be-vietnam">
-                  {dest.count} {dest.count === 1 ? 'stay' : 'stays'} available
+                  {t('discover.stays', { count: dest.count })}
                 </p>
               </div>
             ))}
