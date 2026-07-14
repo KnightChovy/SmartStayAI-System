@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { AdminConfirmDialog } from '@/components/admin/shared/AdminConfirmDialog';
 import { AdminUserDetailModal } from '@/components/admin/models/user/AdminUserDetailModal';
@@ -39,6 +40,7 @@ const statusOptions = [
 
 export function AdminUsersPage() {
   const { openCreateUser } = useAdminModal();
+  const [page, setPage] = useState(1);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [filters, setFilters] = useState<UserFilterState>({
     name: '',
@@ -47,7 +49,8 @@ export function AdminUsersPage() {
   });
 
   const queryParams: AdminUsersParams = {
-    limit: 20,
+    limit: 8,
+    page,
     sortBy: 'createdAt:desc',
     name: filters.name.trim() || undefined,
     role: filters.role === 'all' ? undefined : filters.role,
@@ -74,6 +77,9 @@ export function AdminUsersPage() {
       onSuccess: () => {
         toast.success('User deleted');
         setUserToDelete(null);
+        if (users.length === 1 && page > 1) {
+          setPage(current => current - 1);
+        }
       },
       onError: err => {
         toast.error(errorMessage(err, 'Could not delete user.'));
@@ -95,12 +101,13 @@ export function AdminUsersPage() {
             <Label htmlFor="admin-user-filter-name">Name</Label>
             <Input
               id="admin-user-filter-name"
-              onChange={event =>
+              onChange={event => {
+                setPage(1);
                 setFilters(current => ({
                   ...current,
                   name: event.target.value,
-                }))
-              }
+                }));
+              }}
               placeholder="Search full name"
               value={filters.name}
             />
@@ -111,12 +118,13 @@ export function AdminUsersPage() {
             <select
               className="h-9 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-ring focus:ring-3 focus:ring-ring/50"
               id="admin-user-filter-role"
-              onChange={event =>
+              onChange={event => {
+                setPage(1);
                 setFilters(current => ({
                   ...current,
                   role: event.target.value as UserFilterState['role'],
-                }))
-              }
+                }));
+              }}
               value={filters.role}
             >
               {roleOptions.map(option => (
@@ -132,12 +140,13 @@ export function AdminUsersPage() {
             <select
               className="h-9 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-ring focus:ring-3 focus:ring-ring/50"
               id="admin-user-filter-status"
-              onChange={event =>
+              onChange={event => {
+                setPage(1);
                 setFilters(current => ({
                   ...current,
                   status: event.target.value as UserFilterState['status'],
-                }))
-              }
+                }));
+              }}
               value={filters.status}
             >
               {statusOptions.map(option => (
@@ -151,9 +160,10 @@ export function AdminUsersPage() {
           <Button
             className="h-9 rounded-full px-4"
             disabled={!filterCount}
-            onClick={() =>
-              setFilters({ name: '', role: 'all', status: 'all' })
-            }
+            onClick={() => {
+              setPage(1);
+              setFilters({ name: '', role: 'all', status: 'all' });
+            }}
             type="button"
             variant="outline"
           >
@@ -175,6 +185,52 @@ export function AdminUsersPage() {
           onDelete={setUserToDelete}
           onEdit={user => setDetailUserId(user.id)}
           onView={user => setDetailUserId(user.id)}
+          pagination={
+            data && data.totalResults > 0 ? (
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm text-slate-500">
+                  Showing{' '}
+                  <span className="font-semibold text-slate-700">
+                    {(data.page - 1) * data.limit + 1}–
+                    {Math.min(data.page * data.limit, data.totalResults)}
+                  </span>{' '}
+                  of{' '}
+                  <span className="font-semibold text-slate-700">
+                    {data.totalResults}
+                  </span>{' '}
+                  users
+                </p>
+
+                <div className="flex items-center justify-between gap-2 sm:justify-end">
+                  <Button
+                    className="h-9 rounded-xl px-3"
+                    disabled={data.page <= 1}
+                    onClick={() => setPage(current => Math.max(1, current - 1))}
+                    type="button"
+                    variant="outline"
+                  >
+                    <ChevronLeft className="size-4" />
+                    Previous
+                  </Button>
+                  <span className="min-w-20 text-center text-sm font-medium text-slate-600">
+                    {data.page} / {Math.max(data.totalPages, 1)}
+                  </span>
+                  <Button
+                    className="h-9 rounded-xl px-3"
+                    disabled={data.page >= data.totalPages}
+                    onClick={() =>
+                      setPage(current => Math.min(data.totalPages, current + 1))
+                    }
+                    type="button"
+                    variant="outline"
+                  >
+                    Next
+                    <ChevronRight className="size-4" />
+                  </Button>
+                </div>
+              </div>
+            ) : undefined
+          }
           users={users}
         />
       )}
@@ -192,7 +248,10 @@ export function AdminUsersPage() {
         destructive
         loading={deleteUser.isPending}
         message={`Are you sure you want to delete "${
-          userToDelete?.fullName ?? userToDelete?.name ?? userToDelete?.email ?? ''
+          userToDelete?.fullName ??
+          userToDelete?.name ??
+          userToDelete?.email ??
+          ''
         }"? This action cannot be undone.`}
         onClose={() => setUserToDelete(null)}
         onConfirm={handleConfirmDelete}
