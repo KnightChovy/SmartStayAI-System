@@ -25,6 +25,7 @@ export function AdminUsersTable({
   onEdit,
   onDelete,
   isDeleting,
+  pagination,
 }: AdminUsersTableProps) {
   const rows = users.map(user => [
     user.fullName ?? user.name ?? user.email,
@@ -48,7 +49,9 @@ export function AdminUsersTable({
         'Status',
         'Actions',
       ]}
+      footer={pagination}
       rows={rows}
+      showStatusIcons
       renderLastColumn={row => {
         const user = findUser(row[5]);
         if (!user) return null;

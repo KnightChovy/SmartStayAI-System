@@ -23,8 +23,12 @@ function getPriorityClass(priority: string) {
   return 'bg-blue-100 text-blue-700';
 }
 
-export function AdminTasksModal({ currentTime, onClose }: AdminTasksModalProps) {
-  const { tasks, openCount, addTask, cycleStatus, removeTask } = useAdminTasks();
+export function AdminTasksModal({
+  currentTime,
+  onClose,
+}: AdminTasksModalProps) {
+  const { tasks, openCount, addTask, cycleStatus, removeTask } =
+    useAdminTasks();
   const [taskName, setTaskName] = useState('');
   const [priority, setPriority] = useState<AdminTaskPriority>('Mid');
   const [due, setDue] = useState('');
@@ -65,8 +69,8 @@ export function AdminTasksModal({ currentTime, onClose }: AdminTasksModalProps) 
               <h2 className="text-lg font-bold text-slate-950">Task Board</h2>
             </div>
             <p className="mt-1 text-xs font-medium text-muted-foreground">
-              {openCount} open · {tasks.length} total — {formatDateLong(currentTime)} |{' '}
-              {formatTime(currentTime)}
+              {openCount} open · {tasks.length} total —{' '}
+              {formatDateLong(currentTime)} | {formatTime(currentTime)}
             </p>
           </div>
           <button
@@ -81,7 +85,10 @@ export function AdminTasksModal({ currentTime, onClose }: AdminTasksModalProps) 
 
         <div className="flex flex-wrap items-end gap-2 border-b border-outline-variant/30 px-4 py-3 sm:px-5">
           <div className="min-w-40 flex-1 space-y-1">
-            <label className="text-[11px] font-bold uppercase text-slate-500" htmlFor="task-name">
+            <label
+              className="text-[11px] font-bold uppercase text-slate-500"
+              htmlFor="task-name"
+            >
               New task
             </label>
             <Input
@@ -92,13 +99,18 @@ export function AdminTasksModal({ currentTime, onClose }: AdminTasksModalProps) 
             />
           </div>
           <div className="space-y-1">
-            <label className="text-[11px] font-bold uppercase text-slate-500" htmlFor="task-priority">
+            <label
+              className="text-[11px] font-bold uppercase text-slate-500"
+              htmlFor="task-priority"
+            >
               Priority
             </label>
             <select
               className="h-9 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-ring focus:ring-3 focus:ring-ring/50"
               id="task-priority"
-              onChange={event => setPriority(event.target.value as AdminTaskPriority)}
+              onChange={event =>
+                setPriority(event.target.value as AdminTaskPriority)
+              }
               value={priority}
             >
               <option value="High">High</option>
@@ -107,7 +119,10 @@ export function AdminTasksModal({ currentTime, onClose }: AdminTasksModalProps) 
             </select>
           </div>
           <div className="space-y-1">
-            <label className="text-[11px] font-bold uppercase text-slate-500" htmlFor="task-due">
+            <label
+              className="text-[11px] font-bold uppercase text-slate-500"
+              htmlFor="task-due"
+            >
               Due
             </label>
             <Input
@@ -128,68 +143,75 @@ export function AdminTasksModal({ currentTime, onClose }: AdminTasksModalProps) 
           </button>
         </div>
 
-        <div className="overflow-x-auto">
-          {tasks.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">
-              No tasks yet — add one above.
-            </p>
-          ) : (
-            <table className="w-full min-w-170 text-left">
-              <thead>
-                <tr className="border-b border-outline-variant/40 text-[11px] font-bold uppercase tracking-wide text-slate-400">
-                  <th className="px-5 py-3">Status</th>
-                  <th className="px-4 py-3">Priority</th>
-                  <th className="px-4 py-3">Task</th>
-                  <th className="px-5 py-3">Due</th>
-                  <th className="py-3 pr-5 text-right"> </th>
-                </tr>
-              </thead>
-              <tbody>
-                {tasks.map(task => (
-                  <tr className="border-b border-outline-variant/30 last:border-b-0" key={task.id}>
-                    <td className="px-5 py-4">
-                      <button
-                        className={cn(
-                          'rounded-full px-2.5 py-1 text-[10px] font-bold uppercase',
-                          getStatusClass(task.status)
-                        )}
-                        onClick={() => cycleStatus(task.id)}
-                        type="button"
-                      >
-                        {task.status}
-                      </button>
-                    </td>
-                    <td className="px-4 py-4">
-                      <span
-                        className={cn(
-                          'rounded-full px-2.5 py-1 text-[10px] font-bold uppercase',
-                          getPriorityClass(task.priority)
-                        )}
-                      >
-                        {task.priority}
-                      </span>
-                    </td>
-                    <td className="px-4 py-4">
-                      <span className="text-sm font-bold text-slate-950">{task.task}</span>
-                    </td>
-                    <td className="px-5 py-4 text-xs font-semibold text-blue-600">
-                      {task.due || '—'}
-                    </td>
-                    <td className="py-4 pr-5 text-right">
-                      <button
-                        aria-label={`Delete ${task.task}`}
-                        className="inline-flex size-7 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-red-600"
-                        onClick={() => removeTask(task.id)}
-                        type="button"
-                      >
-                        <Trash2 className="size-3.5" />
-                      </button>
-                    </td>
+        <div className="m-4 overflow-hidden rounded-2xl border border-slate-200 sm:m-5">
+          <div className="overflow-x-auto">
+            {tasks.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                No tasks yet — add one above.
+              </p>
+            ) : (
+              <table className="w-full min-w-170 text-left">
+                <thead className="bg-slate-50/90">
+                  <tr className="border-b border-slate-200 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
+                    <th className="px-5 py-3">Status</th>
+                    <th className="px-4 py-3">Priority</th>
+                    <th className="px-4 py-3">Task</th>
+                    <th className="px-5 py-3">Due</th>
+                    <th className="py-3 pr-5 text-right"> </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {tasks.map(task => (
+                    <tr
+                      className="transition-colors duration-200 hover:bg-indigo-50/35"
+                      key={task.id}
+                    >
+                      <td className="px-5 py-4">
+                        <button
+                          className={cn(
+                            'rounded-full px-2.5 py-1 text-[10px] font-bold uppercase',
+                            getStatusClass(task.status)
+                          )}
+                          onClick={() => cycleStatus(task.id)}
+                          type="button"
+                        >
+                          {task.status}
+                        </button>
+                      </td>
+                      <td className="px-4 py-4">
+                        <span
+                          className={cn(
+                            'rounded-full px-2.5 py-1 text-[10px] font-bold uppercase',
+                            getPriorityClass(task.priority)
+                          )}
+                        >
+                          {task.priority}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4">
+                        <span className="text-sm font-bold text-slate-950">
+                          {task.task}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4 text-xs font-semibold text-blue-600">
+                        {task.due || '—'}
+                      </td>
+                      <td className="py-4 pr-5 text-right">
+                        <button
+                          aria-label={`Delete ${task.task}`}
+                          className="inline-flex size-7 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-red-600"
+                          onClick={() => removeTask(task.id)}
+                          type="button"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
         </div>
       </section>
     </div>

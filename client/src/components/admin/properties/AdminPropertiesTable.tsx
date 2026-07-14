@@ -6,6 +6,7 @@ export function AdminPropertiesTable({ rows }: AdminPropertiesTableProps) {
     <AdminTable
       headers={['Property', 'Location', 'Partner', 'Status', 'Submitted']}
       rows={rows}
+      showStatusIcons
     />
   );
 }
