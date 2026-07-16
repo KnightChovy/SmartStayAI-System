@@ -8,6 +8,7 @@ import {
   ShieldCheck,
   Users,
   TrendingUp,
+  Banknote,
   BarChart2,
   Settings,
 } from 'lucide-react';
@@ -16,6 +17,7 @@ const navItems = [
   { name: 'Dashboard', href: '/manager/dashboard', icon: LayoutDashboard },
   { name: 'Verifications', href: '/manager/verification', icon: ShieldCheck },
   { name: 'Hotel Partners', href: '/manager/hotel-partners', icon: Users },
+  { name: 'Refunds', href: '/manager/refunds', icon: Banknote },
   { name: 'Revenue', href: '/manager/revenue', icon: TrendingUp },
   { name: 'Analytics', href: '/manager/analytics', icon: BarChart2 },
 ];

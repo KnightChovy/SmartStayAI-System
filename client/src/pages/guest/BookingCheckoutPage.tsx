@@ -35,10 +35,20 @@ import BackLink from '@/components/shared/BackLink';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { estimateTaxAndFees } from '@/utils/estimateTaxAndFees';
 import { formatAddress } from '@/utils/formatAddress';
 import { formatDateShort, nightsBetween } from '@/utils/formatDate';
 import type { HotelDetail, RoomType } from '@/types/hotel.types';
 import type { SepayPaymentInfo } from '@/types/payment.types';
+
+/** Số tiền THẬT của booking đã tạo — thay cho ước tính ngay khi có. */
+interface BookingTotals {
+  subtotal: string;
+  discountAmount: string;
+  taxAmount: string;
+  feeAmount: string;
+  totalAmount: string;
+}
 
 interface CheckoutState {
   /** Khách sạn truyền từ trang chi tiết — có `cancellationPolicy` để hiện ở tóm tắt. */
@@ -80,7 +90,7 @@ export default function BookingCheckoutPage() {
   // Router state chỉ mang bản tóm tắt từ trang chi tiết, nên nhiều field trong schema
   // (giờ nhận/trả phòng, cọc, tuổi tối thiểu, chính sách…) không tới được đây. Fetch bản
   // đầy đủ theo hotelId để trang đặt phòng luôn hiện đúng những gì DB đang có.
-  const { data: hotelDetail } = useHotel(roomType?.hotelId ?? '', hotelSeed);
+  const { data: hotelDetail, isPlaceholderData } = useHotel(roomType?.hotelId ?? '', hotelSeed);
   const hotel = hotelDetail ?? hotelSeed;
 
   const [step, setStep] = useState(0);
@@ -91,6 +101,9 @@ export default function BookingCheckoutPage() {
   const [sepayInfo, setSepayInfo] = useState<SepayPaymentInfo | null>(null);
   // Giữ id booking đã tạo: bấm thanh toán lại chỉ gọi lại VNPay, không tạo booking trùng
   const [createdBookingId, setCreatedBookingId] = useState<string | null>(null);
+  // Số tiền thật của booking đã tạo + cờ báo lệch so với ước tính (xem `handleConfirm`).
+  const [actualTotals, setActualTotals] = useState<BookingTotals | null>(null);
+  const [priceChanged, setPriceChanged] = useState(false);
 
   // Nguồn thật của hồ sơ là `GET /users/me`, KHÔNG phải `authStore`: store chỉ giữ ảnh chụp
   // user tại thời điểm đăng nhập và không bao giờ refresh, nên số điện thoại khách lưu ở trang
@@ -131,6 +144,29 @@ export default function BookingCheckoutPage() {
   /** Giá mỗi đêm suy từ tổng (khớp tuyệt đối với tổng, tránh lệch do làm tròn). */
   const perNight = nights > 0 ? subtotal / nights : Number(roomType?.basePrice ?? 0);
 
+  // `useHotel` dựng placeholder = seed + các relation RỖNG, nên trong lúc chờ API,
+  // `hotelDetail.policies` là `[]` BỊA RA — đọc thẳng sẽ tính ra "không thuế" cho KS có VAT 8%.
+  // Chỉ tin `hotelDetail` khi query đã về; chưa về thì dùng policies của seed (trang chi tiết
+  // truyền nguyên `HotelDetail` sang nên thường đã có sẵn), còn không thì `undefined` = chưa biết.
+  const policies = isPlaceholderData ? hotelSeed?.policies : hotelDetail?.policies;
+
+  // Thuế/phí chỉ có số thật sau khi tạo booking, nên trước đó phải tự tính — nếu không
+  // khách thấy tổng thấp hơn số VNPay/SePay charge. Số thật (nếu có) luôn thắng.
+  const estimate = useMemo(
+    () => estimateTaxAndFees({ policies, subtotal, numNights: nights, numGuests: guests }),
+    [policies, subtotal, nights, guests]
+  );
+
+  // Booking đã tạo ⇒ chỉ hiện số của server. Chưa có ⇒ ước tính; chưa biết chính sách ⇒
+  // về đúng hành vi cũ (chỉ tiền phòng) thay vì khẳng định "không thuế".
+  const displaySubtotal = actualTotals ? Number(actualTotals.subtotal) : subtotal;
+  const displayDiscount = actualTotals ? Number(actualTotals.discountAmount) : 0;
+  const displayTax = actualTotals ? Number(actualTotals.taxAmount) : (estimate?.taxAmount ?? 0);
+  const displayFee = actualTotals ? Number(actualTotals.feeAmount) : (estimate?.feeAmount ?? 0);
+  const displayTotal = actualTotals
+    ? Number(actualTotals.totalAmount)
+    : (estimate?.total ?? subtotal);
+
   // Thiếu dữ liệu phòng (vào thẳng URL) → mời quay lại tìm phòng
   if (!roomType || !checkIn || !checkOut) {
     return (
@@ -150,6 +186,8 @@ export default function BookingCheckoutPage() {
   }
 
   const handleConfirm = async () => {
+    // Lần bấm thứ hai (sau khi đã thấy số thật) phải đi thẳng tới thanh toán.
+    setPriceChanged(false);
     try {
       // Tạo booking đúng một lần; bấm lại chỉ tạo lại URL thanh toán.
       let bookingId = createdBookingId;
@@ -168,6 +206,22 @@ export default function BookingCheckoutPage() {
         });
         bookingId = booking.id;
         setCreatedBookingId(bookingId);
+
+        // Server chốt giá, không phải ước tính của client. Lệch thì DỪNG LẠI cho khách
+        // xem số thật trước — không bao giờ đẩy sang cổng thanh toán với số chưa từng hiện.
+        setActualTotals({
+          subtotal: booking.subtotal,
+          discountAmount: booking.discountAmount,
+          taxAmount: booking.taxAmount,
+          feeAmount: booking.feeAmount,
+          totalAmount: booking.totalAmount,
+        });
+        const quoted = estimate?.total ?? subtotal;
+        // Dung sai nửa đồng: tiền VND, lệch thật luôn ≥ 1 — tránh banner vì rác dấu phẩy động.
+        if (Math.abs(Number(booking.totalAmount) - quoted) >= 0.5) {
+          setPriceChanged(true);
+          return;
+        }
       }
 
       // SePay: không redirect — hiện QR, SePay gọi webhook về BE, FE poll booking.
@@ -372,6 +426,15 @@ export default function BookingCheckoutPage() {
                     {errorMessage(createPayment.error, t('confirm.errorPayment'))}
                   </p>
                 )}
+                {/*
+                  Ước tính lệch số server chốt → dừng lại báo khách (tông cảnh báo, KHÔNG phải
+                  lỗi). Bảng giá bên cạnh lúc này đã hiện số thật; bấm lần nữa là thanh toán.
+                */}
+                {priceChanged && actualTotals && (
+                  <p className="rounded-xl bg-premium-gold/10 px-3 py-2 text-sm text-on-surface">
+                    {t('confirm.priceUpdated', { total: format(actualTotals.totalAmount) })}
+                  </p>
+                )}
                 <div className="flex gap-3">
                   <Button variant="outline" size="lg" onClick={() => setStep(1)}>
                     {t('common:back')}
@@ -473,9 +536,10 @@ export default function BookingCheckoutPage() {
 
               <div className="mt-5 border-t border-outline-variant/30 pt-5">
                 {/*
-                  Breakdown từng khoản từ data sẵn có: giá/đêm × số đêm → tổng.
-                  BE gộp thuế vào `totalAmount` (không tách trường tax/fee) nên dòng
-                  Thuế & phí ghi rõ "Đã bao gồm" thay vì bịa một con số.
+                  Breakdown: tiền phòng (giá/đêm × số đêm) + thuế + phí = tổng.
+                  Chưa tạo booking thì thuế/phí là ƯỚC TÍNH từ `hotel.policies`; tạo xong rồi
+                  thì lấy số THẬT của BE. Mỗi dòng chỉ hiện khi > 0 nên khách sạn không thu
+                  thuế/phí trông y hệt như trước.
                 */}
                 <PriceSummary
                   lines={[
@@ -484,12 +548,15 @@ export default function BookingCheckoutPage() {
                         price: format(perNight),
                         count: nights,
                       }),
-                      value: subtotal,
+                      value: displaySubtotal,
                     },
-                    { label: t('summary.taxesFees'), valueText: t('summary.included') },
+                    ...(displayDiscount > 0
+                      ? [{ label: t('summary.discount'), value: displayDiscount, negative: true }]
+                      : []),
+                    ...(displayTax > 0 ? [{ label: t('summary.tax'), value: displayTax }] : []),
+                    ...(displayFee > 0 ? [{ label: t('summary.fee'), value: displayFee }] : []),
                   ]}
-                  total={subtotal}
-                  totalLabel={t('summary.totalInclTaxes')}
+                  total={displayTotal}
                 />
                 <div className="mt-4 border-t border-outline-variant/30 pt-4">
                   <p className="flex items-center gap-1.5 text-xs font-semibold text-on-surface">

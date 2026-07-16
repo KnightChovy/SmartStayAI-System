@@ -14,6 +14,7 @@ import type {
   HotelImageInput,
   HotelContactInput,
   HotelPolicyInput,
+  HotelChargeInput,
   HotelNearbyPlaceInput,
 } from '../dto/hotel.dto';
 import type { AmenityAssignmentInput } from '../dto/amenity.dto';
@@ -131,7 +132,8 @@ export class HotelService {
         images: { orderBy: [{ isPrimary: 'desc' }, { sortOrder: 'asc' }] },
         amenities: { include: { amenity: true } },
         contacts: true,
-        policies: true,
+        policies: { orderBy: [{ important: 'desc' }, { createdAt: 'asc' }] },
+        charges: { orderBy: [{ chargeType: 'asc' }, { createdAt: 'asc' }] },
         nearbyPlaces: true,
         roomTypes: {
           orderBy: { basePrice: 'asc' },
@@ -333,13 +335,16 @@ export class HotelService {
     });
   };
 
-  /** Danh sách chính sách / phụ phí của khách sạn (chủ KS / manageHotels). */
+  /** Danh sách điều khoản (văn bản) của khách sạn — điều khoản quan trọng lên đầu. */
   getHotelPolicies = async (hotelId: string, currentUser: User) => {
     await this.getManagedHotel(hotelId, currentUser);
-    return prisma.hotelPolicy.findMany({ where: { hotelId }, orderBy: { createdAt: 'asc' } });
+    return prisma.hotelPolicy.findMany({
+      where: { hotelId },
+      orderBy: [{ important: 'desc' }, { createdAt: 'asc' }],
+    });
   };
 
-  /** Gán lại TOÀN BỘ chính sách / phụ phí của khách sạn (thay thế; mảng rỗng = xoá hết). */
+  /** Gán lại TOÀN BỘ điều khoản của khách sạn (thay thế; mảng rỗng = xoá hết). */
   setHotelPolicies = async (hotelId: string, currentUser: User, policies: HotelPolicyInput[]) => {
     await this.getManagedHotel(hotelId, currentUser);
     return prisma.$transaction(async (tx) => {
@@ -347,7 +352,39 @@ export class HotelService {
       if (policies.length > 0) {
         await tx.hotelPolicy.createMany({ data: policies.map((p) => ({ hotelId, ...p })) });
       }
-      return tx.hotelPolicy.findMany({ where: { hotelId }, orderBy: { createdAt: 'asc' } });
+      return tx.hotelPolicy.findMany({
+        where: { hotelId },
+        orderBy: [{ important: 'desc' }, { createdAt: 'asc' }],
+      });
+    });
+  };
+
+  /** Danh sách khoản thu (thuế/phí) của khách sạn (chủ KS / manageHotels). */
+  getHotelCharges = async (hotelId: string, currentUser: User) => {
+    await this.getManagedHotel(hotelId, currentUser);
+    return prisma.hotelCharge.findMany({ where: { hotelId }, orderBy: [{ chargeType: 'asc' }, { createdAt: 'asc' }] });
+  };
+
+  /**
+   * Gán lại TOÀN BỘ khoản thu của khách sạn (thay thế; mảng rỗng = không thu thuế/phí nào).
+   * Đổi ở đây là đổi số tiền khách sẽ trả cho các ĐƠN MỚI — đơn đã đặt giữ nguyên vì thuế/phí đã
+   * được đóng băng vào Booking lúc đặt.
+   */
+  setHotelCharges = async (hotelId: string, currentUser: User, charges: HotelChargeInput[]) => {
+    await this.getManagedHotel(hotelId, currentUser);
+    return prisma.$transaction(async (tx) => {
+      await tx.hotelCharge.deleteMany({ where: { hotelId } });
+      if (charges.length > 0) {
+        await tx.hotelCharge.createMany({
+          data: charges.map((c) => ({
+            hotelId,
+            ...c,
+            // Tính theo % thì tần suất vô nghĩa (validation đã cấm gửi kèm) — lưu null cho sạch
+            chargeFrequency: c.isPercentage ? null : (c.chargeFrequency ?? 'per_stay'),
+          })),
+        });
+      }
+      return tx.hotelCharge.findMany({ where: { hotelId }, orderBy: [{ chargeType: 'asc' }, { createdAt: 'asc' }] });
     });
   };
 
@@ -469,7 +506,8 @@ export class HotelService {
         images: { orderBy: [{ isPrimary: 'desc' }, { sortOrder: 'asc' }] },
         amenities: { include: { amenity: true } },
         contacts: true,
-        policies: true,
+        policies: { orderBy: [{ important: 'desc' }, { createdAt: 'asc' }] },
+        charges: { orderBy: [{ chargeType: 'asc' }, { createdAt: 'asc' }] },
         nearbyPlaces: true,
         roomTypes: {
           where: { isActive: true },
@@ -546,7 +584,7 @@ export class HotelService {
     const numNights = eachNightOfStay(filter.checkIn, filter.checkOut).length;
     // Thuế/phí tính y hệt lúc đặt (cùng hàm computeTaxAndFees) để số báo ở bước chọn phòng CHÍNH LÀ
     // số khách sẽ trả — trước đây chỉ báo tiền phòng nên khách bị bất ngờ ở bước thanh toán.
-    const taxFeePolicies = (await availabilityService.getTaxFeePolicies([hotelId])).get(hotelId) ?? [];
+    const taxFeeCharges = (await availabilityService.getTaxFeeCharges([hotelId])).get(hotelId) ?? [];
     // Số khách dùng để nhân phí per_person: lấy theo bộ lọc, không có thì coi như 1 khách
     const numGuests = filter.guests ?? 1;
 
@@ -557,7 +595,7 @@ export class HotelService {
       }
       const subtotal = quote.totalPrice;
       const { taxAmount, feeAmount } = availabilityService.computeTaxAndFees(
-        taxFeePolicies,
+        taxFeeCharges,
         subtotal,
         numNights,
         numGuests

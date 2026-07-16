@@ -14,7 +14,7 @@ export function useRegister() {
       if (user && tokens?.access?.token && tokens?.refresh?.token) {
         setAuth(user, tokens.access.token, tokens.refresh.token);
       }
-      toast.success('Registered successfully', { duration: 3000 });
+      toast.success('Registered successfully', { duration: 1500 });
     },
   });
 }

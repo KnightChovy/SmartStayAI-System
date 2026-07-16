@@ -1,9 +1,11 @@
 export { dashboardKeys } from './keys';
 export { useDashboardSummary } from './use-dashboard-summary';
 export { useDashboardTimeSeries } from './use-dashboard-time-series';
+export { useUsersGrowth } from './use-users-growth';
 export { useDashboardVerifications } from './use-dashboard-verifications';
-export { useReviewVerification } from './use-review-verification';
+export { usePendingVerificationsCount } from './use-pending-verifications-count';
 export { useDashboardAlerts } from './use-dashboard-alerts';
 export { useTopHotels } from './use-top-hotels';
 export { useRecentActivity } from './use-recent-activity';
 export { useDashboardSearch } from './use-dashboard-search';
+export { previousRange, rangeLengthDays, seriesGroupBy } from './range';

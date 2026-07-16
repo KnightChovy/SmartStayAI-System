@@ -1,17 +1,25 @@
-import { useState } from 'react';
-import { Loader2, ScrollText, Plus, Trash2 } from 'lucide-react';
+import { Loader2, Plus, ScrollText } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/hotel-partner/shared/Modal';
+import { Pill } from '@/components/hotel-partner/shared/Pill';
 import { ErrorState } from '@/components/hotel-partner/shared/states';
 import { ListSkeleton } from '@/components/shared/skeletons';
 import { useHotelPolicies, useSetHotelPolicies } from '@/hooks/hotel-property';
 import { errorMessage } from '@/utils/errorMessage';
+import { formatCurrency } from '@/utils/formatCurrency';
 import type { ChargeFrequency, PolicyType } from '@/types/hotel-property.types';
+import { EditableRow, RowSummary } from './EditableRow';
 import { SelectField, TextField } from './fields';
-import { CHARGE_FREQUENCY_OPTIONS, POLICY_TYPE_OPTIONS } from './labels';
+import { useRowEditor, type RowWithId } from './use-row-editor';
+import {
+  CHARGE_FREQUENCY_OPTIONS,
+  POLICY_TYPE_OPTIONS,
+  POLICY_TYPE_TONE,
+  optionLabel,
+} from './labels';
 
-interface PolicyRow {
+interface PolicyRow extends RowWithId {
   policyType: PolicyType;
   code: string;
   description: string;
@@ -22,7 +30,8 @@ interface PolicyRow {
   maxAge: string;
 }
 
-const emptyRow: PolicyRow = {
+const emptyRow = (id: string): PolicyRow => ({
+  id,
   policyType: 'fee',
   code: '',
   description: '',
@@ -31,7 +40,7 @@ const emptyRow: PolicyRow = {
   chargeFrequency: '',
   minAge: '',
   maxAge: '',
-};
+});
 
 /** '' -> null, số hợp lệ -> number. */
 function toNum(v: string): number | null {
@@ -39,6 +48,29 @@ function toNum(v: string): number | null {
   if (t === '') return null;
   const n = Number(t);
   return Number.isNaN(n) ? null : n;
+}
+
+/** Khoảng tuổi ở dạng đọc được: "Age 0–12" / "Age 18+" / "Age up to 12". */
+function ageSummary(minAge: string, maxAge: string): string | null {
+  const min = minAge.trim();
+  const max = maxAge.trim();
+  if (min && max) return `Age ${min}–${max}`;
+  if (min) return `Age ${min}+`;
+  if (max) return `Age up to ${max}`;
+  return null;
+}
+
+/** Thông tin phụ của một policy, chỉ gồm field đã nhập. */
+function summaryBits(row: PolicyRow): string[] {
+  const bits: string[] = [];
+  const amount = row.amount.trim();
+  if (amount) bits.push(row.isPercentage ? `${amount}%` : formatCurrency(amount));
+  if (row.chargeFrequency)
+    bits.push(optionLabel(CHARGE_FREQUENCY_OPTIONS, row.chargeFrequency));
+  const age = ageSummary(row.minAge, row.maxAge);
+  if (age) bits.push(age);
+  if (row.code.trim()) bits.push(`Code ${row.code.trim()}`);
+  return bits;
 }
 
 interface Props {
@@ -52,30 +84,28 @@ interface Props {
 export function HotelPoliciesModal({ open, onClose, hotelId, hotelName }: Props) {
   const { data, isLoading, isError } = useHotelPolicies(hotelId);
   const setPolicies = useSetHotelPolicies(hotelId);
-  const [rows, setRows] = useState<PolicyRow[] | null>(null);
 
-  const current: PolicyRow[] =
-    rows ??
-    (data ?? []).map(p => ({
-      policyType: p.policyType,
-      code: p.code ?? '',
-      description: p.description ?? '',
-      amount: p.amount ?? '',
-      isPercentage: p.isPercentage,
-      chargeFrequency: p.chargeFrequency ?? '',
-      minAge: p.minAge != null ? String(p.minAge) : '',
-      maxAge: p.maxAge != null ? String(p.maxAge) : '',
-    }));
+  const seed: PolicyRow[] = (data ?? []).map(p => ({
+    id: p.id,
+    policyType: p.policyType,
+    code: p.code ?? '',
+    description: p.description ?? '',
+    amount: p.amount ?? '',
+    isPercentage: p.isPercentage,
+    chargeFrequency: p.chargeFrequency ?? '',
+    minAge: p.minAge != null ? String(p.minAge) : '',
+    maxAge: p.maxAge != null ? String(p.maxAge) : '',
+  }));
 
-  const update = (i: number, patch: Partial<PolicyRow>) =>
-    setRows(current.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
-  const add = () => setRows([...current, { ...emptyRow }]);
-  const remove = (i: number) => setRows(current.filter((_, idx) => idx !== i));
+  const { rows, add, update, remove, isNew, isEditing, startEdit, stopEdit } = useRowEditor(
+    seed,
+    emptyRow
+  );
 
   const handleSave = async () => {
     try {
       await setPolicies.mutateAsync({
-        policies: current.map(r => ({
+        policies: rows.map(r => ({
           policyType: r.policyType,
           code: r.code.trim() || null,
           description: r.description.trim() || null,
@@ -98,7 +128,7 @@ export function HotelPoliciesModal({ open, onClose, hotelId, hotelName }: Props)
       open={open}
       onClose={onClose}
       title="Hotel policies & fees"
-      description={`${hotelName} · ${current.length} item(s)`}
+      description={`${hotelName} · ${rows.length} item(s)`}
       icon={ScrollText}
       size="lg"
       footer={
@@ -123,85 +153,90 @@ export function HotelPoliciesModal({ open, onClose, hotelId, hotelName }: Props)
         <ErrorState label="Failed to load policies." />
       ) : (
         <div className="space-y-3">
-          {current.length === 0 && (
+          {rows.length === 0 && (
             <p className="py-6 text-center text-sm text-slate-400">
               No policies yet. Add one below.
             </p>
           )}
-          {current.map((row, i) => (
-            <div key={i} className="rounded-xl border border-slate-200 p-3">
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                  Policy {i + 1}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => remove(i)}
-                  className="rounded-lg p-1 text-slate-400 hover:bg-red-50 hover:text-red-500"
-                  aria-label="Remove policy"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <SelectField
-                  label="Type"
-                  value={row.policyType}
-                  onChange={v => update(i, { policyType: (v || 'fee') as PolicyType })}
-                  options={POLICY_TYPE_OPTIONS}
+          {rows.map(row => (
+            <EditableRow
+              key={row.id}
+              editing={isEditing(row.id)}
+              entity="policy"
+              editingLabel={isNew(row.id) ? 'New policy' : 'Editing policy'}
+              onEdit={() => startEdit(row.id)}
+              onDone={() => stopEdit(row.id)}
+              onRemove={() => remove(row.id)}
+              summary={
+                <RowSummary
+                  badge={
+                    <Pill tone={POLICY_TYPE_TONE[row.policyType]}>
+                      {optionLabel(POLICY_TYPE_OPTIONS, row.policyType)}
+                    </Pill>
+                  }
+                  meta={summaryBits(row)}
+                  primary={row.description}
+                  emptyPrimary="No description"
                 />
-                <TextField
-                  label="Code"
-                  value={row.code}
-                  onChange={v => update(i, { code: v })}
-                  placeholder="Optional code"
+              }
+            >
+              <SelectField
+                label="Type"
+                value={row.policyType}
+                onChange={v => update(row.id, { policyType: (v || 'fee') as PolicyType })}
+                options={POLICY_TYPE_OPTIONS}
+              />
+              <TextField
+                label="Code"
+                value={row.code}
+                onChange={v => update(row.id, { code: v })}
+                placeholder="Optional code"
+              />
+              <TextField
+                label="Amount"
+                type="number"
+                value={row.amount}
+                onChange={v => update(row.id, { amount: v })}
+                placeholder="e.g. 8"
+              />
+              <SelectField
+                label="Charge frequency"
+                value={row.chargeFrequency}
+                onChange={v => update(row.id, { chargeFrequency: v as ChargeFrequency | '' })}
+                options={CHARGE_FREQUENCY_OPTIONS}
+                emptyLabel="—"
+              />
+              <TextField
+                label="Min age"
+                type="number"
+                value={row.minAge}
+                onChange={v => update(row.id, { minAge: v })}
+                placeholder="0–120"
+              />
+              <TextField
+                label="Max age"
+                type="number"
+                value={row.maxAge}
+                onChange={v => update(row.id, { maxAge: v })}
+                placeholder="0–120"
+              />
+              <TextField
+                label="Description"
+                value={row.description}
+                onChange={v => update(row.id, { description: v })}
+                placeholder="Describe the policy / fee"
+                className="sm:col-span-2"
+              />
+              <label className="flex items-center gap-2 text-sm text-slate-600 sm:col-span-2">
+                <input
+                  type="checkbox"
+                  checked={row.isPercentage}
+                  onChange={e => update(row.id, { isPercentage: e.target.checked })}
+                  className="h-4 w-4 rounded border-slate-300 text-role-partner-primary"
                 />
-                <TextField
-                  label="Amount"
-                  type="number"
-                  value={row.amount}
-                  onChange={v => update(i, { amount: v })}
-                  placeholder="e.g. 8"
-                />
-                <SelectField
-                  label="Charge frequency"
-                  value={row.chargeFrequency}
-                  onChange={v => update(i, { chargeFrequency: v as ChargeFrequency | '' })}
-                  options={CHARGE_FREQUENCY_OPTIONS}
-                  emptyLabel="—"
-                />
-                <TextField
-                  label="Min age"
-                  type="number"
-                  value={row.minAge}
-                  onChange={v => update(i, { minAge: v })}
-                  placeholder="0–120"
-                />
-                <TextField
-                  label="Max age"
-                  type="number"
-                  value={row.maxAge}
-                  onChange={v => update(i, { maxAge: v })}
-                  placeholder="0–120"
-                />
-                <TextField
-                  label="Description"
-                  value={row.description}
-                  onChange={v => update(i, { description: v })}
-                  placeholder="Describe the policy / fee"
-                  className="sm:col-span-2"
-                />
-                <label className="flex items-center gap-2 text-sm text-slate-600 sm:col-span-2">
-                  <input
-                    type="checkbox"
-                    checked={row.isPercentage}
-                    onChange={e => update(i, { isPercentage: e.target.checked })}
-                    className="h-4 w-4 rounded border-slate-300 text-role-partner-primary"
-                  />
-                  Amount is a percentage (%)
-                </label>
-              </div>
-            </div>
+                Amount is a percentage (%)
+              </label>
+            </EditableRow>
           ))}
           <Button variant="outline" onClick={add} className="w-full">
             <Plus className="mr-1.5 h-4 w-4" /> Add policy

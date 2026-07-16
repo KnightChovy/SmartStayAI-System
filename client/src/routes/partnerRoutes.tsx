@@ -9,6 +9,7 @@ import AmenitiesPage from '@/pages/hotel-partner/amenities/AmenitiesPage';
 import StaffManagementPage from '@/pages/hotel-partner/staff/StaffManagementPage';
 import BookingsPage from '@/pages/hotel-partner/bookings/BookingsPage';
 import RevenuePage from '@/pages/hotel-partner/revenue/RevenuePage';
+import RefundsPage from '@/pages/hotel-partner/refunds/RefundsPage';
 import AnalyticsPage from '@/pages/hotel-partner/analytics/AnalyticsPage';
 import ReviewsPage from '@/pages/hotel-partner/reviews/ReviewsPage';
 import { CommonProfilePage } from '@/common/profile/CommonProfilePage';
@@ -36,6 +37,7 @@ export const partnerRoutes: RouteObject[] = [
           { path: 'bookings', element: <BookingsPage /> },
           { path: 'profile', element: <CommonProfilePage /> },
           { path: 'revenue', element: <RevenuePage /> },
+          { path: 'refunds', element: <RefundsPage /> },
           { path: 'analytics', element: <AnalyticsPage /> },
           { path: 'reviews', element: <ReviewsPage /> },
           // Đã có trong sidebar nhưng chưa triển khai — tạm dùng "Coming soon" để tránh link chết.

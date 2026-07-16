@@ -210,8 +210,8 @@ export class BookingService {
     const pricingRules = await availabilityService.getActivePricingRules([roomType.hotelId]);
     const priceInput = { id: roomType.id, hotelId: roomType.hotelId, basePrice: roomType.basePrice };
 
-    // Chính sách thuế/phí ĐANG hiệu lực — đọc một lần ở đây rồi đóng băng vào booking bên dưới
-    const taxFeePolicies = (await availabilityService.getTaxFeePolicies([roomType.hotelId])).get(roomType.hotelId) ?? [];
+    // Khoản thu thuế/phí ĐANG hiệu lực — đọc một lần ở đây rồi đóng băng vào booking bên dưới
+    const taxFeeCharges = (await availabilityService.getTaxFeeCharges([roomType.hotelId])).get(roomType.hotelId) ?? [];
 
     return prisma.$transaction(async (tx) => {
       const physicalRooms = await tx.room.count({ where: { roomTypeId: roomType.id } });
@@ -242,7 +242,7 @@ export class BookingService {
       }
 
       const { taxAmount, feeAmount } = availabilityService.computeTaxAndFees(
-        taxFeePolicies,
+        taxFeeCharges,
         subtotal,
         nights.length,
         payload.numGuests

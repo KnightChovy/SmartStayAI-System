@@ -48,7 +48,11 @@ export default function HotelDetailPage() {
 
   // Hotel summary có thể đã được truyền qua router state từ trang search
   const stateHotel = (location.state as { hotel?: HotelSearchResult } | null)?.hotel ?? null;
-  const { data: hotel, isLoading: hotelLoading } = useHotel(hotelId, stateHotel);
+  const { data: hotel, isLoading: hotelLoading, isPlaceholderData } = useHotel(hotelId, stateHotel);
+  // Placeholder của `useHotel` là seed + relation RỖNG, mà seed ở đây là bản tóm tắt từ trang
+  // search (không hề có policies) ⇒ `policies: []` lúc này là BỊA. Chỉ đọc khi query đã về,
+  // không thì để `undefined` = chưa biết → thẻ phòng im lặng thay vì hứa "không thu thêm".
+  const hotelPolicies = isPlaceholderData ? undefined : hotel?.policies;
 
   const checkIn = params.get('checkIn') ?? '';
   const checkOut = params.get('checkOut') ?? '';
@@ -338,6 +342,8 @@ export default function HotelDetailPage() {
                 selectable
                 onSelect={handleSelectRoom}
                 bestValue={roomTypes.length > 1 && rt.id === bestValueRoomId}
+                policies={hotelPolicies}
+                guests={guests}
               />
             ))
           )}
