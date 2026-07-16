@@ -36,21 +36,21 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
 
   return (
     <View
+      className="flex-row items-center justify-around border-t px-2"
       style={{
-        flexDirection: 'row',
         backgroundColor: GUEST_COLORS.surface,
-        borderTopWidth: 1,
-        // Viền tóc ~30% — đúng cách client dựng ranh giới (border-outline-variant/30).
-        borderTopColor: `${GUEST_COLORS.hairline}4D`,
+        borderColor: `${GUEST_COLORS.hairline}4D`,
+        height: 66 + bottom + 8,
         paddingTop: 8,
         paddingBottom: bottom + 8,
-        paddingHorizontal: 8,
       }}
     >
       {state.routes.map((route, index) => {
         const config = TAB_CONFIG[route.name];
         if (!config) return null;
         const focused = state.index === index;
+        const isCenterTab = route.name === 'bookings';
+        const label = t(`tabs.${config.labelKey}`);
 
         function onPress() {
           const event = navigation.emit({
@@ -58,48 +58,74 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
             target: route.key,
             canPreventDefault: true,
           });
-          if (!focused && !event.defaultPrevented)
-            navigation.navigate(route.name);
+          if (!focused && !event.defaultPrevented) {
+            navigation.navigate(route.name, route.params);
+          }
+        }
+
+        function onLongPress() {
+          navigation.emit({ type: 'tabLongPress', target: route.key });
+        }
+
+        if (isCenterTab) {
+          return (
+            <Pressable
+              key={route.key}
+              accessibilityRole="button"
+              accessibilityState={focused ? { selected: true } : {}}
+              accessibilityLabel={label}
+              onPress={onPress}
+              onLongPress={onLongPress}
+              className="h-full w-[76px] items-center justify-center gap-1"
+            >
+              <View
+                className="-mt-[30px] h-[58px] w-[58px] items-center justify-center rounded-full shadow-lg"
+                style={{
+                  backgroundColor: focused ? GUEST_COLORS.onSurface : GUEST_COLORS.brand,
+                  elevation: 12,
+                  shadowColor: GUEST_COLORS.brand,
+                  shadowOffset: { width: 0, height: 6 },
+                  shadowOpacity: 0.45,
+                  shadowRadius: 10,
+                }}
+              >
+                <Ionicons name={focused ? config.active : config.inactive} size={28} color={GUEST_COLORS.onBrand} />
+              </View>
+              <Text
+                className="text-[10px]"
+                style={{ fontFamily: 'BeVietnamPro_600SemiBold', color: GUEST_COLORS.brand }}
+                numberOfLines={1}
+              >
+                {label}
+              </Text>
+            </Pressable>
+          );
         }
 
         return (
           <Pressable
             key={route.key}
+            accessibilityRole="button"
+            accessibilityState={focused ? { selected: true } : {}}
+            accessibilityLabel={label}
             onPress={onPress}
-            style={{
-              flex: 1,
-              alignItems: 'center',
-              justifyContent: 'center',
-              paddingVertical: 4,
-              gap: 3,
-            }}
+            onLongPress={onLongPress}
+            className="h-full flex-1 items-center justify-center gap-[3px]"
           >
-            <View
-              style={{
-                width: 48,
-                height: 28,
-                borderRadius: 14,
-                // Pill nền `surface-container` cho tab đang mở — cùng cách client
-                // đánh dấu mục active (nền chìm, không phải màu rực).
-                backgroundColor: focused ? GUEST_COLORS.surfaceContainer : 'transparent',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Ionicons
-                name={focused ? config.active : config.inactive}
-                size={22}
-                color={focused ? GUEST_COLORS.onSurface : GUEST_COLORS.muted}
-              />
-            </View>
+            <Ionicons
+              name={focused ? config.active : config.inactive}
+              size={23}
+              color={focused ? GUEST_COLORS.brand : GUEST_COLORS.muted}
+            />
             <Text
+              className="text-[10px]"
               style={{
-                fontSize: 11,
                 fontFamily: focused ? 'BeVietnamPro_600SemiBold' : 'BeVietnamPro_400Regular',
-                color: focused ? GUEST_COLORS.onSurface : GUEST_COLORS.muted,
+                color: focused ? GUEST_COLORS.brand : GUEST_COLORS.muted,
               }}
+              numberOfLines={1}
             >
-              {t(`tabs.${config.labelKey}`)}
+              {label}
             </Text>
           </Pressable>
         );

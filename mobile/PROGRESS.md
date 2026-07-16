@@ -10,6 +10,8 @@ This file tracks the accomplished tasks, resolved user requests, and structural/
 
 ### July 17, 2026
 
+- [x] **Guest tab navigation updated to LenFolk-style floating navigation**: edge-to-edge bottom bar, accessible press/long-press behavior, and a raised central **Bookings** action. Existing guest routes and translated labels are unchanged.
+
 - [x] **Guest app đổi sang gam màu + typography của client (web), auth có ảnh khách sạn, thêm i18n EN/VI**:
   - **Phạm vi**: chỉ **guest** (auth + tabs + hotel/room/booking + profile/\*). **Staff portal giữ nguyên theme teal** — bên client staff cũng là portal riêng có màu riêng, và grep xác nhận `navy`/`gold` **không** xuất hiện ở `(staff)` nên đổi guest không ảnh hưởng staff.
   - **Design token** (`tailwind.config.js`): port 1:1 từ `client/src/styles/index.css` (@theme). Tên nào gluestack đã chiếm (`primary`/`secondary`/`outline`/`background`/`error`) thì đặt tên khác để **không phá scale gluestack** mà `Text`/`Heading`/`Spinner` đang dùng: `canvas` #f5f2ee · `surface` #fcf9f8 (+ `low`/`lowest`/`container`) · `on-surface` #1c1b1b (+ `variant` #474741) · `brand` #5f5e5b · `bronze` #735a35 · `premium-gold` #d4af37 · `hairline` #c8c7bf · `muted` #777771 · `danger` #ba1a1a. **Bo góc** của client KHÔNG trùng thang Tailwind (rounded-2xl là **21.6px** chứ không phải 16px) ⇒ thêm thang riêng theo công dụng: `rounded-tile/field/card/panel/sheet` = 12/16.8/21.6/26.4/32px — vừa khớp client vừa không đổi ngầm giao diện staff.
