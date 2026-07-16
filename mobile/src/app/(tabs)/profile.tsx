@@ -4,13 +4,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Text } from '@/components/ui/text';
 import { SectionHeader } from '@/components/shared/SectionHeader';
+import { LanguageSwitcher } from '@/components/guest';
+import { useTranslation } from 'react-i18next';
 import { MenuList } from '@/components/shared/MenuList';
 import { useAuthStore } from '@/stores/authStore';
+import { GUEST_COLORS } from '@/constants/guestTheme';
 
-const GOLD = '#F5A623';
-const NAVY = '#0B1D45';
 
 export default function ProfileScreen() {
+  const { t } = useTranslation('common');
   const router = useRouter();
   const { user, clearAuth } = useAuthStore();
 
@@ -62,11 +64,11 @@ export default function ProfileScreen() {
   }
 
   return (
-    <View className="flex-1 bg-gray-100">
+    <View className="flex-1 bg-canvas">
       {/* Navy header bg */}
-      <SafeAreaView edges={['top']} className="bg-navy">
+      <SafeAreaView edges={['top']} className="bg-on-surface">
         <View className="flex-row items-center justify-center px-5 pt-2 pb-4">
-          <Text bold className="text-white text-lg">
+          <Text bold className="font-bevi-bold text-white text-lg">
             Account
           </Text>
         </View>
@@ -74,11 +76,11 @@ export default function ProfileScreen() {
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
         {/* User info card — overlaps navy header */}
-        <View className="bg-navy px-5 pb-4">
+        <View className="bg-on-surface px-5 pb-4">
           <View className="flex-row items-center">
             {/* Avatar */}
-            <View className="w-[68px] h-[68px] rounded-full bg-gold items-center justify-center mr-4">
-              <Text bold className="text-navy text-2xl">
+            <View className="w-[68px] h-[68px] rounded-full bg-bronze items-center justify-center mr-4">
+              <Text bold className="font-bevi-bold text-on-surface text-2xl">
                 {initials}
               </Text>
             </View>
@@ -86,40 +88,40 @@ export default function ProfileScreen() {
             {/* Name + email */}
             <View className="flex-1">
               <View className="flex-row items-center gap-1.5">
-                <Text bold className="text-white text-base">
+                <Text bold className="font-bevi-bold text-white text-base">
                   {user?.fullName ?? 'Guest'}
                 </Text>
-                <Ionicons name="shield-checkmark" size={16} color={GOLD} />
+                <Ionicons name="shield-checkmark" size={16} color={GUEST_COLORS.bronze} />
               </View>
-              <Text size="sm" className="text-white/70 mt-0.5">
+              <Text size="sm" className="font-bevi text-white/70 mt-0.5">
                 {user?.email ?? ''}
               </Text>
-              <Pressable onPress={() => router.push('/profile/edit')} className="mt-1.5 self-start bg-white/15 rounded-full px-3 py-1">
-                <Text size="xs" bold className="text-white">
+              <Pressable onPress={() => router.push('/profile/edit')} className="mt-1.5 self-start bg-surface/15 rounded-full px-3 py-1">
+                <Text size="xs" bold className="font-bevi-bold text-white">
                   Edit profile
                 </Text>
               </Pressable>
             </View>
 
             {/* Edit */}
-            <Pressable onPress={() => router.push('/profile/edit')} className="w-9 h-9 rounded-full bg-white/10 items-center justify-center">
-              <Ionicons name="pencil-outline" size={16} color="#fff" />
+            <Pressable onPress={() => router.push('/profile/edit')} className="w-9 h-9 rounded-full bg-surface/10 items-center justify-center">
+              <Ionicons name="pencil-outline" size={16} color={GUEST_COLORS.white} />
             </Pressable>
           </View>
 
           {/* Profile completion */}
           <View className="mt-4">
             <View className="flex-row items-center justify-between mb-1.5">
-              <Text size="xs" className="text-white/70">
+              <Text size="xs" className="font-bevi text-white/70">
                 Profile completion
               </Text>
-              <Text size="xs" bold className="text-white">
+              <Text size="xs" bold className="font-bevi-bold text-white">
                 {completedCount}/{completionSteps.length}
               </Text>
             </View>
-            <View className="h-2 bg-white/20 rounded-full overflow-hidden">
+            <View className="h-2 bg-surface/20 rounded-full overflow-hidden">
               <View
-                className="h-full bg-gold rounded-full"
+                className="h-full bg-bronze rounded-full"
                 style={{ width: `${completionPct}%` }}
               />
             </View>
@@ -129,17 +131,17 @@ export default function ProfileScreen() {
         {/* Completion prompt card */}
         {completedCount < completionSteps.length && (
           <View className="mx-4 -mt-1 mb-1">
-            <View className="bg-blue-700 rounded-2xl p-4 flex-row items-center gap-3">
+            <View className="bg-blue-700 rounded-card p-4 flex-row items-center gap-3">
               <View className="flex-1">
-                <Text bold className="text-white text-sm">
+                <Text bold className="font-bevi-bold text-white text-sm">
                   Complete your profile
                 </Text>
-                <Text size="xs" className="text-white/70 mt-1 leading-4">
+                <Text size="xs" className="font-bevi text-white/70 mt-1 leading-4">
                   Add more details to unlock offers tailored just for you.
                 </Text>
               </View>
-              <Pressable onPress={() => router.push('/profile/edit')} className="bg-white rounded-xl px-3 py-2">
-                <Text bold className="text-navy text-xs">
+              <Pressable onPress={() => router.push('/profile/edit')} className="bg-surface rounded-field px-3 py-2">
+                <Text bold className="font-bevi-bold text-on-surface text-xs">
                   Update
                 </Text>
               </Pressable>
@@ -150,25 +152,25 @@ export default function ProfileScreen() {
         <View className="px-4">
           {/* Quick actions */}
           <View className="flex-row gap-3 mt-4">
-            <Pressable onPress={() => router.push('/(tabs)/bookings')} className="flex-1 bg-white rounded-2xl p-4 items-start gap-2">
-              <View className="w-10 h-10 rounded-xl bg-blue-50 items-center justify-center">
-                <Ionicons name="calendar-outline" size={20} color={NAVY} />
+            <Pressable onPress={() => router.push('/(tabs)/bookings')} className="flex-1 bg-surface rounded-card p-4 items-start gap-2">
+              <View className="w-10 h-10 rounded-field bg-brand/10 items-center justify-center">
+                <Ionicons name="calendar-outline" size={20} color={GUEST_COLORS.onSurface} />
               </View>
-              <Text bold className="text-navy text-sm">
+              <Text bold className="font-bevi-bold text-on-surface text-sm">
                 Bookings
               </Text>
-              <Text size="xs" className="text-gray-400">
+              <Text size="xs" className="font-bevi text-muted">
                 View history
               </Text>
             </Pressable>
-            <Pressable onPress={() => router.push('/profile/rewards')} className="flex-1 bg-white rounded-2xl p-4 items-start gap-2">
-              <View className="w-10 h-10 rounded-xl bg-amber-50 items-center justify-center">
-                <Ionicons name="diamond-outline" size={20} color={GOLD} />
+            <Pressable onPress={() => router.push('/profile/rewards')} className="flex-1 bg-surface rounded-card p-4 items-start gap-2">
+              <View className="w-10 h-10 rounded-field bg-bronze/10 items-center justify-center">
+                <Ionicons name="diamond-outline" size={20} color={GUEST_COLORS.bronze} />
               </View>
-              <Text bold className="text-navy text-sm">
+              <Text bold className="font-bevi-bold text-on-surface text-sm">
                 SmartStay Plus
               </Text>
-              <Text size="xs" className="text-gray-400">
+              <Text size="xs" className="font-bevi text-muted">
                 Silver Member
               </Text>
             </Pressable>
@@ -186,13 +188,26 @@ export default function ProfileScreen() {
           <SectionHeader title="Settings" />
           <MenuList items={settingItems} />
 
+          {/* Đổi ngôn ngữ cho khách đã đăng nhập — bản ở màn auth chỉ tới được khi chưa vào app. */}
+          <View className="mt-3 flex-row items-center justify-between rounded-card border border-hairline/30 bg-surface px-4 py-3.5">
+            <View className="flex-row items-center gap-3">
+              <View className="h-9 w-9 items-center justify-center rounded-field bg-brand/10">
+                <Ionicons name="language-outline" size={18} color={GUEST_COLORS.brand} />
+              </View>
+              <Text className="font-bevi-medium text-on-surface" size="sm">
+                {t('language')}
+              </Text>
+            </View>
+            <LanguageSwitcher />
+          </View>
+
           {/* Logout */}
           <Pressable
             onPress={handleLogout}
-            className="flex-row items-center justify-center gap-2 mt-4 bg-red-50 rounded-2xl py-3.5 border border-red-500"
+            className="flex-row items-center justify-center gap-2 mt-4 bg-red-50 rounded-card py-3.5 border border-red-500"
           >
             <Ionicons name="log-out-outline" size={20} color="#DC2626" />
-            <Text bold className="text-red-600 text-base">
+            <Text bold className="font-bevi-bold text-red-600 text-base">
               Sign Out
             </Text>
           </Pressable>

@@ -1,4 +1,5 @@
 import { isStaff, STAFF_HOME } from '@/constants/roles';
+import { GUEST_COLORS } from '@/constants/guestTheme';
 import { useAuthStore } from '@/stores/authStore';
 import { Ionicons } from '@expo/vector-icons';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
@@ -6,28 +7,25 @@ import { Redirect, Tabs } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const NAVY = '#0B1D45';
-const GRAY = '#9CA3AF';
-
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
 const TAB_CONFIG: Record<
   string,
   { active: IoniconsName; inactive: IoniconsName; label: string }
 > = {
-  index: { active: 'home', inactive: 'home-outline', label: 'Home' },
-  search: { active: 'search', inactive: 'search-outline', label: 'Search' },
+  index: { active: 'home', inactive: 'home-outline', label: 'Trang chủ' },
+  search: { active: 'search', inactive: 'search-outline', label: 'Tìm kiếm' },
   bookings: {
     active: 'calendar',
     inactive: 'calendar-outline',
-    label: 'Bookings',
+    label: 'Đặt phòng',
   },
   chatbot: {
     active: 'chatbubble',
     inactive: 'chatbubble-outline',
-    label: 'Chat',
+    label: 'Trò chuyện',
   },
-  profile: { active: 'person', inactive: 'person-outline', label: 'Account' },
+  profile: { active: 'person', inactive: 'person-outline', label: 'Tài khoản' },
 };
 
 function CustomTabBar({ state, navigation }: BottomTabBarProps) {
@@ -37,9 +35,10 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
     <View
       style={{
         flexDirection: 'row',
-        backgroundColor: '#FFFFFF',
+        backgroundColor: GUEST_COLORS.surface,
         borderTopWidth: 1,
-        borderTopColor: '#F3F4F6',
+        // Viền tóc ~30% — đúng cách client dựng ranh giới (border-outline-variant/30).
+        borderTopColor: `${GUEST_COLORS.hairline}4D`,
         paddingTop: 8,
         paddingBottom: bottom + 8,
         paddingHorizontal: 8,
@@ -77,7 +76,9 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
                 width: 48,
                 height: 28,
                 borderRadius: 14,
-                backgroundColor: focused ? '#E8EEF9' : 'transparent',
+                // Pill nền `surface-container` cho tab đang mở — cùng cách client
+                // đánh dấu mục active (nền chìm, không phải màu rực).
+                backgroundColor: focused ? GUEST_COLORS.surfaceContainer : 'transparent',
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
@@ -85,14 +86,14 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
               <Ionicons
                 name={focused ? config.active : config.inactive}
                 size={22}
-                color={focused ? NAVY : GRAY}
+                color={focused ? GUEST_COLORS.onSurface : GUEST_COLORS.muted}
               />
             </View>
             <Text
               style={{
                 fontSize: 11,
-                fontWeight: focused ? '700' : '500',
-                color: focused ? NAVY : GRAY,
+                fontFamily: focused ? 'BeVietnamPro_600SemiBold' : 'BeVietnamPro_400Regular',
+                color: focused ? GUEST_COLORS.onSurface : GUEST_COLORS.muted,
               }}
             >
               {config.label}
