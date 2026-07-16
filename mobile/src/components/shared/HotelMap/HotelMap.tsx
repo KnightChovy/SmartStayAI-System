@@ -2,8 +2,8 @@ import { View, Pressable, Linking, Platform } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { Ionicons } from '@expo/vector-icons';
 import { Text } from '@/components/ui/text';
+import { GUEST_COLORS } from '@/constants/guestTheme';
 
-const GOLD = '#F5A623';
 const TILE_URL = process.env.EXPO_PUBLIC_MAP_TILE_URL ?? '';
 const ATTRIBUTION = process.env.EXPO_PUBLIC_MAP_ATTRIBUTION ?? '© VietMap';
 // Khớp version maplibre-gl đã cài trong package.json.
@@ -46,11 +46,11 @@ function buildMapHtml(lat: number, lng: number): string {
   <link href="${MAPLIBRE_CDN}/maplibre-gl.css" rel="stylesheet" />
   <script src="${MAPLIBRE_CDN}/maplibre-gl.js"></script>
   <style>
-    html, body, #map { margin: 0; padding: 0; height: 100%; width: 100%; background: #E5E7EB; }
+    html, body, #map { margin: 0; padding: 0; height: 100%; width: 100%; background: ${GUEST_COLORS.surfaceContainer}; }
     .pin {
       width: 22px; height: 22px; border-radius: 50% 50% 50% 0;
-      background: ${GOLD}; transform: rotate(-45deg);
-      border: 2px solid #0B1D45; box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      background: ${GUEST_COLORS.bronze}; transform: rotate(-45deg);
+      border: 2px solid ${GUEST_COLORS.onSurface}; box-shadow: 0 2px 6px rgba(0,0,0,0.3);
     }
   </style>
 </head>
@@ -99,20 +99,24 @@ export function HotelMap({ latitude, longitude, name, address, height = 160 }: H
           />
         </View>
       ) : (
-        <View className="items-center justify-center bg-blue-200" style={{ height }}>
-          <Ionicons name="map" size={48} color="#3B82F6" />
+        <View className="items-center justify-center bg-surface-container" style={{ height }}>
+          <Ionicons name="map-outline" size={44} color={GUEST_COLORS.hairline} />
         </View>
       )}
 
       <Pressable
         onPress={() => openExternalMaps(lat, lng, address ? `${name}, ${address}` : name)}
-        className="p-3.5 flex-row items-center gap-2"
+        className="flex-row items-center gap-2 p-3.5"
       >
-        <Ionicons name="location" size={16} color={GOLD} />
-        <Text size="sm" className="text-gray-700 font-medium flex-1">{address ?? name}</Text>
+        <Ionicons name="location" size={16} color={GUEST_COLORS.bronze} />
+        <Text className="flex-1 font-bevi-medium text-on-surface-variant" size="sm">
+          {address ?? name}
+        </Text>
         <View className="flex-row items-center gap-1">
-          <Text size="xs" bold className="text-gold">Directions</Text>
-          <Ionicons name="open-outline" size={14} color={GOLD} />
+          <Text className="font-bevi-bold text-bronze" size="xs">
+            Chỉ đường
+          </Text>
+          <Ionicons name="open-outline" size={14} color={GUEST_COLORS.bronze} />
         </View>
       </Pressable>
     </View>

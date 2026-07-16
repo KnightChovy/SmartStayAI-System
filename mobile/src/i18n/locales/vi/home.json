@@ -1,0 +1,24 @@
+{
+  "heroTitle": "Tìm chỗ nghỉ tiếp theo",
+  "heroSubtitle": "Đặt phòng thông minh hơn cùng trợ lý AI",
+  "destinationPlaceholder": "Bạn muốn đi đâu?",
+  "search": "Tìm kiếm",
+  "deals": {
+    "title": "Ưu đãi chớp nhoáng",
+    "body": "Giảm ít nhất 15% khi đặt trong vòng 24 giờ hôm nay."
+  },
+  "propertyTypes": {
+    "title": "Chọn theo loại chỗ nghỉ",
+    "hotels": "Khách sạn",
+    "apartments": "Căn hộ",
+    "resorts": "Resort"
+  },
+  "explore": {
+    "title": "Khám phá Việt Nam",
+    "seeAll": "Xem tất cả"
+  },
+  "favorites": {
+    "title": "Khách yêu thích",
+    "empty": "Chưa có khách sạn nào"
+  }
+}

@@ -13,12 +13,12 @@ export interface SectionHeaderProps {
 export function SectionHeader({ title, actionLabel, onAction, className }: SectionHeaderProps) {
   return (
     <View className={`flex-row items-center justify-between px-1 mb-2 mt-5 ${className ?? ''}`}>
-      <Text bold className="text-navy text-base">
+      <Text bold className="font-bevi-bold text-on-surface text-base">
         {title}
       </Text>
       {actionLabel && (
         <Pressable onPress={onAction}>
-          <Text size="sm" bold className="text-gold">
+          <Text size="sm" bold className="font-bevi-bold text-bronze">
             {actionLabel}
           </Text>
         </Pressable>

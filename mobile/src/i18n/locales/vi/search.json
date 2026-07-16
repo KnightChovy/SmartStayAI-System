@@ -1,0 +1,23 @@
+{
+  "placeholder": "Tìm khách sạn, điểm đến…",
+  "filters": "Bộ lọc",
+  "clearFilters": "Xoá lọc ({{count}})",
+  "filterOptions": {
+    "5star": "5 sao",
+    "4plus": "4 sao trở lên",
+    "under1m": "Dưới 1 triệu",
+    "under3m": "Dưới 3 triệu",
+    "hasPrice": "Còn phòng"
+  },
+  "sort": {
+    "recommended": "Gợi ý",
+    "lowestPrice": "Giá thấp nhất",
+    "highestRated": "Đánh giá cao nhất"
+  },
+  "resultCount_one": "{{count}} chỗ nghỉ tại {{place}}",
+  "resultCount_other": "{{count}} chỗ nghỉ tại {{place}}",
+  "defaultPlace": "Việt Nam",
+  "empty": "Không tìm thấy khách sạn nào",
+  "error": "Không tải được danh sách khách sạn. Vui lòng thử lại.",
+  "viewRoom": "Xem phòng"
+}

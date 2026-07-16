@@ -3,8 +3,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { Text } from '@/components/ui/text';
 import type { ChatMessage } from '@/hooks/chat';
 import { TypingDots } from './TypingDots';
+import { GUEST_COLORS } from '@/constants/guestTheme';
 
-const GOLD = '#F5A623';
 
 export interface MessageBubbleProps {
   message: ChatMessage;
@@ -17,18 +17,18 @@ export function MessageBubble({ message }: MessageBubbleProps) {
   return (
     <View className={`flex-row items-end mb-3 px-4 py-3 gap-2 ${isUser ? 'justify-end' : 'justify-start'}`}>
       {!isUser && (
-        <View className="w-8 h-8 rounded-full bg-navy items-center justify-center">
-          <Ionicons name="sparkles" size={16} color={GOLD} />
+        <View className="w-8 h-8 rounded-full bg-on-surface items-center justify-center">
+          <Ionicons name="sparkles" size={16} color={GUEST_COLORS.bronze} />
         </View>
       )}
 
       <View
         className={`max-w-[75%] px-3.5 py-2.5 rounded-[18px] ${
           isUser
-            ? 'bg-navy rounded-br-[4px]'
+            ? 'bg-on-surface rounded-br-[4px]'
             : message.error
               ? 'bg-red-50 rounded-bl-[4px]'
-              : 'bg-gray-100 rounded-bl-[4px]'
+              : 'bg-canvas rounded-bl-[4px]'
         }`}
       >
         {message.streaming && message.text === '' ? (

@@ -1,0 +1,62 @@
+{
+  "list": {
+    "title": "Đặt phòng của tôi",
+    "error": "Không tải được danh sách đặt phòng.",
+    "emptyTitle": "Chưa có đặt phòng nào",
+    "emptySubtitle": "Kỳ nghỉ sắp tới của bạn sẽ hiện ở đây",
+    "findHotel": "Tìm khách sạn",
+    "total": "Tổng"
+  },
+  "status": {
+    "pending": "Chờ xử lý",
+    "confirmed": "Đã xác nhận",
+    "checked_in": "Đã nhận phòng",
+    "checked_out": "Đã trả phòng",
+    "cancelled": "Đã huỷ",
+    "no_show": "Không đến"
+  },
+  "checkout": {
+    "title": "Hoàn tất đặt phòng",
+    "steps": {
+      "details": "Thông tin khách",
+      "review": "Xem lại & xác nhận"
+    },
+    "fullName": "Họ và tên",
+    "fullNamePlaceholder": "Nguyễn Văn A",
+    "email": "Email",
+    "emailPlaceholder": "ban@email.com",
+    "phone": "Số điện thoại",
+    "phonePlaceholder": "09xx xxx xxx",
+    "specialRequests": "Yêu cầu đặc biệt (không bắt buộc)",
+    "specialRequestsPlaceholder": "Nhận phòng muộn, tầng cao, thêm giường…",
+    "priceDetails": "Chi tiết giá",
+    "continue": "Tiếp tục",
+    "confirm": "Xác nhận đặt phòng",
+    "creating": "Đang tạo…",
+    "errorTitle": "Đặt phòng thất bại"
+  },
+  "success": {
+    "title": "Đã xác nhận đặt phòng!",
+    "bookingCode": "Mã đặt phòng",
+    "scanAtDesk": "Quét mã tại quầy lễ tân",
+    "payNow": "Thanh toán qua VNPay",
+    "viewBooking": "Xem đặt phòng",
+    "myBookings": "Đặt phòng của tôi"
+  },
+  "detail": {
+    "title": "Chi tiết đặt phòng",
+    "error": "Không tải được đặt phòng này.",
+    "bookingCode": "Mã đặt phòng",
+    "showQr": "Đưa mã QR này khi nhận phòng",
+    "modify": "Thay đổi đặt phòng",
+    "modifySent": "Đã gửi yêu cầu thay đổi",
+    "modifySentBody": "Khách sạn sẽ sớm xác nhận tình trạng phòng.",
+    "priceDetails": "Chi tiết giá",
+    "cancel": "Huỷ đặt phòng",
+    "cancelTitle": "Huỷ đặt phòng",
+    "cancelBody": "Bạn có chắc muốn huỷ đặt phòng này? Thao tác không thể hoàn tác.",
+    "cancelConfirm": "Có, huỷ",
+    "keep": "Giữ đặt phòng",
+    "cancelFailed": "Không thể huỷ"
+  }
+}

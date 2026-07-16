@@ -1,13 +1,14 @@
 import { useRef, useState, useEffect } from 'react';
-import { View, TextInput, Pressable, Alert, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ActivityIndicator, Alert, Pressable, TextInput, View } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Text } from '@/components/ui/text';
 import { Heading } from '@/components/ui/heading';
+import { AuthScreenLayout } from '@/components/auth';
+import { LuxButton } from '@/components/guest';
 import { useRegister, useSendOtp } from '@/hooks/auth';
-
-const NAVY = '#0B1D45';
-const GOLD = '#F5A623';
+import { AUTH_IMAGES, GUEST_COLORS } from '@/constants/guestTheme';
+import { errorMessage } from '@/utils/errorMessage';
 
 const OTP_LENGTH = 6;
 const RESEND_SECONDS = 60;
@@ -15,12 +16,17 @@ const RESEND_SECONDS = 60;
 export default function VerifyOtpScreen() {
   const router = useRouter();
   // Params: email, name, password (khi flow = register)
-  const { email = '', name = '', password = '' } = useLocalSearchParams<{
+  const {
+    email = '',
+    name = '',
+    password = '',
+  } = useLocalSearchParams<{
     email: string;
     name: string;
     password: string;
   }>();
 
+  const { t } = useTranslation('auth');
   const { mutate: register, isPending: isRegistering } = useRegister();
   const { mutate: sendOtp, isPending: isSendingOtp } = useSendOtp();
 
@@ -30,7 +36,7 @@ export default function VerifyOtpScreen() {
 
   useEffect(() => {
     if (countdown <= 0) return;
-    const t = setInterval(() => setCountdown((c) => c - 1), 1000);
+    const t = setInterval(() => setCountdown(c => c - 1), 1000);
     return () => clearInterval(t);
   }, [countdown]);
 
@@ -62,108 +68,97 @@ export default function VerifyOtpScreen() {
           setDigits(Array(OTP_LENGTH).fill(''));
           inputRefs.current[0]?.focus();
         },
-        onError: (err: any) =>
-          Alert.alert('Gửi lại thất bại', err?.response?.data?.message ?? 'Vui lòng thử lại.'),
-      },
+        onError: err => Alert.alert(t('verifyOtp.resendFailedTitle'), errorMessage(err, t('errors.generic'))),
+      }
     );
   }
 
   function handleVerify() {
     const code = digits.join('');
     if (code.length < OTP_LENGTH) {
-      Alert.alert('Thiếu mã', 'Vui lòng nhập đủ 6 chữ số.');
+      Alert.alert(t('verifyOtp.missingTitle'), t('verifyOtp.missingBody'));
       return;
     }
     register(
       { name, email, password, verificationCode: code },
       {
         onSuccess: () => router.replace('/(tabs)'),
-        onError: (err: any) =>
-          Alert.alert('Xác thực thất bại', err?.response?.data?.message ?? 'Mã OTP không đúng, vui lòng thử lại.'),
-      },
+        onError: err =>
+          Alert.alert(t('verifyOtp.failedTitle'), errorMessage(err, t('verifyOtp.failedBody'))),
+      }
     );
   }
 
-  const maskedEmail = email
-    ? email.replace(/(.{2}).+(@.+)/, (_, a, b) => `${a}****${b}`)
-    : '';
-
+  const maskedEmail = email ? email.replace(/(.{2}).+(@.+)/, (_, a, b) => `${a}****${b}`) : '';
   const isComplete = digits.join('').length >= OTP_LENGTH;
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <View className="flex-1 px-6 pt-4">
-        {/* Back */}
-        <Pressable
-          onPress={() => router.back()}
-          className="w-10 h-10 items-center justify-center mb-8"
-        >
-          <Text className="text-navy" style={{ fontSize: 22 }}>←</Text>
-        </Pressable>
-
-        {/* Icon */}
-        <View className="w-[72px] h-[72px] rounded-full bg-blue-50 items-center justify-center mb-6">
-          <Text style={{ fontSize: 34 }}>📬</Text>
-        </View>
-
-        <Heading size="2xl" className="text-navy mb-2.5">Check your email</Heading>
-        <Text size="sm" className="text-gray-500 leading-[22px] mb-9">
-          We sent a 6-digit verification code to{'\n'}
-          <Text size="sm" bold className="text-navy">{maskedEmail}</Text>
+    <AuthScreenLayout
+      image={AUTH_IMAGES.verifyOtp}
+      tagline={t('verifyOtp.tagline')}
+      onBack={() => router.back()}
+      heroHeight={250}
+    >
+      <Heading className="font-bevi-bold text-on-surface" size="2xl">
+        {t('verifyOtp.title')}
+      </Heading>
+      <Text className="mb-7 mt-1 font-bevi text-on-surface-variant" size="sm">
+        {t('verifyOtp.subtitle')}{'\n'}
+        <Text className="font-bevi-semibold text-on-surface" size="sm">
+          {maskedEmail}
         </Text>
+      </Text>
 
-        {/* OTP boxes */}
-        <View className="flex-row gap-2.5 justify-center mb-9">
-          {digits.map((digit, i) => (
-            <TextInput
-              key={i}
-              ref={(el) => { inputRefs.current[i] = el; }}
-              className="w-12 h-14 border-2 rounded-xl text-center text-navy text-[22px] font-bold"
-              style={{
-                borderColor: digit ? NAVY : '#E5E7EB',
-                backgroundColor: digit ? '#EFF6FF' : '#F9FAFB',
-              }}
-              value={digit}
-              onChangeText={(v) => handleDigit(v, i)}
-              onKeyPress={({ nativeEvent }) => handleKeyPress(nativeEvent.key, i)}
-              keyboardType="number-pad"
-              maxLength={1}
-              selectTextOnFocus
-            />
-          ))}
-        </View>
-
-        {/* Verify button */}
-        <Pressable
-          onPress={handleVerify}
-          disabled={isRegistering || !isComplete}
-          className={`rounded-2xl py-4 items-center mb-6 ${isComplete ? 'bg-navy' : 'bg-slate-400'}`}
-        >
-          {isRegistering ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text bold className="text-white text-base">Verify & Create Account</Text>
-          )}
-        </Pressable>
-
-        {/* Resend */}
-        <View className="flex-row justify-center items-center">
-          <Text size="sm" className="text-gray-500">Didn't receive the code? </Text>
-          {countdown > 0 ? (
-            <Text size="sm" bold className="text-gray-400">
-              Resend in {countdown}s
-            </Text>
-          ) : (
-            <Pressable onPress={handleResend} disabled={isSendingOtp}>
-              {isSendingOtp ? (
-                <ActivityIndicator size="small" color={GOLD} />
-              ) : (
-                <Text size="sm" bold className="text-gold">Resend</Text>
-              )}
-            </Pressable>
-          )}
-        </View>
+      <View className="mb-8 flex-row justify-center gap-2.5">
+        {digits.map((digit, i) => (
+          <TextInput
+            key={i}
+            ref={el => {
+              inputRefs.current[i] = el;
+            }}
+            className="h-14 w-12 rounded-field border text-center font-bevi-bold text-[22px] text-on-surface"
+            // Ô đã điền thì viền + nền đậm lên để thấy ngay còn thiếu ô nào.
+            style={{
+              borderColor: digit ? GUEST_COLORS.onSurface : GUEST_COLORS.hairline,
+              backgroundColor: digit ? GUEST_COLORS.surfaceLowest : GUEST_COLORS.surfaceLow,
+            }}
+            value={digit}
+            onChangeText={v => handleDigit(v, i)}
+            onKeyPress={({ nativeEvent }) => handleKeyPress(nativeEvent.key, i)}
+            keyboardType="number-pad"
+            maxLength={1}
+            selectTextOnFocus
+          />
+        ))}
       </View>
-    </SafeAreaView>
+
+      <LuxButton
+        label={t('verifyOtp.submit')}
+        onPress={handleVerify}
+        loading={isRegistering}
+        disabled={!isComplete}
+      />
+
+      <View className="mt-7 flex-row items-center justify-center">
+        <Text className="font-bevi text-on-surface-variant" size="sm">
+          {t('verifyOtp.noCode')}{' '}
+        </Text>
+        {countdown > 0 ? (
+          <Text className="font-bevi-semibold text-muted" size="sm">
+            {t('verifyOtp.resendIn', { seconds: countdown })}
+          </Text>
+        ) : (
+          <Pressable onPress={handleResend} disabled={isSendingOtp} hitSlop={8}>
+            {isSendingOtp ? (
+              <ActivityIndicator size="small" color={GUEST_COLORS.bronze} />
+            ) : (
+              <Text className="font-bevi-bold text-bronze underline" size="sm">
+                {t('verifyOtp.resend')}
+              </Text>
+            )}
+          </Pressable>
+        )}
+      </View>
+    </AuthScreenLayout>
   );
 }

@@ -18,7 +18,51 @@ module.exports = {
   ],
   theme: {
     extend: {
+      borderRadius: {
+        // Bán kính của client (index.css: --radius 12px × hệ số). KHÔNG trùng thang mặc
+        // định của Tailwind (rounded-2xl chuẩn là 16px, client là 21.6px) nên đặt tên
+        // riêng theo công dụng — vừa khớp client, vừa không đổi ngầm giao diện staff.
+        tile: '12px', // client rounded-lg
+        field: '16.8px', // client rounded-xl — ô nhập, nút vuông
+        card: '21.6px', // client rounded-2xl — thẻ/section, dùng nhiều nhất
+        panel: '26.4px', // client rounded-3xl
+        sheet: '32px', // client rounded-xxl — sheet bo góc trên
+      },
       colors: {
+        // ===== Guest palette — port 1:1 từ client/src/styles/index.css (@theme) =====
+        // Tên đặt theo client để port class cho nhanh; những tên đã bị gluestack chiếm
+        // (primary/secondary/tertiary/outline/background/error) thì đổi tên khác để
+        // không phá scale gluestack mà Text/Heading/Spinner đang dùng.
+        canvas: '#f5f2ee', // client --background: nền trang
+        surface: {
+          DEFAULT: '#fcf9f8', // --color-surface: nền thẻ (sáng hơn canvas → nổi khối)
+          lowest: '#ffffff',
+          low: '#f6f3f2', // --color-surface-container-low: nền ô nhập
+          container: '#f0eded',
+          high: '#eae7e7',
+        },
+        'on-surface': {
+          DEFAULT: '#1c1b1b', // chữ chính
+          variant: '#474741', // chữ phụ
+        },
+        brand: {
+          DEFAULT: '#5f5e5b', // client --color-primary (xám ấm)
+          on: '#ffffff',
+          container: '#f5f2ee',
+        },
+        bronze: {
+          DEFAULT: '#735a35', // client --color-secondary
+          container: '#fddaac',
+          on: '#ffffff',
+          'on-container': '#785e39',
+        },
+        olive: '#735c00', // client --color-tertiary
+        'premium-gold': '#d4af37', // client --color-premium-gold
+        hairline: '#c8c7bf', // client --color-outline-variant (viền tóc)
+        muted: '#777771', // client --color-outline
+        danger: '#ba1a1a', // client --color-error
+
+        // Theme cũ của guest (navy/gold) — giữ lại tới khi mọi màn guest chuyển xong.
         navy: '#0B1D45',
         gold: '#F5A623',
         // ===== Staff portal palette (teal) — tách biệt hẳn theme khách hàng (navy/gold) =====
@@ -192,8 +236,18 @@ module.exports = {
         },
       },
       fontFamily: {
+        // ⚠️ `heading`/`body` (gluestack Text/Heading dùng) PHẢI để undefined = font hệ
+        // thống. React Native trên Android BỎ QUA `fontWeight` khi đã chỉ định fontFamily
+        // tuỳ biến — mỗi độ đậm là một file font riêng. Nếu ép body = BeVietnamPro_400Regular
+        // thì mọi `<Text bold>` (kể cả portal staff) sẽ mất nét đậm trên Android.
+        // Vì vậy font mới chỉ áp qua các lớp `font-bevi-*` tường minh ở màn guest.
         heading: undefined,
         body: undefined,
+        bevi: ['BeVietnamPro_400Regular'],
+        'bevi-medium': ['BeVietnamPro_500Medium'],
+        'bevi-semibold': ['BeVietnamPro_600SemiBold'],
+        'bevi-bold': ['BeVietnamPro_700Bold'],
+        'bevi-extrabold': ['BeVietnamPro_800ExtraBold'],
         mono: undefined,
         jakarta: ['var(--font-plus-jakarta-sans)'],
         roboto: ['var(--font-roboto)'],

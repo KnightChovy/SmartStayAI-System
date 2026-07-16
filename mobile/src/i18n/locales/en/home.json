@@ -1,0 +1,24 @@
+{
+  "heroTitle": "Find your next stay",
+  "heroSubtitle": "Smarter travel with an AI assistant",
+  "destinationPlaceholder": "Where are you going?",
+  "search": "Search",
+  "deals": {
+    "title": "Flash deals",
+    "body": "Save at least 15% when you book within 24 hours today."
+  },
+  "propertyTypes": {
+    "title": "Browse by property type",
+    "hotels": "Hotels",
+    "apartments": "Apartments",
+    "resorts": "Resorts"
+  },
+  "explore": {
+    "title": "Explore Vietnam",
+    "seeAll": "See all"
+  },
+  "favorites": {
+    "title": "Guest favourites",
+    "empty": "No hotels yet"
+  }
+}

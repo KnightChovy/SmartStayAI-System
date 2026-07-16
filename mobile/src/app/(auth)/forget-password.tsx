@@ -1,23 +1,19 @@
 import { useState } from 'react';
-import {
-  View,
-  TextInput,
-  Pressable,
-  Alert,
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Alert, Pressable, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Text } from '@/components/ui/text';
 import { Heading } from '@/components/ui/heading';
+import { AuthScreenLayout } from '@/components/auth';
+import { LuxButton, LuxField } from '@/components/guest';
 import { useForgotPassword } from '@/hooks/auth';
-
-const PLACEHOLDER = '#9CA3AF';
+import { AUTH_IMAGES, GUEST_COLORS } from '@/constants/guestTheme';
+import { errorMessage } from '@/utils/errorMessage';
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
+  const { t } = useTranslation('auth');
   const { mutate: forgotPassword, isPending } = useForgotPassword();
 
   const [email, setEmail] = useState('');
@@ -25,107 +21,76 @@ export default function ForgotPasswordScreen() {
 
   function handleSend() {
     if (!email.trim()) {
-      Alert.alert('Thiếu thông tin', 'Vui lòng nhập địa chỉ email.');
+      Alert.alert(t('forgotPassword.missingTitle'), t('forgotPassword.missingBody'));
       return;
     }
     forgotPassword(
       { email: email.trim() },
       {
         onSuccess: () => setSent(true),
-        onError: (err: any) =>
-          Alert.alert('Thất bại', err?.response?.data?.message ?? 'Vui lòng thử lại.'),
-      },
+        onError: err => Alert.alert(t('forgotPassword.failedTitle'), errorMessage(err, t('errors.generic'))),
+      }
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <KeyboardAvoidingView
-        className="flex-1"
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
-        <View className="flex-1 px-6 pt-4 pb-8">
-          {/* Back */}
-          <Pressable
-            onPress={() => router.back()}
-            className="w-10 h-10 items-center justify-center mb-8"
-          >
-            <Text size="xl" className="text-navy">←</Text>
+    <AuthScreenLayout
+      image={AUTH_IMAGES.forgotPassword}
+      tagline={t('forgotPassword.tagline')}
+      onBack={() => router.back()}
+      heroHeight={260}
+    >
+      {sent ? (
+        <View className="items-center py-4">
+          <View className="mb-5 h-16 w-16 items-center justify-center rounded-full bg-bronze/15">
+            <Ionicons name="mail-open-outline" size={28} color={GUEST_COLORS.bronze} />
+          </View>
+          <Heading className="text-center font-bevi-bold text-on-surface" size="xl">
+            {t('forgotPassword.sentTitle')}
+          </Heading>
+          <Text className="mb-7 mt-2 text-center font-bevi text-on-surface-variant" size="sm">
+            {t('forgotPassword.sentBody')}{'\n'}
+            <Text className="font-bevi-semibold text-on-surface" size="sm">
+              {email.trim()}
+            </Text>
+          </Text>
+          <LuxButton label={t('forgotPassword.backToLogin')} onPress={() => router.replace('/(auth)/login')} className="w-full" />
+          <Pressable onPress={() => setSent(false)} className="mt-5 py-2" hitSlop={8}>
+            <Text className="font-bevi-semibold text-bronze" size="sm">
+              {t('forgotPassword.resend')}
+            </Text>
           </Pressable>
-
-          {!sent ? (
-            <>
-              {/* Icon */}
-              <View className="w-[72px] h-[72px] rounded-full bg-blue-50 items-center justify-center mb-6">
-                <Text size="3xl">🔑</Text>
-              </View>
-
-              <Heading size="2xl" className="text-navy mb-2.5">Forgot password?</Heading>
-              <Text size="sm" className="text-gray-500 leading-6 mb-8">
-                No worries! Enter your email address and we'll send you a link to reset your password.
-              </Text>
-
-              {/* Email */}
-              <Text size="sm" bold className="text-navy mb-1.5">Email address</Text>
-              <View className="flex-row items-center border border-gray-200 rounded-xl px-3.5 mb-6 bg-gray-50">
-                <Text size="lg" className="mr-2.5">✉️</Text>
-                <TextInput
-                  className="flex-1 h-[50px] text-[15px] text-navy"
-                  placeholder="Enter your email"
-                  placeholderTextColor={PLACEHOLDER}
-                  value={email}
-                  onChangeText={setEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
-              </View>
-
-              {/* Send button */}
-              <Pressable
-                onPress={handleSend}
-                disabled={isPending}
-                className="bg-navy rounded-2xl py-4 items-center mb-5"
-              >
-                {isPending ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text bold className="text-white text-base">Send reset link</Text>
-                )}
-              </Pressable>
-
-              {/* Back to login */}
-              <Pressable onPress={() => router.back()} className="items-center">
-                <Text size="sm" className="text-gray-500">
-                  Remember your password?{' '}
-                  <Text size="sm" bold className="text-navy">Sign in</Text>
-                </Text>
-              </Pressable>
-            </>
-          ) : (
-            /* Success state */
-            <View className="flex-1 items-center justify-center">
-              <View className="w-20 h-20 rounded-full bg-green-50 items-center justify-center mb-6">
-                <Text size="4xl">📧</Text>
-              </View>
-              <Heading size="xl" className="text-navy mb-2.5 text-center">Check your email</Heading>
-              <Text size="sm" className="text-gray-500 leading-6 text-center mb-8">
-                We've sent a password reset link to{'\n'}
-                <Text size="sm" className="text-navy font-semibold">{email}</Text>
-              </Text>
-              <Pressable
-                onPress={() => router.push('/(auth)/login')}
-                className="bg-navy rounded-2xl py-4 px-12 items-center mb-4"
-              >
-                <Text bold className="text-white text-base">Back to Sign In</Text>
-              </Pressable>
-              <Pressable onPress={handleSend}>
-                <Text size="sm" className="text-gold font-semibold">Resend email</Text>
-              </Pressable>
-            </View>
-          )}
         </View>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+      ) : (
+        <>
+          <Heading className="font-bevi-bold text-on-surface" size="2xl">
+            {t('forgotPassword.title')}
+          </Heading>
+          <Text className="mb-6 mt-1 font-bevi text-on-surface-variant" size="sm">
+            {t('forgotPassword.subtitle')}
+          </Text>
+
+          <LuxField
+            label={t('fields.email')}
+            icon="mail-outline"
+            placeholder={t('fields.emailPlaceholder')}
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
+            containerClassName="mb-6"
+          />
+
+          <LuxButton label={t('forgotPassword.submit')} onPress={handleSend} loading={isPending} />
+
+          <Pressable onPress={() => router.replace('/(auth)/login')} className="mt-7 self-center py-2" hitSlop={8}>
+            <Text className="font-bevi-semibold text-on-surface underline" size="sm">
+              {t('forgotPassword.backToLogin')}
+            </Text>
+          </Pressable>
+        </>
+      )}
+    </AuthScreenLayout>
   );
 }

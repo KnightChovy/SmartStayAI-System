@@ -3,6 +3,7 @@ import { View, ScrollView, Pressable, TextInput, KeyboardAvoidingView, Platform 
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Text } from '@/components/ui/text';
 import { Heading } from '@/components/ui/heading';
@@ -11,9 +12,8 @@ import { useCreateBooking } from '@/hooks/bookings';
 import { useAuthStore } from '@/stores/authStore';
 import { formatVnd } from '@/utils/formatCurrency';
 import { formatDateShort, nightsBetween } from '@/utils/formatDate';
+import { GUEST_COLORS } from '@/constants/guestTheme';
 
-const NAVY = '#0B1D45';
-const GOLD = '#F5A623';
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /** Lấy message lỗi từ axios error mà không dùng `any`. */
@@ -29,6 +29,7 @@ const STEPS = ['Guest details', 'Review'] as const;
 
 export default function BookingCheckoutScreen() {
   const router = useRouter();
+  const { t } = useTranslation(['booking', 'common']);
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{
     hotelId: string; roomTypeId: string; roomName?: string; hotelName?: string;
@@ -78,18 +79,18 @@ export default function BookingCheckoutScreen() {
   }
 
   return (
-    <View className="flex-1 bg-gray-100">
+    <View className="flex-1 bg-canvas">
       <StatusBar style="dark" />
-      <SafeAreaView edges={['top']} className="bg-white">
-        <View className="flex-row items-center gap-3 px-4 pt-2 pb-3 border-b border-gray-100">
+      <SafeAreaView edges={['top']} className="bg-surface">
+        <View className="flex-row items-center gap-3 px-4 pt-2 pb-3 border-b border-hairline/30">
           <Pressable
             onPress={() => (step === 0 ? router.back() : setStep(0))}
             hitSlop={8}
             className="w-9 h-9 items-center justify-center"
           >
-            <Ionicons name="arrow-back" size={22} color={NAVY} />
+            <Ionicons name="arrow-back" size={22} color={GUEST_COLORS.onSurface} />
           </Pressable>
-          <Heading size="lg" className="text-navy">Complete booking</Heading>
+          <Heading size="lg" className="font-bevi-bold text-on-surface">{t('booking:checkout.title')}</Heading>
         </View>
         {/* Stepper */}
         <View className="flex-row items-center px-5 py-3 gap-2">
@@ -97,16 +98,16 @@ export default function BookingCheckoutScreen() {
             <View key={label} className="flex-1 flex-row items-center gap-2">
               <View
                 className="w-6 h-6 rounded-full items-center justify-center"
-                style={{ backgroundColor: i <= step ? NAVY : '#E5E7EB' }}
+                style={{ backgroundColor: i <= step ? GUEST_COLORS.onSurface : GUEST_COLORS.hairline }}
               >
                 {i < step ? (
-                  <Ionicons name="checkmark" size={14} color="#fff" />
+                  <Ionicons name="checkmark" size={14} color={GUEST_COLORS.white} />
                 ) : (
-                  <Text size="2xs" bold className={i <= step ? 'text-white' : 'text-gray-400'}>{i + 1}</Text>
+                  <Text size="2xs" bold className={`font-bevi-bold ${i <= step ? 'text-white' : 'text-muted'}`}>{i + 1}</Text>
                 )}
               </View>
-              <Text size="xs" bold className={i <= step ? 'text-navy' : 'text-gray-400'}>{label}</Text>
-              {i < STEPS.length - 1 && <View className="flex-1 h-0.5 bg-gray-200" />}
+              <Text size="xs" bold className={`font-bevi-bold ${i <= step ? 'text-on-surface' : 'text-muted'}`}>{label}</Text>
+              {i < STEPS.length - 1 && <View className="flex-1 h-0.5 bg-surface-container" />}
             </View>
           ))}
         </View>
@@ -115,48 +116,48 @@ export default function BookingCheckoutScreen() {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 120 }}>
           {/* Stay summary card (always visible) */}
-          <View className="bg-white rounded-2xl p-4 mb-4">
-            <Text bold className="text-navy text-base" numberOfLines={1}>{params.hotelName || 'Your hotel'}</Text>
-            {params.roomName ? <Text size="sm" className="text-gray-500 mt-0.5">{params.roomName}</Text> : null}
+          <View className="bg-surface rounded-card p-4 mb-4">
+            <Text bold className="font-bevi-bold text-on-surface text-base" numberOfLines={1}>{params.hotelName || 'Your hotel'}</Text>
+            {params.roomName ? <Text size="sm" className="font-bevi text-on-surface-variant mt-0.5">{params.roomName}</Text> : null}
             <View className="flex-row items-center gap-1.5 mt-3">
-              <Ionicons name="calendar-outline" size={15} color="#6B7280" />
-              <Text size="sm" className="text-gray-600">
+              <Ionicons name="calendar-outline" size={15} color={GUEST_COLORS.onSurfaceVariant} />
+              <Text size="sm" className="font-bevi text-on-surface-variant">
                 {formatDateShort(params.checkIn)} → {formatDateShort(params.checkOut)} · {nights} night{nights > 1 ? 's' : ''}
               </Text>
             </View>
             <View className="flex-row items-center gap-1.5 mt-1.5">
-              <Ionicons name="people-outline" size={15} color="#6B7280" />
-              <Text size="sm" className="text-gray-600">{guests} guest{guests > 1 ? 's' : ''}</Text>
+              <Ionicons name="people-outline" size={15} color={GUEST_COLORS.onSurfaceVariant} />
+              <Text size="sm" className="font-bevi text-on-surface-variant">{guests} guest{guests > 1 ? 's' : ''}</Text>
             </View>
           </View>
 
           {step === 0 ? (
             <>
-              <Heading size="md" className="text-navy mb-3">Guest details</Heading>
-              <View className="bg-white rounded-2xl p-4 gap-3.5">
+              <Heading size="md" className="font-bevi-bold text-on-surface mb-3">{t('booking:checkout.steps.details')}</Heading>
+              <View className="bg-surface rounded-card p-4 gap-3.5">
                 <Field
                   label="Full name" value={fullName} onChangeText={setFullName}
-                  placeholder="John Doe" error={touched ? nameError : ''} autoCapitalize="words"
+                  placeholder={t('booking:checkout.fullNamePlaceholder')} error={touched ? nameError : ''} autoCapitalize="words"
                 />
                 <Field
                   label="Email" value={email} onChangeText={setEmail}
-                  placeholder="you@example.com" error={touched ? emailError : ''}
+                  placeholder={t('booking:checkout.emailPlaceholder')} error={touched ? emailError : ''}
                   keyboardType="email-address" autoCapitalize="none"
                 />
                 <Field
                   label="Phone" value={phone} onChangeText={setPhone}
-                  placeholder="09xx xxx xxx" error={touched ? phoneError : ''}
+                  placeholder={t('booking:checkout.phonePlaceholder')} error={touched ? phoneError : ''}
                   keyboardType="phone-pad"
                 />
                 <View>
-                  <Text size="sm" bold className="text-navy mb-1.5">Special requests (optional)</Text>
+                  <Text size="sm" bold className="font-bevi-bold text-on-surface mb-1.5">{t('booking:checkout.specialRequests')}</Text>
                   <TextInput
                     value={specialRequests}
                     onChangeText={setSpecialRequests}
-                    placeholder="Late check-in, high floor, extra bed…"
-                    placeholderTextColor="#9CA3AF"
+                    placeholder={t('booking:checkout.specialRequestsPlaceholder')}
+                    placeholderTextColor={GUEST_COLORS.muted}
                     multiline
-                    className="border border-gray-200 rounded-xl px-3 py-2.5 text-navy text-sm min-h-20"
+                    className="border border-hairline/50 rounded-field px-3 py-2.5 text-on-surface text-sm min-h-20"
                     style={{ textAlignVertical: 'top' }}
                   />
                 </View>
@@ -164,16 +165,16 @@ export default function BookingCheckoutScreen() {
             </>
           ) : (
             <>
-              <Heading size="md" className="text-navy mb-3">Review &amp; confirm</Heading>
-              <View className="bg-white rounded-2xl p-4 mb-4">
+              <Heading size="md" className="font-bevi-bold text-on-surface mb-3">{t('booking:checkout.steps.review')}</Heading>
+              <View className="bg-surface rounded-card p-4 mb-4">
                 <ReviewRow label="Guest" value={fullName} />
                 <ReviewRow label="Email" value={email} />
                 <ReviewRow label="Phone" value={phone} />
                 {specialRequests.trim() ? <ReviewRow label="Requests" value={specialRequests.trim()} /> : null}
               </View>
 
-              <Heading size="md" className="text-navy mb-3">Price details</Heading>
-              <View className="bg-white rounded-2xl p-4 mb-4">
+              <Heading size="md" className="font-bevi-bold text-on-surface mb-3">{t('booking:checkout.priceDetails')}</Heading>
+              <View className="bg-surface rounded-card p-4 mb-4">
                 <PriceSummary
                   lines={[{ label: `${formatVnd(params.basePrice ?? 0)} × ${nights} night${nights > 1 ? 's' : ''}`, value: subtotal }]}
                   total={subtotal}
@@ -181,9 +182,9 @@ export default function BookingCheckoutScreen() {
               </View>
 
               {createBooking.isError && (
-                <View className="bg-red-50 rounded-xl px-3 py-2.5 mb-2 flex-row items-start gap-2">
+                <View className="bg-red-50 rounded-field px-3 py-2.5 mb-2 flex-row items-start gap-2">
                   <Ionicons name="alert-circle" size={18} color="#DC2626" />
-                  <Text size="sm" className="text-red-600 flex-1">
+                  <Text size="sm" className="font-bevi text-red-600 flex-1">
                     {errorMessage(createBooking.error, 'Could not create booking. The room may no longer be available for these dates.')}
                   </Text>
                 </View>
@@ -191,7 +192,7 @@ export default function BookingCheckoutScreen() {
 
               <View className="flex-row items-center gap-2 px-1">
                 <Ionicons name="lock-closed" size={14} color="#16A34A" />
-                <Text size="xs" className="text-gray-500 flex-1">
+                <Text size="xs" className="font-bevi text-on-surface-variant flex-1">
                   We’ll hold your room. You can pay securely after confirming.
                 </Text>
               </View>
@@ -201,26 +202,26 @@ export default function BookingCheckoutScreen() {
 
         {/* Sticky CTA */}
         <View
-          className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-100 flex-row items-center justify-between px-5 pt-3"
+          className="absolute bottom-0 left-0 right-0 bg-surface border-t border-hairline/30 flex-row items-center justify-between px-5 pt-3"
           style={{ paddingBottom: insets.bottom + 12 }}
         >
           <View>
-            <Text size="2xs" className="text-gray-400">Total</Text>
-            <Text bold className="text-navy text-xl">{formatVnd(subtotal)}</Text>
+            <Text size="2xs" className="font-bevi text-muted">{t('common:total')}</Text>
+            <Text bold className="font-bevi-bold text-on-surface text-xl">{formatVnd(subtotal)}</Text>
           </View>
           {step === 0 ? (
-            <Pressable onPress={goReview} className="bg-navy rounded-2xl px-7 py-3.5 flex-row items-center gap-1.5">
-              <Text bold className="text-white text-[15px]">Continue</Text>
-              <Ionicons name="arrow-forward" size={16} color="#fff" />
+            <Pressable onPress={goReview} className="bg-on-surface rounded-card px-7 py-3.5 flex-row items-center gap-1.5">
+              <Text bold className="font-bevi-bold text-white text-[15px]">{t('booking:checkout.continue')}</Text>
+              <Ionicons name="arrow-forward" size={16} color={GUEST_COLORS.white} />
             </Pressable>
           ) : (
             <Pressable
               disabled={createBooking.isPending}
               onPress={handleConfirm}
-              className="rounded-2xl px-7 py-3.5"
-              style={{ backgroundColor: createBooking.isPending ? '#E5E7EB' : GOLD }}
+              className="rounded-card px-7 py-3.5"
+              style={{ backgroundColor: createBooking.isPending ? GUEST_COLORS.hairline : GUEST_COLORS.bronze }}
             >
-              <Text bold className={createBooking.isPending ? 'text-gray-400 text-[15px]' : 'text-navy text-[15px]'}>
+              <Text bold className={`font-bevi-bold ${createBooking.isPending ? 'text-muted text-[15px]' : 'text-on-surface text-[15px]'}`}>
                 {createBooking.isPending ? 'Confirming…' : 'Confirm booking'}
               </Text>
             </Pressable>
@@ -244,17 +245,17 @@ interface FieldProps {
 function Field({ label, value, onChangeText, placeholder, error, keyboardType, autoCapitalize }: FieldProps) {
   return (
     <View>
-      <Text size="sm" bold className="text-navy mb-1.5">{label}</Text>
+      <Text size="sm" bold className="font-bevi-bold text-on-surface mb-1.5">{label}</Text>
       <TextInput
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor="#9CA3AF"
+        placeholderTextColor={GUEST_COLORS.muted}
         keyboardType={keyboardType}
         autoCapitalize={autoCapitalize}
-        className={`border rounded-xl px-3 h-11 text-navy text-sm ${error ? 'border-red-400' : 'border-gray-200'}`}
+        className={`border rounded-field px-3 h-11 text-on-surface text-sm ${error ? 'border-red-400' : 'border-hairline/50'}`}
       />
-      {error ? <Text size="xs" className="text-red-500 mt-1">{error}</Text> : null}
+      {error ? <Text size="xs" className="font-bevi text-red-500 mt-1">{error}</Text> : null}
     </View>
   );
 }
@@ -262,8 +263,8 @@ function Field({ label, value, onChangeText, placeholder, error, keyboardType, a
 function ReviewRow({ label, value }: { label: string; value: string }) {
   return (
     <View className="flex-row items-start justify-between py-1.5">
-      <Text size="sm" className="text-gray-500">{label}</Text>
-      <Text size="sm" bold className="text-navy flex-1 text-right ml-4" numberOfLines={2}>{value}</Text>
+      <Text size="sm" className="font-bevi text-on-surface-variant">{label}</Text>
+      <Text size="sm" bold className="font-bevi-bold text-on-surface flex-1 text-right ml-4" numberOfLines={2}>{value}</Text>
     </View>
   );
 }

@@ -1,8 +1,8 @@
 import { View, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Text } from '@/components/ui/text';
+import { GUEST_COLORS } from '@/constants/guestTheme';
 
-const NAVY = '#0B1D45';
 
 export interface QuantityStepperProps {
   value: number;
@@ -20,17 +20,17 @@ export function QuantityStepper({ value, onChange, min = 1, max = 20 }: Quantity
       <Pressable
         disabled={!canDec}
         onPress={() => canDec && onChange(value - 1)}
-        className={`w-9 h-9 rounded-full border items-center justify-center ${canDec ? 'border-navy' : 'border-gray-200'}`}
+        className={`w-9 h-9 rounded-full border items-center justify-center ${canDec ? 'border-on-surface' : 'border-hairline/50'}`}
       >
-        <Ionicons name="remove" size={18} color={canDec ? NAVY : '#D1D5DB'} />
+        <Ionicons name="remove" size={18} color={canDec ? GUEST_COLORS.onSurface : GUEST_COLORS.hairline} />
       </Pressable>
-      <Text bold className="text-navy text-base w-6 text-center">{value}</Text>
+      <Text bold className="font-bevi-bold text-on-surface text-base w-6 text-center">{value}</Text>
       <Pressable
         disabled={!canInc}
         onPress={() => canInc && onChange(value + 1)}
-        className={`w-9 h-9 rounded-full border items-center justify-center ${canInc ? 'border-navy' : 'border-gray-200'}`}
+        className={`w-9 h-9 rounded-full border items-center justify-center ${canInc ? 'border-on-surface' : 'border-hairline/50'}`}
       >
-        <Ionicons name="add" size={18} color={canInc ? NAVY : '#D1D5DB'} />
+        <Ionicons name="add" size={18} color={canInc ? GUEST_COLORS.onSurface : GUEST_COLORS.hairline} />
       </Pressable>
     </View>
   );

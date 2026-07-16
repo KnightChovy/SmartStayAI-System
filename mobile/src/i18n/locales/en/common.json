@@ -1,0 +1,32 @@
+{
+  "appName": "SmartStay AI",
+  "back": "Back",
+  "skip": "Skip",
+  "next": "Next",
+  "cancel": "Cancel",
+  "save": "Save",
+  "retry": "Retry",
+  "loading": "Loading…",
+  "language": "Language",
+  "total": "Total",
+  "from": "from",
+  "perNight": "per night",
+  "contactForPrice": "Contact for price",
+  "hotel": "Hotel",
+  "notFound": "Not found",
+  "guests_one": "{{count}} guest",
+  "guests_other": "{{count}} guests",
+  "nights_one": "{{count}} night",
+  "nights_other": "{{count}} nights",
+  "stars": "{{count}}-star",
+  "tabs": {
+    "home": "Home",
+    "search": "Search",
+    "bookings": "Bookings",
+    "chat": "Chat",
+    "account": "Account"
+  },
+  "errors": {
+    "generic": "Please try again."
+  }
+}

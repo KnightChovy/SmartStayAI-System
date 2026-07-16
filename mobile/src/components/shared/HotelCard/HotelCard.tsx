@@ -5,55 +5,72 @@ import { Text } from '@/components/ui/text';
 import type { HotelSearchResult } from '@/types/hotels.type';
 import { getPrimaryImageUrl, getHotelLocation } from '@/utils/hotel';
 import { formatVnd } from '@/utils/formatCurrency';
+import { GUEST_COLORS } from '@/constants/guestTheme';
 
 interface HotelCardProps {
   hotel: HotelSearchResult;
   onPress: () => void;
 }
 
+/**
+ * Thẻ khách sạn — theo công thức card của client: `rounded-2xl` + viền tóc
+ * `outline-variant/30` + nền `surface`, dựng khối bằng viền chứ không đổ bóng đậm.
+ */
 export function HotelCard({ hotel, onPress }: HotelCardProps) {
   const imageUrl = getPrimaryImageUrl(hotel.images);
 
   return (
     <Pressable
       onPress={onPress}
-      className="flex-row bg-white rounded-2xl mb-3 overflow-hidden shadow-hard-5"
+      className="mb-3 flex-row overflow-hidden rounded-card border border-hairline/30 bg-surface"
     >
-      {/* Thumbnail */}
-      <View className="w-24 h-[110px] bg-gray-200 overflow-hidden">
+      <View className="h-[118px] w-24 overflow-hidden bg-surface-container">
         {imageUrl ? (
           <Image source={{ uri: imageUrl }} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} />
         ) : (
           <View className="flex-1 items-center justify-center">
-            <Ionicons name="bed-outline" size={32} color="rgba(0,0,0,0.2)" />
+            <Ionicons name="bed-outline" size={30} color={GUEST_COLORS.hairline} />
           </View>
         )}
         {hotel.starRating ? (
-          <View className="absolute top-2 left-2 bg-gold rounded px-1.5 py-0.5 flex-row items-center gap-0.5">
-            <Ionicons name="star" size={9} color="#0B1D45" />
-            <Text size="2xs" bold className="text-navy">{hotel.starRating}</Text>
+          <View className="absolute left-2 top-2 flex-row items-center gap-0.5 rounded-full bg-on-surface/85 px-2 py-0.5">
+            <Ionicons name="star" size={9} color={GUEST_COLORS.premiumGold} />
+            <Text className="font-bevi-bold text-white" size="2xs">
+              {hotel.starRating}
+            </Text>
           </View>
         ) : null}
       </View>
 
-      {/* Info */}
-      <View className="flex-1 p-3 justify-between">
+      <View className="flex-1 justify-between p-3.5">
         <View>
-          <Text bold className="text-navy text-sm" numberOfLines={1}>{hotel.name}</Text>
-          <View className="flex-row items-center gap-1 mt-1">
-            <Ionicons name="location-outline" size={12} color="#6B7280" />
-            <Text size="xs" className="text-gray-500 flex-1" numberOfLines={1}>{getHotelLocation(hotel)}</Text>
+          <Text className="font-bevi-semibold text-on-surface" size="sm" numberOfLines={1}>
+            {hotel.name}
+          </Text>
+          <View className="mt-1 flex-row items-center gap-1">
+            <Ionicons name="location-outline" size={12} color={GUEST_COLORS.muted} />
+            <Text className="flex-1 font-bevi text-on-surface-variant" size="xs" numberOfLines={1}>
+              {getHotelLocation(hotel)}
+            </Text>
           </View>
         </View>
         <View>
           {hotel.minPrice ? (
-            <>
-              <Text size="2xs" className="text-gray-400">from</Text>
-              <Text bold className="text-navy text-[15px]">{formatVnd(hotel.minPrice)}</Text>
-              <Text size="2xs" className="text-gray-400">per night</Text>
-            </>
+            <View className="flex-row items-baseline gap-1">
+              <Text className="font-bevi text-muted" size="2xs">
+                từ
+              </Text>
+              <Text className="font-bevi-bold text-on-surface" size="md">
+                {formatVnd(hotel.minPrice)}
+              </Text>
+              <Text className="font-bevi text-on-surface-variant" size="2xs">
+                /đêm
+              </Text>
+            </View>
           ) : (
-            <Text size="xs" className="text-gray-400">Contact for price</Text>
+            <Text className="font-bevi text-muted" size="xs">
+              Liên hệ để biết giá
+            </Text>
           )}
         </View>
       </View>

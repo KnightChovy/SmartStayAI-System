@@ -1,4 +1,5 @@
 import { View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { Text } from '@/components/ui/text';
 import { formatVnd } from '@/utils/formatCurrency';
 
@@ -17,6 +18,7 @@ export interface PriceSummaryProps {
 
 /** Bảng tóm tắt giá: danh sách dòng + tổng cộng, định dạng VND. Dùng ở checkout / detail. */
 export function PriceSummary({ lines, total, className }: PriceSummaryProps) {
+  const { t } = useTranslation('common');
   return (
     <View className={className}>
       {lines.map((line) => {
@@ -24,19 +26,19 @@ export function PriceSummary({ lines, total, className }: PriceSummaryProps) {
         const isDiscount = num < 0;
         return (
           <View key={line.label} className="flex-row items-center justify-between mb-2">
-            <Text size="sm" className="text-gray-500">{line.label}</Text>
+            <Text size="sm" className="font-bevi text-on-surface-variant">{line.label}</Text>
             <Text
               size="sm"
-              className={isDiscount ? 'text-green-600' : line.muted ? 'text-gray-400' : 'text-navy'}
+              className={isDiscount ? 'text-green-600' : line.muted ? 'text-muted' : 'text-on-surface'}
             >
               {isDiscount ? `- ${formatVnd(Math.abs(num))}` : formatVnd(line.value)}
             </Text>
           </View>
         );
       })}
-      <View className="flex-row items-center justify-between border-t border-gray-100 pt-3 mt-1">
-        <Text bold className="text-navy">Total</Text>
-        <Text bold className="text-navy text-lg">{formatVnd(total)}</Text>
+      <View className="flex-row items-center justify-between border-t border-hairline/30 pt-3 mt-1">
+        <Text bold className="font-bevi-bold text-on-surface">{t('total')}</Text>
+        <Text bold className="font-bevi-bold text-on-surface text-lg">{formatVnd(total)}</Text>
       </View>
     </View>
   );

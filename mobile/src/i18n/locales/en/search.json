@@ -1,0 +1,23 @@
+{
+  "placeholder": "Search hotels, destinations…",
+  "filters": "Filters",
+  "clearFilters": "Clear ({{count}})",
+  "filterOptions": {
+    "5star": "5 stars",
+    "4plus": "4+ stars",
+    "under1m": "Under 1M",
+    "under3m": "Under 3M",
+    "hasPrice": "Available now"
+  },
+  "sort": {
+    "recommended": "Recommended",
+    "lowestPrice": "Lowest price",
+    "highestRated": "Highest rated"
+  },
+  "resultCount_one": "{{count}} stay in {{place}}",
+  "resultCount_other": "{{count}} stays in {{place}}",
+  "defaultPlace": "Vietnam",
+  "empty": "No hotels found",
+  "error": "Couldn't load hotels. Please try again.",
+  "viewRoom": "View room"
+}

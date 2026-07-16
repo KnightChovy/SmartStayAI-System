@@ -15,7 +15,7 @@ export function PageDots({ current, count = 2, className }: PageDotsProps) {
       {Array.from({ length: count }).map((_, i) => (
         <View
           key={i}
-          className={`h-2 rounded-full ${current === i ? 'w-6 bg-navy' : 'w-2 bg-gray-300'}`}
+          className={`h-2 rounded-full ${current === i ? 'w-6 bg-on-surface' : 'w-2 bg-hairline'}`}
         />
       ))}
     </View>
