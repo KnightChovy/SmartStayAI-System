@@ -1,11 +1,11 @@
-import type { DashboardRangeParams } from '@/types/dashboard.types';
-
+/**
+ * Query keys RIÊNG của dashboard.
+ *
+ * Chỉ còn `search` — các hook dashboard khác giờ đều gộp từ hook thật của domain khác
+ * (`hooks/admin`, `hooks/platform-manager`, `hooks/analytics`, `hooks/manager`) và dùng
+ * query key của chính domain đó. Nhờ vậy cache được CHIA SẺ: dashboard mở `/admin/revenue`
+ * cho một range, trang Revenue mở đúng range đó thì ăn luôn cache, không gọi lại.
+ */
 export const dashboardKeys = {
-  summary: (p: DashboardRangeParams) => ['dashboard', 'summary', p] as const,
-  timeSeries: (p: DashboardRangeParams) => ['dashboard', 'time-series', p] as const,
-  verifications: (p: DashboardRangeParams) => ['dashboard', 'verifications', p] as const,
-  alerts: ['dashboard', 'alerts'] as const,
-  topHotels: (p: DashboardRangeParams) => ['dashboard', 'top-hotels', p] as const,
-  activity: ['dashboard', 'activity'] as const,
   search: (q: string) => ['dashboard', 'search', q] as const,
 };

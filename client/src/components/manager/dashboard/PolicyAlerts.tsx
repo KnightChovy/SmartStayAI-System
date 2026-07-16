@@ -12,19 +12,31 @@ interface PolicyAlertsProps {
   onRetry: () => void;
 }
 
+/**
+ * "Khách sạn cần chú ý" — suy ra từ `GET /platform-manager/performance` (xem `use-dashboard-alerts`).
+ *
+ * Không phải "policy violation" theo nghĩa BE có luật riêng: BE KHÔNG có API cảnh báo nào.
+ * Đây là các ngưỡng do FE quy ước áp lên số liệu hiệu suất thật (90 ngày gần nhất),
+ * nên tiêu đề tránh hàm ý đây là vi phạm chính sách đã được hệ thống phán quyết.
+ */
 export function PolicyAlerts({ data, isLoading, isError, onRetry }: PolicyAlertsProps) {
   if (isLoading) return <ListCardSkeleton rows={3} />;
 
   return (
     <div className="bg-white rounded-xl border border-slate-200 p-6">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <AlertTriangle className="w-5 h-5 text-amber-500" />
-          <h2 className="font-semibold text-slate-900">Policy Violation Alerts</h2>
+      <div className="flex items-start justify-between mb-4 gap-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5 text-amber-500" />
+            <h2 className="font-semibold text-slate-900">Hotels Needing Attention</h2>
+          </div>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Based on performance over the last 90 days
+          </p>
         </div>
         <Link
           to="/manager/hotel-partners"
-          className="text-xs text-role-manager-primary font-medium hover:underline"
+          className="text-xs text-role-manager-primary font-medium hover:underline shrink-0"
         >
           View all →
         </Link>
@@ -33,7 +45,11 @@ export function PolicyAlerts({ data, isLoading, isError, onRetry }: PolicyAlerts
       {isError ? (
         <SectionError onRetry={onRetry} />
       ) : !data || data.length === 0 ? (
-        <SectionEmpty icon={AlertTriangle} title="No policy alerts" description="Everything looks healthy right now." />
+        <SectionEmpty
+          icon={AlertTriangle}
+          title="No hotels need attention"
+          description="Cancellation rates, ratings and response times all look healthy."
+        />
       ) : (
         <div className="space-y-2.5">
           {data.map(a => {

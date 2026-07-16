@@ -4,6 +4,7 @@ import ManagerDashboardPage from '@/pages/manager/dashboard/DashboardPage';
 import VerificationRequestsPage from '@/pages/manager/verification/VerificationRequestsPage';
 import HotelPartnersPage from '@/pages/manager/hotel-partners/HotelPartnersPage';
 import RevenuePage from '@/pages/manager/revenue/RevenuePage';
+import ManagerRefundsPage from '@/pages/manager/refunds/RefundsPage';
 import AnalyticsPage from '@/pages/manager/analytics/AnalyticsPage';
 import { CommonProfilePage } from '@/common/profile/CommonProfilePage';
 import { ProtectedRoute } from '@/routes/ProtectedRoute';
@@ -23,6 +24,7 @@ export const managerRoutes: RouteObject[] = [
           { path: 'verification', element: <VerificationRequestsPage /> },
           { path: 'hotel-partners', element: <HotelPartnersPage /> },
           { path: 'revenue', element: <RevenuePage /> },
+          { path: 'refunds', element: <ManagerRefundsPage /> },
           { path: 'analytics', element: <AnalyticsPage /> },
           { path: 'profile', element: <CommonProfilePage /> },
         ],
