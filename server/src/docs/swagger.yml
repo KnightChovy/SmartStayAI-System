@@ -29,6 +29,8 @@ tags:
     description: Platform-wide admin dashboard & oversight (admin / platform_manager)
   - name: PlatformManager
     description: Platform analytics & hotel performance scoring (platform_manager / admin)
+  - name: Notifications
+    description: In-app notifications for the authenticated user (list, unread badge, mark read, delete)
 
 paths:
   /conversations/messages:
@@ -2335,6 +2337,133 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  /notifications:
+    get:
+      summary: List the current user's notifications
+      description: >
+        Paginated list of the authenticated user's own notifications (newest first). Filter by
+        `type` or `unreadOnly=true`. The response also includes `unreadCount` (total unread across
+        all types) so the client can render a badge without a second request.
+      tags: [Notifications]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: unreadOnly
+          schema:
+            type: boolean
+          description: When true, only notifications that have not been read yet
+        - in: query
+          name: type
+          schema:
+            type: string
+            enum: [booking_confirmed, payment_success, check_in_reminder, review_request, alert, promotion, partner_approved]
+        - in: query
+          name: sortBy
+          schema:
+            type: string
+          description: 'field:asc|desc, e.g. createdAt:desc'
+        - in: query
+          name: limit
+          schema:
+            type: integer
+        - in: query
+          name: page
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Paginated notifications of the current user (with unreadCount)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PaginatedNotifications' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /notifications/unread-count:
+    get:
+      summary: Get the current user's unread notification count
+      tags: [Notifications]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Unread count for the badge
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  unreadCount: { type: integer, example: 3 }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /notifications/read-all:
+    post:
+      summary: Mark all the current user's notifications as read
+      tags: [Notifications]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Number of notifications updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  updated: { type: integer, example: 5 }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /notifications/{notificationId}/read:
+    patch:
+      summary: Mark one notification as read
+      description: >
+        Marks a single notification (owned by the authenticated user) as read. Idempotent —
+        an already-read notification keeps its original readAt timestamp.
+      tags: [Notifications]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: notificationId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The updated notification
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Notification' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /notifications/{notificationId}:
+    delete:
+      summary: Delete one of the current user's notifications
+      tags: [Notifications]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: notificationId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /bookings:
     post:
       summary: Create a booking
@@ -4041,6 +4170,38 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
 
   /hotels/{hotelId}/room-types/{roomTypeId}:
+    get:
+      summary: Get one room type detail (guest)
+      description: >
+        Public. Returns full detail of a single active room type belonging to a listed hotel
+        (hotel isActive + isListed) — images, amenities, beds and minimal hotel info. When
+        checkIn/checkOut are provided the response also includes numNights, availableRooms and
+        totalPrice for the stay (per-night priceOverride applied). Returns 404 if the room type
+        is hidden or belongs to a hotel that is not on sale.
+      tags: [Hotels]
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: path
+          name: roomTypeId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: query
+          name: checkIn
+          schema: { type: string, format: date }
+        - in: query
+          name: checkOut
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: Room type detail (plus availability and total price when dates given)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RoomType' }
+        '404':
+          $ref: '#/components/responses/NotFound'
     put:
       summary: Update a room type
       description: Hotel owner or manageHotels. All fields optional; set isActive=false to stop selling.

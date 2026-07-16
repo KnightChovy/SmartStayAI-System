@@ -1329,6 +1329,35 @@ components:
           properties:
             results: { type: array, items: { $ref: '#/components/schemas/Room' } }
 
+    Notification:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        userId: { type: string, format: uuid }
+        type:
+          type: string
+          enum: [booking_confirmed, payment_success, check_in_reminder, review_request, alert, promotion, partner_approved]
+        title: { type: string }
+        body: { type: string }
+        data: { type: object, nullable: true, description: Optional structured payload (e.g. bookingId) }
+        channel:
+          type: string
+          enum: [push, email, sms, in_app]
+        status:
+          type: string
+          enum: [pending, sent, failed, read]
+        sentAt: { type: string, format: date-time, nullable: true }
+        readAt: { type: string, format: date-time, nullable: true }
+        createdAt: { type: string, format: date-time }
+
+    PaginatedNotifications:
+      allOf:
+        - $ref: '#/components/schemas/Pagination'
+        - type: object
+          properties:
+            results: { type: array, items: { $ref: '#/components/schemas/Notification' } }
+            unreadCount: { type: integer, description: Total unread notifications across all types, example: 3 }
+
   responses:
     BadRequest:
       description: Validation error or business rule violated
