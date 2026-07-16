@@ -4,16 +4,22 @@ import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
-  ArrowLeft,
   ArrowRight,
+  Bed,
   BedDouble,
   CalendarDays,
+  Clock,
+  Eye,
   Lock,
+  MapPin,
+  Maximize,
   ShieldCheck,
   Users,
 } from 'lucide-react';
+import { useProfile } from '@/hooks/account';
 import { useCreateBooking } from '@/hooks/bookings';
 import { useMoney } from '@/hooks/currency';
+import { useHotel } from '@/hooks/hotels';
 import { useCreateSepayPayment, useCreateVnpayPayment } from '@/hooks/payments';
 import { useAuthStore } from '@/stores/authStore';
 import { ROUTES } from '@/constants/routes';
@@ -21,11 +27,15 @@ import { guestDetailsSchema, type GuestDetailsValues } from '@/validations/check
 import CheckoutStepper from '@/components/booking/CheckoutStepper';
 import PaymentMethodSelect, { type PaymentMethod } from '@/components/booking/PaymentMethodSelect';
 import SepayQrModal from '@/components/booking/SepayQrModal';
+import HotelPolicies from '@/components/guest/HotelPolicies';
 import PriceSummary from '@/components/shared/PriceSummary';
+import StarRating from '@/components/shared/StarRating';
 import EmptyState from '@/components/shared/EmptyState';
+import BackLink from '@/components/shared/BackLink';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { formatAddress } from '@/utils/formatAddress';
 import { formatDateShort, nightsBetween } from '@/utils/formatDate';
 import type { HotelDetail, RoomType } from '@/types/hotel.types';
 import type { SepayPaymentInfo } from '@/types/payment.types';
@@ -63,8 +73,15 @@ export default function BookingCheckoutPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const user = useAuthStore(state => state.user);
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const state = (location.state as CheckoutState | null) ?? {};
-  const { hotel, roomType, checkIn, checkOut, guests = 2 } = state;
+  const { hotel: hotelSeed, roomType, checkIn, checkOut, guests = 2 } = state;
+
+  // Router state chỉ mang bản tóm tắt từ trang chi tiết, nên nhiều field trong schema
+  // (giờ nhận/trả phòng, cọc, tuổi tối thiểu, chính sách…) không tới được đây. Fetch bản
+  // đầy đủ theo hotelId để trang đặt phòng luôn hiện đúng những gì DB đang có.
+  const { data: hotelDetail } = useHotel(roomType?.hotelId ?? '', hotelSeed);
+  const hotel = hotelDetail ?? hotelSeed;
 
   const [step, setStep] = useState(0);
   const [payment, setPayment] = useState<PaymentMethod>('vnpay');
@@ -75,16 +92,34 @@ export default function BookingCheckoutPage() {
   // Giữ id booking đã tạo: bấm thanh toán lại chỉ gọi lại VNPay, không tạo booking trùng
   const [createdBookingId, setCreatedBookingId] = useState<string | null>(null);
 
+  // Nguồn thật của hồ sơ là `GET /users/me`, KHÔNG phải `authStore`: store chỉ giữ ảnh chụp
+  // user tại thời điểm đăng nhập và không bao giờ refresh, nên số điện thoại khách lưu ở trang
+  // Account sau đó không tới được đây (ô Phone trống dù tài khoản đã có sđt). Store vẫn dùng
+  // làm giá trị mồi để form có sẵn chữ trong lúc chờ API.
+  const { data: profile } = useProfile({ enabled: isAuthenticated });
+
   const form = useForm<GuestDetailsValues>({
     resolver: zodResolver(guestDetailsSchema),
     // Xác thực ngay khi rời ô (phòng ngừa lỗi) thay vì chỉ khi submit.
     mode: 'onBlur',
+    // Giá trị mồi từ store — hiện ngay lúc mount, trước khi `/users/me` trả về.
     defaultValues: {
       fullName: user?.fullName ?? '',
       email: user?.email ?? '',
       phone: user?.phone ?? '',
       specialRequests: '',
     },
+    // Hồ sơ về sau khi form đã mount, nên phải nạp lại qua `values` (API reactive của RHF).
+    // `keepDirtyValues` giữ nguyên những ô khách đã tự sửa.
+    values: profile
+      ? {
+          fullName: profile.fullName ?? '',
+          email: profile.email ?? '',
+          phone: profile.phone ?? '',
+          specialRequests: '',
+        }
+      : undefined,
+    resetOptions: { keepDirtyValues: true },
   });
 
   const nights = nightsBetween(checkIn, checkOut);
@@ -135,12 +170,6 @@ export default function BookingCheckoutPage() {
         setCreatedBookingId(bookingId);
       }
 
-      // Tiền mặt: BE đã confirm + phát voucher ngay, không có cổng nào để đi.
-      if (payment === 'cash') {
-        navigate(ROUTES.bookingSuccess(bookingId));
-        return;
-      }
-
       // SePay: không redirect — hiện QR, SePay gọi webhook về BE, FE poll booking.
       if (payment === 'sepay') {
         const info = await createSepay.mutateAsync(bookingId);
@@ -161,12 +190,7 @@ export default function BookingCheckoutPage() {
   return (
     <div className="w-full py-10">
       <div className="mx-auto max-w-6xl px-margin-mobile md:px-8">
-        <button
-          onClick={() => navigate(-1)}
-          className="mb-4 -ml-2 flex min-h-11 items-center gap-1.5 rounded-lg px-2 text-sm font-semibold text-on-surface-variant hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-        >
-          <ArrowLeft className="size-4" /> {t('common:back')}
-        </button>
+        <BackLink fallbackTo={ROUTES.search} />
 
         {/* H1 ~30px: nhãn trang không được lấn át form + giá (cấp bậc trực quan) */}
         <h1 className="font-be-vietnam text-3xl font-bold text-on-surface">{t('title')}</h1>
@@ -263,18 +287,16 @@ export default function BookingCheckoutPage() {
                 <h2 className="font-be-vietnam text-lg font-semibold text-on-surface">{t('payment.title')}</h2>
                 <PaymentMethodSelect value={payment} onChange={setPayment} />
                 <div className="space-y-1.5 rounded-xl bg-emerald-500/5 p-3">
-                  {/* Ghi chú phải khớp phương thức đã chọn — cash không đi qua cổng nào */}
+                  {/* Ghi chú phải khớp phương thức đã chọn: VNPay redirect, SePay hiện QR */}
                   <p className="flex items-center gap-1.5 text-xs text-on-surface-variant">
                     <ShieldCheck className="size-4 shrink-0 text-primary" aria-hidden="true" />
-                    {payment === 'cash' ? t('payment.cashNote') : t('payment.secureNote')}
+                    {payment === 'sepay' ? t('payment.sepayNote') : t('payment.secureNote')}
                   </p>
-                  {payment !== 'cash' && (
-                    /* Đảo ngược rủi ro: nói rõ chưa bị trừ tiền ở bước này */
-                    <p className="flex items-center gap-1.5 text-xs font-medium text-emerald-700">
-                      <Lock className="size-4 shrink-0" aria-hidden="true" />
-                      {t('payment.notCharged')}
-                    </p>
-                  )}
+                  {/* Đảo ngược rủi ro: nói rõ chưa bị trừ tiền ở bước này */}
+                  <p className="flex items-center gap-1.5 text-xs font-medium text-emerald-700">
+                    <Lock className="size-4 shrink-0" aria-hidden="true" />
+                    {t('payment.notCharged')}
+                  </p>
                 </div>
                 <div className="flex gap-3">
                   <Button
@@ -323,8 +345,6 @@ export default function BookingCheckoutPage() {
                       {{
                         vnpay: t('methods.vnpay.label'),
                         sepay: t('methods.sepay.label'),
-                        stripe: t('methods.stripe.label'),
-                        cash: t('methods.cash.label'),
                       }[payment]}
                     </dd>
                   </div>
@@ -335,6 +355,13 @@ export default function BookingCheckoutPage() {
                     </dd>
                   </div>
                 </dl>
+                {/*
+                  Chính sách của chính khách sạn (giờ nhận/trả, huỷ, trẻ em, thú cưng, hút thuốc,
+                  tuổi tối thiểu, số đêm tối đa, cọc, liên hệ) — khách phải thấy TRƯỚC khi trả tiền,
+                  không phải chỉ ở trang chi tiết. Component tự ẩn khi khách sạn chưa nhập gì.
+                */}
+                {hotelDetail && <HotelPolicies hotel={hotelDetail} compact />}
+
                 {createBooking.isError && (
                   <p className="rounded-xl bg-error/10 px-3 py-2 text-sm text-error">
                     {errorMessage(createBooking.error, t('confirm.errorBooking'))}
@@ -372,20 +399,75 @@ export default function BookingCheckoutPage() {
           <aside className="lg:w-80 lg:shrink-0">
             <div className="rounded-2xl border border-outline-variant/30 bg-surface p-6 lg:sticky lg:top-24">
               {hotel && (
-                <h3 className="font-be-vietnam font-semibold text-on-surface">{hotel.name}</h3>
+                <>
+                  <h3 className="font-be-vietnam font-semibold text-on-surface">{hotel.name}</h3>
+                  {hotel.starRating ? (
+                    <StarRating value={hotel.starRating} size={13} className="mt-1" />
+                  ) : null}
+                  <p className="mt-1 flex items-start gap-1.5 text-xs text-on-surface-variant">
+                    <MapPin className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+                    {formatAddress(hotel.address, hotel.district, hotel.city, hotel.country)}
+                  </p>
+                </>
               )}
-              <p className="mt-1 text-sm text-on-surface-variant">{roomType.name}</p>
+              <p className="mt-3 text-sm font-medium text-on-surface">{roomType.name}</p>
+
+              {/* Thông số phòng từ DB: ưu tiên cấu hình giường chi tiết, fallback `bedType` cũ. */}
+              <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-xs text-on-surface-variant">
+                {roomType.beds && roomType.beds.length > 0 ? (
+                  <span className="flex items-center gap-1">
+                    <Bed className="size-3.5" aria-hidden="true" />
+                    {roomType.beds
+                      .map(b => `${b.quantity}× ${b.bedType.replace(/_/g, ' ')}`)
+                      .join(', ')}
+                  </span>
+                ) : (
+                  roomType.bedType && (
+                    <span className="flex items-center gap-1">
+                      <Bed className="size-3.5" aria-hidden="true" /> {roomType.bedType}
+                    </span>
+                  )
+                )}
+                {roomType.areaSqm && (
+                  <span className="flex items-center gap-1">
+                    <Maximize className="size-3.5" aria-hidden="true" /> {roomType.areaSqm}{' '}
+                    {roomType.sizeUnit === 'sqft' ? 'ft²' : 'm²'}
+                  </span>
+                )}
+                {roomType.viewType && (
+                  <span className="flex items-center gap-1">
+                    <Eye className="size-3.5" aria-hidden="true" /> {roomType.viewType}
+                  </span>
+                )}
+              </div>
 
               <div className="mt-4 space-y-2 text-sm text-on-surface-variant">
                 <p className="flex items-center gap-2">
                   <CalendarDays className="size-4" />
                   {formatDateShort(checkIn)} → {formatDateShort(checkOut)}
                 </p>
+                {/* Giờ nhận/trả phòng có sẵn trong DB nhưng trước đây chỉ hiện ở trang chi tiết. */}
+                {(hotel?.checkInTime || hotel?.checkOutTime) && (
+                  <p className="flex items-center gap-2">
+                    <Clock className="size-4" />
+                    {[
+                      hotel.checkInTime ? t('summary.checkInFrom', { time: hotel.checkInTime }) : null,
+                      hotel.checkOutTime ? t('summary.checkOutUntil', { time: hotel.checkOutTime }) : null,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </p>
+                )}
                 <p className="flex items-center gap-2">
                   <BedDouble className="size-4" /> {t('common:nights', { count: nights })}
                 </p>
                 <p className="flex items-center gap-2">
                   <Users className="size-4" /> {t('common:guestsCount', { count: guests })}
+                  {roomType.maxOccupancy ? (
+                    <span className="text-xs">
+                      {t('summary.maxOccupancy', { count: roomType.maxOccupancy })}
+                    </span>
+                  ) : null}
                 </p>
               </div>
 

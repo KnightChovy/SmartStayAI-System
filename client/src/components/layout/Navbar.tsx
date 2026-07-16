@@ -1,11 +1,14 @@
+import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import {
   ChevronDown,
   LayoutDashboard,
   LogOut,
+  Menu,
   Store,
   User as UserIcon,
+  X,
 } from 'lucide-react';
 import { useLogout } from '../../hooks/auth';
 import { useAuthStore } from '../../stores/authStore';
@@ -33,18 +36,37 @@ const ROLE_LABELS: Record<string, string> = {
   [UserRole.ADMIN]: 'Admin',
 };
 
+/** Mục điều hướng chính — dùng chung cho cả thanh desktop và menu mobile. */
+const NAV_LINKS = [
+  { to: '/', key: 'nav.home' },
+  { to: '/deals', key: 'nav.deals' },
+  { to: '/destinations', key: 'nav.destinations' },
+] as const;
+
 export default function Navbar() {
   const location = useLocation();
   const { t } = useTranslation();
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const user = useAuthStore(state => state.user);
   const { mutateAsync: logout, isPending: isLoggingOut } = useLogout();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const closeMenu = () => setMenuOpen(false);
 
   const initials = (user?.fullName || user?.email || 'US')
     .slice(0, 1)
     .toUpperCase();
   const dashboardPath = user ? getLandingPathForRole(user.role) : '/';
   const hasDashboard = dashboardPath !== '/';
+
+  // Mở menu thì khoá cuộn nền (drawer chiếm toàn màn hình trên mobile).
+  useEffect(() => {
+    if (!menuOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [menuOpen]);
 
   return (
     <nav className="bg-surface/80 backdrop-blur-xl sticky top-0 z-50 w-full border-b border-outline-variant/30">
@@ -57,30 +79,15 @@ export default function Navbar() {
         </Link>
         <div className="flex items-center gap-6">
           <div className="hidden md:flex items-center gap-6 text-sm font-semibold text-on-surface-variant">
-            <Link
-              to="/"
-              className={`hover:text-primary transition-colors ${location.pathname === '/' ? 'text-secondary font-bold' : ''}`}
-            >
-              {t('nav.home')}
-            </Link>
-            <Link
-              to="/deals"
-              className={`hover:text-primary transition-colors ${location.pathname === '/deals' ? 'text-secondary font-bold' : ''}`}
-            >
-              {t('nav.deals')}
-            </Link>
-            <Link
-              to="/destinations"
-              className={`hover:text-primary transition-colors ${location.pathname === '/destinations' ? 'text-secondary font-bold' : ''}`}
-            >
-              {t('nav.destinations')}
-            </Link>
-            <Link
-              to="/accommodation-types"
-              className={`hover:text-primary transition-colors ${location.pathname === '/accommodation-types' ? 'text-secondary font-bold' : ''}`}
-            >
-              {t('nav.stays')}
-            </Link>
+            {NAV_LINKS.map(link => (
+              <Link
+                key={link.to}
+                to={link.to}
+                className={`hover:text-primary transition-colors ${location.pathname === link.to ? 'text-secondary font-bold' : ''}`}
+              >
+                {t(link.key)}
+              </Link>
+            ))}
             <CurrencySwitcher />
             <LanguageSwitcher />
           </div>
@@ -167,24 +174,87 @@ export default function Navbar() {
                 </DropdownMenu>
               </>
             ) : (
+              // Dưới sm chỉ giữ 1 CTA chính (Sign up) — 2 nút cạnh nhau làm tràn thanh nav
+              // trên máy hẹp; Sign in đã có trong menu hamburger.
               <>
                 <Link
                   to="/login"
-                  className="px-5 py-2 text-sm font-semibold text-on-surface hover:bg-surface-container-low rounded-xl transition-all text-center"
+                  className="hidden sm:block px-5 py-2 text-sm font-semibold text-on-surface hover:bg-surface-container-low rounded-xl transition-all text-center"
                 >
                   {t('nav.login')}
                 </Link>
                 <Link
                   to="/register"
-                  className="px-5 py-2 text-sm font-semibold bg-on-surface text-white rounded-xl hover:bg-primary transition-all text-center"
+                  className="px-4 sm:px-5 py-2 text-sm font-semibold bg-on-surface text-white rounded-xl hover:bg-primary transition-all text-center"
                 >
                   {t('nav.register')}
                 </Link>
               </>
             )}
+
+            {/* Hamburger — chỉ hiện dưới md, nơi thanh link ngang bị ẩn */}
+            <button
+              type="button"
+              onClick={() => setMenuOpen(o => !o)}
+              aria-label={menuOpen ? t('nav.closeMenu') : t('nav.openMenu')}
+              aria-expanded={menuOpen}
+              aria-controls="mobile-nav"
+              className="md:hidden inline-flex size-11 items-center justify-center rounded-xl text-on-surface hover:bg-surface-container-low transition-colors"
+            >
+              {menuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+            </button>
           </div>
         </div>
       </div>
+
+      {/* Menu mobile: danh sách mục điều hướng + tiện ích, mở từ nút hamburger */}
+      {menuOpen && (
+        <div
+          id="mobile-nav"
+          className="md:hidden border-t border-outline-variant/30 bg-surface"
+        >
+          <div className="px-margin-mobile py-3 flex flex-col">
+            {NAV_LINKS.map(link => (
+              <Link
+                key={link.to}
+                to={link.to}
+                onClick={closeMenu}
+                className={`flex min-h-11 items-center rounded-xl px-3 text-sm font-semibold transition-colors hover:bg-surface-container-low ${
+                  location.pathname === link.to
+                    ? 'text-secondary font-bold'
+                    : 'text-on-surface-variant'
+                }`}
+              >
+                {t(link.key)}
+              </Link>
+            ))}
+
+            <Link
+              to={ROUTES.listYourProperty}
+              onClick={closeMenu}
+              className="flex min-h-11 items-center gap-1.5 rounded-xl px-3 text-sm font-semibold text-role-partner-primary hover:bg-role-partner-light transition-colors sm:hidden"
+            >
+              <Store className="size-4" />
+              {t('nav.listProperty')}
+            </Link>
+
+            {!isAuthenticated && (
+              <Link
+                to="/login"
+                onClick={closeMenu}
+                className="flex min-h-11 items-center rounded-xl px-3 text-sm font-semibold text-on-surface hover:bg-surface-container-low transition-colors sm:hidden"
+              >
+                {t('nav.login')}
+              </Link>
+            )}
+
+            <div className="mt-2 flex items-center gap-3 border-t border-outline-variant/30 px-3 pt-3">
+              <CurrencySwitcher />
+              <LanguageSwitcher />
+            </div>
+          </div>
+        </div>
+      )}
     </nav>
   );
 }

@@ -1,4 +1,3 @@
-import Promotions from '../../components/home/Promotions';
 import WeekendDeals from '../../components/home/WeekendDeals';
 import LoyaltyBanner from '../../components/home/LoyaltyBanner';
 
@@ -18,7 +17,9 @@ export default function DealsPage() {
         </p>
       </div>
 
-      <Promotions />
+      {/* Chỉ còn khối chạy trên dữ liệu thật: WeekendDeals lấy từ GET /hotels. Hai thẻ
+          khuyến mãi "Summer Solstice / Sanctuary Rates" là hardcode, bấm vào không dẫn tới
+          ưu đãi nào nên đã gỡ. */}
       <WeekendDeals />
       <LoyaltyBanner />
     </div>

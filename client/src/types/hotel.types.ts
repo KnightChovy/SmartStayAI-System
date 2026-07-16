@@ -57,8 +57,16 @@ export interface HotelDetail extends HotelSearchResult {
   isSmokingAllowed?: boolean | null;
   minGuestAge?: number | null;
   languagesSpoken?: string[] | null;
+  /** Số đêm tối đa cho một lượt đặt (`Hotel.maxLengthOfStay`). */
+  maxLengthOfStay?: number | null;
+  /** Tiền cọc thu khi nhận phòng — Decimal ⇒ string qua JSON. */
+  securityDepositAmount?: string | null;
   phone?: string | null;
   email?: string | null;
+  postalCode?: string | null;
+  totalFloors?: number | null;
+  builtYear?: number | null;
+  renovationYear?: number | null;
 }
 
 /**

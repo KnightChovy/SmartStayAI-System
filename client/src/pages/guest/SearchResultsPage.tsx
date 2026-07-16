@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { Search, SlidersHorizontal } from 'lucide-react';
@@ -29,6 +29,16 @@ export default function SearchResultsPage() {
   );
 
   const { data, isLoading, isError } = useSearchHotels(filters);
+
+  // Ô điểm đến là input có kiểm soát để nút Search submit được. Khi `city` trên URL đổi từ
+  // nguồn khác (back/forward, hoặc điều hướng từ trang chủ) thì đồng bộ lại ô nhập — chỉnh
+  // ngay trong render thay vì trong effect để không tốn thêm một vòng render thừa.
+  const [cityInput, setCityInput] = useState(filters.city ?? '');
+  const [syncedCity, setSyncedCity] = useState(filters.city);
+  if (filters.city !== syncedCity) {
+    setSyncedCity(filters.city);
+    setCityInput(filters.city ?? '');
+  }
 
   /** Cập nhật một (hoặc nhiều) tham số lọc trên URL, reset page khi đổi filter. */
   const update = (patch: Record<string, string | undefined>, resetPage = true) => {
@@ -75,21 +85,39 @@ export default function SearchResultsPage() {
                 <SlidersHorizontal className="size-4 text-primary" /> {t('filters')}
               </div>
 
-              <label className="flex flex-col gap-1">
-                <span className="text-xs font-semibold text-on-surface-variant">{t('destination')}</span>
-                <div className="flex items-center gap-2 rounded-xl border border-outline-variant/40 px-3">
-                  <Search className="size-4 text-on-surface-variant" />
-                  <input
-                    defaultValue={filters.city ?? ''}
-                    onBlur={e => update({ city: e.target.value || undefined })}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') update({ city: (e.target as HTMLInputElement).value || undefined });
-                    }}
-                    placeholder={t('cityPlaceholder')}
-                    className="h-11 flex-1 bg-transparent text-sm text-on-surface outline-none"
-                  />
-                </div>
-              </label>
+              {/*
+                Ô điểm đến là form thật: trên mobile không có phím Enter rõ ràng và blur
+                cũng không đáng tin (khách bấm thẳng sang chỗ khác), nên phải có nút Search.
+              */}
+              <form
+                onSubmit={e => {
+                  e.preventDefault();
+                  update({ city: cityInput.trim() || undefined });
+                }}
+                className="flex flex-col gap-2"
+              >
+                <label className="flex flex-col gap-1">
+                  <span className="text-xs font-semibold text-on-surface-variant">
+                    {t('destination')}
+                  </span>
+                  <div className="flex items-center gap-2 rounded-xl border border-outline-variant/40 px-3">
+                    <Search className="size-4 shrink-0 text-on-surface-variant" />
+                    <input
+                      value={cityInput}
+                      onChange={e => setCityInput(e.target.value)}
+                      placeholder={t('cityPlaceholder')}
+                      className="h-11 min-w-0 flex-1 bg-transparent text-sm text-on-surface outline-none"
+                    />
+                  </div>
+                </label>
+                <Button
+                  type="submit"
+                  className="min-h-11 w-full bg-on-surface text-white hover:bg-primary"
+                >
+                  <Search className="size-4" />
+                  {t('common:search')}
+                </Button>
+              </form>
 
               <DateRangePicker
                 className="grid-cols-1"

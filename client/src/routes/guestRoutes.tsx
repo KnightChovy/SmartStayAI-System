@@ -3,9 +3,7 @@ import Layout from '@/components/layout/Layout';
 import HomePage from '@/pages/guest/HomePage';
 import DestinationsPage from '@/pages/guest/DestinationsPage';
 import DealsPage from '@/pages/guest/DealsPage';
-import AccommodationTypesPage from '@/pages/guest/AccommodationTypesPage';
 import PartnerLandingPage from '@/pages/guest/PartnerLandingPage';
-import RoomDetailPage from '@/pages/guest/RoomDetailPage';
 import BookingInformationPage from '@/pages/guest/BookingInformationPage';
 import SearchResultsPage from '@/pages/guest/SearchResultsPage';
 import HotelDetailPage from '@/pages/guest/HotelDetailPage';
@@ -34,9 +32,7 @@ export const guestRoutes: RouteObject[] = [
       { path: 'hotels/:hotelId', element: <HotelDetailPage /> },
       { path: 'destinations', element: <DestinationsPage /> },
       { path: 'deals', element: <DealsPage /> },
-      { path: 'accommodation-types', element: <AccommodationTypesPage /> },
       { path: 'list-your-property', element: <PartnerLandingPage /> },
-      { path: 'room/executive-penthouse', element: <RoomDetailPage /> },
       { path: 'booking-information', element: <BookingInformationPage /> },
       { path: 'booking', element: <BookingCheckoutPage /> },
       { path: 'booking/payment-result', element: <PaymentResultPage /> },

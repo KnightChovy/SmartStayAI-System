@@ -27,29 +27,6 @@
       "desc": "Đảm bảo mức giá độc quyền cho thành viên của chúng tôi"
     }
   },
-  "promotions": {
-    "summer": {
-      "badge": "Đặt sớm",
-      "title": "Kỳ nghỉ hạ chí",
-      "desc": "Đặt trước 30 ngày để được giảm 20%.",
-      "cta": "Nhận ưu đãi"
-    },
-    "member": {
-      "badge": "Chỉ thành viên",
-      "title": "Giá ưu đãi độc quyền",
-      "desc": "Mở khoá giá ẩn cho thành viên Vàng.",
-      "cta": "Đăng nhập để xem"
-    }
-  },
-  "accommodationTypes": {
-    "title": "Tìm theo loại chỗ nghỉ",
-    "hotels": "Khách sạn",
-    "apartments": "Căn hộ",
-    "resorts": "Resort",
-    "villas": "Biệt thự",
-    "cabins": "Nhà gỗ",
-    "unique": "Chỗ nghỉ độc đáo"
-  },
   "trending": {
     "title": "Điểm đến thịnh hành",
     "properties_one": "{{count}} khách sạn",
@@ -80,15 +57,8 @@
     "learnMore": "Tìm hiểu thêm"
   },
   "popular": {
-    "title": "Được du khách Việt Nam ưa chuộng",
-    "singapore": { "name": "Singapore", "desc": "Sang trọng hiện đại & mua sắm" },
-    "thailand": { "name": "Thái Lan", "desc": "Biển đẹp & văn hoá sôi động" },
-    "korea": { "name": "Hàn Quốc", "desc": "Làn sóng K, mỹ phẩm & cung điện cổ" },
-    "japan": { "name": "Nhật Bản", "desc": "Hoa anh đào & suối nước nóng thanh bình" }
-  },
-  "guestFavorites": {
-    "badge": "Đánh giá của khách",
-    "title": "Chỗ nghỉ được khách yêu thích",
-    "subtitle": "Lời thật từ những du khách đã tìm được chỗ nghỉ hoàn hảo với SmartStay AI."
+    "title": "Điểm đến phổ biến tại Việt Nam",
+    "stays_one": "{{count}} chỗ nghỉ",
+    "stays_other": "{{count}} chỗ nghỉ"
   }
 }

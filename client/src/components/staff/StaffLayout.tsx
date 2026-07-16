@@ -15,6 +15,9 @@ import { useAuthStore } from '@/stores/authStore';
 import { useStaffHotelStore } from '@/stores/staffHotelStore';
 import { useStaffHotels } from '@/hooks/staff';
 import { useLogout } from '@/hooks/auth';
+import { StaffGlobalSearch } from './StaffGlobalSearch';
+import { StaffNotifications } from './StaffNotifications';
+import { StaffHelpMenu } from './StaffHelpMenu';
 import { ROUTES } from '@/constants/routes';
 
 const navItems = [
@@ -50,8 +53,10 @@ export function StaffLayout() {
       />
       <SidebarInset>
         <CommonNavbar
-          searchPlaceholder="Search bookings, rooms, guests..."
           userName={userName}
+          searchSlot={<StaffGlobalSearch />}
+          bellSlot={<StaffNotifications />}
+          helpSlot={<StaffHelpMenu />}
           leadingActions={
             <>
               <div className="hidden items-center gap-2 text-sm sm:flex">

@@ -1,5 +1,4 @@
 {
-  "backToResults": "Về kết quả tìm kiếm",
   "location": "Vị trí",
   "checkInTime": "Nhận phòng {{time}}",
   "checkOutTime": " · Trả phòng {{time}}",
@@ -32,7 +31,22 @@
     "pets": "Thú cưng",
     "petsNotAllowed": "Không cho phép thú cưng",
     "petsAllowed": "Cho phép mang thú cưng",
-    "petsOnRequest": "Cho phép thú cưng nếu báo trước"
+    "petsOnRequest": "Cho phép thú cưng nếu báo trước",
+    "smoking": "Hút thuốc",
+    "smokingAllowed": "Cho phép hút thuốc",
+    "smokingNotAllowed": "Không hút thuốc trong toàn bộ khách sạn",
+    "minGuestAge": "Độ tuổi tối thiểu",
+    "minGuestAgeValue": "Khách nhận phòng phải từ {{age}} tuổi trở lên",
+    "maxStay": "Số đêm tối đa",
+    "maxStayValue_one": "Tối đa {{count}} đêm mỗi lượt đặt",
+    "maxStayValue_other": "Tối đa {{count}} đêm mỗi lượt đặt",
+    "deposit": "Tiền cọc",
+    "depositValue": "{{amount}} thu khi nhận phòng, hoàn lại lúc trả phòng",
+    "languages": "Ngôn ngữ phục vụ",
+    "tax": "Thuế",
+    "fee": "Phụ phí",
+    "parking": "Đỗ xe",
+    "internet": "Internet"
   },
   "nearby": {
     "title": "Địa điểm lân cận",

@@ -1,19 +1,18 @@
-import { Banknote, QrCode, Wallet } from 'lucide-react';
+import { QrCode, Wallet } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/cn';
 
 /**
- * Chỉ mời phương thức backend thực sự hỗ trợ (`booking.validation` nhận
- * `vnpay | sepay | cash`). `stripe`/Thẻ tín dụng đã bị gỡ: BE không có route nào,
- * chọn vào là hỏng — đó là tuỳ chọn ma.
+ * Cổng thanh toán online mà khách được chọn. BE còn nhận `cash` (lễ tân thu tiền mặt tại quầy
+ * qua `record-cash-payment`) và enum `stripe`, nhưng cả hai đều KHÔNG mời ở luồng đặt phòng:
+ * stripe không có route, còn cash là quyết định sản phẩm — chỉ giữ VNPay + SePay.
  */
-export type PaymentMethod = 'vnpay' | 'sepay' | 'cash';
+export type PaymentMethod = 'vnpay' | 'sepay';
 
 const METHODS = [
   { value: 'vnpay', icon: Wallet, labelKey: 'methods.vnpay.label', descKey: 'methods.vnpay.desc' },
   { value: 'sepay', icon: QrCode, labelKey: 'methods.sepay.label', descKey: 'methods.sepay.desc' },
-  { value: 'cash', icon: Banknote, labelKey: 'methods.cash.label', descKey: 'methods.cash.desc' },
 ] as const satisfies {
   value: PaymentMethod;
   icon: LucideIcon;
@@ -21,7 +20,7 @@ const METHODS = [
   descKey: string;
 }[];
 
-/** Chọn phương thức thanh toán (UI mock — chưa nối cổng thật). */
+/** Chọn phương thức thanh toán online (VNPay redirect / SePay QR). */
 export default function PaymentMethodSelect({
   value,
   onChange,

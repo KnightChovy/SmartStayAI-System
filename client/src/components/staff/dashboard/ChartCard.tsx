@@ -3,17 +3,22 @@ import type { ReactNode } from 'react';
 interface ChartCardProps {
   title: string;
   subtitle?: string;
+  /** Controls shown on the right of the header (e.g. a range picker). */
+  action?: ReactNode;
   children: ReactNode;
   className?: string;
 }
 
 /** Khung card cho biểu đồ — đồng bộ với card của trang partner (rounded-xl, border slate). */
-export function ChartCard({ title, subtitle, children, className }: ChartCardProps) {
+export function ChartCard({ title, subtitle, action, children, className }: ChartCardProps) {
   return (
     <div className={`rounded-xl border border-slate-200 bg-white p-4${className ? ` ${className}` : ''}`}>
-      <div className="mb-3">
-        <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
-        {subtitle && <p className="text-xs text-slate-500">{subtitle}</p>}
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
+          {subtitle && <p className="text-xs text-slate-500">{subtitle}</p>}
+        </div>
+        {action}
       </div>
       {children}
     </div>

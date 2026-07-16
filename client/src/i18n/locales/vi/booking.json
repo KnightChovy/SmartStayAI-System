@@ -23,7 +23,7 @@
     "secureNote": "Bạn sẽ được chuyển an toàn tới VNPay để hoàn tất thanh toán.",
     "review": "Xem lại đặt phòng",
     "notCharged": "Bạn chưa bị trừ tiền cho tới khi hoàn tất thanh toán tại cổng.",
-    "cashNote": "Không cần thanh toán online — trả tiền tại khách sạn khi nhận phòng. Đơn được xác nhận ngay."
+    "sepayNote": "Bạn sẽ nhận mã QR để chuyển khoản — hệ thống tự đối soát và xác nhận đơn."
   },
   "trust": {
     "inclTaxes": "Đã bao gồm thuế & phí",
@@ -53,7 +53,11 @@
     "perNightLine_other": "{{price}} × {{count}} đêm",
     "taxesFees": "Thuế & phí",
     "included": "Đã bao gồm",
-    "totalInclTaxes": "Tổng (đã gồm thuế & phí)"
+    "totalInclTaxes": "Tổng (đã gồm thuế & phí)",
+    "checkInFrom": "Nhận từ {{time}}",
+    "checkOutUntil": "trả trước {{time}}",
+    "maxOccupancy_one": "(tối đa {{count}} khách/phòng)",
+    "maxOccupancy_other": "(tối đa {{count}} khách/phòng)"
   },
   "methods": {
     "vnpay": {
@@ -63,14 +67,6 @@
     "sepay": {
       "label": "SePay",
       "desc": "Chuyển khoản, tự động xác nhận"
-    },
-    "stripe": {
-      "label": "Thẻ tín dụng / ghi nợ",
-      "desc": "Visa, Mastercard, JCB"
-    },
-    "cash": {
-      "label": "Thanh toán tại nơi ở",
-      "desc": "Tiền mặt khi nhận phòng"
     }
   },
   "result": {

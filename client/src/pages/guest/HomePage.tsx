@@ -2,12 +2,7 @@ import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import Hero from '../../components/home/Hero';
 import WhyChooseUs from '../../components/home/WhyChooseUs';
-import Promotions from '../../components/home/Promotions';
-import AccommodationTypes from '../../components/home/AccommodationTypes';
-import TrendingDestinations from '../../components/home/TrendingDestinations';
-import DiscoverVietnam from '../../components/home/DiscoverVietnam';
 import WeekendDeals from '../../components/home/WeekendDeals';
-import GuestFavorites from '../../components/home/GuestFavorites';
 import LoyaltyBanner from '../../components/home/LoyaltyBanner';
 import PopularVietnameseTourists from '../../components/home/PopularVietnameseTourists';
 import WelcomeProfileModal from '../../components/account/WelcomeProfileModal';
@@ -49,16 +44,18 @@ export default function HomePage() {
 
   return (
     <>
+      {/*
+        Landing chỉ giữ những khối chạy trên dữ liệu thật hoặc là nội dung thương hiệu:
+        Hero (form tìm kiếm thật), WhyChooseUs, WeekendDeals (GET /hotels), LoyaltyBanner,
+        PopularVietnameseTourists (điểm đến VN → search thật). Các khối demo hardcode
+        (Promotions, AccommodationTypes, TrendingDestinations, DiscoverVietnam, GuestFavorites)
+        đã gỡ vì dữ liệu bịa và bấm vào không ra kết quả.
+      */}
       <Hero />
       <WhyChooseUs />
-      <Promotions />
-      <AccommodationTypes />
-      <TrendingDestinations />
-      <DiscoverVietnam />
       <WeekendDeals />
       <LoyaltyBanner />
       <PopularVietnameseTourists />
-      <GuestFavorites />
 
       <WelcomeProfileModal
         open={showWelcome}

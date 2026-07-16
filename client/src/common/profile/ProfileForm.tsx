@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { BadgeCheck, Loader2, Upload } from 'lucide-react';
 import { useUpdateProfile } from '@/hooks/account';
 import { useUpload } from '@/hooks/use-upload';
+import { useAuthStore } from '@/stores/authStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,6 +20,7 @@ const MIN_DOB = toDateInputValue(
 export function ProfileForm({ initial }: { initial: UserProfile }) {
   const { t } = useTranslation('account');
   const updateProfile = useUpdateProfile();
+  const updateUser = useAuthStore(state => state.updateUser);
   const upload = useUpload();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState<UserProfile>(initial);
@@ -39,6 +41,14 @@ export function ProfileForm({ initial }: { initial: UserProfile }) {
   const onSave = async (e: React.FormEvent) => {
     e.preventDefault();
     await updateProfile.mutateAsync(form);
+    // `authStore` chỉ được ghi lúc đăng nhập và không tự refresh, nên nếu không đồng bộ ở đây
+    // thì mọi nơi đọc `user` (navbar, prefill form đặt phòng…) vẫn thấy dữ liệu cũ cho tới lần
+    // đăng nhập kế tiếp — đúng nguyên nhân ô Phone ở trang đặt phòng bị trống.
+    updateUser({
+      fullName: form.fullName,
+      phone: form.phone ?? null,
+      avatarUrl: form.avatarUrl ?? null,
+    });
     setSaved(true);
   };
 

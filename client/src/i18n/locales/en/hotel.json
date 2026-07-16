@@ -1,5 +1,4 @@
 {
-  "backToResults": "Back to results",
   "location": "Location",
   "checkInTime": "Check-in {{time}}",
   "checkOutTime": " · Check-out {{time}}",
@@ -32,7 +31,22 @@
     "pets": "Pets",
     "petsNotAllowed": "Pets are not allowed",
     "petsAllowed": "Pets are allowed",
-    "petsOnRequest": "Pets allowed on request"
+    "petsOnRequest": "Pets allowed on request",
+    "smoking": "Smoking",
+    "smokingAllowed": "Smoking allowed",
+    "smokingNotAllowed": "Non-smoking throughout",
+    "minGuestAge": "Minimum age",
+    "minGuestAgeValue": "Guests must be {{age}} or older to check in",
+    "maxStay": "Maximum stay",
+    "maxStayValue_one": "Up to {{count}} night per booking",
+    "maxStayValue_other": "Up to {{count}} nights per booking",
+    "deposit": "Security deposit",
+    "depositValue": "{{amount}} taken at check-in, refunded at check-out",
+    "languages": "Languages spoken",
+    "tax": "Tax",
+    "fee": "Fee",
+    "parking": "Parking",
+    "internet": "Internet"
   },
   "nearby": {
     "title": "What's nearby",

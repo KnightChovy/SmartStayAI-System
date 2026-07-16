@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import {
-  ArrowLeft,
   BadgeCheck,
   Clock,
   Columns3,
@@ -23,6 +22,7 @@ import EmptyState from '@/components/shared/EmptyState';
 import HotelReviews from '@/components/guest/HotelReviews';
 import HotelAmenities from '@/components/guest/HotelAmenities';
 import HotelPolicies from '@/components/guest/HotelPolicies';
+import BackLink from '@/components/shared/BackLink';
 import HotelNearby from '@/components/guest/HotelNearby';
 import StickyBookingBar from '@/components/guest/StickyBookingBar';
 import GalleryLightbox from '@/components/guest/GalleryLightbox';
@@ -150,12 +150,7 @@ export default function HotelDetailPage() {
     // pb lớn để thanh sticky (giá + CTA) không che nội dung cuối trang
     <div className="w-full py-8 pb-28">
       <div className="mx-auto max-w-7xl px-margin-mobile md:px-8">
-        <button
-          onClick={() => navigate(-1)}
-          className="mb-4 -ml-2 flex min-h-11 items-center gap-1.5 rounded-lg px-2 text-sm font-semibold text-on-surface-variant hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-        >
-          <ArrowLeft className="size-4" /> {t('backToResults')}
-        </button>
+        <BackLink fallbackTo={ROUTES.search} />
 
         {/* Gallery — click bất kỳ ảnh nào để mở lightbox toàn màn hình (vuốt / ←→ / Esc) */}
         <div className="relative grid gap-3 md:grid-cols-4 md:grid-rows-2">
