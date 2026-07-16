@@ -18,8 +18,10 @@ import type {
   PartnerBookingFilter,
   CheckInBookingDto,
   CheckOutBookingDto,
+  CancelBookingDto,
 } from '../dto/booking.dto';
 import { walletService } from './wallet.service';
+import { encrypt } from '../utils/encryption';
 
 // Đặt tối đa bao nhiêu đêm cho một booking (chặn khoảng ngày vô lý)
 const MAX_NIGHTS = 30;
@@ -392,12 +394,20 @@ export class BookingService {
     };
   };
 
-  cancelBooking = async (bookingId: string, currentUser: User, reason?: string) => {
+  cancelBooking = async (bookingId: string, currentUser: User, payload: CancelBookingDto = {}) => {
+    const { reason, bankAccount } = payload;
     const { booking, paidPayment, refundAmount } = await this.loadBookingForCancel(bookingId, currentUser);
 
     const today = toUtcDate(new Date());
     if (toUtcDate(booking.checkInDate) <= today) {
       throw new ApiError(httpStatus.BAD_REQUEST, 'Chỉ được huỷ trước ngày nhận phòng');
+    }
+
+    // Mặc định hoàn vào ví: khách nhận được ngay, không phải chờ ai chuyển khoản. Muốn tiền về
+    // ngân hàng thì phải gửi kèm tài khoản — không có thì Platform Manager chẳng biết chuyển đi đâu.
+    const refundMethod = payload.refundMethod ?? 'wallet';
+    if (refundMethod === 'bank' && !bankAccount) {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Chọn hoàn về ngân hàng thì phải cung cấp tài khoản nhận tiền');
     }
 
     const nights = eachNightOfStay(booking.checkInDate, booking.checkOutDate);
@@ -428,8 +438,15 @@ export class BookingService {
             amount: refundAmount,
             reason: reason || 'Khách huỷ booking',
             status: 'pending',
+            refundMethod,
+            // Số tài khoản MÃ HOÁ như HotelPayoutAccount — chỉ giải mã cho người đi chuyển tiền
+            ...(refundMethod === 'bank' && {
+              bankAccountNumber: encrypt(bankAccount!.accountNumber),
+              bankName: bankAccount!.bankName,
+              bankAccountHolder: bankAccount!.accountHolder,
+            }),
           },
-          select: { id: true, amount: true, status: true },
+          select: { id: true, amount: true, status: true, refundMethod: true },
         });
       }
 

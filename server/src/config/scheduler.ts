@@ -66,8 +66,15 @@ export const startScheduler = (): void => {
     timezone: TIMEZONE,
   });
 
+  // Cộng vào ví các khoản hoàn ĐÃ DUYỆT mà khách chọn nhận qua ví — 04:10, ngay sau job tự duyệt.
+  // Yêu cầu do cron tự duyệt không đi qua reviewRefund nên không được cộng ngay; thiếu job này thì
+  // chúng treo ở 'approved' vĩnh viễn, vì hoàn vào ví vốn không cần Platform Manager động tay.
+  cron.schedule('10 4 * * *', () => runJob('credit-wallet-refunds', () => refundService.processApprovedWalletRefunds()), {
+    timezone: TIMEZONE,
+  });
+
   logger.info(
     `[Cron] Đã bật scheduler (${TIMEZONE}): release-holds mỗi 5', sweep-no-shows 02:00, ` +
-      `settle-commissions 03:00, auto-approve-refunds 04:00`
+      `settle-commissions 03:00, auto-approve-refunds 04:00, credit-wallet-refunds 04:10`
   );
 };

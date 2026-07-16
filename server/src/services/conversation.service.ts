@@ -420,14 +420,14 @@ export class ConversationService {
               ? `Đặt phòng thành công! Mã booking: ${booking.bookingCode}. Đã xác nhận — khách trả tiền mặt tại khách sạn khi nhận phòng.`
               : `Đã tạo booking ${booking.bookingCode} (chờ thanh toán). Khách cần thanh toán online trong 15 phút để giữ phòng.`;
           }
-          // cancel_booking
-          const result = await bookingService.cancelBooking(
-            String(action.payload.bookingId),
-            currentUser,
-            'Khách huỷ qua trợ lý AI'
-          );
+          // cancel_booking — hoàn vào ví: chatbot không phải chỗ để khách đọc/nhập số tài khoản,
+          // và vào ví thì khách nhận được ngay. Muốn về ngân hàng thì huỷ ở trang booking.
+          const result = await bookingService.cancelBooking(String(action.payload.bookingId), currentUser, {
+            reason: 'Khách huỷ qua trợ lý AI',
+            refundMethod: 'wallet',
+          });
           const refundText = result.refund
-            ? `Số tiền hoàn: ${result.refund.amount} VND.`
+            ? `Số tiền hoàn: ${result.refund.amount} VND đã được cộng vào ví của bạn sau khi khách sạn duyệt.`
             : 'Booking chưa thanh toán nên không phát sinh hoàn tiền.';
           return `Đã huỷ booking thành công. ${refundText}`;
         } catch (err) {

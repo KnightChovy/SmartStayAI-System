@@ -4,6 +4,7 @@ import pick from '../utils/pick';
 import ApiError from '../utils/ApiError';
 import catchAsync from '../utils/catchAsync';
 import { userService } from '../services';
+import { walletService } from '../services/wallet.service';
 import { Request, Response } from 'express';
 
 export class UserController {
@@ -23,6 +24,12 @@ export class UserController {
   getMe = catchAsync(async (req: Request, res: Response): Promise<void> => {
     const user = await userService.getMyProfile((req.user as User).id);
     res.send(user);
+  });
+
+  // Ví của chính khách đang đăng nhập: số dư + lịch sử giao dịch
+  getMyWallet = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const wallet = await walletService.getCustomerWallet((req.user as User).id);
+    res.send(wallet);
   });
 
   // User tự cập nhật hồ sơ của mình

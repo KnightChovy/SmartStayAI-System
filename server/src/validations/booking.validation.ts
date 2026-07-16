@@ -33,6 +33,16 @@ export const cancelBooking = {
   }),
   body: Joi.object().keys({
     reason: Joi.string().max(500).allow('', null),
+    // Mặc định hoàn vào ví (nhận ngay). Chọn 'bank' thì BẮT BUỘC gửi tài khoản — không có thì
+    // Platform Manager không biết chuyển đi đâu, nên Joi chặn ngay thay vì để lòi ra lúc chi tiền.
+    refundMethod: Joi.string().valid('wallet', 'bank').default('wallet'),
+    bankAccount: Joi.object()
+      .keys({
+        accountNumber: Joi.string().max(30).pattern(/^\d+$/).required(),
+        bankName: Joi.string().max(100).required(),
+        accountHolder: Joi.string().max(100).required(),
+      })
+      .when('refundMethod', { is: 'bank', then: Joi.required(), otherwise: Joi.forbidden() }),
   }),
 };
 

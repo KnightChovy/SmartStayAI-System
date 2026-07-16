@@ -224,8 +224,8 @@ export class PaymentService {
       });
       if (updated.count === 0) {
         // TIỀN MỒ CÔI: tiền đã vào nhưng booking không còn giữ chỗ (đã huỷ / quá hạn 15-30') ⇒ khách
-        // KHÔNG có phòng. Trước đây chỉ ghi log rồi bỏ đó — tiền nằm im, không ai biết. Giờ tạo hẳn
-        // yêu cầu hoàn tiền 'approved' (lỗi hệ thống, khách sạn không có gì để xét) để admin chuyển trả.
+        // KHÔNG có phòng. Trước đây chỉ ghi log rồi bỏ đó — tiền nằm im, không ai biết. Giờ hoàn
+        // NGAY vào ví khách trong chính transaction này, khách không phải chờ ai.
         const orphan = await tx.booking.findUniqueOrThrow({
           where: { id: bookingId },
           select: { customerId: true, bookingCode: true },
@@ -235,11 +235,12 @@ export class PaymentService {
           paymentId,
           customerId: orphan.customerId,
           amount: paid.amount,
+          bookingId,
           bookingCode: orphan.bookingCode,
         });
         logger.error(
           `[Payment] TIỀN MỒ CÔI: booking ${orphan.bookingCode} đã nhận ${paid.amount.toString()}đ nhưng ` +
-            `không còn pending — ĐÃ TẠO yêu cầu hoàn tiền (approved), chờ admin chuyển khoản`
+            `không còn pending — ĐÃ hoàn toàn bộ vào ví khách`
         );
         return { confirmed: false as const, emailTo: null };
       }

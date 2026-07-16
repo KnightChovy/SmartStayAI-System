@@ -48,11 +48,7 @@ export class BookingController {
   });
 
   cancelBooking = catchAsync(async (req: Request, res: Response): Promise<void> => {
-    const booking = await bookingService.cancelBooking(
-      req.params.bookingId as string,
-      req.user as User,
-      req.body.reason
-    );
+    const booking = await bookingService.cancelBooking(req.params.bookingId as string, req.user as User, req.body);
     res.send(booking);
   });
 
