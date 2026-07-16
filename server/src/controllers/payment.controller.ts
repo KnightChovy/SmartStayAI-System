@@ -4,7 +4,7 @@ import type { User } from '@prisma/client';
 import catchAsync from '../utils/catchAsync';
 import config from '../config/config';
 import { paymentService } from '../services';
-import type { VnpayParams } from '../dto/payment.dto';
+import type { VnpayParams, SepayWebhookPayload } from '../dto/payment.dto';
 
 // VNPay gửi mọi tham số dạng query string ⇒ ép về Record<string,string>
 const toVnpayParams = (query: Request['query']): VnpayParams => {
@@ -42,6 +42,26 @@ export class PaymentController {
   vnpayIpn = catchAsync(async (req: Request, res: Response): Promise<void> => {
     const result = await paymentService.handleVnpayCallback(toVnpayParams(req.query));
     res.send({ RspCode: result.rspCode, Message: result.message });
+  });
+
+  // Khách chọn trả bằng chuyển khoản ⇒ trả ảnh QR VietQR + nội dung chuyển khoản để khách quét
+  createSepayPayment = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const result = await paymentService.createSepayPayment(req.params.bookingId as string, req.user as User);
+    res.status(httpStatus.CREATED).send(result);
+  });
+
+  // SePay gọi SERVER-TO-SERVER khi tài khoản ngân hàng có biến động số dư.
+  // Xác thực bằng header "Authorization: Apikey <key>" (không phải JWT của user).
+  // SePay yêu cầu: trả HTTP 200/201 + { success: true } trong 30s, nếu không sẽ retry tới 7 lần.
+  sepayWebhook = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const header = req.headers.authorization ?? '';
+    const apiKey = header.startsWith('Apikey ') ? header.slice('Apikey '.length).trim() : null;
+    if (!paymentService.verifySepayApiKey(apiKey)) {
+      res.status(httpStatus.UNAUTHORIZED).send({ success: false, message: 'Invalid API key' });
+      return;
+    }
+    const result = await paymentService.handleSepayWebhook(req.body as SepayWebhookPayload);
+    res.send(result);
   });
 }
 

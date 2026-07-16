@@ -11,8 +11,9 @@ export interface CreateBookingDto {
   checkOutDate: Date;
   numGuests: number;
   specialRequests?: string;
-  // 'vnpay' = trả trước online (mặc định); 'cash' = trả tiền mặt tại khách sạn khi tới
-  paymentMethod?: 'vnpay' | 'cash';
+  // 'vnpay' = trả trước qua cổng (mặc định); 'sepay' = chuyển khoản quét QR;
+  // 'cash' = trả tiền mặt tại khách sạn khi tới
+  paymentMethod?: 'vnpay' | 'sepay' | 'cash';
 }
 
 /** Bộ lọc khi liệt kê booking của user. */
