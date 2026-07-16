@@ -124,6 +124,9 @@ router.get(
   roomTypeController.listRoomTypes
 );
 
+// Chi tiết một loại phòng cho guest — public. Đặt SAU '/manage' (literal) để param không nuốt route đó.
+router.get('/:hotelId/room-types/:roomTypeId', validate(hotelValidation.getRoomType), hotelController.getRoomType);
+
 router.put(
   '/:hotelId/room-types/:roomTypeId',
   auth(),
