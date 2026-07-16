@@ -1,0 +1,18 @@
+{
+  "titleCity": "Chỗ nghỉ tại {{city}}",
+  "titleDefault": "Khám phá chỗ nghỉ",
+  "resultsFound": "Tìm thấy {{count}} chỗ nghỉ",
+  "searching": "Đang tìm những chốn nghỉ tinh tuyển…",
+  "filters": "Bộ lọc",
+  "destination": "Điểm đến",
+  "cityPlaceholder": "Thành phố, vd. Đà Nẵng",
+  "sortBy": "Sắp xếp theo",
+  "sortRecommended": "Đề xuất",
+  "sortStar": "Hạng sao: cao đến thấp",
+  "sortNewest": "Mới nhất",
+  "errorTitle": "Đã xảy ra lỗi",
+  "errorDesc": "Không tải được kết quả tìm kiếm. Vui lòng thử lại.",
+  "emptyTitle": "Không tìm thấy chỗ nghỉ",
+  "emptyDesc": "Thử điều chỉnh ngày, điểm đến hoặc số khách.",
+  "pageOf": "Trang {{page}} / {{total}}"
+}

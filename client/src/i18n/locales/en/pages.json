@@ -1,0 +1,155 @@
+{
+  "notFound": {
+    "title": "Page not found",
+    "desc": "The page you're looking for doesn't exist or may have moved.",
+    "backHome": "Back to home",
+    "explore": "Explore stays"
+  },
+  "about": {
+    "eyebrow": "Our story",
+    "title": "About SmartStay AI",
+    "description": "We're reimagining luxury travel through intelligent discovery and seamless, human-centered experiences.",
+    "imageAlt": "A SmartStay partner hotel",
+    "p1": "SmartStay AI was founded on a simple belief: finding the perfect place to stay should feel as restful as the stay itself. By combining curated taste with artificial intelligence, we match travelers to sanctuaries that resonate with how they want to feel.",
+    "p2": "From an AI concierge that answers any question in seconds to smart alerts that keep your trip on track, every feature exists to remove friction — so you can focus on the experience.",
+    "whatWeValue": "What we value",
+    "stats": [
+      { "value": "500+", "label": "Verified properties" },
+      { "value": "120K", "label": "Happy guests" },
+      { "value": "15", "label": "Cities worldwide" },
+      { "value": "4.9", "label": "Average rating" }
+    ],
+    "values": [
+      { "title": "Intelligent by design", "desc": "AI guides every step — from discovery to concierge — so travel feels effortless." },
+      { "title": "Quiet luxury", "desc": "We curate calm, characterful stays over loud, generic ones." },
+      { "title": "Partner-first", "desc": "We grow with our hotel partners through fair, transparent tools." }
+    ]
+  },
+  "careers": {
+    "eyebrow": "Join the journey",
+    "title": "Careers at SmartStay",
+    "description": "Help us build the future of intelligent travel. We hire for curiosity, craft, and care.",
+    "openPositions": "Open positions",
+    "apply": "Apply",
+    "perks": [
+      "Fast-growing startup",
+      "Remote-friendly",
+      "Travel credits",
+      "Learning budget"
+    ],
+    "openings": [
+      { "title": "Senior Frontend Engineer", "team": "Engineering", "location": "Ho Chi Minh City · Hybrid", "type": "Full-time" },
+      { "title": "AI/ML Engineer", "team": "AI Platform", "location": "Remote", "type": "Full-time" },
+      { "title": "Product Designer", "team": "Design", "location": "Ha Noi · Hybrid", "type": "Full-time" },
+      { "title": "Hotel Partnerships Manager", "team": "Growth", "location": "Da Nang · On-site", "type": "Full-time" },
+      { "title": "Customer Success Specialist", "team": "Support", "location": "Remote", "type": "Contract" }
+    ]
+  },
+  "safety": {
+    "eyebrow": "Your safety first",
+    "title": "Safety Information",
+    "description": "How SmartStay protects every guest — from booking to checkout.",
+    "tipsTitle": "Safety tips for travelers",
+    "pillars": [
+      { "title": "Verified Properties", "desc": "Every hotel partner passes identity, licensing, and quality verification before going live." },
+      { "title": "Secure Payments", "desc": "Transactions run through encrypted, PCI-compliant gateways. We never store full card data." },
+      { "title": "Health Standards", "desc": "Partners commit to enhanced cleaning protocols and transparent on-site safety measures." },
+      { "title": "24/7 Support", "desc": "Our team and AI concierge are reachable around the clock, before and during your stay." }
+    ],
+    "tips": [
+      "Always communicate and pay through SmartStay — never wire money off-platform.",
+      "Review the property's safety amenities (smoke alarms, locks) on the hotel page.",
+      "Keep a copy of your booking confirmation and emergency contacts handy.",
+      "Report anything that feels off using the Report a Concern page — we act fast."
+    ]
+  },
+  "blog": {
+    "eyebrow": "Stories & insights",
+    "title": "The SmartStay Blog",
+    "description": "Travel inspiration, product news, and tips for the modern explorer.",
+    "posts": [
+      { "category": "Travel Guides", "title": "10 hidden sanctuaries in Vietnam for a quiet luxury escape", "excerpt": "From misty Da Lat villas to lantern-lit Hoi An suites, here are the stays our team can't stop recommending.", "author": "Mai Tran", "date": "Jun 18, 2026" },
+      { "category": "Product", "title": "How our AI concierge actually understands what you want", "excerpt": "A peek behind the curtain at the technology that turns a casual question into the perfect booking.", "author": "David Kim", "date": "Jun 10, 2026" },
+      { "category": "Tips", "title": "The art of the last-minute booking (without the stress)", "excerpt": "Smart alerts, flexible rates, and a few insider habits that make spontaneous trips effortless.", "author": "Sarah Johnson", "date": "May 29, 2026" }
+    ]
+  },
+  "press": {
+    "eyebrow": "In the news",
+    "title": "Press & Media",
+    "description": "The latest coverage, announcements, and resources for journalists.",
+    "mediaKit": "Media kit",
+    "mediaKitDesc": "Logos, brand guidelines, and executive bios in one download.",
+    "downloadKit": "Download kit",
+    "recentCoverage": "Recent coverage",
+    "inquiries": "Press inquiries: ",
+    "releases": [
+      { "date": "May 2026", "source": "TechCrunch", "title": "SmartStay AI raises $20M to bring AI concierge to boutique hotels" },
+      { "date": "Mar 2026", "source": "Skift", "title": "How SmartStay's \"quiet luxury\" curation is reshaping travel discovery" },
+      { "date": "Jan 2026", "source": "VnExpress", "title": "Vietnamese hospitality startup expands to 15 cities across Asia" },
+      { "date": "Nov 2025", "source": "The Verge", "title": "A look inside the AI that plans your next luxury getaway" }
+    ]
+  },
+  "help": {
+    "eyebrow": "We're here to help",
+    "title": "Help Center",
+    "description": "Answers to the most common questions, plus ways to reach our team anytime.",
+    "searchPlaceholder": "Search for a topic...",
+    "faqTitle": "Frequently asked questions",
+    "categories": [
+      { "title": "Booking & Reservations", "desc": "Find rooms, modify dates, and manage your upcoming stays." },
+      { "title": "Payments & Refunds", "desc": "Payment methods, invoices, VNPay and refund timelines." },
+      { "title": "Account & Login", "desc": "Password resets, profile settings, and loyalty membership." },
+      { "title": "During Your Stay", "desc": "Check-in, concierge requests, and on-site assistance." }
+    ],
+    "faqs": [
+      { "q": "How do I modify or cancel my booking?", "a": "Open My Bookings from your account menu, select the reservation, and choose Modify or Cancel. Eligibility depends on the rate you booked — see Cancellation Options for details." },
+      { "q": "When will I receive my refund?", "a": "Approved refunds are returned to your original payment method within 5–10 business days, depending on your bank or VNPay processing times." },
+      { "q": "How does the AI concierge work?", "a": "Our AI concierge answers questions about a hotel, suggests rooms, and helps you book — available 24/7 from the chat bubble on every hotel page." },
+      { "q": "Is my payment information secure?", "a": "Yes. Payments are processed through encrypted, PCI-compliant gateways. SmartStay never stores your full card number." }
+    ]
+  },
+  "cancellation": {
+    "eyebrow": "Flexibility that fits",
+    "title": "Cancellation Options",
+    "description": "Understand each rate type so you can book with total confidence.",
+    "howToCancel": "How to cancel",
+    "tiers": [
+      { "name": "Flexible", "refund": "Full refund", "window": "Cancel up to 24h before check-in", "desc": "Plans change — get 100% back when you cancel at least one day ahead." },
+      { "name": "Standard", "refund": "50% refund", "window": "Cancel up to 5 days before check-in", "desc": "A balanced rate. Half your booking value is refunded inside the window." },
+      { "name": "Non-refundable", "refund": "No refund", "window": "Best price, no changes", "desc": "The lowest price in exchange for a committed, locked-in reservation." }
+    ],
+    "steps": [
+      "Go to My Bookings from your account menu.",
+      "Select the reservation you want to change.",
+      "Click Cancel and confirm — you'll see the refund amount instantly.",
+      "Refunds return to your original payment method within 5–10 business days."
+    ]
+  },
+  "report": {
+    "eyebrow": "We take this seriously",
+    "title": "Report a Concern",
+    "description": "Tell us what happened. Our Trust & Safety team reviews every report.",
+    "receivedTitle": "Report received",
+    "receivedBody": "Thank you for letting us know. Our team will review your report and follow up by email if we need more details.",
+    "submitAnother": "Submit another report",
+    "fullName": "Full name",
+    "namePlaceholder": "Your name",
+    "email": "Email",
+    "emailPlaceholder": "you@example.com",
+    "typeLabel": "Type of concern",
+    "selectTopic": "Select a topic",
+    "bookingCode": "Booking code (optional)",
+    "bookingPlaceholder": "e.g. BKMQI8WO17C4B983",
+    "whatHappened": "What happened?",
+    "detailsPlaceholder": "Describe the issue in as much detail as you can...",
+    "submit": "Submit report",
+    "topics": [
+      "Safety issue",
+      "Payment problem",
+      "Property misrepresentation",
+      "Inappropriate behavior",
+      "Technical bug",
+      "Other"
+    ]
+  }
+}

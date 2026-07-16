@@ -1,67 +1,92 @@
-import { Calendar, CalendarX2, Star } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, Coins, Minus, RefreshCcw, Wallet } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import type { PartnerActivity } from '@/hooks/partner-dashboard';
+import type { WalletTransactionType } from '@/types/hotel-revenue.types';
+import { formatCurrency } from '@/utils/formatCurrency';
+import { formatDate } from '@/utils/formatDate';
 
-export function RecentActivities() {
+interface RecentActivitiesProps {
+  activities: PartnerActivity[];
+  isLoading?: boolean;
+}
+
+const TXN_META: Record<
+  WalletTransactionType,
+  { icon: LucideIcon; label: string; wrap: string; color: string }
+> = {
+  earning: {
+    icon: ArrowDownLeft,
+    label: 'Earning',
+    wrap: 'bg-emerald-50',
+    color: 'text-emerald-600',
+  },
+  commission: { icon: Minus, label: 'Commission', wrap: 'bg-amber-50', color: 'text-amber-600' },
+  payout: { icon: ArrowUpRight, label: 'Payout', wrap: 'bg-role-partner-light', color: 'text-role-partner-primary' },
+  refund: { icon: RefreshCcw, label: 'Refund', wrap: 'bg-red-50', color: 'text-red-500' },
+  adjustment: { icon: Coins, label: 'Adjustment', wrap: 'bg-slate-100', color: 'text-slate-500' },
+};
+
+function ActivitySkeleton() {
   return (
-    <div className="p-6 rounded-xl border border-slate-200 bg-white shadow-sm flex-1 cursor-pointer  transition-transform duration-300 hover:scale-102">
-      <h3 className="text-base font-bold text-slate-900 mb-6">Recent Activities</h3>
-      
-      <div className="relative border-l-2 border-slate-100 ml-3.5 space-y-7 pb-2">
-        {/* Activity 1 */}
-        <div className="relative pl-6">
-          <div className="absolute -left-3.5 top-0 w-7 h-7 rounded-full bg-role-partner-light flex items-center justify-center border-4 border-white">
-            <Calendar className="w-3 h-3 text-role-partner-primary" />
-          </div>
-          <div className="flex justify-between items-start mb-1">
-            <p className="text-sm text-slate-900 font-bold">New Booking <span className="font-medium text-slate-500">for Deluxe Suite</span></p>
-            <span className="text-[10px] font-semibold text-slate-500">Just now</span>
-          </div>
-          <div className="bg-role-partner-light/60 rounded-lg p-3 flex justify-between items-center mt-2 border border-role-partner-light">
-            <div>
-              <p className="text-sm font-bold text-slate-900">John Smith</p>
-              <p className="text-xs text-slate-500 font-medium mt-0.5">Oct 12 - Oct 15 {'•'} 3 Nights</p>
-            </div>
-            <span className="text-sm font-bold text-role-partner-primary">$850</span>
-          </div>
-        </div>
-
-        {/* Activity 2 */}
-        <div className="relative pl-6">
-          <div className="absolute -left-3.5 top-0 w-7 h-7 rounded-full bg-red-50 flex items-center justify-center border-4 border-white">
-            <CalendarX2 className="w-3 h-3 text-red-500" />
-          </div>
-          <div className="flex justify-between items-start mb-1">
-            <p className="text-sm text-slate-900 font-bold">Booking Cancelled <span className="font-medium text-slate-500">for Standard Room</span></p>
-            <span className="text-[10px] font-semibold text-slate-500">2 hrs ago</span>
-          </div>
-          <p className="text-sm text-slate-600 font-medium mt-1">Guest requested cancellation due to travel changes.</p>
-        </div>
-
-        {/* Activity 3 */}
-        <div className="relative pl-6">
-          <div className="absolute -left-3.5 top-0 w-7 h-7 rounded-full bg-amber-50 flex items-center justify-center border-4 border-white">
-            <Star className="w-3 h-3 text-amber-500" fill="currentColor" />
-          </div>
-          <div className="flex justify-between items-start mb-1">
-            <p className="text-sm text-slate-900 font-bold">New 5-Star Review <span className="font-medium text-slate-500">via Booking.com</span></p>
-            <span className="text-[10px] font-semibold text-slate-500">5 hrs ago</span>
-          </div>
-          <div className="bg-slate-50 rounded-lg p-3 mt-2 border border-slate-100">
-            <div className="flex gap-0.5 mb-2">
-              {[...Array(5)].map((_, i) => (
-                <Star key={i} className="w-3.5 h-3.5 text-amber-400" fill="currentColor" />
-              ))}
-            </div>
-            <p className="text-sm text-slate-600 italic">"Exceptional service and immaculate rooms. Will definitely return!"</p>
-          </div>
-        </div>
-      </div>
-      
-      <div className="mt-4 pt-4 text-center">
-        <button className="text-sm font-semibold text-role-partner-primary hover:text-role-partner-secondary transition-colors">
-          View All Activity
-        </button>
+    <div className="flex items-start gap-3">
+      <div className="w-7 h-7 rounded-full bg-slate-100 animate-pulse" />
+      <div className="flex-1 space-y-2">
+        <div className="h-3 w-40 bg-slate-100 rounded animate-pulse" />
+        <div className="h-3 w-24 bg-slate-100 rounded animate-pulse" />
       </div>
     </div>
   );
 }
 
+export function RecentActivities({ activities, isLoading }: RecentActivitiesProps) {
+  return (
+    <div className="p-6 rounded-xl border border-slate-200 bg-white shadow-sm flex-1 transition-transform duration-300 hover:scale-102">
+      <h3 className="text-base font-bold text-slate-900 mb-6">Recent Activities</h3>
+
+      {isLoading ? (
+        <div className="space-y-6">
+          <ActivitySkeleton />
+          <ActivitySkeleton />
+          <ActivitySkeleton />
+        </div>
+      ) : activities.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-10 text-center">
+          <div className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center mb-3">
+            <Wallet className="w-5 h-5 text-slate-400" />
+          </div>
+          <p className="text-sm text-slate-500">No recent activity yet.</p>
+        </div>
+      ) : (
+        <div className="relative border-l-2 border-slate-100 ml-3.5 space-y-7 pb-2">
+          {activities.map(item => {
+            const meta = TXN_META[item.type];
+            const Icon = meta.icon;
+            return (
+              <div key={item.id} className="relative pl-6">
+                <div
+                  className={`absolute -left-3.5 top-0 w-7 h-7 rounded-full ${meta.wrap} flex items-center justify-center border-4 border-white`}
+                >
+                  <Icon className={`w-3 h-3 ${meta.color}`} />
+                </div>
+                <div className="flex justify-between items-start mb-1">
+                  <p className="text-sm text-slate-900 font-bold">
+                    {meta.label}{' '}
+                    {item.hotelName && (
+                      <span className="font-medium text-slate-500">· {item.hotelName}</span>
+                    )}
+                  </p>
+                  <span className={`text-sm font-bold ${meta.color}`}>
+                    {formatCurrency(item.amount)}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 font-medium">
+                  {item.description ?? '—'} {'•'} {formatDate(item.createdAt)}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}

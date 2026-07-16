@@ -1,14 +1,15 @@
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/cn';
 import type { BookingStatus } from '@/types/booking.types';
 
-/** Nhãn + màu cho từng trạng thái booking (khớp enum BookingStatus của DB). */
-const STATUS_CONFIG: Record<BookingStatus, { label: string; className: string }> = {
-  pending: { label: 'Pending', className: 'bg-premium-gold/15 text-premium-gold' },
-  confirmed: { label: 'Confirmed', className: 'bg-primary/15 text-primary' },
-  checked_in: { label: 'Checked in', className: 'bg-emerald-500/15 text-emerald-600' },
-  checked_out: { label: 'Checked out', className: 'bg-outline-variant/30 text-on-surface-variant' },
-  cancelled: { label: 'Cancelled', className: 'bg-error/15 text-error' },
-  no_show: { label: 'No show', className: 'bg-error/10 text-error/80' },
+/** Màu cho từng trạng thái booking (khớp enum BookingStatus của DB). Nhãn qua i18n. */
+const STATUS_CLASS: Record<BookingStatus, string> = {
+  pending: 'bg-premium-gold/15 text-premium-gold',
+  confirmed: 'bg-primary/15 text-primary',
+  checked_in: 'bg-emerald-500/15 text-emerald-600',
+  checked_out: 'bg-outline-variant/30 text-on-surface-variant',
+  cancelled: 'bg-error/15 text-error',
+  no_show: 'bg-error/10 text-error/80',
 };
 
 export default function BookingStatusBadge({
@@ -18,16 +19,17 @@ export default function BookingStatusBadge({
   status: BookingStatus;
   className?: string;
 }) {
-  const config = STATUS_CONFIG[status] ?? STATUS_CONFIG.pending;
+  const { t } = useTranslation('account');
+  const cls = STATUS_CLASS[status] ?? STATUS_CLASS.pending;
   return (
     <span
       className={cn(
         'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold',
-        config.className,
+        cls,
         className
       )}
     >
-      {config.label}
+      {t(`status.${status}`)}
     </span>
   );
 }

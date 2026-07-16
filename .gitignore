@@ -14,3 +14,9 @@
 /AI
 /.playwright-mcp
 .vscode
+
+# Ảnh nguồn dùng để upload thủ công qua UI partner (~20MB) — chỉ dùng ở máy local, không commit.
+/server/prisma/seed-assets/
+
+# Tài liệu review nội bộ (đánh giá luồng booking) — chia sẻ trực tiếp cho team, không đưa lên repo.
+/server/docs/booking-flow-review.md

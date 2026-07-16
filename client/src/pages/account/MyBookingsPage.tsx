@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CalendarCheck } from 'lucide-react';
 import { useMyBookings } from '@/hooks/bookings';
 import { ROUTES } from '@/constants/routes';
@@ -15,6 +16,7 @@ type Tab = 'upcoming' | 'past';
 const UPCOMING_STATUSES = new Set(['pending', 'confirmed', 'checked_in']);
 
 export default function MyBookingsPage() {
+  const { t } = useTranslation('account');
   const [tab, setTab] = useState<Tab>('upcoming');
   const { data, isLoading, isError } = useMyBookings({ limit: 100 });
 
@@ -30,20 +32,20 @@ export default function MyBookingsPage() {
 
   return (
     <div>
-      <h2 className="font-be-vietnam text-2xl font-bold text-on-surface">My bookings</h2>
+      <h2 className="font-be-vietnam text-2xl font-bold text-on-surface">{t('bookings.title')}</h2>
 
       {/* Tabs */}
       <div className="mt-5 inline-flex rounded-xl bg-surface-container-low p-1">
-        {(['upcoming', 'past'] as Tab[]).map(t => (
+        {(['upcoming', 'past'] as Tab[]).map(tabKey => (
           <button
-            key={t}
-            onClick={() => setTab(t)}
+            key={tabKey}
+            onClick={() => setTab(tabKey)}
             className={cn(
-              'rounded-lg px-4 py-2 text-sm font-semibold capitalize transition-colors',
-              tab === t ? 'bg-surface text-on-surface shadow-sm' : 'text-on-surface-variant'
+              'rounded-lg px-4 py-2 text-sm font-semibold transition-colors',
+              tab === tabKey ? 'bg-surface text-on-surface shadow-sm' : 'text-on-surface-variant'
             )}
           >
-            {t} ({t === 'upcoming' ? upcoming.length : past.length})
+            {t(`bookings.${tabKey}`)} ({tabKey === 'upcoming' ? upcoming.length : past.length})
           </button>
         ))}
       </div>
@@ -52,15 +54,15 @@ export default function MyBookingsPage() {
         {isLoading ? (
           Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-28 w-full rounded-2xl" />)
         ) : isError ? (
-          <EmptyState title="Couldn't load bookings" description="Please try again in a moment." />
+          <EmptyState title={t('bookings.errorTitle')} description={t('bookings.errorDesc')} />
         ) : list.length === 0 ? (
           <EmptyState
             icon={CalendarCheck}
-            title={tab === 'upcoming' ? 'No upcoming stays' : 'No past stays yet'}
-            description="When you book a stay, it will appear here."
+            title={tab === 'upcoming' ? t('bookings.emptyUpcoming') : t('bookings.emptyPast')}
+            description={t('bookings.emptyDesc')}
             action={
               <Button className="bg-on-surface text-white hover:bg-primary" asChild>
-                <a href={ROUTES.search}>Find a stay</a>
+                <a href={ROUTES.search}>{t('bookings.findStay')}</a>
               </Button>
             }
           />

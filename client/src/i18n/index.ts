@@ -10,13 +10,43 @@ import enFooter from './locales/en/footer.json';
 import viFooter from './locales/vi/footer.json';
 import enHome from './locales/en/home.json';
 import viHome from './locales/vi/home.json';
+import enSearch from './locales/en/search.json';
+import viSearch from './locales/vi/search.json';
+import enHotel from './locales/en/hotel.json';
+import viHotel from './locales/vi/hotel.json';
+import enBooking from './locales/en/booking.json';
+import viBooking from './locales/vi/booking.json';
+import enAccount from './locales/en/account.json';
+import viAccount from './locales/vi/account.json';
+import enPages from './locales/en/pages.json';
+import viPages from './locales/vi/pages.json';
 
 export const SUPPORTED_LANGS = ['vi', 'en'] as const;
 export type AppLang = (typeof SUPPORTED_LANGS)[number];
 
 export const resources = {
-  en: { common: enCommon, auth: enAuth, footer: enFooter, home: enHome },
-  vi: { common: viCommon, auth: viAuth, footer: viFooter, home: viHome },
+  en: {
+    common: enCommon,
+    auth: enAuth,
+    footer: enFooter,
+    home: enHome,
+    search: enSearch,
+    hotel: enHotel,
+    booking: enBooking,
+    account: enAccount,
+    pages: enPages,
+  },
+  vi: {
+    common: viCommon,
+    auth: viAuth,
+    footer: viFooter,
+    home: viHome,
+    search: viSearch,
+    hotel: viHotel,
+    booking: viBooking,
+    account: viAccount,
+    pages: viPages,
+  },
 } as const;
 
 i18n
@@ -27,7 +57,7 @@ i18n
     fallbackLng: 'vi',
     supportedLngs: SUPPORTED_LANGS,
     defaultNS: 'common',
-    ns: ['common', 'auth', 'footer', 'home'],
+    ns: ['common', 'auth', 'footer', 'home', 'search', 'hotel', 'booking', 'account', 'pages'],
     interpolation: { escapeValue: false }, // React đã tự escape
     detection: {
       order: ['localStorage', 'navigator'],

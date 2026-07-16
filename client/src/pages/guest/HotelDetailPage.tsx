@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Clock, MapPin } from 'lucide-react';
 import { useHotel } from '@/hooks/hotels/use-hotel';
 import { useRoomTypes } from '@/hooks/hotels/use-room-types';
@@ -22,6 +23,7 @@ const FALLBACK =
   'https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=1600&auto=format&fit=crop';
 
 export default function HotelDetailPage() {
+  const { t } = useTranslation('hotel');
   const { hotelId = '' } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -116,7 +118,7 @@ export default function HotelDetailPage() {
           onClick={() => navigate(-1)}
           className="mb-4 flex items-center gap-1.5 text-sm font-semibold text-on-surface-variant hover:text-primary"
         >
-          <ArrowLeft className="size-4" /> Back to results
+          <ArrowLeft className="size-4" /> {t('backToResults')}
         </button>
 
         {/* Gallery */}
@@ -150,8 +152,8 @@ export default function HotelDetailPage() {
             )}
             {hotel?.checkInTime && (
               <span className="flex items-center gap-1.5">
-                <Clock className="size-4" /> Check-in {hotel.checkInTime}
-                {hotel.checkOutTime ? ` · Check-out ${hotel.checkOutTime}` : ''}
+                <Clock className="size-4" /> {t('checkInTime', { time: hotel.checkInTime })}
+                {hotel.checkOutTime ? t('checkOutTime', { time: hotel.checkOutTime }) : ''}
               </span>
             )}
           </div>
@@ -163,7 +165,7 @@ export default function HotelDetailPage() {
         {/* Map — toạ độ từ DB, hoặc geocode từ địa chỉ khi DB chưa có lat/lng */}
         {mapLat != null && mapLng != null && (
           <div className="mt-6">
-            <h2 className="mb-3 font-be-vietnam text-xl font-bold text-on-surface">Location</h2>
+            <h2 className="mb-3 font-be-vietnam text-xl font-bold text-on-surface">{t('location')}</h2>
             <HotelMap
               latitude={mapLat}
               longitude={mapLng}
@@ -188,19 +190,19 @@ export default function HotelDetailPage() {
         </div>
         {!checkIn || !checkOut ? (
           <p className="mt-2 text-xs text-on-surface-variant">
-            Select your dates to see availability and total price.
+            {t('selectDates')}
           </p>
         ) : null}
 
         {/* Room types */}
-        <h2 className="mt-10 font-be-vietnam text-2xl font-bold text-on-surface">Available rooms</h2>
+        <h2 className="mt-10 font-be-vietnam text-2xl font-bold text-on-surface">{t('availableRooms')}</h2>
         <div className="mt-5 space-y-4">
           {roomsLoading ? (
             Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-44 w-full rounded-2xl" />)
           ) : !roomTypes || roomTypes.length === 0 ? (
             <EmptyState
-              title="No rooms available"
-              description="There are no rooms matching your dates or guest count. Try different dates."
+              title={t('noRoomsTitle')}
+              description={t('noRoomsDesc')}
             />
           ) : (
             roomTypes.map(rt => (
@@ -216,7 +218,7 @@ export default function HotelDetailPage() {
               className="bg-on-surface text-white hover:bg-primary"
               onClick={() => document.getElementById('stay-picker')?.scrollIntoView({ behavior: 'smooth' })}
             >
-              Pick dates to book
+              {t('pickDates')}
             </Button>
           </div>
         )}

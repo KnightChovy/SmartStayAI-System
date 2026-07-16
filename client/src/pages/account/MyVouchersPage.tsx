@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Check, Copy, Ticket } from 'lucide-react';
 import { useAvailablePromotions } from '@/hooks/account';
 import EmptyState from '@/components/shared/EmptyState';
@@ -7,15 +8,16 @@ import { formatCurrency } from '@/utils/formatCurrency';
 import { formatDateShort } from '@/utils/formatDate';
 import type { PromotionItem } from '@/types/account.types';
 
-function discountLabel(p: PromotionItem): string {
-  if (p.discountType === 'percentage') return `${p.discountValue}% off`;
-  if (p.discountType === 'fixed_amount') return `${formatCurrency(p.discountValue)} off`;
-  return `${p.discountValue} free night`;
-}
-
 export default function MyVouchersPage() {
+  const { t } = useTranslation('account');
   const { data, isLoading } = useAvailablePromotions();
   const [copied, setCopied] = useState<string | null>(null);
+
+  const discountLabel = (p: PromotionItem): string => {
+    if (p.discountType === 'percentage') return t('vouchers.percentOff', { value: p.discountValue });
+    if (p.discountType === 'fixed_amount') return t('vouchers.fixedOff', { value: formatCurrency(p.discountValue) });
+    return t('vouchers.freeNight', { value: p.discountValue });
+  };
 
   const copy = (code: string) => {
     navigator.clipboard?.writeText(code);
@@ -25,9 +27,9 @@ export default function MyVouchersPage() {
 
   return (
     <div>
-      <h2 className="font-be-vietnam text-2xl font-bold text-on-surface">Vouchers &amp; offers</h2>
+      <h2 className="font-be-vietnam text-2xl font-bold text-on-surface">{t('vouchers.title')}</h2>
       <p className="mt-1 text-sm text-on-surface-variant">
-        Apply a code at checkout to redeem your discount.
+        {t('vouchers.subtitle')}
       </p>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
@@ -35,7 +37,7 @@ export default function MyVouchersPage() {
           Array.from({ length: 2 }).map((_, i) => <Skeleton key={i} className="h-40 rounded-2xl" />)
         ) : !data || data.length === 0 ? (
           <div className="sm:col-span-2">
-            <EmptyState icon={Ticket} title="No vouchers" description="Check back later for new offers." />
+            <EmptyState icon={Ticket} title={t('vouchers.emptyTitle')} description={t('vouchers.emptyDesc')} />
           </div>
         ) : (
           data.map(p => (
@@ -51,8 +53,8 @@ export default function MyVouchersPage() {
               <h3 className="mt-2 font-semibold text-on-surface">{p.name}</h3>
               {p.description && <p className="mt-1 text-sm text-on-surface-variant">{p.description}</p>}
               <div className="mt-2 text-xs text-on-surface-variant">
-                {p.minNights ? `Min ${p.minNights} nights · ` : ''}
-                Valid until {formatDateShort(p.endDate)}
+                {p.minNights ? t('vouchers.minNights', { count: p.minNights }) : ''}
+                {t('vouchers.validUntil', { date: formatDateShort(p.endDate) })}
               </div>
 
               <button
@@ -62,11 +64,11 @@ export default function MyVouchersPage() {
                 <span className="font-mono tracking-wider">{p.code}</span>
                 {copied === p.code ? (
                   <span className="flex items-center gap-1 text-emerald-600">
-                    <Check className="size-4" /> Copied
+                    <Check className="size-4" /> {t('vouchers.copied')}
                   </span>
                 ) : (
                   <span className="flex items-center gap-1">
-                    <Copy className="size-4" /> Copy
+                    <Copy className="size-4" /> {t('vouchers.copy')}
                   </span>
                 )}
               </button>
