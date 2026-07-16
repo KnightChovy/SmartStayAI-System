@@ -121,6 +121,9 @@ enum PaymentMethod {
   sepay
   stripe
   cash
+  // Trả bằng số dư ví khách. Một booking có thể có 2 payment: 'wallet' trả phần ví lo được,
+  // cổng trả phần còn lại (xem booking.service — thanh toán kết hợp).
+  wallet
 }
 
 enum PaymentStatus {
@@ -144,11 +147,20 @@ enum CommissionStatus {
 }
 
 enum WalletTransactionType {
-  earning     // KS nhận tiền (net) khi booking thanh toán thành công
-  commission  // phần hoa hồng platform cắt
-  payout      // chi trả về bank của partner
-  refund      // hoàn tiền (âm)
+  earning     // [ví KS] nhận tiền (net) khi booking thanh toán thành công
+  commission  // [ví KS] phần hoa hồng platform cắt
+  payout      // [ví KS] chi trả về bank của partner
+  refund      // [ví KS] trừ đi khi huỷ/hoàn (âm) — [ví khách] cộng vào khi được hoàn (dương)
   adjustment  // điều chỉnh thủ công
+  spend       // [ví khách] trừ đi khi dùng số dư trả cho booking (âm)
+}
+
+// Khách chọn nhận tiền hoàn ở đâu khi bấm huỷ.
+enum RefundMethod {
+  // Vào ví khách — tiền không rời nền tảng nên duyệt xong là cộng ngay, không cần ai chuyển khoản
+  wallet
+  // Về tài khoản ngân hàng — Platform Manager phải chuyển tay rồi nhập mã giao dịch
+  bank
 }
 
 enum SentimentLabel {
@@ -435,6 +447,7 @@ model User {
   reviews                       Review[]                    @relation("reviewCustomer")
   refunds                       Refund[]                    @relation("refundRequester")
   reviewedRefunds               Refund[]                    @relation("refundReviewer")
+  wallet                        Wallet?
   readAlerts                    SmartAlert[]                @relation("alertReader")
   assignedConversations         Conversation[]              @relation("conversationAssignee")
   messages                      Message[]                   @relation("messageSender")
@@ -901,6 +914,14 @@ model Refund {
   amount              Decimal      @db.Decimal(12, 2)
   reason              String
   status              RefundStatus
+  // Khách chọn lúc huỷ: 'wallet' cộng thẳng vào ví (không ai phải chuyển khoản),
+  // 'bank' thì Platform Manager chuyển tay vào tài khoản dưới đây.
+  refundMethod        RefundMethod @default(wallet) @map("refund_method")
+  // Chỉ dùng khi refundMethod = 'bank'. accountNumber MÃ HOÁ (AES-256-GCM) giống
+  // HotelPayoutAccount — chỉ giải mã cho người thực sự đi chuyển tiền.
+  bankAccountNumber   String?      @map("bank_account_number")
+  bankName            String?      @map("bank_name")
+  bankAccountHolder   String?      @map("bank_account_holder")
   // Người của khách sạn (chủ KS/manager/staff) duyệt hoặc từ chối yêu cầu
   reviewedBy          String?      @map("reviewed_by") @db.Uuid
   reviewer            User?        @relation("refundReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull, onUpdate: Cascade)
@@ -950,11 +971,24 @@ model PlatformCommission {
 
 // Ví per-hotel: mỗi khách sạn có 1 ví. Payout thực tế đi về bank cấp partner,
 // cộng dồn số dư available từ ví các hotel thuộc partner đó.
+// Ví — thuộc về ĐÚNG MỘT trong hai: khách sạn HOẶC khách hàng.
+//
+// Ví KHÁCH SẠN: sổ ghi nền tảng đang nợ khách sạn bao nhiêu. balancePending = tiền đang ký quỹ
+// (khách đã trả nhưng chưa trả phòng), balanceAvailable = đã tất toán, rút được.
+//
+// Ví KHÁCH HÀNG: số dư khách dùng trả cho lần đặt sau. Tiền hoàn vào đây KHÔNG rời nền tảng nên
+// không cần chuyển khoản tay. Khách chỉ có balanceAvailable — không có khái niệm ký quỹ.
+//
+// Cả hai cột chủ sở hữu đều nullable vì Prisma không khai được "đúng một trong hai"; ràng buộc
+// CHECK num_nonnulls(hotel_id, customer_id) = 1 nằm trong migration để DB tự chặn trạng thái sai.
 model Wallet {
   id               String   @id @default(uuid()) @db.Uuid
-  hotelId          String   @unique @map("hotel_id") @db.Uuid
-  hotel            Hotel    @relation(fields: [hotelId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  hotelId          String?  @unique @map("hotel_id") @db.Uuid
+  hotel            Hotel?   @relation(fields: [hotelId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  customerId       String?  @unique @map("customer_id") @db.Uuid
+  customer         User?    @relation(fields: [customerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   balanceAvailable Decimal  @default(0) @map("balance_available") @db.Decimal(14, 2)
+  // Chỉ ví khách sạn dùng cột này; ví khách luôn để 0
   balancePending   Decimal  @default(0) @map("balance_pending") @db.Decimal(14, 2)
   currency         String   @default("VND")
   createdAt        DateTime @default(now()) @map("created_at")

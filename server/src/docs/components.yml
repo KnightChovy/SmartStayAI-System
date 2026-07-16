@@ -752,6 +752,47 @@ components:
         voucherCode: { type: string }
         usedAt: { type: string, format: date-time, nullable: true }
 
+    CustomerWallet:
+      type: object
+      description: >
+        The guest's wallet. Money lands here when a refund is taken as wallet credit, and is spent
+        on future bookings. A guest who has never been refunded has no wallet row yet — the endpoint
+        returns an empty wallet (balance 0) rather than 404.
+      properties:
+        id: { type: string, format: uuid, nullable: true, description: 'null when no wallet row exists yet' }
+        customerId: { type: string, format: uuid }
+        balanceAvailable: { type: string, description: 'Decimal as string — spendable right away' }
+        currency: { type: string, example: VND }
+        transactions:
+          type: array
+          description: 'Newest first'
+          items: { $ref: '#/components/schemas/WalletTransaction' }
+
+    WalletTransaction:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        type:
+          type: string
+          enum: [earning, commission, payout, refund, adjustment, spend]
+          description: 'On a guest wallet only two appear: refund (credit, positive) and spend (debit, negative)'
+        amount: { type: string, description: 'Signed: positive credits, negative debits' }
+        balanceAfter: { type: string }
+        bookingId: { type: string, format: uuid, nullable: true }
+        description: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+
+    WalletPaymentResult:
+      type: object
+      description: Result of paying a booking from the wallet balance.
+      properties:
+        bookingCode: { type: string }
+        walletApplied: { type: string, description: 'Taken from the wallet — min(balance, amount still owed), never more' }
+        remainingToPay: { type: string, description: '0 means fully paid; otherwise pay this much through a gateway' }
+        bookingStatus: { type: string, enum: [pending, confirmed], description: 'confirmed when the wallet covered everything' }
+        voucherCode: { type: string, nullable: true, description: 'Issued only once the booking is confirmed' }
+        walletBalance: { type: string, description: 'Balance left after this payment' }
+
     CancellationRule:
       type: object
       description: >
@@ -860,8 +901,15 @@ components:
       type: object
       description: >
         A refund request. Lifecycle: `pending` (guest cancelled a paid booking, waiting for the hotel
-        to review) → `approved` (hotel agreed) → `processed` (Platform Manager actually transferred the
-        money), or `rejected`. Money only leaves the hotel wallet/commission at the `processed` step.
+        to review) → `approved` → `processed`, or `rejected`. Money only leaves the hotel
+        wallet/commission at the `processed` step.
+
+
+        How it reaches `processed` depends on `refundMethod`. With `wallet` the money never leaves
+        the platform, so approval credits the guest instantly and the request goes straight from
+        `pending` to `processed` — it never rests on `approved`, and the Platform Manager has nothing
+        to do (calling process on it returns 400). With `bank` it waits on `approved` until the
+        Platform Manager transfers the money and records the real transaction id.
 
 
         The hotel has **3 days** to review. After that a nightly job auto-approves the request, because
@@ -870,8 +918,9 @@ components:
         so the UI can label it "tự động duyệt (quá hạn phản hồi)".
 
 
-        Orphan-money refunds (payment arrived after the hold expired) are created straight as
-        `approved` — there is nothing for the hotel to review, it is a system fault.
+        Orphan-money refunds (payment arrived after the hold expired) skip every step: they are
+        credited to the guest wallet immediately as `processed`. There is nothing for the hotel to
+        review — it is a system fault, and the guest should not wait for it.
       properties:
         id: { type: string, format: uuid }
         amount:
@@ -882,6 +931,12 @@ components:
         status:
           type: string
           enum: [pending, approved, processed, rejected]
+        refundMethod:
+          type: string
+          enum: [wallet, bank]
+          description: 'Chosen by the guest when cancelling. Defaults to wallet'
+        bankName: { type: string, nullable: true, description: 'Only with refundMethod bank' }
+        bankAccountHolder: { type: string, nullable: true, description: 'Only with refundMethod bank' }
         rejectionReason: { type: string, nullable: true }
         refundTransactionId:
           type: string
