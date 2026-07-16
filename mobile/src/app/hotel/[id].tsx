@@ -16,10 +16,10 @@ import { useGetReviews } from '@/hooks/reviews';
 import { useGeocode } from '@/hooks/geo';
 import { getHotelLocation, getInitials } from '@/utils/hotel';
 import { formatDateShort, todayKey, toDateKey, addDays } from '@/utils/formatDate';
+import { GUEST_COLORS } from '@/constants/guestTheme';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 const CAROUSEL_H = 280;
-const GOLD = '#F5A623';
 
 const AVATAR_COLORS = ['#0D9488', '#B45309', '#1D4ED8', '#7C3AED', '#DC2626', '#059669'];
 function avatarColor(seed: string): string {
@@ -81,28 +81,28 @@ export default function HotelDetailScreen() {
 
   if (isLoading) {
     return (
-      <View className="flex-1 bg-gray-100 items-center justify-center">
+      <View className="flex-1 bg-canvas items-center justify-center">
         <StatusBar style="dark" />
-        <ActivityIndicator size="large" color="#0B1D45" />
+        <ActivityIndicator size="large" color={GUEST_COLORS.onSurface} />
       </View>
     );
   }
 
   if (!hotel) {
     return (
-      <View className="flex-1 bg-gray-100 items-center justify-center gap-3 px-8" style={{ paddingTop: insets.top }}>
+      <View className="flex-1 bg-canvas items-center justify-center gap-3 px-8" style={{ paddingTop: insets.top }}>
         <StatusBar style="dark" />
-        <Ionicons name="alert-circle-outline" size={48} color="#D1D5DB" />
-        <Text className="text-gray-400 text-center">Hotel not found.</Text>
-        <Pressable onPress={() => router.back()} className="bg-navy rounded-xl px-5 py-2.5">
-          <Text bold className="text-white">Go back</Text>
+        <Ionicons name="alert-circle-outline" size={48} color={GUEST_COLORS.hairline} />
+        <Text className="font-bevi text-muted text-center">Hotel not found.</Text>
+        <Pressable onPress={() => router.back()} className="bg-on-surface rounded-field px-5 py-2.5">
+          <Text bold className="font-bevi-bold text-white">Go back</Text>
         </Pressable>
       </View>
     );
   }
 
   return (
-    <View className="flex-1 bg-gray-100">
+    <View className="flex-1 bg-canvas">
       <StatusBar style="light" />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}>
         {/* ── Image Carousel ── */}
@@ -133,14 +133,14 @@ export default function HotelDetailScreen() {
           {/* Top bar overlay */}
           <View className="absolute left-0 right-0 flex-row items-center justify-between px-4" style={{ top: insets.top + 6 }}>
             <Pressable onPress={() => router.back()} className="w-9 h-9 rounded-full bg-black/30 items-center justify-center">
-              <Ionicons name="arrow-back" size={20} color="#fff" />
+              <Ionicons name="arrow-back" size={20} color={GUEST_COLORS.white} />
             </Pressable>
             <View className="flex-row gap-2">
               <Pressable className="w-9 h-9 rounded-full bg-black/30 items-center justify-center">
-                <Ionicons name="share-outline" size={18} color="#fff" />
+                <Ionicons name="share-outline" size={18} color={GUEST_COLORS.white} />
               </Pressable>
               <Pressable onPress={() => setSaved((v) => !v)} className="w-9 h-9 rounded-full bg-black/30 items-center justify-center">
-                <Ionicons name={saved ? 'heart' : 'heart-outline'} size={18} color={saved ? '#EF4444' : '#fff'} />
+                <Ionicons name={saved ? 'heart' : 'heart-outline'} size={18} color={saved ? '#EF4444' : GUEST_COLORS.white} />
               </Pressable>
             </View>
           </View>
@@ -149,11 +149,11 @@ export default function HotelDetailScreen() {
           {images.length > 1 && (
             <>
               <View className="absolute bottom-3.5 right-3.5 bg-black/50 rounded-full px-2.5 py-1">
-                <Text size="xs" bold className="text-white">{imageIndex + 1}/{images.length}</Text>
+                <Text size="xs" bold className="font-bevi-bold text-white">{imageIndex + 1}/{images.length}</Text>
               </View>
               <View className="absolute bottom-4 left-0 right-0 flex-row justify-center gap-1.5">
                 {images.map((img, i) => (
-                  <View key={img.id} className={`h-1.5 rounded-full ${i === imageIndex ? 'w-5 bg-white' : 'w-1.5 bg-white/50'}`} />
+                  <View key={img.id} className={`h-1.5 rounded-full ${i === imageIndex ? 'w-5 bg-surface' : 'w-1.5 bg-surface/50'}`} />
                 ))}
               </View>
             </>
@@ -162,37 +162,37 @@ export default function HotelDetailScreen() {
 
         <View className="p-4">
           {/* ── Hotel Info ── */}
-          <View className="bg-white rounded-2xl p-4 mb-3.5">
+          <View className="bg-surface rounded-card p-4 mb-3.5">
             {hotel.starRating ? (
               <View className="flex-row items-center gap-1.5">
                 <StarRating count={hotel.starRating} size={13} />
-                <Text size="xs" className="text-gray-500">{hotel.starRating}-star Hotel</Text>
+                <Text size="xs" className="font-bevi text-on-surface-variant">{hotel.starRating}-star Hotel</Text>
               </View>
             ) : null}
-            <Heading size="xl" className="text-navy mt-1.5 mb-2">{hotel.name}</Heading>
+            <Heading size="xl" className="font-bevi-bold text-on-surface mt-1.5 mb-2">{hotel.name}</Heading>
 
             <View className="flex-row items-center justify-between">
               <View className="flex-row items-center gap-1 flex-1 pr-2">
-                <Ionicons name="location-outline" size={14} color="#6B7280" />
-                <Text size="sm" className="text-gray-500 flex-1" numberOfLines={1}>{hotel.address}, {getHotelLocation(hotel)}</Text>
+                <Ionicons name="location-outline" size={14} color={GUEST_COLORS.onSurfaceVariant} />
+                <Text size="sm" className="font-bevi text-on-surface-variant flex-1" numberOfLines={1}>{hotel.address}, {getHotelLocation(hotel)}</Text>
               </View>
               {reviewAvg !== null && (
                 <View className="bg-blue-100 rounded-lg px-2.5 py-1">
-                  <Text size="sm" bold className="text-blue-700">{reviewAvg.toFixed(1)} ★</Text>
+                  <Text size="sm" bold className="font-bevi-bold text-blue-700">{reviewAvg.toFixed(1)} ★</Text>
                 </View>
               )}
             </View>
 
-            <Text size="xs" className="text-gray-400 mt-1">{reviewCount} reviews</Text>
+            <Text size="xs" className="font-bevi text-muted mt-1">{reviewCount} reviews</Text>
 
             {/* Amenities */}
             {amenities.length > 0 && (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mt-3">
                 <View className="flex-row gap-2">
                   {amenities.map((a) => (
-                    <View key={a} className="flex-row items-center gap-1.5 border border-gray-200 rounded-full px-2 py-1.5">
-                      <Ionicons name="checkmark-circle-outline" size={13} color={GOLD} />
-                      <Text size="xs" className="text-navy font-medium">{a}</Text>
+                    <View key={a} className="flex-row items-center gap-1.5 border border-hairline/50 rounded-full px-2 py-1.5">
+                      <Ionicons name="checkmark-circle-outline" size={13} color={GUEST_COLORS.bronze} />
+                      <Text size="xs" className="font-bevi-medium text-on-surface font-medium">{a}</Text>
                     </View>
                   ))}
                 </View>
@@ -201,32 +201,32 @@ export default function HotelDetailScreen() {
           </View>
 
           {/* ── Your stay (date/guest picker) ── */}
-          <Pressable onPress={() => setPickerOpen(true)} className="bg-white rounded-2xl p-4 mb-3.5 flex-row items-center">
+          <Pressable onPress={() => setPickerOpen(true)} className="bg-surface rounded-card p-4 mb-3.5 flex-row items-center">
             <View className="flex-1 flex-row items-center gap-4">
               <View>
-                <Text size="2xs" className="text-gray-400 uppercase">Check-in</Text>
-                <Text bold className="text-navy text-sm">{formatDateShort(checkIn)}</Text>
+                <Text size="2xs" className="font-bevi text-muted uppercase">Check-in</Text>
+                <Text bold className="font-bevi-bold text-on-surface text-sm">{formatDateShort(checkIn)}</Text>
               </View>
-              <Ionicons name="arrow-forward" size={16} color="#9CA3AF" />
+              <Ionicons name="arrow-forward" size={16} color={GUEST_COLORS.muted} />
               <View>
-                <Text size="2xs" className="text-gray-400 uppercase">Check-out</Text>
-                <Text bold className="text-navy text-sm">{formatDateShort(checkOut)}</Text>
+                <Text size="2xs" className="font-bevi text-muted uppercase">Check-out</Text>
+                <Text bold className="font-bevi-bold text-on-surface text-sm">{formatDateShort(checkOut)}</Text>
               </View>
-              <View className="border-l border-gray-100 pl-4">
-                <Text size="2xs" className="text-gray-400 uppercase">Guests</Text>
-                <Text bold className="text-navy text-sm">{guests}</Text>
+              <View className="border-l border-hairline/30 pl-4">
+                <Text size="2xs" className="font-bevi text-muted uppercase">Guests</Text>
+                <Text bold className="font-bevi-bold text-on-surface text-sm">{guests}</Text>
               </View>
             </View>
-            <View className="w-9 h-9 rounded-full bg-blue-50 items-center justify-center">
-              <Ionicons name="create-outline" size={18} color="#0B1D45" />
+            <View className="w-9 h-9 rounded-full bg-brand/10 items-center justify-center">
+              <Ionicons name="create-outline" size={18} color={GUEST_COLORS.onSurface} />
             </View>
           </Pressable>
 
           {/* ── Select Room ── */}
-          <Heading size="lg" className="text-navy mb-3">Select Room</Heading>
+          <Heading size="lg" className="font-bevi-bold text-on-surface mb-3">Select Room</Heading>
           {rooms.length === 0 ? (
-            <View className="bg-white rounded-2xl p-6 items-center mb-3">
-              <Text size="sm" className="text-gray-400">No rooms available for these dates</Text>
+            <View className="bg-surface rounded-card p-6 items-center mb-3">
+              <Text size="sm" className="font-bevi text-muted">No rooms available for these dates</Text>
             </View>
           ) : (
             rooms.map((r) => <RoomTypeCard key={r.id} room={r} onPress={() => openRoom(r.id)} />)
@@ -236,32 +236,32 @@ export default function HotelDetailScreen() {
           {reviews.length > 0 && (
             <>
               <View className="flex-row items-center justify-between mt-2 mb-3">
-                <Heading size="lg" className="text-navy">Guest Reviews</Heading>
+                <Heading size="lg" className="font-bevi-bold text-on-surface">Guest Reviews</Heading>
                 <Pressable>
-                  <Text size="sm" bold className="text-gold">View all →</Text>
+                  <Text size="sm" bold className="font-bevi-bold text-bronze">View all →</Text>
                 </Pressable>
               </View>
 
               {reviews.map((review) => {
                 const name = review.customer?.fullName ?? 'Guest';
                 return (
-                  <View key={review.id} className="bg-white rounded-2xl p-3.5 mb-3">
+                  <View key={review.id} className="bg-surface rounded-card p-3.5 mb-3">
                     <View className="flex-row items-center justify-between mb-2.5">
                       <View className="flex-row items-center gap-2.5">
                         <View className="w-[38px] h-[38px] rounded-full items-center justify-center" style={{ backgroundColor: avatarColor(name) }}>
-                          <Text size="sm" bold className="text-white">{getInitials(name)}</Text>
+                          <Text size="sm" bold className="font-bevi-bold text-white">{getInitials(name)}</Text>
                         </View>
                         <View>
-                          <Text bold className="text-navy text-sm">{name}</Text>
-                          <Text size="xs" className="text-gray-400">{review.createdAt.slice(0, 10)}</Text>
+                          <Text bold className="font-bevi-bold text-on-surface text-sm">{name}</Text>
+                          <Text size="xs" className="font-bevi text-muted">{review.createdAt.slice(0, 10)}</Text>
                         </View>
                       </View>
-                      <View className="bg-navy rounded-lg px-2 py-1">
-                        <Text size="sm" bold className="text-white">{review.overallRating}</Text>
+                      <View className="bg-on-surface rounded-lg px-2 py-1">
+                        <Text size="sm" bold className="font-bevi-bold text-white">{review.overallRating}</Text>
                       </View>
                     </View>
-                    {review.title ? <Text bold className="text-navy text-sm mb-1">{review.title}</Text> : null}
-                    <Text size="sm" className="text-gray-700 leading-5">{review.content}</Text>
+                    {review.title ? <Text bold className="font-bevi-bold text-on-surface text-sm mb-1">{review.title}</Text> : null}
+                    <Text size="sm" className="font-bevi text-on-surface-variant leading-5">{review.content}</Text>
                   </View>
                 );
               })}
@@ -269,7 +269,7 @@ export default function HotelDetailScreen() {
           )}
 
           {/* ── Location ── */}
-          <Heading size="lg" className="text-navy mb-3">Location</Heading>
+          <Heading size="lg" className="font-bevi-bold text-on-surface mb-3">Location</Heading>
           <HotelMap
             latitude={mapLat}
             longitude={mapLng}
