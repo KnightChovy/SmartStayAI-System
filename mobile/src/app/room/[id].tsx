@@ -15,11 +15,10 @@ import { StayPickerSheet } from '@/components/shared/StayPickerSheet';
 import { useGetHotel, useGetRoomTypes } from '@/hooks/hotels';
 import { formatVnd } from '@/utils/formatCurrency';
 import { formatDateShort, nightsBetween, todayKey, toDateKey, addDays } from '@/utils/formatDate';
+import { GUEST_COLORS } from '@/constants/guestTheme';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 const CAROUSEL_H = 260;
-const NAVY = '#0B1D45';
-const GOLD = '#F5A623';
 
 type RoomMetaIcon = { icon: React.ComponentProps<typeof Ionicons>['name']; label: string };
 
@@ -86,21 +85,21 @@ export default function RoomDetailScreen() {
 
   if (isLoading) {
     return (
-      <View className="flex-1 bg-gray-100 items-center justify-center">
+      <View className="flex-1 bg-canvas items-center justify-center">
         <StatusBar style="dark" />
-        <ActivityIndicator size="large" color={NAVY} />
+        <ActivityIndicator size="large" color={GUEST_COLORS.onSurface} />
       </View>
     );
   }
 
   if (!room) {
     return (
-      <View className="flex-1 bg-gray-100 items-center justify-center gap-3 px-8" style={{ paddingTop: insets.top }}>
+      <View className="flex-1 bg-canvas items-center justify-center gap-3 px-8" style={{ paddingTop: insets.top }}>
         <StatusBar style="dark" />
-        <Ionicons name="bed-outline" size={48} color="#D1D5DB" />
-        <Text className="text-gray-400 text-center">This room is no longer available.</Text>
-        <Pressable onPress={() => router.back()} className="bg-navy rounded-xl px-5 py-2.5">
-          <Text bold className="text-white">Go back</Text>
+        <Ionicons name="bed-outline" size={48} color={GUEST_COLORS.hairline} />
+        <Text className="font-bevi text-muted text-center">This room is no longer available.</Text>
+        <Pressable onPress={() => router.back()} className="bg-on-surface rounded-field px-5 py-2.5">
+          <Text bold className="font-bevi-bold text-white">Go back</Text>
         </Pressable>
       </View>
     );
@@ -109,7 +108,7 @@ export default function RoomDetailScreen() {
   const soldOut = room.availableRooms === 0;
 
   return (
-    <View className="flex-1 bg-gray-100">
+    <View className="flex-1 bg-canvas">
       <StatusBar style="light" />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 96 + insets.bottom }}>
         {/* ── Carousel ── */}
@@ -134,59 +133,59 @@ export default function RoomDetailScreen() {
 
           <View className="absolute left-0 right-0 flex-row items-center justify-between px-4" style={{ top: insets.top + 6 }}>
             <Pressable onPress={() => router.back()} className="w-9 h-9 rounded-full bg-black/30 items-center justify-center">
-              <Ionicons name="arrow-back" size={20} color="#fff" />
+              <Ionicons name="arrow-back" size={20} color={GUEST_COLORS.white} />
             </Pressable>
           </View>
 
           {images.length > 1 && (
             <View className="absolute bottom-3.5 right-3.5 bg-black/50 rounded-full px-2.5 py-1">
-              <Text size="xs" bold className="text-white">{imageIndex + 1}/{images.length}</Text>
+              <Text size="xs" bold className="font-bevi-bold text-white">{imageIndex + 1}/{images.length}</Text>
             </View>
           )}
         </View>
 
         <View className="p-4">
           {/* ── Room header ── */}
-          <View className="bg-white rounded-2xl p-4 mb-3.5">
-            {hotel?.name ? <Text size="xs" className="text-gray-400 mb-1">{hotel.name}</Text> : null}
-            <Heading size="xl" className="text-navy mb-3">{room.name}</Heading>
+          <View className="bg-surface rounded-card p-4 mb-3.5">
+            {hotel?.name ? <Text size="xs" className="font-bevi text-muted mb-1">{hotel.name}</Text> : null}
+            <Heading size="xl" className="font-bevi-bold text-on-surface mb-3">{room.name}</Heading>
             <View className="flex-row flex-wrap gap-2">
               {metaItems.map((m) => (
-                <View key={m.label} className="flex-row items-center gap-1.5 bg-gray-50 rounded-full px-3 py-1.5">
-                  <Ionicons name={m.icon} size={14} color={NAVY} />
-                  <Text size="xs" className="text-navy font-medium">{m.label}</Text>
+                <View key={m.label} className="flex-row items-center gap-1.5 bg-surface-low rounded-full px-3 py-1.5">
+                  <Ionicons name={m.icon} size={14} color={GUEST_COLORS.onSurface} />
+                  <Text size="xs" className="font-bevi-medium text-on-surface font-medium">{m.label}</Text>
                 </View>
               ))}
             </View>
           </View>
 
           {/* ── Your stay (date/guest picker) ── */}
-          <Heading size="lg" className="text-navy mb-3">Your stay</Heading>
-          <Pressable onPress={() => setPickerOpen(true)} className="bg-white rounded-2xl p-4 mb-3.5 flex-row items-center">
+          <Heading size="lg" className="font-bevi-bold text-on-surface mb-3">Your stay</Heading>
+          <Pressable onPress={() => setPickerOpen(true)} className="bg-surface rounded-card p-4 mb-3.5 flex-row items-center">
             <View className="flex-1 flex-row items-center gap-4">
               <View>
-                <Text size="2xs" className="text-gray-400 uppercase">Check-in</Text>
-                <Text bold className="text-navy text-sm">{formatDateShort(checkIn)}</Text>
+                <Text size="2xs" className="font-bevi text-muted uppercase">Check-in</Text>
+                <Text bold className="font-bevi-bold text-on-surface text-sm">{formatDateShort(checkIn)}</Text>
               </View>
-              <Ionicons name="arrow-forward" size={16} color="#9CA3AF" />
+              <Ionicons name="arrow-forward" size={16} color={GUEST_COLORS.muted} />
               <View>
-                <Text size="2xs" className="text-gray-400 uppercase">Check-out</Text>
-                <Text bold className="text-navy text-sm">{formatDateShort(checkOut)}</Text>
+                <Text size="2xs" className="font-bevi text-muted uppercase">Check-out</Text>
+                <Text bold className="font-bevi-bold text-on-surface text-sm">{formatDateShort(checkOut)}</Text>
               </View>
-              <View className="border-l border-gray-100 pl-4">
-                <Text size="2xs" className="text-gray-400 uppercase">Guests</Text>
-                <Text bold className="text-navy text-sm">{guests}</Text>
+              <View className="border-l border-hairline/30 pl-4">
+                <Text size="2xs" className="font-bevi text-muted uppercase">Guests</Text>
+                <Text bold className="font-bevi-bold text-on-surface text-sm">{guests}</Text>
               </View>
             </View>
-            <View className="w-9 h-9 rounded-full bg-blue-50 items-center justify-center">
-              <Ionicons name="create-outline" size={18} color={NAVY} />
+            <View className="w-9 h-9 rounded-full bg-brand/10 items-center justify-center">
+              <Ionicons name="create-outline" size={18} color={GUEST_COLORS.onSurface} />
             </View>
           </Pressable>
 
           {typeof room.availableRooms === 'number' && (
             <View className="flex-row items-center gap-1.5 mb-3.5 px-1">
               <Ionicons name={soldOut ? 'close-circle' : 'checkmark-circle'} size={15} color={soldOut ? '#DC2626' : '#16A34A'} />
-              <Text size="sm" className={soldOut ? 'text-red-600' : 'text-green-700'}>
+              <Text size="sm" className={`font-bevi ${soldOut ? 'text-red-600' : 'text-green-700'}`}>
                 {soldOut ? 'No rooms left for these dates' : `${room.availableRooms} room${room.availableRooms > 1 ? 's' : ''} available`}
               </Text>
             </View>
@@ -195,9 +194,9 @@ export default function RoomDetailScreen() {
           {/* ── Description ── */}
           {room.description ? (
             <>
-              <Heading size="lg" className="text-navy mb-2">About this room</Heading>
-              <View className="bg-white rounded-2xl p-4 mb-3.5">
-                <Text size="sm" className="text-gray-700 leading-6">{room.description}</Text>
+              <Heading size="lg" className="font-bevi-bold text-on-surface mb-2">About this room</Heading>
+              <View className="bg-surface rounded-card p-4 mb-3.5">
+                <Text size="sm" className="font-bevi text-on-surface-variant leading-6">{room.description}</Text>
               </View>
             </>
           ) : null}
@@ -205,12 +204,12 @@ export default function RoomDetailScreen() {
           {/* ── Amenities ── */}
           {room.amenities.length > 0 && (
             <>
-              <Heading size="lg" className="text-navy mb-2">Room amenities</Heading>
-              <View className="bg-white rounded-2xl p-4 mb-3.5">
+              <Heading size="lg" className="font-bevi-bold text-on-surface mb-2">Room amenities</Heading>
+              <View className="bg-surface rounded-card p-4 mb-3.5">
                 {room.amenities.map(({ amenity }) => (
                   <View key={amenity.id} className="flex-row items-center gap-2.5 py-1.5">
-                    <Ionicons name="checkmark-circle-outline" size={18} color={GOLD} />
-                    <Text size="sm" className="text-gray-700">{amenity.name}</Text>
+                    <Ionicons name="checkmark-circle-outline" size={18} color={GUEST_COLORS.bronze} />
+                    <Text size="sm" className="font-bevi text-on-surface-variant">{amenity.name}</Text>
                   </View>
                 ))}
               </View>
@@ -218,8 +217,8 @@ export default function RoomDetailScreen() {
           )}
 
           {/* ── Price breakdown ── */}
-          <Heading size="lg" className="text-navy mb-2">Price details</Heading>
-          <View className="bg-white rounded-2xl p-4 mb-2">
+          <Heading size="lg" className="font-bevi-bold text-on-surface mb-2">Price details</Heading>
+          <View className="bg-surface rounded-card p-4 mb-2">
             <PriceSummary
               lines={[{ label: `${formatVnd(room.basePrice)} × ${nights} night${nights > 1 ? 's' : ''}`, value: subtotal }]}
               total={subtotal}
@@ -230,20 +229,20 @@ export default function RoomDetailScreen() {
 
       {/* ── Sticky bottom ── */}
       <View
-        className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-100 flex-row items-center justify-between px-5 pt-3"
+        className="absolute bottom-0 left-0 right-0 bg-surface border-t border-hairline/30 flex-row items-center justify-between px-5 pt-3"
         style={{ paddingBottom: insets.bottom + 12 }}
       >
         <View>
-          <Text bold className="text-navy text-xl">{formatVnd(subtotal)}</Text>
-          <Text size="2xs" className="text-gray-400">for {nights} night{nights > 1 ? 's' : ''} (incl. taxes)</Text>
+          <Text bold className="font-bevi-bold text-on-surface text-xl">{formatVnd(subtotal)}</Text>
+          <Text size="2xs" className="font-bevi text-muted">for {nights} night{nights > 1 ? 's' : ''} (incl. taxes)</Text>
         </View>
         <Pressable
           disabled={soldOut}
           onPress={handleBookNow}
-          className="rounded-2xl px-7 py-3.5"
-          style={{ backgroundColor: soldOut ? '#E5E7EB' : GOLD }}
+          className="rounded-card px-7 py-3.5"
+          style={{ backgroundColor: soldOut ? GUEST_COLORS.hairline : GUEST_COLORS.bronze }}
         >
-          <Text bold className={soldOut ? 'text-gray-400 text-[15px]' : 'text-navy text-[15px]'}>
+          <Text bold className={`font-bevi-bold ${soldOut ? 'text-muted text-[15px]' : 'text-on-surface text-[15px]'}`}>
             {soldOut ? 'Sold out' : 'Book now'}
           </Text>
         </Pressable>
