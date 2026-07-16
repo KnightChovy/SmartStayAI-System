@@ -536,6 +536,58 @@ export class HotelService {
       ];
     });
   };
+
+  /**
+   * Chi tiết một loại phòng cho trang đặt phòng của guest — public. Chỉ trả loại phòng đang bán
+   * (isActive) thuộc khách sạn đang mở bán (isActive + isListed, chưa xoá) để khách không xem được
+   * loại phòng/khách sạn đang ẩn. Kèm ảnh, tiện nghi, giường và thông tin khách sạn tối giản.
+   * Khi có checkIn/checkOut thì kèm số phòng trống, số đêm và tổng giá kỳ ở (giá theo ngày đã áp).
+   */
+  getRoomTypeById = async (hotelId: string, roomTypeId: string, filter: RoomTypeSearchFilter) => {
+    const roomType = await prisma.roomType.findFirst({
+      where: {
+        id: roomTypeId,
+        hotelId,
+        isActive: true,
+        hotel: { isActive: true, isListed: true, deletedAt: null },
+      },
+      include: {
+        images: { orderBy: [{ isPrimary: 'desc' }, { sortOrder: 'asc' }] },
+        amenities: { include: { amenity: true } },
+        beds: true,
+        hotel: {
+          select: {
+            id: true,
+            name: true,
+            address: true,
+            city: true,
+            country: true,
+            starRating: true,
+            checkInTime: true,
+            checkOutTime: true,
+          },
+        },
+      },
+    });
+    if (!roomType) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy loại phòng');
+    }
+
+    // Không có khoảng ngày ⇒ trả chi tiết loại phòng, chưa kèm tồn kho/giá kỳ ở
+    if (!filter.checkIn || !filter.checkOut) {
+      return roomType;
+    }
+
+    const quotes = await availabilityService.getStayQuotes([roomType], filter.checkIn, filter.checkOut);
+    const numNights = eachNightOfStay(filter.checkIn, filter.checkOut).length;
+    const quote = quotes.get(roomType.id);
+    return {
+      ...roomType,
+      numNights,
+      availableRooms: quote?.availableRooms ?? 0,
+      totalPrice: quote?.totalPrice ?? null,
+    };
+  };
 }
 
 export const hotelService = new HotelService();
