@@ -35,6 +35,32 @@ const bookingInclude = {
   hotel: { select: { id: true, name: true, address: true, city: true, checkInTime: true, checkOutTime: true } },
   roomType: { select: { id: true, name: true, bedType: true, viewType: true, maxOccupancy: true } },
   voucher: { select: { voucherCode: true, qrData: true, usedAt: true } },
+  // Kèm thanh toán + yêu cầu hoàn tiền để khách TỰ THEO DÕI được sau khi huỷ:
+  // huỷ xong tiền không tự về ngay mà phải qua KS duyệt → PM chuyển khoản, nên khách cần thấy
+  // đang ở bước nào và vì sao bị từ chối. KHÔNG lộ gatewayResponse/transactionId (dữ liệu cổng).
+  payments: {
+    select: {
+      id: true,
+      paymentMethod: true,
+      status: true,
+      amount: true,
+      paidAt: true,
+      refunds: {
+        select: {
+          id: true,
+          amount: true,
+          status: true,
+          reason: true,
+          rejectionReason: true,
+          reviewedAt: true,
+          processedAt: true,
+          createdAt: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+  },
 } satisfies Prisma.BookingInclude;
 
 // Quan hệ kèm theo cho màn vận hành của staff/chủ KS (kèm khách, phòng đã gán, voucher)

@@ -757,6 +757,34 @@ components:
             bedType: { type: string, nullable: true }
             viewType: { type: string, nullable: true }
             maxOccupancy: { type: integer }
+        payments:
+          type: array
+          description: >
+            Payments of this booking, newest first, each with its refund requests — so the guest can
+            follow a cancellation end-to-end (pending → approved → processed, or rejected + reason)
+            without any extra endpoint. Raw gateway data (gatewayResponse, transactionId) is NOT exposed.
+          items:
+            type: object
+            properties:
+              id: { type: string, format: uuid }
+              paymentMethod: { type: string, enum: [vnpay, sepay, stripe, cash] }
+              status: { type: string, enum: [pending, completed, failed, refunded] }
+              amount: { type: string, description: Decimal as string }
+              paidAt: { type: string, format: date-time, nullable: true }
+              refunds:
+                type: array
+                description: Refund requests for this payment, newest first
+                items:
+                  type: object
+                  properties:
+                    id: { type: string, format: uuid }
+                    amount: { type: string }
+                    status: { type: string, enum: [pending, approved, processed, rejected] }
+                    reason: { type: string }
+                    rejectionReason: { type: string, nullable: true }
+                    reviewedAt: { type: string, format: date-time, nullable: true }
+                    processedAt: { type: string, format: date-time, nullable: true }
+                    createdAt: { type: string, format: date-time }
 
     Refund:
       type: object
