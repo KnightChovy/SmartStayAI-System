@@ -5,9 +5,9 @@ import {
   CalendarDays,
   CheckCircle2,
   Download,
+  Info,
   MapPin,
   PencilLine,
-  Receipt,
   Users,
   XCircle,
 } from 'lucide-react';
@@ -21,20 +21,13 @@ import QRVoucher from '@/components/shared/QRVoucher';
 import DateRangePicker from '@/components/shared/DateRangePicker';
 import GuestSelector from '@/components/shared/GuestSelector';
 import ReviewModal from '@/components/account/ReviewModal';
+import RefundStatusCard from '@/components/account/RefundStatusCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { formatDateShort } from '@/utils/formatDate';
-import { formatCurrency } from '@/utils/formatCurrency';
 
 /** Trạng thái còn cho phép hủy / đổi. */
 const CANCELLABLE = new Set(['pending', 'confirmed']);
-/** Trạng thái còn cho phép yêu cầu hoàn tiền (đã thanh toán). */
-const REFUNDABLE = new Set([
-  'confirmed',
-  'checked_in',
-  'checked_out',
-  'cancelled',
-]);
 
 export default function BookingDetailPage() {
   const { t } = useTranslation(['account', 'common']);
@@ -49,10 +42,6 @@ export default function BookingDetailPage() {
   const [showCancel, setShowCancel] = useState(false);
   const [reason, setReason] = useState('');
 
-  // Mock (DB có Refund/Booking nhưng chưa có API) — xử lý dạng "gửi yêu cầu"
-  const [showRefund, setShowRefund] = useState(false);
-  const [refundReason, setRefundReason] = useState('');
-  const [refundSent, setRefundSent] = useState(false);
   const [showModify, setShowModify] = useState(false);
   const [modifyRange, setModifyRange] = useState({ checkIn: '', checkOut: '' });
   const [modifyGuests, setModifyGuests] = useState(1);
@@ -80,8 +69,14 @@ export default function BookingDetailPage() {
 
   const canCancel = CANCELLABLE.has(booking.status);
   const canModify = CANCELLABLE.has(booking.status);
-  const canRefund = REFUNDABLE.has(booking.status);
   const canReview = booking.status === 'checked_out';
+
+  // Yêu cầu hoàn tiền do BE tự tạo lúc huỷ (theo chính sách của KS) — khách không tự gửi.
+  const refunds = (booking.payments ?? []).flatMap(p => p.refunds ?? []);
+  const hasPaid = (booking.payments ?? []).some(p => p.status === 'completed');
+  // Huỷ muộn bị phạt hết ⇒ BE không tạo refund nào. Phải nói rõ, không để khách chờ tiền.
+  const cancelledWithoutRefund =
+    booking.status === 'cancelled' && hasPaid && refunds.length === 0;
 
   const openModify = () => {
     setModifyRange({
@@ -165,15 +160,6 @@ export default function BookingDetailPage() {
                 <PencilLine className="size-4" /> {t('detail.modify')}
               </Button>
             )}
-            {canRefund && (
-              <Button
-                variant="outline"
-                size="lg"
-                onClick={() => setShowRefund(true)}
-              >
-                <Receipt className="size-4" /> {t('detail.requestRefund')}
-              </Button>
-            )}
             <Button variant="outline" size="lg" onClick={downloadInvoice}>
               <Download className="size-4" /> {t('detail.invoice')}
             </Button>
@@ -245,46 +231,15 @@ export default function BookingDetailPage() {
             </div>
           )}
 
-          {/* Request refund (mock — gửi yêu cầu, DB có Refund) */}
-          {showRefund && (
-            <div className="rounded-2xl border border-outline-variant/30 bg-surface p-5">
-              <h3 className="font-be-vietnam font-semibold text-on-surface">
-                {t('detail.refundTitle')}
-              </h3>
-              {refundSent ? (
-                <p className="mt-3 flex items-center gap-2 rounded-xl bg-emerald-500/10 px-3 py-2 text-sm text-emerald-700">
-                  <CheckCircle2 className="size-4" /> {t('detail.refundSent', { amount: formatCurrency(booking.totalAmount) })}
-                </p>
-              ) : (
-                <>
-                  <p className="mt-1 text-sm text-on-surface-variant">
-                    {t('detail.refundableAmount')}
-                    <strong>{formatCurrency(booking.totalAmount)}</strong>{t('detail.refundDesc')}
-                  </p>
-                  <textarea
-                    rows={3}
-                    value={refundReason}
-                    onChange={e => setRefundReason(e.target.value)}
-                    placeholder={t('detail.refundReasonPlaceholder')}
-                    className="mt-3 w-full rounded-xl border border-outline-variant/40 bg-surface px-3 py-2 text-sm outline-none focus:border-primary"
-                  />
-                  <div className="mt-3 flex gap-3">
-                    <Button
-                      variant="outline"
-                      onClick={() => setShowRefund(false)}
-                    >
-                      {t('detail.cancel')}
-                    </Button>
-                    <Button
-                      className="bg-on-surface text-white hover:bg-primary"
-                      disabled={!refundReason.trim()}
-                      onClick={() => setRefundSent(true)}
-                    >
-                      {t('detail.submitRequest')}
-                    </Button>
-                  </div>
-                </>
-              )}
+          {/* Theo dõi hoàn tiền — dữ liệu thật từ `booking.payments[].refunds[]` */}
+          {refunds.map(refund => (
+            <RefundStatusCard key={refund.id} refund={refund} />
+          ))}
+
+          {cancelledWithoutRefund && (
+            <div className="flex gap-2 rounded-2xl border border-outline-variant/30 bg-surface-container-low p-4 text-sm text-on-surface-variant">
+              <Info className="mt-0.5 size-4 shrink-0" />
+              <span>{t('refund.noneTitle')}</span>
             </div>
           )}
 

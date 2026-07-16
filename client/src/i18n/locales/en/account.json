@@ -40,7 +40,6 @@
     "specialRequests": "Special requests: ",
     "cancelledReason": "Cancelled: {{reason}}",
     "modify": "Modify",
-    "requestRefund": "Request refund",
     "invoice": "Invoice",
     "cancelBooking": "Cancel booking",
     "editFeedback": "Edit feedback",
@@ -50,14 +49,8 @@
     "modifyDesc": "Request new dates or guest count (subject to availability).",
     "cancel": "Cancel",
     "sendRequest": "Send request",
-    "refundTitle": "Request a refund",
-    "refundSent": "Refund request submitted for {{amount}}. Our team will review it within 3–5 business days.",
-    "refundableAmount": "Refundable amount: ",
-    "refundDesc": ". Tell us why you're requesting a refund.",
-    "refundReasonPlaceholder": "Reason for refund…",
-    "submitRequest": "Submit request",
     "cancelTitle": "Cancel this booking?",
-    "cancelDesc": "Tell us why you're cancelling (optional). This action can't be undone.",
+    "cancelDesc": "Tell us why you're cancelling (optional). This action can't be undone. If the booking is paid, we'll open a refund request under the property's cancellation policy — the money isn't returned instantly, the property has to approve it first.",
     "cancelReasonPlaceholder": "Reason for cancellation…",
     "cancelError": "Could not cancel. Please try again.",
     "keepBooking": "Keep booking",
@@ -68,6 +61,34 @@
     "discount": "Discount",
     "totalPaid": "Total paid",
     "evoucher": "Your e-voucher"
+  },
+  "refund": {
+    "title": "Refund",
+    "amountLabel": "Refund amount: ",
+    "reasonLabel": "Reason: {{reason}}",
+    "noneTitle": "Under the property's cancellation policy, this booking has no refund.",
+    "rejectedTitle": "The property rejected your refund request",
+    "rejectedNoReason": "The property didn't give a reason. Please contact them for details.",
+    "status": {
+      "pending": "Awaiting property review",
+      "approved": "Approved",
+      "processed": "Refunded",
+      "rejected": "Rejected"
+    },
+    "steps": {
+      "pending": {
+        "title": "Awaiting property review",
+        "desc": "The property is reviewing your refund request"
+      },
+      "approved": {
+        "title": "Approved by the property",
+        "desc": "Waiting for SmartStay to transfer the money to you"
+      },
+      "processed": {
+        "title": "Refunded",
+        "desc": "The transfer has been made; it may take a few business days to arrive"
+      }
+    }
   },
   "loyalty": {
     "title": "Loyalty rewards",

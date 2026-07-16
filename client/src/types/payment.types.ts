@@ -31,3 +31,40 @@ export interface SepayPaymentInfo {
   /** Hạn giữ chỗ — quá hạn thì tiền vào cũng không tự confirm. */
   expiresAt: string | null;
 }
+
+// ============================================================
+// Thanh toán + hoàn tiền đính kèm booking (`bookingInclude` của BE)
+// ============================================================
+
+export type PaymentMethod = 'vnpay' | 'sepay' | 'stripe' | 'cash';
+
+export type PaymentStatus = 'pending' | 'completed' | 'failed' | 'refunded';
+
+/**
+ * Vòng đời một yêu cầu hoàn tiền: khách huỷ ⇒ `pending` (chờ khách sạn duyệt)
+ * ⇒ `approved` (KS đồng ý, chờ Platform Manager chuyển khoản) ⇒ `processed` (tiền đã đi),
+ * hoặc `rejected` kèm `rejectionReason`. Huỷ KHÔNG hoàn tiền ngay.
+ */
+export type RefundStatus = 'pending' | 'approved' | 'processed' | 'rejected';
+
+/** Yêu cầu hoàn tiền như khách nhìn thấy — BE không trả gatewayResponse/transactionId. */
+export interface BookingRefund {
+  id: string;
+  amount: string;
+  status: RefundStatus;
+  reason: string;
+  rejectionReason?: string | null;
+  reviewedAt?: string | null;
+  processedAt?: string | null;
+  createdAt: string;
+}
+
+/** Khoản thanh toán của booking, kèm các yêu cầu hoàn tiền phát sinh từ nó. */
+export interface BookingPayment {
+  id: string;
+  paymentMethod: PaymentMethod;
+  status: PaymentStatus;
+  amount: string;
+  paidAt?: string | null;
+  refunds: BookingRefund[];
+}

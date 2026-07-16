@@ -1,6 +1,6 @@
 import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { CalendarDays, MapPin } from 'lucide-react';
+import { Banknote, CalendarDays, MapPin } from 'lucide-react';
 import type { Booking } from '@/types/booking.types';
 import { ROUTES } from '@/constants/routes';
 import { useMoney } from '@/hooks/currency';
@@ -11,6 +11,8 @@ import BookingStatusBadge from '@/components/shared/BookingStatusBadge';
 export default function BookingListItem({ booking }: { booking: Booking }) {
   const { t } = useTranslation(['account', 'common']);
   const { format } = useMoney();
+  // Hoàn tiền mới nhất (BE sort desc) — đơn đã huỷ thì đây là thứ khách quan tâm nhất.
+  const refund = (booking.payments ?? []).flatMap(p => p.refunds ?? [])[0];
   return (
     <Link
       to={ROUTES.accountBookingDetail(booking.id)}
@@ -31,6 +33,12 @@ export default function BookingListItem({ booking }: { booking: Booking }) {
           {formatDateShort(booking.checkInDate)} → {formatDateShort(booking.checkOutDate)} ·{' '}
           {t('common:nights', { count: booking.numNights })}
         </p>
+        {refund && (
+          <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-surface-container-low px-2.5 py-1 text-xs font-medium text-on-surface-variant">
+            <Banknote className="size-3.5" />
+            {t('refund.title')} · {t(`refund.status.${refund.status}`)}
+          </p>
+        )}
       </div>
       <div className="text-right">
         <p className="text-xs text-on-surface-variant">{booking.bookingCode}</p>

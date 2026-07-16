@@ -40,7 +40,6 @@
     "specialRequests": "Yêu cầu đặc biệt: ",
     "cancelledReason": "Đã huỷ: {{reason}}",
     "modify": "Thay đổi",
-    "requestRefund": "Yêu cầu hoàn tiền",
     "invoice": "Hoá đơn",
     "cancelBooking": "Huỷ đặt phòng",
     "editFeedback": "Sửa đánh giá",
@@ -50,14 +49,8 @@
     "modifyDesc": "Yêu cầu ngày mới hoặc số khách (tuỳ tình trạng phòng trống).",
     "cancel": "Huỷ",
     "sendRequest": "Gửi yêu cầu",
-    "refundTitle": "Yêu cầu hoàn tiền",
-    "refundSent": "Đã gửi yêu cầu hoàn tiền cho {{amount}}. Đội ngũ của chúng tôi sẽ xem xét trong 3–5 ngày làm việc.",
-    "refundableAmount": "Số tiền có thể hoàn: ",
-    "refundDesc": ". Cho chúng tôi biết lý do bạn yêu cầu hoàn tiền.",
-    "refundReasonPlaceholder": "Lý do hoàn tiền…",
-    "submitRequest": "Gửi yêu cầu",
     "cancelTitle": "Huỷ đặt phòng này?",
-    "cancelDesc": "Cho chúng tôi biết lý do huỷ (không bắt buộc). Thao tác này không thể hoàn tác.",
+    "cancelDesc": "Cho chúng tôi biết lý do huỷ (không bắt buộc). Thao tác này không thể hoàn tác. Nếu đơn đã thanh toán, chúng tôi sẽ tạo yêu cầu hoàn tiền theo chính sách huỷ của khách sạn — tiền không về ngay mà cần khách sạn duyệt.",
     "cancelReasonPlaceholder": "Lý do huỷ…",
     "cancelError": "Không thể huỷ. Vui lòng thử lại.",
     "keepBooking": "Giữ đặt phòng",
@@ -68,6 +61,34 @@
     "discount": "Giảm giá",
     "totalPaid": "Tổng đã thanh toán",
     "evoucher": "Voucher điện tử của bạn"
+  },
+  "refund": {
+    "title": "Hoàn tiền",
+    "amountLabel": "Số tiền hoàn: ",
+    "reasonLabel": "Lý do: {{reason}}",
+    "noneTitle": "Theo chính sách huỷ của khách sạn, đơn này không có khoản hoàn tiền.",
+    "rejectedTitle": "Khách sạn đã từ chối yêu cầu hoàn tiền",
+    "rejectedNoReason": "Khách sạn không nêu lý do. Vui lòng liên hệ chỗ nghỉ để biết thêm chi tiết.",
+    "status": {
+      "pending": "Chờ khách sạn duyệt",
+      "approved": "Đã duyệt",
+      "processed": "Đã hoàn tiền",
+      "rejected": "Bị từ chối"
+    },
+    "steps": {
+      "pending": {
+        "title": "Chờ khách sạn duyệt",
+        "desc": "Khách sạn đang xem xét yêu cầu hoàn tiền của bạn"
+      },
+      "approved": {
+        "title": "Khách sạn đã duyệt",
+        "desc": "Chờ SmartStay chuyển khoản về tài khoản của bạn"
+      },
+      "processed": {
+        "title": "Đã hoàn tiền",
+        "desc": "Tiền đã được chuyển, có thể mất vài ngày làm việc để về tài khoản"
+      }
+    }
   },
   "loyalty": {
     "title": "Ưu đãi tích điểm",
