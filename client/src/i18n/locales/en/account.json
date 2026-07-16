@@ -5,6 +5,7 @@
   "nav": {
     "profile": "Profile",
     "bookings": "My bookings",
+    "messages": "Messages",
     "reviews": "My reviews",
     "loyalty": "Loyalty",
     "vouchers": "Vouchers",
@@ -203,5 +204,8 @@
     "updated": "Your review has been updated.",
     "published": "Thank you! Your review has been published.",
     "submitError": "Could not submit your review. Please try again."
+  },
+  "messages": {
+    "empty": "You haven't messaged any hotel yet. Open the chat bubble to start."
   }
 }
