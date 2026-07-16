@@ -1,14 +1,13 @@
 import httpStatus from 'http-status';
 import { randomBytes } from 'crypto';
 import { Prisma } from '@prisma/client';
-import type { User, BookingStatus } from '@prisma/client';
+import type { User, BookingStatus, RefundStatus } from '@prisma/client';
 import prisma from '../config/prisma';
 import ApiError from '../utils/ApiError';
 import { roleRights } from '../config/roles';
 import { toUtcDate, eachNightOfStay } from '../utils/dates';
 import { availabilityService } from './availability.service';
 import { hotelService } from './hotel.service';
-import { paymentService } from './payment.service';
 import type {
   CreateBookingDto,
   BookingFilter,
@@ -277,9 +276,13 @@ export class BookingService {
 
   /**
    * Huỷ booking (chủ booking hoặc người có quyền manageBookings). Chỉ huỷ được khi đang
-   * pending/confirmed và TRƯỚC ngày nhận phòng; tồn kho được trả lại. Nếu booking đã thanh toán
-   * thì tính tiền hoàn theo chính sách huỷ của khách sạn (computeRefundAmount), tạo bản ghi Refund,
-   * đánh dấu Payment refunded khi hoàn 100%, và chỉnh hoa hồng về đúng phần KS thực giữ.
+   * pending/confirmed và TRƯỚC ngày nhận phòng; tồn kho được trả lại NGAY (khách đã bỏ chỗ).
+   *
+   * Nếu booking đã thanh toán: tính tiền hoàn theo chính sách của KS rồi tạo YÊU CẦU hoàn tiền
+   * (Refund status 'pending') để khách sạn duyệt — KHÔNG tự hoàn.
+   * CỐ Ý không đụng tới payment/commission/ví ở đây: yêu cầu có thể bị từ chối, và nếu trừ ví
+   * ngay lúc huỷ thì khách sạn bị trừ oan. Tiền chỉ thực sự rời đi ở bước refundService.processRefund.
+   * An toàn vì booking đã huỷ không bao giờ checked_out ⇒ cron tất toán không nhả phần tiền này.
    */
   cancelBooking = async (bookingId: string, currentUser: User, reason?: string) => {
     const booking = await prisma.booking.findUnique({
@@ -306,17 +309,11 @@ export class BookingService {
     // Tính tiền hoàn theo chính sách (chỉ có ý nghĩa khi booking đã thanh toán)
     const paidPayment = booking.payments[0] ?? null;
     let refundAmount = new Prisma.Decimal(0);
-    let refundTransactionId: string | null = null;
     if (paidPayment) {
       const policy = readCancellationPolicy(booking.hotel.settings);
       const moment = checkInMomentOf(booking.checkInDate, booking.hotel.checkInTime);
       const hoursBeforeCheckIn = (moment.getTime() - Date.now()) / (1000 * 60 * 60);
       refundAmount = computeRefundAmount(policy, hoursBeforeCheckIn, paidPayment.amount, booking.basePricePerNight);
-      // Đẩy tiền ra ở cổng — gọi NGOÀI transaction (gọi mạng không nên nằm trong tx). Mô phỏng nên tức thì.
-      if (refundAmount.greaterThan(0)) {
-        const gateway = await paymentService.executeGatewayRefund(paidPayment, refundAmount);
-        refundTransactionId = gateway.refundTransactionId;
-      }
     }
 
     const nights = eachNightOfStay(booking.checkInDate, booking.checkOutDate);
@@ -336,36 +333,24 @@ export class BookingService {
         data: { bookedRooms: { decrement: 1 } },
       });
 
-      if (paidPayment) {
-        // Ghi nhận hoàn tiền (kể cả 0đ khi bị phạt hết) để có vết đối soát
-        await tx.refund.create({
+      // Chỉ tạo yêu cầu hoàn khi THỰC SỰ có tiền để hoàn. Huỷ muộn bị phạt hết (0đ) thì không có gì
+      // để khách sạn duyệt — vết đối soát đã nằm ở cancelledAt/cancellationReason của booking.
+      let refund: { id: string; amount: Prisma.Decimal; status: RefundStatus } | null = null;
+      if (paidPayment && refundAmount.greaterThan(0)) {
+        refund = await tx.refund.create({
           data: {
             paymentId: paidPayment.id,
             requestedBy: currentUser.id,
             amount: refundAmount,
             reason: reason || 'Khách huỷ booking',
-            status: 'processed',
-            refundTransactionId,
-            processedAt: new Date(),
+            status: 'pending',
           },
+          select: { id: true, amount: true, status: true },
         });
-        // Hoàn 100% ⇒ Payment refunded; hoàn một phần ⇒ giữ completed (bản ghi Refund là nguồn sự thật)
-        if (refundAmount.equals(paidPayment.amount)) {
-          await tx.payment.update({ where: { id: paidPayment.id }, data: { status: 'refunded' } });
-        }
-        // Hoa hồng chỉ tính trên phần khách sạn THỰC GIỮ (tổng đã trả − tiền hoàn)
-        if (booking.commission) {
-          const retained = paidPayment.amount.sub(refundAmount);
-          const newCommission = retained.mul(booking.commission.commissionRate).div(100).toDecimalPlaces(2);
-          await tx.platformCommission.update({ where: { bookingId }, data: { commissionAmount: newCommission } });
-          const oldNet = paidPayment.amount.sub(booking.commission.commissionAmount);
-          const newNet = retained.sub(newCommission);
-          await walletService.recordRefund(tx, booking.hotelId, bookingId, oldNet.sub(newNet));
-        }
       }
 
       const result = await tx.booking.findUniqueOrThrow({ where: { id: bookingId }, include: bookingInclude });
-      return { ...result, refund: paidPayment ? { amount: refundAmount, status: 'processed' as const } : null };
+      return { ...result, refund };
     });
   };
 

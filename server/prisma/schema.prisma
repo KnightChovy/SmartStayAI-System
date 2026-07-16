@@ -436,6 +436,7 @@ model User {
   bookings                      Booking[]                   @relation("bookingCustomer")
   reviews                       Review[]                    @relation("reviewCustomer")
   refunds                       Refund[]                    @relation("refundRequester")
+  reviewedRefunds               Refund[]                    @relation("refundReviewer")
   readAlerts                    SmartAlert[]                @relation("alertReader")
   assignedConversations         Conversation[]              @relation("conversationAssignee")
   messages                      Message[]                   @relation("messageSender")
@@ -884,6 +885,8 @@ model Payment {
   @@map("payments")
 }
 
+// Yêu cầu hoàn tiền. Vòng đời: pending (khách huỷ, chờ KS duyệt) → approved → processed (đã chuyển
+// khoản thật) | rejected. Tiền chỉ thực sự rời ví/commission ở bước processed, không phải lúc huỷ.
 model Refund {
   id                  String       @id @default(uuid()) @db.Uuid
   paymentId           String       @map("payment_id") @db.Uuid
@@ -893,6 +896,11 @@ model Refund {
   amount              Decimal      @db.Decimal(12, 2)
   reason              String
   status              RefundStatus
+  // Người của khách sạn (chủ KS/manager/staff) duyệt hoặc từ chối yêu cầu
+  reviewedBy          String?      @map("reviewed_by") @db.Uuid
+  reviewer            User?        @relation("refundReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  reviewedAt          DateTime?    @map("reviewed_at")
+  rejectionReason     String?      @map("rejection_reason")
   refundTransactionId String?      @map("refund_transaction_id")
   processedAt         DateTime?    @map("processed_at")
   createdAt           DateTime     @default(now()) @map("created_at")

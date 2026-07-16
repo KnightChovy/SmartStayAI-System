@@ -17,3 +17,4 @@ export { jobController } from './job.controller';
 export { revenueController } from './revenue.controller';
 export { adminController } from './admin.controller';
 export { platformManagerController } from './platform-manager.controller';
+export { refundController } from './refund.controller';

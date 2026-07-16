@@ -269,13 +269,21 @@ export class AdminService {
   settleCommission = async (commissionId: string, currentUser: User) => {
     const commission = await prisma.platformCommission.findUnique({
       where: { id: commissionId },
-      include: { booking: { select: { hotelId: true, totalAmount: true } } },
+      include: { booking: { select: { hotelId: true, totalAmount: true, status: true, bookingCode: true } } },
     });
     if (!commission) {
       throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy khoản hoa hồng');
     }
     if (commission.status === 'settled') {
       throw new ApiError(httpStatus.BAD_REQUEST, 'Khoản hoa hồng này đã được tất toán');
+    }
+    // Cùng điều kiện với cron tự tất toán: chỉ nhả tiền khi khách ĐÃ TRẢ PHÒNG (hết cửa huỷ/hoàn).
+    // Không có guard này, admin có thể nhả tiền cho booking khách chưa tới ở — khách huỷ sau thì đã muộn.
+    if (commission.booking.status !== 'checked_out') {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        `Chỉ tất toán được booking đã trả phòng. Booking ${commission.booking.bookingCode} đang ở trạng thái "${commission.booking.status}".`
+      );
     }
     // Net khách sạn thực nhận = tổng booking − hoa hồng; tất toán chuyển khoản này pending → available
     const net = commission.booking.totalAmount.sub(commission.commissionAmount);
