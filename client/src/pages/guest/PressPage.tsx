@@ -1,60 +1,40 @@
+import { useTranslation } from 'react-i18next';
 import InfoPageHeader from '../../components/shared/InfoPageHeader';
 import { Button } from '../../components/ui/button';
 
-const releases = [
-  {
-    date: 'May 2026',
-    source: 'TechCrunch',
-    title: 'SmartStay AI raises $20M to bring AI concierge to boutique hotels',
-  },
-  {
-    date: 'Mar 2026',
-    source: 'Skift',
-    title: 'How SmartStay’s "quiet luxury" curation is reshaping travel discovery',
-  },
-  {
-    date: 'Jan 2026',
-    source: 'VnExpress',
-    title: 'Vietnamese hospitality startup expands to 15 cities across Asia',
-  },
-  {
-    date: 'Nov 2025',
-    source: 'The Verge',
-    title: 'A look inside the AI that plans your next luxury getaway',
-  },
-];
-
 export default function PressPage() {
+  const { t } = useTranslation('pages');
+  const releases = t('press.releases', { returnObjects: true });
   return (
     <div className="py-12 w-full">
       <InfoPageHeader
-        eyebrow="In the news"
-        title="Press & Media"
-        description="The latest coverage, announcements, and resources for journalists."
+        eyebrow={t('press.eyebrow')}
+        title={t('press.title')}
+        description={t('press.description')}
       />
 
       <div className="max-w-3xl mx-auto px-margin-mobile md:px-8 mb-12">
         <div className="rounded-3xl bg-primary text-on-primary p-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <h2 className="font-be-vietnam text-xl font-bold mb-1">
-              Media kit
+              {t('press.mediaKit')}
             </h2>
             <p className="text-on-primary/80 text-sm font-be-vietnam">
-              Logos, brand guidelines, and executive bios in one download.
+              {t('press.mediaKitDesc')}
             </p>
           </div>
           <Button
             variant="secondary"
             className="rounded-full shrink-0 bg-white text-primary hover:bg-white/90"
           >
-            Download kit
+            {t('press.downloadKit')}
           </Button>
         </div>
       </div>
 
       <div className="max-w-3xl mx-auto px-margin-mobile md:px-8">
         <h2 className="font-be-vietnam text-2xl font-bold text-on-surface mb-6">
-          Recent coverage
+          {t('press.recentCoverage')}
         </h2>
         <div className="space-y-4">
           {releases.map(r => (
@@ -80,7 +60,7 @@ export default function PressPage() {
 
       <div className="max-w-3xl mx-auto px-margin-mobile md:px-8 mt-12 text-center">
         <p className="text-on-surface-variant font-be-vietnam">
-          Press inquiries:{' '}
+          {t('press.inquiries')}
           <a
             href="mailto:press@smartstay.ai"
             className="text-primary font-semibold hover:underline"

@@ -1,17 +1,19 @@
+import { useTranslation } from 'react-i18next';
 import { useProfile } from '@/hooks/account';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ProfileForm } from './ProfileForm';
 
 export function CommonProfilePage() {
+  const { t } = useTranslation('account');
   const { data: profile } = useProfile();
 
   return (
     <div>
       <h2 className="font-be-vietnam text-2xl font-bold text-on-surface">
-        Profile
+        {t('profile.title')}
       </h2>
       <p className="mt-1 text-sm text-on-surface-variant">
-        Manage your personal information.
+        {t('profile.subtitle')}
       </p>
 
       {profile ? (

@@ -1,4 +1,5 @@
 import { Gift, Sparkles, TrendingDown, TrendingUp } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useLoyalty } from '@/hooks/account';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDateShort } from '@/utils/formatDate';
@@ -20,6 +21,7 @@ const TIER_STYLE: Record<LoyaltyTier, string> = {
 };
 
 export default function LoyaltyPage() {
+  const { t } = useTranslation('account');
   const { data, isLoading } = useLoyalty();
 
   if (isLoading || !data) {
@@ -35,7 +37,7 @@ export default function LoyaltyPage() {
 
   return (
     <div>
-      <h2 className="font-be-vietnam text-2xl font-bold text-on-surface">Loyalty rewards</h2>
+      <h2 className="font-be-vietnam text-2xl font-bold text-on-surface">{t('loyalty.title')}</h2>
 
       {/* Tier card */}
       <div
@@ -47,10 +49,10 @@ export default function LoyaltyPage() {
         <div className="flex items-center justify-between">
           <div>
             <p className="flex items-center gap-1.5 text-sm font-medium uppercase tracking-wider opacity-90">
-              <Sparkles className="size-4" /> {data.tier} member
+              <Sparkles className="size-4" /> {t('loyalty.member', { tier: data.tier })}
             </p>
             <p className="mt-2 font-be-vietnam text-4xl font-bold">{data.totalPoints.toLocaleString()}</p>
-            <p className="text-sm opacity-90">points available</p>
+            <p className="text-sm opacity-90">{t('loyalty.pointsAvailable')}</p>
           </div>
           <Gift className="size-12 opacity-80" />
         </div>
@@ -60,7 +62,7 @@ export default function LoyaltyPage() {
             <div className="mb-1.5 flex justify-between text-xs font-medium opacity-90">
               <span>{data.tier}</span>
               <span>
-                {nextThreshold - data.totalPoints} pts to {nextTier}
+                {t('loyalty.ptsTo', { points: nextThreshold - data.totalPoints, tier: nextTier })}
               </span>
             </div>
             <div className="h-2 overflow-hidden rounded-full bg-white/30">
@@ -71,7 +73,7 @@ export default function LoyaltyPage() {
       </div>
 
       {/* Transactions */}
-      <h3 className="mt-8 font-be-vietnam text-lg font-semibold text-on-surface">Points history</h3>
+      <h3 className="mt-8 font-be-vietnam text-lg font-semibold text-on-surface">{t('loyalty.pointsHistory')}</h3>
       <ul className="mt-4 divide-y divide-outline-variant/20 rounded-2xl border border-outline-variant/30 bg-surface">
         {data.transactions.map(tx => {
           const positive = tx.points >= 0;

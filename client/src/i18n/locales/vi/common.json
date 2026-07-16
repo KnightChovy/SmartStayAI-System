@@ -19,5 +19,18 @@
   },
   "currency": {
     "label": "Tiền tệ"
-  }
+  },
+  "checkIn": "Nhận phòng",
+  "checkOut": "Trả phòng",
+  "guests": "Số khách",
+  "previous": "Trước",
+  "next": "Sau",
+  "back": "Quay lại",
+  "retry": "Thử lại",
+  "total": "Tổng cộng",
+  "nights_one": "{{count}} đêm",
+  "nights_other": "{{count}} đêm",
+  "guestsCount_one": "{{count}} khách",
+  "guestsCount_other": "{{count}} khách",
+  "qrEmptyHint": "Mã QR e-voucher sẽ hiển thị sau khi đơn được xác nhận / thanh toán."
 }

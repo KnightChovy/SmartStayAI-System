@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ImagePlus, PencilLine, Star, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useCreateReview, useUpdateReview } from '@/hooks/bookings';
@@ -20,10 +21,10 @@ interface ReviewModalProps {
 }
 
 const SUBSCORES = [
-  { key: 'cleanlinessRating', label: 'Cleanliness' },
-  { key: 'serviceRating', label: 'Service' },
-  { key: 'locationRating', label: 'Location' },
-  { key: 'valueRating', label: 'Value' },
+  { key: 'cleanlinessRating', labelKey: 'review.cleanliness' },
+  { key: 'serviceRating', labelKey: 'review.service' },
+  { key: 'locationRating', labelKey: 'review.location' },
+  { key: 'valueRating', labelKey: 'review.value' },
 ] as const;
 
 type SubKey = (typeof SUBSCORES)[number]['key'];
@@ -59,6 +60,7 @@ export default function ReviewModal({
   bookingCode,
   existingReview,
 }: ReviewModalProps) {
+  const { t } = useTranslation('account');
   const createReview = useCreateReview();
   const updateReview = useUpdateReview();
   const isEdit = !!existingReview;
@@ -130,7 +132,7 @@ export default function ReviewModal({
             images: form.images,
           },
         });
-        toast.success('Your review has been updated.');
+        toast.success(t('review.updated'));
       } else {
         await createReview.mutateAsync({
           bookingId,
@@ -143,11 +145,11 @@ export default function ReviewModal({
           content: form.content.trim(),
           images: form.images.length ? form.images : undefined,
         });
-        toast.success('Thank you! Your review has been published.');
+        toast.success(t('review.published'));
       }
       onClose();
     } catch (err) {
-      toast.error(errorMessage(err, 'Could not submit your review. Please try again.'));
+      toast.error(errorMessage(err, t('review.submitError')));
     }
   };
 
@@ -168,7 +170,7 @@ export default function ReviewModal({
         <div className="flex items-start justify-between gap-4 border-b border-outline-variant/30 px-6 py-4">
           <div>
             <h2 className="font-be-vietnam text-lg font-bold text-on-surface">
-              {isEdit ? 'Edit feedback' : 'Write a review'}
+              {isEdit ? t('review.editTitle') : t('review.writeTitle')}
             </h2>
             <p className="mt-0.5 text-xs text-on-surface-variant">
               {hotelName} · {bookingCode}
@@ -189,20 +191,20 @@ export default function ReviewModal({
           {/* Context read-only — cho khách biết đang đánh giá đúng chuyến, không sửa được */}
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="flex flex-col gap-1.5">
-              <Label>Hotel</Label>
+              <Label>{t('review.hotel')}</Label>
               <Input value={hotelName} disabled readOnly />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label>Booking code</Label>
+              <Label>{t('review.bookingCode')}</Label>
               <Input value={bookingCode} disabled readOnly />
             </div>
           </div>
 
           <div className="flex flex-col gap-1.5">
             <Label>
-              Overall rating{' '}
+              {t('review.overall')}{' '}
               <span className="font-normal text-on-surface-variant">
-                (average of the four below)
+                {t('review.overallHint')}
               </span>
             </Label>
             <div className="flex items-center gap-2">
@@ -212,12 +214,12 @@ export default function ReviewModal({
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
-            {SUBSCORES.map(({ key, label }) => (
+            {SUBSCORES.map(({ key, labelKey }) => (
               <div
                 key={key}
                 className="flex items-center justify-between rounded-xl bg-surface-container-low px-3 py-2"
               >
-                <span className="text-sm text-on-surface-variant">{label}</span>
+                <span className="text-sm text-on-surface-variant">{t(labelKey)}</span>
                 <StarRating
                   value={form[key as SubKey]}
                   editable
@@ -229,17 +231,17 @@ export default function ReviewModal({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label>Title</Label>
+            <Label>{t('review.titleLabel')}</Label>
             <Input
               value={form.title}
               onChange={e => set('title', e.target.value)}
-              placeholder="Sum up your stay"
+              placeholder={t('review.titlePlaceholder')}
               maxLength={200}
             />
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label>Your review</Label>
+            <Label>{t('review.content')}</Label>
             <textarea
               rows={4}
               required
@@ -247,18 +249,18 @@ export default function ReviewModal({
               onChange={e => set('content', e.target.value)}
               maxLength={2000}
               className="rounded-xl border border-outline-variant/40 bg-surface px-3 py-2 text-sm outline-none focus:border-primary"
-              placeholder="What did you love? What could be better?"
+              placeholder={t('review.contentPlaceholder')}
             />
           </div>
 
           {/* Photos (paste image URL) */}
           <div className="flex flex-col gap-1.5">
-            <Label>Photos (optional)</Label>
+            <Label>{t('review.photos')}</Label>
             <div className="flex gap-2">
               <Input
                 value={imageUrl}
                 onChange={e => setImageUrl(e.target.value)}
-                placeholder="Paste image URL…"
+                placeholder={t('review.photoPlaceholder')}
                 onKeyDown={e => {
                   if (e.key === 'Enter') {
                     e.preventDefault();
@@ -267,7 +269,7 @@ export default function ReviewModal({
                 }}
               />
               <Button type="button" variant="outline" onClick={addImage}>
-                <ImagePlus className="size-4" /> Add
+                <ImagePlus className="size-4" /> {t('review.add')}
               </Button>
             </div>
             {form.images.length > 0 && (
@@ -297,7 +299,7 @@ export default function ReviewModal({
         {/* Footer */}
         <div className="flex justify-end gap-3 border-t border-outline-variant/30 px-6 py-4">
           <Button type="button" variant="outline" onClick={onClose}>
-            Cancel
+            {t('review.cancel')}
           </Button>
           <Button
             type="submit"
@@ -306,17 +308,17 @@ export default function ReviewModal({
           >
             {isPending ? (
               isEdit ? (
-                'Saving…'
+                t('review.saving')
               ) : (
-                'Publishing…'
+                t('review.publishing')
               )
             ) : isEdit ? (
               <>
-                <PencilLine className="size-4" /> Save changes
+                <PencilLine className="size-4" /> {t('review.saveChanges')}
               </>
             ) : (
               <>
-                <Star className="size-4" /> Publish review
+                <Star className="size-4" /> {t('review.publish')}
               </>
             )}
           </Button>

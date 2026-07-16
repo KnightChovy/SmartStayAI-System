@@ -1,4 +1,5 @@
 import { Bed, BedDouble, Eye, Maximize, Users } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { RoomType } from '@/types/hotel.types';
 import { useMoney } from '@/hooks/currency';
 import { cn } from '@/lib/cn';
@@ -16,6 +17,7 @@ interface RoomTypeCardProps {
 
 /** Thẻ loại phòng trong trang chi tiết khách sạn. */
 export default function RoomTypeCard({ roomType, onSelect, selectable = false }: RoomTypeCardProps) {
+  const { t } = useTranslation('hotel');
   const { format } = useMoney();
   const image = roomType.images?.[0]?.url ?? FALLBACK_IMAGE;
   const amenities = roomType.amenities?.map(a => a.amenity) ?? [];
@@ -35,7 +37,7 @@ export default function RoomTypeCard({ roomType, onSelect, selectable = false }:
 
         <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5 text-sm text-on-surface-variant">
           <span className="flex items-center gap-1.5">
-            <Users className="size-4" /> Up to {roomType.maxOccupancy}
+            <Users className="size-4" /> {t('room.upTo', { count: roomType.maxOccupancy })}
           </span>
           {roomType.bedType && (
             <span className="flex items-center gap-1.5">
@@ -64,8 +66,8 @@ export default function RoomTypeCard({ roomType, onSelect, selectable = false }:
           >
             <BedDouble className="size-4" />
             {isLowStock
-              ? `Only ${availableRooms} room${availableRooms === 1 ? '' : 's'} left!`
-              : `${availableRooms} rooms available`}
+              ? t('room.roomsLeft', { count: availableRooms })
+              : t('room.roomsAvailable', { count: availableRooms })}
           </span>
         )}
 
@@ -91,19 +93,19 @@ export default function RoomTypeCard({ roomType, onSelect, selectable = false }:
             {hasStayQuote ? (
               <>
                 <p className="text-xs text-on-surface-variant">
-                  {roomType.numNights} night{roomType.numNights === 1 ? '' : 's'} total
+                  {t('room.nightsTotal', { count: roomType.numNights ?? 0 })}
                 </p>
                 <p className="font-be-vietnam text-xl font-bold text-on-surface">
                   {format(roomType.totalPrice)}
-                  <span className="text-sm font-normal text-on-surface-variant"> total</span>
+                  <span className="text-sm font-normal text-on-surface-variant"> {t('room.totalSuffix')}</span>
                 </p>
               </>
             ) : (
               <>
-                <p className="text-xs text-on-surface-variant">From</p>
+                <p className="text-xs text-on-surface-variant">{t('room.from')}</p>
                 <p className="font-be-vietnam text-xl font-bold text-on-surface">
                   {format(roomType.basePrice)}
-                  <span className="text-sm font-normal text-on-surface-variant"> / night</span>
+                  <span className="text-sm font-normal text-on-surface-variant"> {t('room.perNight')}</span>
                 </p>
               </>
             )}
@@ -115,7 +117,7 @@ export default function RoomTypeCard({ roomType, onSelect, selectable = false }:
               className="bg-primary text-on-primary hover:bg-primary/90"
               onClick={() => onSelect?.(roomType)}
             >
-              Book now
+              {t('room.bookNow')}
             </Button>
           )}
         </div>

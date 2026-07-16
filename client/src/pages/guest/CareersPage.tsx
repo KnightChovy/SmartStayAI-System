@@ -1,67 +1,33 @@
+import { useTranslation } from 'react-i18next';
 import InfoPageHeader from '../../components/shared/InfoPageHeader';
 import { Button } from '../../components/ui/button';
 
-const perks = [
-  { icon: 'rocket_launch', label: 'Fast-growing startup' },
-  { icon: 'public', label: 'Remote-friendly' },
-  { icon: 'flight_takeoff', label: 'Travel credits' },
-  { icon: 'school', label: 'Learning budget' },
-];
-
-const openings = [
-  {
-    title: 'Senior Frontend Engineer',
-    team: 'Engineering',
-    location: 'Ho Chi Minh City · Hybrid',
-    type: 'Full-time',
-  },
-  {
-    title: 'AI/ML Engineer',
-    team: 'AI Platform',
-    location: 'Remote',
-    type: 'Full-time',
-  },
-  {
-    title: 'Product Designer',
-    team: 'Design',
-    location: 'Ha Noi · Hybrid',
-    type: 'Full-time',
-  },
-  {
-    title: 'Hotel Partnerships Manager',
-    team: 'Growth',
-    location: 'Da Nang · On-site',
-    type: 'Full-time',
-  },
-  {
-    title: 'Customer Success Specialist',
-    team: 'Support',
-    location: 'Remote',
-    type: 'Contract',
-  },
-];
+const PERK_ICONS = ['rocket_launch', 'public', 'flight_takeoff', 'school'];
 
 export default function CareersPage() {
+  const { t } = useTranslation('pages');
+  const perks = t('careers.perks', { returnObjects: true });
+  const openings = t('careers.openings', { returnObjects: true });
   return (
     <div className="py-12 w-full">
       <InfoPageHeader
-        eyebrow="Join the journey"
-        title="Careers at SmartStay"
-        description="Help us build the future of intelligent travel. We hire for curiosity, craft, and care."
+        eyebrow={t('careers.eyebrow')}
+        title={t('careers.title')}
+        description={t('careers.description')}
       />
 
       <div className="max-w-7xl mx-auto px-margin-mobile md:px-8 mb-14">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-          {perks.map(p => (
+          {perks.map((label, i) => (
             <div
-              key={p.label}
+              key={label}
               className="flex items-center gap-3 p-5 rounded-2xl bg-surface-container-low/60 border border-outline-variant/30"
             >
               <span className="material-symbols-outlined text-primary">
-                {p.icon}
+                {PERK_ICONS[i]}
               </span>
               <span className="text-sm font-semibold text-on-surface font-be-vietnam">
-                {p.label}
+                {label}
               </span>
             </div>
           ))}
@@ -70,7 +36,7 @@ export default function CareersPage() {
 
       <div className="max-w-3xl mx-auto px-margin-mobile md:px-8">
         <h2 className="font-be-vietnam text-2xl font-bold text-on-surface mb-6">
-          Open positions
+          {t('careers.openPositions')}
         </h2>
         <div className="space-y-4">
           {openings.map(job => (
@@ -87,7 +53,7 @@ export default function CareersPage() {
                 </p>
               </div>
               <Button variant="outline" className="rounded-full shrink-0">
-                Apply
+                {t('careers.apply')}
               </Button>
             </div>
           ))}

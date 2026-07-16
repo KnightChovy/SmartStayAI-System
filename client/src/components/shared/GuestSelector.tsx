@@ -1,4 +1,5 @@
 import { Minus, Plus, Users } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/cn';
 
 interface GuestSelectorProps {
@@ -17,13 +18,14 @@ export default function GuestSelector({
   max = 20,
   className,
 }: GuestSelectorProps) {
+  const { t } = useTranslation('common');
   const dec = () => onChange(Math.max(min, value - 1));
   const inc = () => onChange(Math.min(max, value + 1));
 
   return (
     <div className={cn('flex flex-col gap-1', className)}>
       <span className="flex items-center gap-1.5 text-xs font-semibold text-on-surface-variant">
-        <Users className="size-3.5" /> Guests
+        <Users className="size-3.5" /> {t('guests')}
       </span>
       <div className="flex h-11 items-center justify-between rounded-xl border border-outline-variant/40 bg-surface px-2">
         <button

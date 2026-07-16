@@ -1,4 +1,5 @@
 import { Outlet } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/stores/authStore';
 import AccountSidebar from '@/components/account/AccountSidebar';
 
@@ -7,6 +8,7 @@ import AccountSidebar from '@/components/account/AccountSidebar';
  * thêm sidebar điều hướng bên trái + header chào mừng.
  */
 export default function AccountLayout() {
+  const { t } = useTranslation('account');
   const user = useAuthStore(state => state.user);
   const initials = (user?.fullName || user?.email || 'US').slice(0, 2).toUpperCase();
 
@@ -27,9 +29,9 @@ export default function AccountLayout() {
             </div>
           )}
           <div>
-            <p className="text-sm text-on-surface-variant">Welcome back,</p>
+            <p className="text-sm text-on-surface-variant">{t('welcomeBack')}</p>
             <h1 className="font-be-vietnam text-2xl font-bold text-on-surface">
-              {user?.fullName || 'Guest'}
+              {user?.fullName || t('guest')}
             </h1>
           </div>
         </div>

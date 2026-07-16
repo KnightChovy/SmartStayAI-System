@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/cn';
 import { formatCurrency } from '@/utils/formatCurrency';
 
@@ -22,10 +23,12 @@ interface PriceSummaryProps {
 export default function PriceSummary({
   lines,
   total,
-  totalLabel = 'Total',
+  totalLabel,
   currency = 'VND',
   className,
 }: PriceSummaryProps) {
+  const { t } = useTranslation('common');
+  const label = totalLabel ?? t('total');
   return (
     <div className={cn('space-y-2.5', className)}>
       {lines.map((line, i) => (
@@ -46,7 +49,7 @@ export default function PriceSummary({
       ))}
 
       <div className="mt-3 flex items-center justify-between border-t border-outline-variant/30 pt-3">
-        <span className="font-be-vietnam font-semibold text-on-surface">{totalLabel}</span>
+        <span className="font-be-vietnam font-semibold text-on-surface">{label}</span>
         <span className="font-be-vietnam text-lg font-bold text-on-surface">
           {formatCurrency(total, currency)}
         </span>

@@ -1,0 +1,23 @@
+{
+  "backToResults": "Về kết quả tìm kiếm",
+  "location": "Vị trí",
+  "checkInTime": "Nhận phòng {{time}}",
+  "checkOutTime": " · Trả phòng {{time}}",
+  "selectDates": "Chọn ngày để xem phòng trống và tổng giá.",
+  "availableRooms": "Phòng còn trống",
+  "noRoomsTitle": "Không còn phòng",
+  "noRoomsDesc": "Không có phòng phù hợp với ngày hoặc số khách của bạn. Hãy thử ngày khác.",
+  "pickDates": "Chọn ngày để đặt",
+  "room": {
+    "upTo": "Tối đa {{count}}",
+    "roomsLeft_one": "Chỉ còn {{count}} phòng!",
+    "roomsLeft_other": "Chỉ còn {{count}} phòng!",
+    "roomsAvailable": "Còn {{count}} phòng",
+    "nightsTotal_one": "Tổng {{count}} đêm",
+    "nightsTotal_other": "Tổng {{count}} đêm",
+    "totalSuffix": "tổng",
+    "from": "Từ",
+    "perNight": "/ đêm",
+    "bookNow": "Đặt ngay"
+  }
+}

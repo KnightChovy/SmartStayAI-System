@@ -1,10 +1,15 @@
 import { Check } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/cn';
-
-const STEPS = ['Guest details', 'Payment', 'Confirm'];
 
 /** Thanh tiến trình 3 bước của trang checkout. */
 export default function CheckoutStepper({ current }: { current: number }) {
+  const { t } = useTranslation('booking');
+  const STEPS = [
+    t('stepper.guestDetails'),
+    t('stepper.payment'),
+    t('stepper.confirm'),
+  ];
   return (
     <ol className="flex items-center gap-2">
       {STEPS.map((label, i) => {
