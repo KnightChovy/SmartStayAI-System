@@ -1845,6 +1845,11 @@ paths:
         city/district/ward, country, coordinates, star rating, check-in/out times, business type).
         Locked here: isActive/isListed (dedicated flows) and legal fields (taxCode,
         businessRegistrationNumber). All fields optional; at least one required.
+
+
+        settings.cancellation sets the terms that actually decide refunds. Unknown keys are
+        rejected with 400 on purpose — a typo like "freeUntilHour" must not silently fall back to
+        the 48h default. Sending settings merges into the stored JSON, it does not replace it.
       tags: [HotelManagement]
       security:
         - bearerAuth: []
@@ -1861,6 +1866,19 @@ paths:
               type: object
               minProperties: 1
               properties:
+                settings:
+                  type: object
+                  description: 'Hotel settings. Only `cancellation` is accepted today; both of its keys are required together'
+                  required: [cancellation]
+                  additionalProperties: false
+                  properties:
+                    cancellation:
+                      type: object
+                      required: [freeUntilHours, latePenalty]
+                      additionalProperties: false
+                      properties:
+                        freeUntilHours: { type: integer, minimum: 0, maximum: 2160, example: 24, description: 'Hours before check-in that still get a full refund. 0 = never free; max 2160 (90 days)' }
+                        latePenalty: { type: string, enum: [first_night, full] }
                 name: { type: string }
                 description: { type: string, nullable: true }
                 address: { type: string }
@@ -4075,6 +4093,33 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/PaginatedReviews' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /bookings/{bookingId}/refund-preview:
+    get:
+      summary: Preview the refund before cancelling
+      description: >
+        Read-only. Tells the guest how much they get back if they cancel RIGHT NOW, and why.
+        Uses the same computation as PATCH /bookings/{bookingId}/cancel, so refundAmount here is
+        exactly what the cancel call will request — as long as the guest cancels before
+        freeUntilMoment passes (after that the free-cancellation window closes and the amount
+        drops). Booking owner or manageBookings only.
+      tags: [Bookings]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: bookingId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Refund preview
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RefundPreview' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }

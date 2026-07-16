@@ -36,6 +36,13 @@ export const cancelBooking = {
   }),
 };
 
+// Xem trước tiền hoàn trước khi huỷ (chỉ đọc)
+export const getRefundPreview = {
+  params: Joi.object().keys({
+    bookingId: Joi.string().uuid().required(),
+  }),
+};
+
 // Staff/chủ KS xem booking của một khách sạn
 export const listHotelBookings = {
   params: Joi.object().keys({

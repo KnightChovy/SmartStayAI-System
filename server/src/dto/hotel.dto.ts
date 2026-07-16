@@ -58,6 +58,9 @@ export interface UpdateHotelDto {
   renovationYear?: number | null;
   isSmokingAllowed?: boolean;
   petsPolicy?: 'not_allowed' | 'allowed' | 'on_request' | null;
+  // Chính sách huỷ THẬT (quyết định tiền hoàn). Service ghi vào hotel.settings.cancellation.
+  settings?: { cancellation: { freeUntilHours: number; latePenalty: 'first_night' | 'full' } };
+  // Đoạn mô tả chính sách huỷ cho khách đọc — KHÔNG ảnh hưởng tới tiền (xem `settings` ở trên).
   cancellationPolicy?: string | null;
   childrenPolicy?: string | null;
   minGuestAge?: number | null;
