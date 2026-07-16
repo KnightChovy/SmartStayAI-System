@@ -19,4 +19,16 @@ router.post(
 router.get('/vnpay/return', validate(paymentValidation.vnpayCallback), paymentController.vnpayReturn);
 router.get('/vnpay/ipn', validate(paymentValidation.vnpayCallback), paymentController.vnpayIpn);
 
+// Khách (chủ booking) lấy QR chuyển khoản SePay cho booking đang chờ thanh toán
+router.post(
+  '/bookings/:bookingId/sepay',
+  auth(),
+  validate(paymentValidation.createSepayPayment),
+  paymentController.createSepayPayment
+);
+
+// Webhook SePay — PUBLIC (không auth JWT): SePay gọi server-to-server khi tài khoản có tiền vào.
+// Bảo mật bằng header "Authorization: Apikey <key>" kiểm trong controller/service.
+router.post('/sepay/webhook', validate(paymentValidation.sepayWebhook), paymentController.sepayWebhook);
+
 export default router;

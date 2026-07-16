@@ -2381,9 +2381,12 @@ paths:
                   type: string
                 paymentMethod:
                   type: string
-                  enum: [vnpay, cash]
+                  enum: [vnpay, sepay, cash]
                   default: vnpay
-                  description: vnpay = pay online now; cash = pay at the hotel on arrival
+                  description: >
+                    vnpay = pay online via gateway (15 min hold); sepay = bank transfer by scanning a
+                    VietQR (30 min hold, confirmed by webhook); cash = pay at the hotel on arrival
+                    (confirmed immediately)
               example:
                 hotelId: 11111111-1111-1111-1111-111111111111
                 roomTypeId: 22222222-2222-2222-2222-222222222222
@@ -2559,6 +2562,144 @@ paths:
           $ref: '#/components/responses/NotFound'
         '503':
           description: VNPay not configured
+
+  /payments/bookings/{bookingId}/sepay:
+    post:
+      summary: Create a SePay bank-transfer QR for a booking
+      description: >
+        Owner of a pending (not yet expired) booking requests a SePay VietQR.
+        Unlike VNPay there is no gateway to redirect to — the guest scans the returned QR image with
+        their banking app and transfers the exact amount, keeping `transferContent` (the booking code)
+        untouched so the webhook can reconcile it. The booking is only confirmed once SePay calls
+        POST /payments/sepay/webhook. Calling this repeatedly returns the SAME transfer content
+        (one SePay payment per booking). Requires SEPAY_API_KEY / SEPAY_ACCOUNT_NUMBER /
+        SEPAY_BANK_CODE to be configured (503 otherwise).
+      tags: [Payments]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: bookingId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '201':
+          description: QR + transfer instructions created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  qrUrl:
+                    type: string
+                    description: VietQR image URL — render directly with an img tag
+                    example: https://qr.sepay.vn/img?acc=0010000000355&bank=Vietcombank&amount=1800000&des=BKMRJ0NXGQ341D22
+                  transferContent:
+                    type: string
+                    description: Guest MUST keep this as the transfer content (it is the booking code)
+                    example: BKMRJ0NXGQ341D22
+                  amount:
+                    type: number
+                    example: 1800000
+                  accountNumber:
+                    type: string
+                  bankCode:
+                    type: string
+                    example: Vietcombank
+                  expiresAt:
+                    type: string
+                    format: date-time
+                    nullable: true
+                    description: Booking hold deadline — transfers after this are not auto-confirmed
+        '400':
+          description: Booking not payable (wrong status or hold expired)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '503':
+          description: SePay not configured
+
+  /payments/sepay/webhook:
+    post:
+      summary: SePay webhook — bank account credited (public, called by SePay)
+      description: >
+        Called SERVER-TO-SERVER by SePay whenever the linked bank account balance changes.
+        Authenticated with the header `Authorization: Apikey <SEPAY_API_KEY>` — NOT a user JWT.
+        Only `transferType: "in"` is processed; the booking code is extracted from `code`/`content`,
+        the amount is verified, then the booking is confirmed (commission + wallet + voucher + email),
+        reusing the same transaction as the VNPay flow. The key is read from SEPAY_WEBHOOK_API_KEY.
+
+
+        Idempotent: SePay retries up to 7 times over 5 hours, so an already-completed payment simply
+        returns success without reprocessing. Business mismatches (booking code not found, underpaid)
+        also return 200 `{ success: true }` — retrying would not help — but are logged as errors for
+        manual reconciliation. Genuine server errors return 5xx so SePay retries.
+      tags: [Payments]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id, transferType, transferAmount]
+              properties:
+                id:
+                  type: number
+                  description: SePay transaction id
+                gateway:
+                  type: string
+                  example: Vietcombank
+                transactionDate:
+                  type: string
+                accountNumber:
+                  type: string
+                code:
+                  type: string
+                  nullable: true
+                  description: Payment code SePay extracted (if a pattern is configured)
+                content:
+                  type: string
+                  description: Raw transfer content — the booking code is parsed out of this
+                  example: 'CT DEN:0011 BKMRJ0NXGQ341D22'
+                transferType:
+                  type: string
+                  enum: [in, out]
+                transferAmount:
+                  type: number
+                referenceCode:
+                  type: string
+      responses:
+        '200':
+          description: Webhook accepted (SePay requires success=true, otherwise it retries)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Thanh toán thành công
+        '401':
+          description: Missing or wrong API key
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: false }
+                  message: { type: string, example: Invalid API key }
 
   /payments/vnpay/return:
     get:

@@ -27,6 +27,10 @@ const MAX_NIGHTS = 30;
 // Booking pending phải thanh toán trong khoảng này, quá hạn thì tự nhả tồn kho
 export const HOLD_MINUTES = 15;
 
+// SePay là chuyển khoản ngân hàng: khách phải mở app, quét QR, nhập OTP... nên chậm hơn quẹt thẻ
+// qua cổng. Cho hạn giữ chỗ rộng hơn để tránh nhả phòng ngay lúc khách đang chuyển tiền.
+export const SEPAY_HOLD_MINUTES = 30;
+
 // Quan hệ kèm theo khi trả booking về client
 const bookingInclude = {
   hotel: { select: { id: true, name: true, address: true, city: true, checkInTime: true, checkOutTime: true } },
@@ -217,6 +221,7 @@ export class BookingService {
       }
 
       const isCash = method === 'cash';
+      const holdMinutes = method === 'sepay' ? SEPAY_HOLD_MINUTES : HOLD_MINUTES;
       const booking = await tx.booking.create({
         data: {
           bookingCode: generateBookingCode(),
@@ -231,11 +236,12 @@ export class BookingService {
           subtotal,
           discountAmount: 0,
           totalAmount: subtotal,
-          // Tiền mặt: xác nhận luôn, không hạn giữ chỗ. VNPay: pending + hạn 15' chờ trả online.
+          // Tiền mặt: xác nhận luôn, không hạn giữ chỗ.
+          // VNPay/SePay: pending + hạn giữ chỗ chờ khách trả online (SePay rộng hơn vì chuyển khoản chậm hơn).
           status: isCash ? 'confirmed' : 'pending',
           source: 'website',
           specialRequests: payload.specialRequests || null,
-          holdExpiresAt: isCash ? null : new Date(Date.now() + HOLD_MINUTES * 60 * 1000),
+          holdExpiresAt: isCash ? null : new Date(Date.now() + holdMinutes * 60 * 1000),
         },
         include: bookingInclude,
       });
