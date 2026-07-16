@@ -12,25 +12,25 @@ import { GUEST_COLORS } from '@/constants/guestTheme';
 
 
 export default function ProfileScreen() {
-  const { t } = useTranslation('common');
+  const { t } = useTranslation(['account', 'common']);
   const router = useRouter();
   const { user, clearAuth } = useAuthStore();
 
   const benefitItems = [
-    { icon: 'gift-outline' as const, label: 'My Offers', sub: '3 offers available', onPress: () => router.push('/profile/offers') },
-    { icon: 'star-outline' as const, label: 'Reward Points', sub: '1,240 points', onPress: () => router.push('/profile/rewards') },
+    { icon: 'gift-outline' as const, label: t('account:menu.myOffers'), sub: t('account:menu.myOffersSub'), onPress: () => router.push('/profile/offers') },
+    { icon: 'star-outline' as const, label: t('account:menu.rewards'), sub: t('account:menu.rewardsSub'), onPress: () => router.push('/profile/rewards') },
   ];
 
   const financeItems = [
-    { icon: 'card-outline' as const, label: 'Payment Methods', sub: 'Add card/wallet', onPress: () => router.push('/profile/payment-methods') },
-    { icon: 'receipt-outline' as const, label: 'Transaction History', sub: 'View all', onPress: () => router.push('/profile/transactions') },
+    { icon: 'card-outline' as const, label: t('account:menu.paymentMethods'), sub: t('account:menu.paymentMethodsSub'), onPress: () => router.push('/profile/payment-methods') },
+    { icon: 'receipt-outline' as const, label: t('account:menu.transactions'), sub: t('account:menu.transactionsSub'), onPress: () => router.push('/profile/transactions') },
   ];
 
   const settingItems = [
-    { icon: 'notifications-outline' as const, label: 'Notifications', onPress: () => router.push('/notifications') },
-    { icon: 'shield-checkmark-outline' as const, label: 'Security & Privacy', onPress: () => router.push('/profile/security') },
-    { icon: 'help-circle-outline' as const, label: 'Help & Support', onPress: () => router.push('/profile/help-support') },
-    { icon: 'information-circle-outline' as const, label: 'About', onPress: () => router.push('/profile/about') },
+    { icon: 'notifications-outline' as const, label: t('account:menu.notifications'), onPress: () => router.push('/notifications') },
+    { icon: 'shield-checkmark-outline' as const, label: t('account:menu.security'), onPress: () => router.push('/profile/security') },
+    { icon: 'help-circle-outline' as const, label: t('account:menu.help'), onPress: () => router.push('/profile/help-support') },
+    { icon: 'information-circle-outline' as const, label: t('account:menu.about'), onPress: () => router.push('/profile/about') },
   ];
 
   const initials = user?.fullName
@@ -50,10 +50,10 @@ export default function ProfileScreen() {
   const completionPct = (completedCount / completionSteps.length) * 100;
 
   function handleLogout() {
-    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('account:signOut'), t('account:signOutConfirm'), [
+      { text: t('common:cancel'), style: 'cancel' },
       {
-        text: 'Sign Out',
+        text: t('account:signOut'),
         style: 'destructive',
         onPress: () => {
           clearAuth();
@@ -69,7 +69,7 @@ export default function ProfileScreen() {
       <SafeAreaView edges={['top']} className="bg-on-surface">
         <View className="flex-row items-center justify-center px-5 pt-2 pb-4">
           <Text bold className="font-bevi-bold text-white text-lg">
-            Account
+            {t('account:title')}
           </Text>
         </View>
       </SafeAreaView>
@@ -89,7 +89,7 @@ export default function ProfileScreen() {
             <View className="flex-1">
               <View className="flex-row items-center gap-1.5">
                 <Text bold className="font-bevi-bold text-white text-base">
-                  {user?.fullName ?? 'Guest'}
+                  {user?.fullName ?? t('account:guest')}
                 </Text>
                 <Ionicons name="shield-checkmark" size={16} color={GUEST_COLORS.bronze} />
               </View>
@@ -98,7 +98,7 @@ export default function ProfileScreen() {
               </Text>
               <Pressable onPress={() => router.push('/profile/edit')} className="mt-1.5 self-start bg-surface/15 rounded-full px-3 py-1">
                 <Text size="xs" bold className="font-bevi-bold text-white">
-                  Edit profile
+                  {t('account:editProfile')}
                 </Text>
               </Pressable>
             </View>
@@ -113,7 +113,7 @@ export default function ProfileScreen() {
           <View className="mt-4">
             <View className="flex-row items-center justify-between mb-1.5">
               <Text size="xs" className="font-bevi text-white/70">
-                Profile completion
+                {t('account:completion')}
               </Text>
               <Text size="xs" bold className="font-bevi-bold text-white">
                 {completedCount}/{completionSteps.length}
@@ -134,15 +134,15 @@ export default function ProfileScreen() {
             <View className="bg-blue-700 rounded-card p-4 flex-row items-center gap-3">
               <View className="flex-1">
                 <Text bold className="font-bevi-bold text-white text-sm">
-                  Complete your profile
+                  {t('account:completeTitle')}
                 </Text>
                 <Text size="xs" className="font-bevi text-white/70 mt-1 leading-4">
-                  Add more details to unlock offers tailored just for you.
+                  {t('account:completeBody')}
                 </Text>
               </View>
               <Pressable onPress={() => router.push('/profile/edit')} className="bg-surface rounded-field px-3 py-2">
                 <Text bold className="font-bevi-bold text-on-surface text-xs">
-                  Update
+                  {t('account:update')}
                 </Text>
               </Pressable>
             </View>
@@ -157,10 +157,10 @@ export default function ProfileScreen() {
                 <Ionicons name="calendar-outline" size={20} color={GUEST_COLORS.onSurface} />
               </View>
               <Text bold className="font-bevi-bold text-on-surface text-sm">
-                Bookings
+                {t('account:quick.bookings')}
               </Text>
               <Text size="xs" className="font-bevi text-muted">
-                View history
+                {t('account:quick.bookingsSub')}
               </Text>
             </Pressable>
             <Pressable onPress={() => router.push('/profile/rewards')} className="flex-1 bg-surface rounded-card p-4 items-start gap-2">
@@ -168,24 +168,24 @@ export default function ProfileScreen() {
                 <Ionicons name="diamond-outline" size={20} color={GUEST_COLORS.bronze} />
               </View>
               <Text bold className="font-bevi-bold text-on-surface text-sm">
-                SmartStay Plus
+                {t('account:quick.plus')}
               </Text>
               <Text size="xs" className="font-bevi text-muted">
-                Silver Member
+                {t('account:quick.plusSub')}
               </Text>
             </Pressable>
           </View>
 
           {/* Benefits */}
-          <SectionHeader title="Offers" />
+          <SectionHeader title={t('account:sections.offers')} />
           <MenuList items={benefitItems} />
 
           {/* Finance */}
-          <SectionHeader title="Finance" actionLabel="See more" onAction={() => router.push('/profile/transactions')} />
+          <SectionHeader title={t('account:sections.finance')} actionLabel={t('account:sections.seeMore')} onAction={() => router.push('/profile/transactions')} />
           <MenuList items={financeItems} />
 
           {/* Settings */}
-          <SectionHeader title="Settings" />
+          <SectionHeader title={t('account:sections.settings')} />
           <MenuList items={settingItems} />
 
           {/* Đổi ngôn ngữ cho khách đã đăng nhập — bản ở màn auth chỉ tới được khi chưa vào app. */}
@@ -195,7 +195,7 @@ export default function ProfileScreen() {
                 <Ionicons name="language-outline" size={18} color={GUEST_COLORS.brand} />
               </View>
               <Text className="font-bevi-medium text-on-surface" size="sm">
-                {t('language')}
+                {t('common:language')}
               </Text>
             </View>
             <LanguageSwitcher />
@@ -208,7 +208,7 @@ export default function ProfileScreen() {
           >
             <Ionicons name="log-out-outline" size={20} color="#DC2626" />
             <Text bold className="font-bevi-bold text-red-600 text-base">
-              Sign Out
+              {t('account:signOut')}
             </Text>
           </Pressable>
         </View>

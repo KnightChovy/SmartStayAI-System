@@ -6,6 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Text } from '@/components/ui/text';
 import { Heading } from '@/components/ui/heading';
 import { HotelCard } from '@/components/shared/HotelCard';
@@ -19,13 +20,14 @@ import { DESTINATIONS } from '@/constants/destinations';
 import { GUEST_COLORS, HOME_HERO_IMAGE, PLACEHOLDER } from '@/constants/guestTheme';
 
 const PROPERTY_TYPES = [
-  { id: '1', label: 'Khách sạn', icon: 'bed-outline' as const },
-  { id: '2', label: 'Căn hộ', icon: 'business-outline' as const },
-  { id: '3', label: 'Resort', icon: 'umbrella-outline' as const },
-];
+  { id: '1', labelKey: 'hotels', icon: 'bed-outline' as const },
+  { id: '2', labelKey: 'apartments', icon: 'business-outline' as const },
+  { id: '3', labelKey: 'resorts', icon: 'umbrella-outline' as const },
+] as const;
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { t } = useTranslation(['home', 'common']);
   const [destination, setDestination] = useState('');
   const [activeType, setActiveType] = useState('1');
   const [checkIn, setCheckIn] = useState(todayKey());
@@ -93,10 +95,10 @@ export default function HomeScreen() {
 
           <View className="mb-5 px-5 pt-7">
             <Heading className="font-bevi-bold leading-9 text-on-surface" size="2xl">
-              Tìm chỗ nghỉ tiếp theo
+              {t('home:heroTitle')}
             </Heading>
             <Text className="mt-1 font-bevi text-on-surface-variant" size="sm">
-              Đặt phòng thông minh hơn cùng trợ lý AI
+              {t('home:heroSubtitle')}
             </Text>
           </View>
 
@@ -106,7 +108,7 @@ export default function HomeScreen() {
               <Ionicons name="location-outline" size={18} color={GUEST_COLORS.muted} />
               <TextInput
                 className="ml-2 h-full flex-1 font-bevi text-[15px] text-on-surface"
-                placeholder="Bạn muốn đi đâu?"
+                placeholder={t('home:destinationPlaceholder')}
                 placeholderTextColor={PLACEHOLDER}
                 value={destination}
                 onChangeText={setDestination}
@@ -132,12 +134,12 @@ export default function HomeScreen() {
             >
               <Ionicons name="people-outline" size={17} color={GUEST_COLORS.muted} />
               <Text className="ml-2 flex-1 font-bevi-medium text-on-surface" size="sm">
-                {guests} khách
+                {t('common:guests', { count: guests })}
               </Text>
               <Ionicons name="chevron-down" size={14} color={GUEST_COLORS.muted} />
             </Pressable>
 
-            <LuxButton label="Tìm kiếm" icon="search" onPress={goToSearch} />
+            <LuxButton label={t('home:search')} icon="search" onPress={goToSearch} />
           </View>
         </View>
 
@@ -149,17 +151,17 @@ export default function HomeScreen() {
             </View>
             <View className="flex-1">
               <Text className="font-bevi-bold text-on-surface" size="sm">
-                Ưu đãi chớp nhoáng
+                {t('home:deals.title')}
               </Text>
               <Text className="mt-0.5 font-bevi text-on-surface-variant" size="xs">
-                Giảm ít nhất 15% khi đặt trước 24 giờ hôm nay.
+                {t('home:deals.body')}
               </Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={GUEST_COLORS.bronze} />
           </Pressable>
 
           <Heading className="mb-3 font-bevi-bold text-on-surface" size="md">
-            Chọn theo loại chỗ nghỉ
+            {t('home:propertyTypes.title')}
           </Heading>
           <View className="mb-6 flex-row gap-2">
             {PROPERTY_TYPES.map(type => {
@@ -181,7 +183,7 @@ export default function HomeScreen() {
                     className={`font-bevi-semibold ${active ? 'text-white' : 'text-on-surface'}`}
                     size="xs"
                   >
-                    {type.label}
+                    {t(`home:propertyTypes.${type.labelKey}`)}
                   </Text>
                 </Pressable>
               );
@@ -190,11 +192,11 @@ export default function HomeScreen() {
 
           <View className="mb-3 flex-row items-center justify-between">
             <Heading className="font-bevi-bold text-on-surface" size="md">
-              Khám phá Việt Nam
+              {t('home:explore.title')}
             </Heading>
             <Pressable onPress={() => router.push('/(tabs)/search')} hitSlop={8}>
               <Text className="font-bevi-semibold text-bronze" size="sm">
-                Xem tất cả
+                {t('home:explore.seeAll')}
               </Text>
             </Pressable>
           </View>
@@ -229,7 +231,7 @@ export default function HomeScreen() {
           />
 
           <Heading className="mb-3 font-bevi-bold text-on-surface" size="md">
-            Khách yêu thích
+            {t('home:favorites.title')}
           </Heading>
           {isLoading ? (
             <View className="items-center py-10">
@@ -239,7 +241,7 @@ export default function HomeScreen() {
             <View className="items-center gap-2 py-10">
               <Ionicons name="bed-outline" size={38} color={GUEST_COLORS.hairline} />
               <Text className="font-bevi text-muted" size="sm">
-                Chưa có khách sạn nào
+                {t('home:favorites.empty')}
               </Text>
             </View>
           ) : (

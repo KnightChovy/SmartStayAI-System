@@ -4,32 +4,35 @@ import { useAuthStore } from '@/stores/authStore';
 import { Ionicons } from '@expo/vector-icons';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { Redirect, Tabs } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
+/** `labelKey` trỏ vào `common:tabs.*` — nhãn dịch lúc render để đổi ngôn ngữ ăn ngay. */
 const TAB_CONFIG: Record<
   string,
-  { active: IoniconsName; inactive: IoniconsName; label: string }
+  { active: IoniconsName; inactive: IoniconsName; labelKey: 'home' | 'search' | 'bookings' | 'chat' | 'account' }
 > = {
-  index: { active: 'home', inactive: 'home-outline', label: 'Trang chủ' },
-  search: { active: 'search', inactive: 'search-outline', label: 'Tìm kiếm' },
+  index: { active: 'home', inactive: 'home-outline', labelKey: 'home' },
+  search: { active: 'search', inactive: 'search-outline', labelKey: 'search' },
   bookings: {
     active: 'calendar',
     inactive: 'calendar-outline',
-    label: 'Đặt phòng',
+    labelKey: 'bookings',
   },
   chatbot: {
     active: 'chatbubble',
     inactive: 'chatbubble-outline',
-    label: 'Trò chuyện',
+    labelKey: 'chat',
   },
-  profile: { active: 'person', inactive: 'person-outline', label: 'Tài khoản' },
+  profile: { active: 'person', inactive: 'person-outline', labelKey: 'account' },
 };
 
 function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const { bottom } = useSafeAreaInsets();
+  const { t } = useTranslation('common');
 
   return (
     <View
@@ -96,7 +99,7 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
                 color: focused ? GUEST_COLORS.onSurface : GUEST_COLORS.muted,
               }}
             >
-              {config.label}
+              {t(`tabs.${config.labelKey}`)}
             </Text>
           </Pressable>
         );

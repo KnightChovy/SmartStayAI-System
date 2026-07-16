@@ -4,6 +4,7 @@ import { Image } from 'expo-image';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Text } from '@/components/ui/text';
 import { StarRating } from '@/components/shared/StarRating';
 import { useDebounce } from '@/hooks/ui/use-debounce';
@@ -13,30 +14,32 @@ import { formatVnd } from '@/utils/formatCurrency';
 import type { HotelSearchResult } from '@/types/hotels.type';
 import { GUEST_COLORS } from '@/constants/guestTheme';
 
+/** Union chứ không phải `string`: để `t()` kiểm được key `search:filterOptions.*` lúc build. */
+type FilterId = '5star' | '4plus' | 'under1m' | 'under3m' | 'hasPrice';
+
 interface HotelFilter {
-  id: string;
-  label: string;
+  id: FilterId;
   test: (h: HotelSearchResult) => boolean;
 }
 
 /** Bộ lọc lọc trên field có thật từ API (starRating, minPrice). */
 const FILTERS: HotelFilter[] = [
-  { id: '5star', label: '5 stars', test: (h) => h.starRating === 5 },
-  { id: '4plus', label: '4+ stars', test: (h) => (h.starRating ?? 0) >= 4 },
-  { id: 'under1m', label: 'Under 1M', test: (h) => h.minPrice != null && Number(h.minPrice) < 1_000_000 },
-  { id: 'under3m', label: 'Under 3M', test: (h) => h.minPrice != null && Number(h.minPrice) < 3_000_000 },
-  { id: 'hasPrice', label: 'Available now', test: (h) => h.minPrice != null },
+  { id: '5star', test: (h) => h.starRating === 5 },
+  { id: '4plus', test: (h) => (h.starRating ?? 0) >= 4 },
+  { id: 'under1m', test: (h) => h.minPrice != null && Number(h.minPrice) < 1_000_000 },
+  { id: 'under3m', test: (h) => h.minPrice != null && Number(h.minPrice) < 3_000_000 },
+  { id: 'hasPrice', test: (h) => h.minPrice != null },
 ];
 
-const SORT_OPTIONS = ['Recommended', 'Lowest price', 'Highest rated'] as const;
+const SORT_OPTIONS = ['recommended', 'lowestPrice', 'highestRated'] as const;
 type SortOption = typeof SORT_OPTIONS[number];
 
 function sortHotels(list: HotelSearchResult[], sort: SortOption): HotelSearchResult[] {
   const copy = [...list];
-  if (sort === 'Lowest price') {
+  if (sort === 'lowestPrice') {
     return copy.sort((a, b) => Number(a.minPrice ?? Infinity) - Number(b.minPrice ?? Infinity));
   }
-  if (sort === 'Highest rated') {
+  if (sort === 'highestRated') {
     return copy.sort((a, b) => (b.starRating ?? 0) - (a.starRating ?? 0));
   }
   return copy;
@@ -44,11 +47,12 @@ function sortHotels(list: HotelSearchResult[], sort: SortOption): HotelSearchRes
 
 export default function SearchScreen() {
   const router = useRouter();
+  const { t } = useTranslation(['search', 'common']);
   const { city, checkIn, checkOut, guests } = useLocalSearchParams<{
     city?: string; checkIn?: string; checkOut?: string; guests?: string;
   }>();
   const { bottom } = useSafeAreaInsets();
-  const [sort, setSort] = useState<SortOption>('Recommended');
+  const [sort, setSort] = useState<SortOption>('recommended');
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const [saved, setSaved] = useState<Record<string, boolean>>({});
   const [query, setQuery] = useState('');
@@ -88,7 +92,7 @@ export default function SearchScreen() {
             <Ionicons name="search" size={18} color={GUEST_COLORS.muted} />
             <TextInput
               className="flex-1 font-bevi text-sm text-on-surface ml-2"
-              placeholder="Search hotels, destinations..."
+              placeholder={t('search:placeholder')}
               placeholderTextColor={GUEST_COLORS.muted}
               value={query}
               onChangeText={setQuery}
@@ -112,7 +116,7 @@ export default function SearchScreen() {
             >
               <Ionicons name="options-outline" size={14} color={GUEST_COLORS.white} />
               <Text size="sm" bold className="font-bevi-bold text-white">
-                {activeFilters.length > 0 ? `Clear (${activeFilters.length})` : 'Filters'}
+                {activeFilters.length > 0 ? t('search:clearFilters', { count: activeFilters.length }) : t('search:filters')}
               </Text>
             </Pressable>
             {FILTERS.map((f) => {
@@ -123,7 +127,7 @@ export default function SearchScreen() {
                   onPress={() => toggleFilter(f.id)}
                   className={`flex-row items-center gap-1.5 rounded-full px-3 py-1.5 ${active ? 'bg-surface' : 'bg-surface/20'}`}
                 >
-                  <Text size="sm" bold className={`font-bevi-bold ${active ? 'text-on-surface' : 'text-white'}`}>{f.label}</Text>
+                  <Text size="sm" bold className={`font-bevi-bold ${active ? 'text-on-surface' : 'text-white'}`}>{t(`search:filterOptions.${f.id}`)}</Text>
                   <Ionicons name={active ? 'checkmark' : 'add'} size={13} color={active ? GUEST_COLORS.onSurface : GUEST_COLORS.white} />
                 </Pressable>
               );
@@ -139,7 +143,7 @@ export default function SearchScreen() {
               onPress={() => setSort(opt)}
               className={`px-3 py-2 rounded-field ${sort === opt ? 'bg-surface' : 'bg-surface/10'}`}
             >
-              <Text size="xs" bold className={`font-bevi-bold ${sort === opt ? 'text-on-surface' : 'text-white'}`}>{opt}</Text>
+              <Text size="xs" bold className={`font-bevi-bold ${sort === opt ? 'text-on-surface' : 'text-white'}`}>{t(`search:sort.${opt}`)}</Text>
             </Pressable>
           ))}
         </View>
@@ -153,9 +157,9 @@ export default function SearchScreen() {
       ) : isError ? (
         <View className="flex-1 items-center justify-center gap-3 px-8">
           <Ionicons name="cloud-offline-outline" size={48} color={GUEST_COLORS.hairline} />
-          <Text className="font-bevi text-muted text-center">{"Couldn’t load hotels. Please try again."}</Text>
+          <Text className="font-bevi text-muted text-center">{t('search:error')}</Text>
           <Pressable onPress={() => refetch()} className="bg-on-surface rounded-field px-5 py-2.5">
-            <Text bold className="font-bevi-bold text-white">Retry</Text>
+            <Text bold className="font-bevi-bold text-white">{t('common:retry')}</Text>
           </Pressable>
         </View>
       ) : (
@@ -167,13 +171,13 @@ export default function SearchScreen() {
           refreshing={isRefetching}
           ListHeaderComponent={
             <Text size="xs" bold className="font-bevi-bold text-on-surface-variant uppercase mb-1">
-              {filtered.length} stays in {city ?? 'Vietnam'}
+              {t('search:resultCount', { count: filtered.length, place: city ?? t('search:defaultPlace') })}
             </Text>
           }
           ListEmptyComponent={
             <View className="py-16 items-center gap-2">
               <Ionicons name="bed-outline" size={44} color={GUEST_COLORS.hairline} />
-              <Text className="font-bevi text-muted">No hotels found</Text>
+              <Text className="font-bevi text-muted">{t('search:empty')}</Text>
             </View>
           }
           renderItem={({ item }) => {
@@ -195,7 +199,7 @@ export default function SearchScreen() {
                   {item.starRating ? (
                     <View className="absolute bottom-3 left-3 bg-bronze rounded-md px-2 py-1 flex-row items-center gap-1">
                       <Ionicons name="star" size={11} color={GUEST_COLORS.onSurface} />
-                      <Text size="xs" bold className="font-bevi-bold text-on-surface">{item.starRating}-star</Text>
+                      <Text size="xs" bold className="font-bevi-bold text-on-surface">{t('common:stars', { count: item.starRating })}</Text>
                     </View>
                   ) : null}
                   <Pressable
@@ -224,19 +228,19 @@ export default function SearchScreen() {
                     <View>
                       {item.minPrice ? (
                         <>
-                          <Text size="xs" className="font-bevi text-on-surface-variant">from</Text>
+                          <Text size="xs" className="font-bevi text-on-surface-variant">{t('common:from')}</Text>
                           <Text bold className="font-bevi-bold text-on-surface text-lg">{formatVnd(item.minPrice)}</Text>
-                          <Text size="xs" className="font-bevi text-on-surface-variant">per night</Text>
+                          <Text size="xs" className="font-bevi text-on-surface-variant">{t('common:perNight')}</Text>
                         </>
                       ) : (
-                        <Text size="sm" className="font-bevi text-muted">Contact for price</Text>
+                        <Text size="sm" className="font-bevi text-muted">{t('common:contactForPrice')}</Text>
                       )}
                     </View>
                     <Pressable
                       onPress={() => router.push({ pathname: '/hotel/[id]', params: { id: item.id, ...(checkIn ? { checkIn } : {}), ...(checkOut ? { checkOut } : {}), ...(guests ? { guests } : {}) } })}
                       className="bg-bronze rounded-field px-4 py-2.5"
                     >
-                      <Text bold className="font-bevi-bold text-on-surface text-sm">View room</Text>
+                      <Text bold className="font-bevi-bold text-on-surface text-sm">{t('search:viewRoom')}</Text>
                     </Pressable>
                   </View>
                 </View>

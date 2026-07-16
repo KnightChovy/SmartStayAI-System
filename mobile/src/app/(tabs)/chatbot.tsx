@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { View, FlatList, TextInput, Pressable, KeyboardAvoidingView, Platform, ActivityIndicator, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { Text } from '@/components/ui/text';
 import { MessageBubble, ChatEmptyState } from '@/components/chat';
 import { useChatbot } from '@/hooks/chat';
@@ -12,6 +13,7 @@ import { GUEST_COLORS } from '@/constants/guestTheme';
 export default function ChatbotScreen() {
   const { data: hotelsData } = useGetHotels({ limit: 50 });
   const hotels = hotelsData?.results ?? [];
+  const { t } = useTranslation(['chat', 'common']);
 
   const [selectedHotelId, setSelectedHotelId] = useState<string | null>(null);
   // Chatbot gắn theo từng khách sạn (backend yêu cầu hotelId). Mặc định khách sạn đầu tiên.
@@ -50,7 +52,7 @@ export default function ChatbotScreen() {
           <View className="flex-1">
             <Text bold className="font-bevi-bold text-on-surface text-base">SmartStay AI</Text>
             <Text size="2xs" className={`font-bevi ${isStreaming ? 'text-green-600' : 'text-muted'}`} numberOfLines={1}>
-              {isStreaming ? '● Replying...' : activeHotel ? activeHotel.name : 'Select a hotel'}
+              {isStreaming ? t('chat:replying') : activeHotel ? activeHotel.name : t('chat:selectHotel')}
             </Text>
           </View>
         </View>
@@ -109,7 +111,7 @@ export default function ChatbotScreen() {
         <View className="flex-row items-end gap-2.5 px-4 py-3 border-t border-hairline/30 bg-surface">
           <TextInput
             className="flex-1 min-h-11 max-h-28 bg-canvas rounded-[22px] px-4 py-2.5 font-bevi text-sm text-on-surface"
-            placeholder={activeHotelId ? 'Type a message...' : 'Select a hotel to start...'}
+            placeholder={activeHotelId ? t('chat:inputPlaceholder') : t('chat:inputDisabled')}
             placeholderTextColor={GUEST_COLORS.muted}
             value={input}
             onChangeText={setInput}
