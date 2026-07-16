@@ -7,8 +7,15 @@ import config from '../config/config';
 import logger from '../config/logger';
 import ApiError from '../utils/ApiError';
 import { emailService } from './email.service';
-import type { VnpayParams, VnpayResult } from '../dto/payment.dto';
+import type { VnpayParams, VnpayResult, SepayWebhookPayload, SepayPaymentInfo } from '../dto/payment.dto';
 import { walletService } from './wallet.service';
+
+// Ảnh QR VietQR do SePay dựng sẵn — chỉ là URL ảnh, không cần gọi API/ký gì cả.
+const SEPAY_QR_ENDPOINT = 'https://qr.sepay.vn/img';
+
+// Mã booking luôn dạng BK + [A-Z0-9]. Ngân hàng hay chèn thêm chữ vào nội dung chuyển khoản
+// (vd "CT DEN:xxx BKABC123 GD..."), nên phải BÓC bằng regex thay vì so khớp cả chuỗi.
+const BOOKING_CODE_PATTERN = /BK[A-Z0-9]+/i;
 
 // Định dạng ngày VNPay yêu cầu: yyyyMMddHHmmss (giờ máy chủ)
 const formatVnpDate = (date: Date): string => {
@@ -198,11 +205,16 @@ export class PaymentService {
    * pending (đã huỷ/hết hạn) thì vẫn đánh dấu payment completed nhưng KHÔNG tạo voucher —
    * tiền đã nhận, cần hoàn thủ công (trả về confirmed=false để lớp trên cảnh báo).
    */
-  private confirmPaidBooking = async (paymentId: string, bookingId: string, params: VnpayParams) => {
+  private confirmPaidBooking = async (
+    paymentId: string,
+    bookingId: string,
+    // Payload thô của cổng (VNPay hoặc SePay) — lưu nguyên vào gateway_response để đối soát sau
+    gatewayPayload: Prisma.InputJsonObject
+  ) => {
     return prisma.$transaction(async (tx) => {
       await tx.payment.update({
         where: { id: paymentId },
-        data: { status: 'completed', paidAt: new Date(), gatewayResponse: params as Prisma.InputJsonObject },
+        data: { status: 'completed', paidAt: new Date(), gatewayResponse: gatewayPayload },
       });
 
       const updated = await tx.booking.updateMany({
@@ -292,6 +304,152 @@ export class PaymentService {
         voucherCode: data.voucherCode ?? '',
       })
       .catch((err) => logger.error(`[VNPay] Gửi email xác nhận booking thất bại: ${err.message}`));
+  };
+
+  // ===== SePay: QR chuyển khoản + webhook đối soát =====
+
+  private assertSepayConfigured = () => {
+    if (!config.sepay.webhookApiKey || !config.sepay.accountNumber || !config.sepay.bankCode) {
+      throw new ApiError(
+        httpStatus.SERVICE_UNAVAILABLE,
+        'SePay chưa được cấu hình (đặt SEPAY_WEBHOOK_API_KEY, SEPAY_ACCOUNT_NUMBER, SEPAY_BANK_CODE trong .env)'
+      );
+    }
+  };
+
+  /**
+   * Tạo thông tin thanh toán SePay cho booking đang chờ thanh toán của CHÍNH khách.
+   * Khác VNPay: không có cổng để redirect — trả ảnh QR + nội dung chuyển khoản để khách quét
+   * bằng app ngân hàng. Tiền vào tài khoản ⇒ SePay gọi webhook, lúc đó booking mới được confirm.
+   * Một booking chỉ có ĐÚNG MỘT khoản SePay (transactionId cố định theo bookingCode) nên gọi lại
+   * nhiều lần vẫn ra cùng một nội dung đối soát — tránh việc mỗi lần bấm lại sinh một mã khác.
+   */
+  createSepayPayment = async (bookingId: string, currentUser: User): Promise<SepayPaymentInfo> => {
+    this.assertSepayConfigured();
+
+    const booking = await prisma.booking.findUnique({ where: { id: bookingId } });
+    if (!booking) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy booking');
+    }
+    if (booking.customerId !== currentUser.id) {
+      throw new ApiError(httpStatus.FORBIDDEN, 'Forbidden');
+    }
+    if (booking.status !== 'pending') {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Booking không ở trạng thái chờ thanh toán');
+    }
+    if (booking.holdExpiresAt && booking.holdExpiresAt < new Date()) {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Booking đã quá hạn giữ chỗ, vui lòng đặt lại');
+    }
+
+    const existing = await prisma.payment.findFirst({
+      where: { bookingId: booking.id, paymentMethod: 'sepay' },
+    });
+    if (!existing) {
+      await prisma.payment.create({
+        data: {
+          bookingId: booking.id,
+          paymentMethod: 'sepay',
+          transactionId: `SEPAY-${booking.bookingCode}`,
+          amount: booking.totalAmount,
+          currency: 'VND',
+          status: 'pending',
+        },
+      });
+    }
+
+    // Nội dung chuyển khoản = mã booking: ngắn, chỉ chữ+số nên ngân hàng không cắt/bỏ dấu.
+    const transferContent = booking.bookingCode;
+    const amount = Math.round(booking.totalAmount.toNumber());
+    const query = new URLSearchParams({
+      acc: config.sepay.accountNumber,
+      bank: config.sepay.bankCode,
+      amount: String(amount),
+      des: transferContent,
+    });
+
+    return {
+      qrUrl: `${SEPAY_QR_ENDPOINT}?${query.toString()}`,
+      transferContent,
+      amount,
+      accountNumber: config.sepay.accountNumber,
+      bankCode: config.sepay.bankCode,
+      expiresAt: booking.holdExpiresAt,
+    };
+  };
+
+  /** Xác thực header "Authorization: Apikey <key>" của SePay, so sánh timing-safe. */
+  verifySepayApiKey = (apiKey: string | null): boolean => {
+    if (!config.sepay.webhookApiKey || !apiKey) {
+      return false;
+    }
+    const received = Buffer.from(apiKey, 'utf8');
+    const expected = Buffer.from(config.sepay.webhookApiKey, 'utf8');
+    if (received.length !== expected.length) {
+      return false;
+    }
+    return crypto.timingSafeEqual(received, expected);
+  };
+
+  /**
+   * Xử lý webhook SePay báo có tiền vào tài khoản.
+   *
+   * Quy ước trả về: LUÔN trả success=true cho các tình huống "nghiệp vụ không khớp"
+   * (không bóc được mã, không thấy booking, chuyển thiếu) — vì SePay sẽ retry tới 7 lần trong 5 giờ
+   * mà retry KHÔNG làm tình huống đó khá hơn, chỉ tổ spam. Những ca đó ghi log ERROR để đối soát tay.
+   * Lỗi hệ thống thật (DB chết) thì cứ để ném ra ⇒ 500 ⇒ SePay retry là đúng.
+   */
+  handleSepayWebhook = async (payload: SepayWebhookPayload): Promise<{ success: boolean; message: string }> => {
+    if (payload.transferType !== 'in') {
+      return { success: true, message: 'Bỏ qua giao dịch tiền ra' };
+    }
+
+    // SePay tự bóc `code` nếu cấu hình mẫu ở dashboard; không có thì tự bóc từ nội dung thô.
+    const matched = (payload.code || payload.content || '').match(BOOKING_CODE_PATTERN);
+    if (!matched) {
+      logger.error(
+        `[SePay] Nhận ${payload.transferAmount}đ nhưng KHÔNG bóc được mã booking từ nội dung "${payload.content}" ` +
+          `(ref ${payload.referenceCode ?? '-'}) — CẦN ĐỐI SOÁT THỦ CÔNG`
+      );
+      return { success: true, message: 'Không tìm thấy mã booking trong nội dung chuyển khoản' };
+    }
+    const bookingCode = matched[0].toUpperCase();
+
+    const payment = await prisma.payment.findFirst({
+      where: { paymentMethod: 'sepay', booking: { bookingCode } },
+    });
+    if (!payment) {
+      logger.error(
+        `[SePay] Nhận ${payload.transferAmount}đ cho booking ${bookingCode} nhưng không có khoản SePay nào — CẦN ĐỐI SOÁT THỦ CÔNG`
+      );
+      return { success: true, message: 'Không tìm thấy khoản thanh toán SePay của booking' };
+    }
+
+    // Idempotent: SePay retry nhiều lần ⇒ đã completed thì báo thành công, không xử lý lại.
+    if (payment.status === 'completed') {
+      return { success: true, message: 'Giao dịch đã được xử lý' };
+    }
+
+    const expectedAmount = Math.round(payment.amount.toNumber());
+    if (payload.transferAmount < expectedAmount) {
+      logger.error(
+        `[SePay] Booking ${bookingCode} chuyển THIẾU: nhận ${payload.transferAmount}đ / cần ${expectedAmount}đ — CẦN ĐỐI SOÁT THỦ CÔNG`
+      );
+      return { success: true, message: 'Số tiền chuyển chưa đủ' };
+    }
+    if (payload.transferAmount > expectedAmount) {
+      logger.warn(
+        `[SePay] Booking ${bookingCode} chuyển THỪA ${payload.transferAmount - expectedAmount}đ — vẫn xác nhận, phần thừa cần hoàn thủ công`
+      );
+    }
+
+    const confirmed = await this.confirmPaidBooking(payment.id, payment.bookingId, payload);
+    if (confirmed.emailTo) {
+      this.sendConfirmationEmailSafe(confirmed);
+    }
+    return {
+      success: true,
+      message: confirmed.confirmed ? 'Thanh toán thành công' : 'Đã ghi nhận thanh toán',
+    };
   };
 
   /**

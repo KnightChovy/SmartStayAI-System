@@ -51,6 +51,18 @@ const envVarsSchema = Joi.object()
     VNP_RETURN_URL: Joi.string()
       .default('http://localhost:5000/v1/payments/vnpay/return')
       .description('Backend URL VNPay redirects the browser back to after payment'),
+    SEPAY_WEBHOOK_API_KEY: Joi.string()
+      .allow('')
+      .default('')
+      .description('SePay webhook API key — dùng xác thực header "Authorization: Apikey <key>" khi SePay gọi về'),
+    SEPAY_ACCOUNT_NUMBER: Joi.string()
+      .allow('')
+      .default('')
+      .description('Số tài khoản ngân hàng nhận tiền (tài khoản đã liên kết SePay)'),
+    SEPAY_BANK_CODE: Joi.string()
+      .allow('')
+      .default('')
+      .description('Mã ngân hàng dựng QR, theo danh sách https://qr.sepay.vn/banks.json (vd: Vietcombank, MBBank, ACB)'),
     AI_PROVIDER: Joi.string().valid('gemini', 'claude').default('gemini').description('Nhà cung cấp LLM cho chatbot'),
     GEMINI_API_KEY: Joi.string().allow('').default('').description('Google Gemini API key (free tier)'),
     CRON_SECRET: Joi.string()
@@ -134,6 +146,11 @@ const config = {
     url: envVars.VNP_URL,
     apiUrl: envVars.VNP_API_URL,
     returnUrl: envVars.VNP_RETURN_URL,
+  },
+  sepay: {
+    webhookApiKey: envVars.SEPAY_WEBHOOK_API_KEY,
+    accountNumber: envVars.SEPAY_ACCOUNT_NUMBER,
+    bankCode: envVars.SEPAY_BANK_CODE,
   },
 };
 
