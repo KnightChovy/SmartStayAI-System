@@ -16,13 +16,14 @@ import { cn } from '@/lib/cn';
 
 /** Chuông thông báo ở Navbar: badge số chưa đọc + dropdown xem nhanh 5 mục gần nhất. */
 export default function NotificationBell() {
-  const { data } = useNotifications();
+  // Chỉ cần 5 mục gần nhất cho dropdown; `unreadCount` do BE trả kèm là TỔNG chưa đọc
+  // của cả tài khoản — không đếm trên 5 mục này (đếm cục bộ sẽ chốt sai ở mức 5).
+  const { data } = useNotifications({ limit: 5 });
   const markRead = useMarkNotificationRead();
   const markAll = useMarkAllNotificationsRead();
 
-  const list = data ?? [];
-  const unread = list.filter(n => !n.readAt).length;
-  const recent = list.slice(0, 5);
+  const recent = data?.results ?? [];
+  const unread = data?.unreadCount ?? 0;
 
   return (
     <DropdownMenu>

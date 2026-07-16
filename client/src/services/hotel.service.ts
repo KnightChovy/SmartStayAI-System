@@ -9,6 +9,8 @@ import type {
   HotelSearchResult,
   PartnerHotel,
   RoomType,
+  RoomTypeDetail,
+  RoomTypeDetailParams,
   RoomTypeParams,
   UpdateHotelDto,
 } from '@/types/hotel.types';
@@ -102,6 +104,26 @@ export const hotelService = {
     const { data } = await api.get<RoomType[]>(`/hotels/${hotelId}/room-types`, {
       params: cleanParams(params),
     });
+    return data;
+  },
+
+  /**
+   * Chi tiết MỘT loại phòng (`GET /hotels/:hotelId/room-types/:roomTypeId`) — public.
+   * Kèm ảnh, tiện nghi, giường và thông tin khách sạn tối giản; có khoảng ngày thì kèm
+   * số phòng trống + số đêm + tiền phòng cả kỳ ở.
+   *
+   * ⚠️ `checkIn`/`checkOut` phải đi CÙNG NHAU (Joi `.and`) — truyền lẻ một cái là 400.
+   * 404 khi loại phòng đã tắt hoặc khách sạn chưa mở bán.
+   */
+  async getRoomTypeById(
+    hotelId: string,
+    roomTypeId: string,
+    params: RoomTypeDetailParams = {}
+  ): Promise<RoomTypeDetail> {
+    const { data } = await api.get<RoomTypeDetail>(
+      `/hotels/${hotelId}/room-types/${roomTypeId}`,
+      { params: cleanParams(params) }
+    );
     return data;
   },
 

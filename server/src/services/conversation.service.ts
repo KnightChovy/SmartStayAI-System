@@ -547,7 +547,8 @@ export class ConversationService {
 
   // Chặn khi khách đã dùng hết hạn mức. Khách ĐÃ ĐĂNG NHẬP: đếm theo tài khoản trong hôm nay (mọi hội thoại).
   // Khách VÃNG LAI: không có danh tính ⇒ đếm theo TỪNG hội thoại (cộng với rate-limit theo IP ở tầng route).
-  private assertWithinQuota = async (currentUser: User | null, conversationId: string): Promise<void> => {
+  // conversationId null = hội thoại CHƯA được tạo (kiểm hạn mức trước khi create — xem sendMessage).
+  private assertWithinQuota = async (currentUser: User | null, conversationId: string | null): Promise<void> => {
     if (currentUser) {
       const startOfDay = new Date();
       startOfDay.setHours(0, 0, 0, 0);
@@ -560,6 +561,10 @@ export class ConversationService {
           'Bạn đã đạt giới hạn tin nhắn với trợ lý trong hôm nay. Vui lòng thử lại vào ngày mai hoặc liên hệ lễ tân.'
         );
       }
+      return;
+    }
+    // Hội thoại chưa tồn tại ⇒ chắc chắn 0 tin ⇒ khỏi truy vấn, luôn trong hạn mức.
+    if (!conversationId) {
       return;
     }
     const usedInConversation = await prisma.message.count({
@@ -589,15 +594,21 @@ export class ConversationService {
     let conversation = conversationId
       ? await prisma.conversation.findFirst({ where: { id: conversationId, hotelId: scopeHotelId, userId: ownerId } })
       : null;
-    if (!conversation) {
-      conversation = await prisma.conversation.create({
-        data: { hotelId: scopeHotelId, userId: ownerId, channel: 'chatbot', status: 'active' },
-      });
+
+    // Trần cứng: chỉ áp cho lượt CẦN gọi AI (khi người thật đang xử lý thì không tốn LLM, xử lý ở (3b)).
+    // PHẢI kiểm TRƯỚC khi create: ném 429 sau lúc tạo sẽ bỏ lại một hội thoại rỗng (lastMessageAt null)
+    // nằm vĩnh viễn trong DB, mà Postgres xếp NULL LÊN ĐẦU khi ORDER BY ... DESC ⇒ hàng rỗng đó LUÔN
+    // thắng getMyConversation/listMyConversations ⇒ khách F5 là mất sạch lịch sử, không tự khỏi.
+    if (!conversation || !isHumanHandling(conversation)) {
+      await this.assertWithinQuota(currentUser, conversation?.id ?? null);
     }
 
-    // Trần cứng: chỉ áp cho lượt CẦN gọi AI (khi người thật đang xử lý thì không tốn LLM, xử lý ở (3b))
-    if (!isHumanHandling(conversation)) {
-      await this.assertWithinQuota(currentUser, conversation.id);
+    if (!conversation) {
+      conversation = await prisma.conversation.create({
+        // lastMessageAt set ngay từ đầu: chốt chặn thứ hai để cột này KHÔNG BAO GIỜ null (vd client ngắt
+        // giữa lúc stream thì đoạn cập nhật cuối generator không chạy) — xem ghi chú NULL-đứng-đầu ở trên.
+        data: { hotelId: scopeHotelId, userId: ownerId, channel: 'chatbot', status: 'active', lastMessageAt: new Date() },
+      });
     }
 
     // (3) Lưu tin nhắn của khách (senderId null cho khách vãng lai)
@@ -672,15 +683,16 @@ export class ConversationService {
     let conversation = conversationId
       ? await prisma.conversation.findFirst({ where: { id: conversationId, hotelId: scopeHotelId, userId: ownerId } })
       : null;
-    if (!conversation) {
-      conversation = await prisma.conversation.create({
-        data: { hotelId: scopeHotelId, userId: ownerId, channel: 'chatbot', status: 'active' },
-      });
+
+    // Trần cứng — kiểm TRƯỚC khi create, cùng lý do hội-thoại-rỗng-che-lịch-sử như ở sendMessage.
+    if (!conversation || !isHumanHandling(conversation)) {
+      await this.assertWithinQuota(currentUser, conversation?.id ?? null);
     }
 
-    // Trần cứng: chỉ áp cho lượt CẦN gọi AI (khi người thật đang xử lý thì không tốn LLM, xử lý ở (3b))
-    if (!isHumanHandling(conversation)) {
-      await this.assertWithinQuota(currentUser, conversation.id);
+    if (!conversation) {
+      conversation = await prisma.conversation.create({
+        data: { hotelId: scopeHotelId, userId: ownerId, channel: 'chatbot', status: 'active', lastMessageAt: new Date() },
+      });
     }
 
     const userMessage = await prisma.message.create({

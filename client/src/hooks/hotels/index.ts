@@ -3,6 +3,7 @@ export { useManagedHotel } from './use-managed-hotel';
 export { usePartnerHotels } from './use-partner-hotels';
 export { useSetHotelListing } from './use-set-hotel-listing';
 export { useRoomTypes } from './use-room-types';
+export { useRoomType } from './use-room-type';
 export { useSearchHotels } from './use-search-hotels';
 export { useUpdateHotel } from './use-update-hotel';
 export { useAddHotelImages } from './use-add-hotel-images';

@@ -301,6 +301,24 @@ export class BookingService {
         });
       }
 
+      // Thông báo cho khách: đơn vừa được tạo. Nội dung bám đúng trạng thái thật —
+      // tiền mặt thì đơn đã confirmed, VNPay/SePay còn pending nên KHÔNG được nói "đã xác nhận"
+      // (khách sẽ tưởng xong việc rồi bỏ qua bước trả tiền, tới hạn giữ chỗ là mất phòng).
+      await tx.notification.create({
+        data: {
+          userId: customerId,
+          type: 'booking_confirmed',
+          title: isCash ? 'Đặt phòng thành công' : 'Đã tạo đơn — vui lòng thanh toán',
+          body: isCash
+            ? `Đơn ${booking.bookingCode} tại ${booking.hotel.name} đã được xác nhận. Bạn thanh toán khi nhận phòng.`
+            : `Đơn ${booking.bookingCode} tại ${booking.hotel.name} đang giữ chỗ trong ${holdMinutes} phút. Hoàn tất thanh toán để xác nhận.`,
+          data: { bookingId: booking.id, bookingCode: booking.bookingCode },
+          channel: 'in_app',
+          status: 'sent',
+          sentAt: new Date(),
+        },
+      });
+
       return booking;
     });
   };
@@ -690,6 +708,23 @@ export class BookingService {
         await tx.bookingVoucher.update({ where: { bookingId }, data: { usedAt: new Date() } });
       }
 
+      // Thông báo cho khách: đã bàn giao phòng. Kèm SỐ PHÒNG vì đó là thứ khách cần ngay
+      // (và là bằng chứng để đối chiếu nếu lễ tân gán nhầm phòng).
+      // Dùng `alert` vì enum NotificationType không có loại nào cho sự kiện đã-nhận-phòng
+      // (`check_in_reminder` là NHẮC TRƯỚC ngày nhận, dùng ở đây sẽ sai nghĩa).
+      await tx.notification.create({
+        data: {
+          userId: booking.customerId,
+          type: 'alert',
+          title: 'Nhận phòng thành công',
+          body: `Bạn đã nhận phòng ${room.roomNumber} cho đơn ${booking.bookingCode}. Chúc bạn có kỳ nghỉ vui vẻ!`,
+          data: { bookingId, bookingCode: booking.bookingCode, roomNumber: room.roomNumber },
+          channel: 'in_app',
+          status: 'sent',
+          sentAt: new Date(),
+        },
+      });
+
       return tx.booking.findUniqueOrThrow({ where: { id: bookingId }, include: staffBookingInclude });
     });
   };
@@ -744,6 +779,23 @@ export class BookingService {
           subtotal: invoiceSubtotal,
           taxAmount: booking.taxAmount,
           totalAmount: invoiceSubtotal.add(booking.taxAmount),
+        },
+      });
+
+      // Thông báo cho khách: đã trả phòng + mời đánh giá. Kèm số hoá đơn để khách đối chiếu
+      // (phụ thu lúc trả phòng nằm trong đó — khách hay thắc mắc chỗ này nhất).
+      // Dùng `review_request` vì đây chính là thời điểm mời đánh giá, và enum không có
+      // loại riêng cho "đã trả phòng".
+      await tx.notification.create({
+        data: {
+          userId: booking.customerId,
+          type: 'review_request',
+          title: 'Trả phòng thành công — kỳ nghỉ của bạn thế nào?',
+          body: `Đơn ${booking.bookingCode} đã hoàn tất, hoá đơn ${invoice.invoiceNumber}. Chia sẻ trải nghiệm của bạn để giúp khách sau nhé!`,
+          data: { bookingId, bookingCode: booking.bookingCode, invoiceNumber: invoice.invoiceNumber },
+          channel: 'in_app',
+          status: 'sent',
+          sentAt: new Date(),
         },
       });
 

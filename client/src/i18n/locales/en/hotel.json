@@ -84,7 +84,7 @@
     "from": "From",
     "perNight": "/ night",
     "bookNow": "Book now",
-    "plusTaxesFees": "+ {{amount}} taxes & fees",
+    "inclTaxesFees": "Includes {{amount}} taxes & fees",
     "noExtraTaxes": "No extra taxes or fees",
     "adults_one": "{{count}} adult",
     "adults_other": "{{count}} adults",
@@ -94,7 +94,8 @@
     "privateBathroom": "Private bathroom",
     "balcony": "Balcony",
     "bedsLabel": "Beds",
-    "bestValue": "Best value"
+    "bestValue": "Best value",
+    "viewDetails": "View room details"
   },
   "gallery": {
     "close": "Close gallery",
@@ -120,5 +121,21 @@
     "phone": "Phone",
     "email": "Email"
   },
-  "viewDetails": "View details"
+  "viewDetails": "View details",
+  "roomDetail": {
+    "notFoundTitle": "Room not found",
+    "notFoundDesc": "This room type is no longer on sale, or the hotel has stopped taking bookings.",
+    "backToHotel": "Back to hotel",
+    "checkInOut": "Check-in {{checkIn}} · Check-out {{checkOut}}",
+    "occupancy": "Occupancy",
+    "beds": "Beds",
+    "size": "Size",
+    "view": "View",
+    "about": "About this room",
+    "highlights": "Highlights",
+    "amenities": "Room amenities",
+    "estIncludesTaxes": "Includes ~{{amount}} taxes & fees (estimated)",
+    "soldOut": "Sold out for these dates",
+    "pickDates": "Pick your dates to see the stay total and availability."
+  }
 }
