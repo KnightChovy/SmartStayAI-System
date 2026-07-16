@@ -1,7 +1,7 @@
 import httpStatus from 'http-status';
 import { randomBytes } from 'crypto';
 import { Prisma } from '@prisma/client';
-import type { User, BookingStatus, RefundStatus } from '@prisma/client';
+import type { User, BookingStatus, RefundStatus, HotelPolicyType, ChargeFrequency } from '@prisma/client';
 import prisma from '../config/prisma';
 import ApiError from '../utils/ApiError';
 import { roleRights } from '../config/roles';
@@ -99,6 +99,57 @@ interface CancellationPolicy {
   freeUntilHours: number;
   latePenalty: string;
 }
+
+/**
+ * Tính thuế + phí dịch vụ của một booking từ HotelPolicy của khách sạn.
+ *
+ * Mỗi dòng policy loại 'tax'/'fee' có:
+ *  - isPercentage = true  ⇒ amount là PHẦN TRĂM tính trên tiền phòng (subtotal)
+ *  - isPercentage = false ⇒ amount là số tiền tuyệt đối, nhân theo chargeFrequency:
+ *      per_stay             × 1
+ *      per_night            × số đêm
+ *      per_person           × số khách
+ *      per_person_per_night × số khách × số đêm
+ * Phần trăm luôn tính trên subtotal (không nhân tiếp theo đêm/khách — subtotal đã gồm đủ số đêm rồi),
+ * nếu không sẽ tính thuế chồng thuế.
+ *
+ * Chỉ lấy 'tax' và 'fee' — 'deposit' là tiền cọc thu/trả tại khách sạn, KHÔNG cộng vào giá đơn;
+ * 'cancellation'/'parking'/'internet' là mô tả, không phải khoản thu bắt buộc.
+ */
+const computeTaxAndFees = (
+  policies: { policyType: HotelPolicyType; amount: Prisma.Decimal | null; isPercentage: boolean; chargeFrequency: ChargeFrequency | null }[],
+  subtotal: Prisma.Decimal,
+  numNights: number,
+  numGuests: number
+): { taxAmount: Prisma.Decimal; feeAmount: Prisma.Decimal } => {
+  let taxAmount = new Prisma.Decimal(0);
+  let feeAmount = new Prisma.Decimal(0);
+
+  for (const policy of policies) {
+    if ((policy.policyType !== 'tax' && policy.policyType !== 'fee') || !policy.amount) {
+      continue;
+    }
+    let value: Prisma.Decimal;
+    if (policy.isPercentage) {
+      value = subtotal.mul(policy.amount).div(100);
+    } else {
+      const multipliers: Record<ChargeFrequency, number> = {
+        per_stay: 1,
+        per_night: numNights,
+        per_person: numGuests,
+        per_person_per_night: numGuests * numNights,
+      };
+      value = policy.amount.mul(multipliers[policy.chargeFrequency ?? 'per_stay']);
+    }
+    value = value.toDecimalPlaces(2);
+    if (policy.policyType === 'tax') {
+      taxAmount = taxAmount.add(value);
+    } else {
+      feeAmount = feeAmount.add(value);
+    }
+  }
+  return { taxAmount, feeAmount };
+};
 
 const readCancellationPolicy = (settings: Prisma.JsonValue | null): CancellationPolicy => {
   const parsed = settings as unknown as { cancellation?: Partial<CancellationPolicy> } | null;
@@ -217,6 +268,12 @@ export class BookingService {
     const pricingRules = await availabilityService.getActivePricingRules([roomType.hotelId]);
     const priceInput = { id: roomType.id, hotelId: roomType.hotelId, basePrice: roomType.basePrice };
 
+    // Chính sách thuế/phí ĐANG hiệu lực — đọc một lần ở đây rồi đóng băng vào booking bên dưới
+    const taxFeePolicies = await prisma.hotelPolicy.findMany({
+      where: { hotelId: roomType.hotelId, policyType: { in: ['tax', 'fee'] } },
+      select: { policyType: true, amount: true, isPercentage: true, chargeFrequency: true },
+    });
+
     return prisma.$transaction(async (tx) => {
       const physicalRooms = await tx.room.count({ where: { roomTypeId: roomType.id } });
       if (physicalRooms === 0) {
@@ -245,6 +302,8 @@ export class BookingService {
         subtotal = subtotal.add(availabilityService.priceForNight(priceInput, night, row, pricingRules, today));
       }
 
+      const { taxAmount, feeAmount } = computeTaxAndFees(taxFeePolicies, subtotal, nights.length, payload.numGuests);
+
       const isCash = method === 'cash';
       const holdMinutes = method === 'sepay' ? SEPAY_HOLD_MINUTES : HOLD_MINUTES;
       const booking = await tx.booking.create({
@@ -260,7 +319,9 @@ export class BookingService {
           basePricePerNight: roomType.basePrice,
           subtotal,
           discountAmount: 0,
-          totalAmount: subtotal,
+          taxAmount,
+          feeAmount,
+          totalAmount: subtotal.add(taxAmount).add(feeAmount),
           // Tiền mặt: xác nhận luôn, không hạn giữ chỗ.
           // VNPay/SePay: pending + hạn giữ chỗ chờ khách trả online (SePay rộng hơn vì chuyển khoản chậm hơn).
           status: isCash ? 'confirmed' : 'pending',
@@ -675,14 +736,17 @@ export class BookingService {
         });
       }
 
-      // Hoá đơn: subtotal = tiền phòng, total = tổng booking + phụ thu (chưa tách thuế ⇒ taxAmount 0)
+      // Hoá đơn tách thuế: taxAmount lấy đúng khoản thuế đã đóng băng trên booking.
+      // Invoice không có cột phí riêng ⇒ subtotal gộp mọi khoản TRƯỚC thuế (tiền phòng − giảm giá
+      // + phí dịch vụ + phụ thu lúc trả phòng), nhờ vậy luôn giữ subtotal + taxAmount = totalAmount.
+      const invoiceSubtotal = booking.subtotal.sub(booking.discountAmount).add(booking.feeAmount).add(extra);
       const invoice = await tx.invoice.create({
         data: {
           bookingId,
           invoiceNumber: generateInvoiceNumber(),
-          subtotal: booking.subtotal,
-          taxAmount: 0,
-          totalAmount: booking.totalAmount.add(extra),
+          subtotal: invoiceSubtotal,
+          taxAmount: booking.taxAmount,
+          totalAmount: invoiceSubtotal.add(booking.taxAmount),
         },
       });
 

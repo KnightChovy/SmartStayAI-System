@@ -729,9 +729,11 @@ components:
         numNights: { type: integer }
         numGuests: { type: integer }
         basePricePerNight: { type: string, description: Decimal as string }
-        subtotal: { type: string }
+        subtotal: { type: string, description: 'Room charge only (nightly prices with pricing rules applied), before tax and fees' }
         discountAmount: { type: string }
-        totalAmount: { type: string }
+        taxAmount: { type: string, description: 'Tax frozen from the hotel tax policies at booking time' }
+        feeAmount: { type: string, description: 'Service fees frozen from the hotel fee policies at booking time' }
+        totalAmount: { type: string, description: 'subtotal - discountAmount + taxAmount + feeAmount' }
         status: { type: string, enum: [pending, confirmed, checked_in, checked_out, cancelled, no_show] }
         source: { type: string, enum: [website, mobile_app, walk_in, ota] }
         specialRequests: { type: string, nullable: true }
@@ -879,7 +881,11 @@ components:
         checkOutDate: { type: string, format: date }
         numNights: { type: integer }
         numGuests: { type: integer }
-        totalAmount: { type: string }
+        subtotal: { type: string }
+        discountAmount: { type: string }
+        taxAmount: { type: string }
+        feeAmount: { type: string }
+        totalAmount: { type: string, description: 'subtotal - discountAmount + taxAmount + feeAmount' }
         status: { type: string, enum: [pending, confirmed, checked_in, checked_out, cancelled, no_show] }
         checkedInAt: { type: string, format: date-time, nullable: true }
         checkedOutAt: { type: string, format: date-time, nullable: true }
