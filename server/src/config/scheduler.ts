@@ -3,6 +3,7 @@ import config from './config';
 import logger from './logger';
 import { bookingService } from '../services/booking.service';
 import { adminService } from '../services/admin.service';
+import { refundService } from '../services/refund.service';
 
 // Giờ Việt Nam để lịch chạy khớp với nghiệp vụ (Render chạy UTC).
 const TIMEZONE = 'Asia/Ho_Chi_Minh';
@@ -59,5 +60,14 @@ export const startScheduler = (): void => {
     timezone: TIMEZONE,
   });
 
-  logger.info(`[Cron] Đã bật scheduler (${TIMEZONE}): release-holds mỗi 5', sweep-no-shows 02:00, settle-commissions 03:00`);
+  // Tự duyệt yêu cầu hoàn tiền khách sạn để quá hạn không phản hồi — 04:00 hằng ngày.
+  // Không có job này thì khách sạn chỉ cần im lặng là khách không bao giờ nhận được tiền.
+  cron.schedule('0 4 * * *', () => runJob('auto-approve-refunds', () => refundService.autoApproveStaleRefunds()), {
+    timezone: TIMEZONE,
+  });
+
+  logger.info(
+    `[Cron] Đã bật scheduler (${TIMEZONE}): release-holds mỗi 5', sweep-no-shows 02:00, ` +
+      `settle-commissions 03:00, auto-approve-refunds 04:00`
+  );
 };

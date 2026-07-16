@@ -8,6 +8,9 @@ import { hotelService } from './hotel.service';
 import { walletService } from './wallet.service';
 import type { RefundFilter, RefundQueryOptions, ReviewRefundDto, ProcessRefundDto } from '../dto/refund.dto';
 
+// Số ngày khách sạn có để phản hồi một yêu cầu hoàn tiền. Quá hạn ⇒ hệ thống tự duyệt.
+const REVIEW_DEADLINE_DAYS = 3;
+
 // Thông tin kèm theo khi trả yêu cầu hoàn tiền: đủ để người duyệt quyết định mà không phải gọi thêm API
 const refundInclude = {
   requesterUser: { select: { id: true, fullName: true, email: true, phone: true } },
@@ -197,6 +200,33 @@ export class RefundService {
         `(mã giao dịch ${payload.refundTransactionId}, admin ${currentUser.id})`
     );
     return result;
+  };
+
+  /**
+   * [Cron] Tự duyệt các yêu cầu khách sạn để quá REVIEW_DEADLINE_DAYS ngày mà không phản hồi.
+   *
+   * Vì sao phải có: tiền hoàn được tính TỰ ĐỘNG theo chính sách huỷ của CHÍNH khách sạn đó — khách
+   * có quyền nhận theo đúng hợp đồng đã công bố. Bước duyệt là để khách sạn xem xét NGOẠI LỆ, không
+   * phải quyền phủ quyết. Không có hạn chót thì khách sạn chỉ cần im lặng là khách KHÔNG BAO GIỜ lấy
+   * được tiền — đúng thứ mà cả Booking.com/Agoda đều không cho phép.
+   *
+   * Đánh dấu "tự động": reviewedAt CÓ giá trị nhưng reviewedBy = null (không người nào bấm duyệt).
+   * Một updateMany có điều kiện `status: 'pending'` là đủ: vừa atomic, vừa idempotent nếu cron chạy chồng.
+   * @returns số yêu cầu đã tự duyệt
+   */
+  autoApproveStaleRefunds = async (): Promise<number> => {
+    const cutoff = new Date(Date.now() - REVIEW_DEADLINE_DAYS * 24 * 60 * 60 * 1000);
+    const { count } = await prisma.refund.updateMany({
+      where: { status: 'pending', createdAt: { lte: cutoff } },
+      data: { status: 'approved', reviewedAt: new Date() },
+    });
+    if (count > 0) {
+      logger.warn(
+        `[Refund] Tự duyệt ${count} yêu cầu quá ${REVIEW_DEADLINE_DAYS} ngày khách sạn không phản hồi — ` +
+          `chờ Platform Manager chuyển khoản`
+      );
+    }
+    return count;
   };
 
   /**

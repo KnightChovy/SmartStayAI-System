@@ -790,8 +790,16 @@ components:
       type: object
       description: >
         A refund request. Lifecycle: `pending` (guest cancelled a paid booking, waiting for the hotel
-        to review) → `approved` (hotel agreed) → `processed` (admin actually transferred the money),
-        or `rejected`. Money only leaves the hotel wallet/commission at the `processed` step.
+        to review) → `approved` (hotel agreed) → `processed` (Platform Manager actually transferred the
+        money), or `rejected`. Money only leaves the hotel wallet/commission at the `processed` step.
+
+
+        The hotel has **3 days** to review. After that a nightly job auto-approves the request, because
+        the refund amount comes from the hotel's OWN cancellation policy — reviewing is for exceptions,
+        not a veto. An auto-approved request has `reviewedAt` set but `reviewedBy: null` (nobody clicked),
+        so the UI can label it "tự động duyệt (quá hạn phản hồi)".
+
+
         Orphan-money refunds (payment arrived after the hold expired) are created straight as
         `approved` — there is nothing for the hotel to review, it is a system fault.
       properties:
@@ -823,7 +831,9 @@ components:
         reviewer:
           type: object
           nullable: true
-          description: Hotel-side user who approved/rejected
+          description: >
+            Hotel-side user who approved/rejected. NULL together with a non-null `reviewedAt` means the
+            system auto-approved it after the 3-day review deadline passed.
           properties:
             id: { type: string, format: uuid }
             fullName: { type: string }
