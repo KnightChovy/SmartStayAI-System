@@ -4476,8 +4476,11 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
     put:
-      summary: Replace all hotel policies / fees (management)
-      description: Hotel owner or manageHotels. Replaces the whole set; an empty array clears all.
+      summary: Replace all hotel policies (management)
+      description: >
+        Hotel owner or manageHotels. Replaces the whole set; an empty array clears all.
+        These are house rules in plain text and affect no amount — taxes and fees now live at
+        PUT /hotels/{hotelId}/charges.
       tags: [HotelManagement]
       security: [{ bearerAuth: [] }]
       parameters:
@@ -4494,22 +4497,79 @@ paths:
                   type: array
                   items:
                     type: object
-                    required: [policyType]
+                    required: [title]
                     properties:
-                      policyType: { type: string, enum: [cancellation, tax, fee, parking, internet, deposit] }
-                      code: { type: string, nullable: true }
-                      description: { type: string, nullable: true }
-                      amount: { type: number, minimum: 0, nullable: true }
-                      isPercentage: { type: boolean }
-                      chargeFrequency: { type: string, enum: [per_stay, per_night, per_person, per_person_per_night], nullable: true }
-                      minAge: { type: integer, minimum: 0, maximum: 120, nullable: true }
-                      maxAge: { type: integer, minimum: 0, maximum: 120, nullable: true }
+                      title: { type: string, maxLength: 200, example: 'Chính sách huỷ phòng' }
+                      description: { type: string, maxLength: 2000, nullable: true }
+                      important: { type: boolean, default: false }
       responses:
         '200':
-          description: Hotel policies after replace
+          description: Hotel policies after replace, important ones first
           content:
             application/json:
               schema: { type: array, items: { $ref: '#/components/schemas/HotelPolicy' } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /hotels/{hotelId}/charges:
+    get:
+      summary: List hotel taxes and fees (management)
+      description: Hotel owner or manageHotels.
+      tags: [HotelManagement]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: path, name: hotelId, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Taxes and fees
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/HotelCharge' } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      summary: Replace all hotel taxes and fees (management)
+      description: >
+        Hotel owner or manageHotels. Replaces the whole set; an empty array means the hotel charges
+        no tax or fee. THIS CHANGES WHAT GUESTS PAY on new bookings — existing bookings keep the
+        amounts frozen at booking time.
+
+
+        chargeFrequency is REQUIRED when isPercentage is false, and FORBIDDEN when it is true: a
+        percentage is always computed on the whole room charge, so sending a frequency alongside it
+        would suggest "8% per night" while the engine never multiplies it by nights.
+      tags: [HotelManagement]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: path, name: hotelId, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [charges]
+              properties:
+                charges:
+                  type: array
+                  items:
+                    type: object
+                    required: [chargeType, name, amount]
+                    properties:
+                      chargeType: { type: string, enum: [tax, fee] }
+                      name: { type: string, maxLength: 200, example: 'VAT' }
+                      amount: { type: number, minimum: 0, example: 8 }
+                      isPercentage: { type: boolean, default: false }
+                      chargeFrequency: { type: string, enum: [per_stay, per_night, per_person, per_person_per_night] }
+      responses:
+        '200':
+          description: Taxes and fees after replace
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/HotelCharge' } }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }

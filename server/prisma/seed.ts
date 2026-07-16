@@ -571,14 +571,20 @@ async function main() {
             { contactType: 'invoices', email: 'invoice-danang@smartstay.ai' },
           ],
         },
+        // Điều khoản = văn bản cho khách đọc, KHÔNG ảnh hưởng tiền
         policies: {
           create: [
-            { policyType: 'cancellation', description: 'Huỷ miễn phí trước 48 giờ so với giờ nhận phòng.' },
-            { policyType: 'deposit', description: 'Đặt cọc minibar khi nhận phòng, hoàn lại lúc trả phòng.', amount: 200_000, isPercentage: false, chargeFrequency: 'per_stay' },
-            // Hai dòng dưới được engine tính giá đọc (booking.service.computeTaxAndFees) và cộng vào
-            // tổng đơn: một khoản theo phần trăm, một khoản cố định theo đêm.
-            { policyType: 'tax', code: 'VAT', description: 'Thuế giá trị gia tăng 8%.', amount: 8, isPercentage: true },
-            { policyType: 'fee', code: 'SERVICE', description: 'Phí dịch vụ 50.000đ mỗi đêm.', amount: 50_000, isPercentage: false, chargeFrequency: 'per_night' },
+            { title: 'Chính sách huỷ phòng', description: 'Huỷ miễn phí trước 48 giờ so với giờ nhận phòng.', important: true },
+            { title: 'Đặt cọc', description: 'Đặt cọc minibar 200.000đ khi nhận phòng, hoàn lại lúc trả phòng.' },
+            { title: 'Giờ nhận / trả phòng', description: 'Nhận phòng từ 14:00, trả phòng trước 12:00.' },
+          ],
+        },
+        // Khoản thu = con số engine tính giá đọc rồi cộng vào tổng đơn (availability.computeTaxAndFees):
+        // một khoản theo phần trăm, một khoản cố định theo đêm — để test cả hai nhánh tính.
+        charges: {
+          create: [
+            { chargeType: 'tax', name: 'VAT', amount: 8, isPercentage: true },
+            { chargeType: 'fee', name: 'Phí dịch vụ', amount: 50_000, isPercentage: false, chargeFrequency: 'per_night' },
           ],
         },
         nearbyPlaces: {
