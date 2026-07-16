@@ -2,10 +2,19 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { formatDistanceToNowStrict } from 'date-fns';
-import { Bot, Headset, Loader2, MessageSquare, Send, Sparkles } from 'lucide-react';
+import {
+  Bot,
+  Headset,
+  Loader2,
+  MessageSquare,
+  Plus,
+  Send,
+  Sparkles,
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import { HotelPickerPanel } from '@/components/account/HotelPickerPanel';
 import { Button } from '@/components/ui/button';
 import {
   useConversationSocket,
@@ -19,17 +28,21 @@ import { useAuthStore } from '@/stores/authStore';
 import type {
   ConversationMode,
   ConversationSocketMessage,
+  HotelConversationListItem,
+  MyConversationListItem,
   MyConversationResponse,
 } from '@/types/chat.types';
 import { errorMessage } from '@/utils/errorMessage';
+import { hotelInitials } from '@/utils/hotelInitials';
 
-/** Chữ cái đầu tên khách sạn cho avatar khi KS chưa có ảnh. */
-const hotelInitials = (name: string): string => {
-  const parts = name.split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return '?';
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0] + parts[1][0]).toUpperCase();
-};
+/**
+ * Dòng hội thoại có gắn khách sạn. Hội thoại TOÀN SÀN (khung chat nổi) cũng về đây nhưng với
+ * `hotel: null` — trang này chỉ nhắn với lễ tân từng khách sạn nên phải lọc bỏ, nếu không
+ * `item.hotel.name` sẽ ném lỗi và làm trắng cả trang.
+ */
+const isHotelConversation = (
+  item: MyConversationListItem
+): item is HotelConversationListItem => item.hotel !== null;
 
 const clockTime = (iso: string): string => {
   const date = new Date(iso);
@@ -47,9 +60,13 @@ const relativeTime = (iso: string | null): string => {
 };
 
 /**
- * Trang chat đầy đủ của khách (`/account/messages`) — thanh bên liệt kê các khách sạn đã nhắn kiểu
- * Messenger, bên phải là toàn bộ hội thoại. Khung chat nổi ở góc màn hình vẫn giữ để hỏi nhanh;
- * trang này dành cho xem lại lịch sử và trao đổi dài với lễ tân.
+ * Trang chat đầy đủ của khách (`/account/messages`) — nhắn RIÊNG với **lễ tân từng khách sạn**.
+ * Thanh bên liệt kê các KS đã nhắn kiểu Messenger; nút + mở bộ chọn để nhắn với một khách sạn mới
+ * bất kỳ trên sàn.
+ *
+ * Khác khung chat nổi ở góc màn hình: chỗ đó là trợ lý AI **toàn sàn** (chỉ tìm/gợi ý khách sạn,
+ * không gắn KS nào nên không có lễ tân). Ở trang này khách chọn đúng khách sạn mình muốn rồi gạt
+ * sang "Lễ tân" để nói chuyện với người thật.
  */
 export default function MessagesPage() {
   // 2 namespace: nhãn chat dùng chung với widget ở `common`, chữ riêng của khu account ở `account`.
@@ -59,15 +76,20 @@ export default function MessagesPage() {
   const queryClient = useQueryClient();
 
   const { data: listData, isLoading } = useMyConversations(isAuthenticated);
-  const conversations = useMemo(() => listData ?? [], [listData]);
+  const conversations = useMemo(
+    () => (listData ?? []).filter(isHotelConversation),
+    [listData]
+  );
 
   // Hội thoại đang mở nằm trên URL để F5 / chia sẻ link giữ đúng khách sạn.
   const [params, setParams] = useSearchParams();
   const hotelIdParam = params.get('hotel') ?? undefined;
   const activeHotelId = hotelIdParam ?? conversations[0]?.hotelId;
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
 
   const { data: conversation, isLoading: isLoadingThread } = useMyConversation(
-    isAuthenticated ? activeHotelId : undefined
+    activeHotelId,
+    { enabled: isAuthenticated && Boolean(activeHotelId) }
   );
 
   const sendMessage = useSendChatMessage();
@@ -76,16 +98,26 @@ export default function MessagesPage() {
   const threadRef = useRef<HTMLDivElement>(null);
   const sendingRef = useRef(false);
 
-  const selectHotel = (hotelId: string) => {
-    setParams(
-      prev => {
-        const next = new URLSearchParams(prev);
-        next.set('hotel', hotelId);
-        return next;
-      },
-      { replace: true }
-    );
-  };
+  const selectHotel = useCallback(
+    (hotelId: string) => {
+      setParams(
+        prev => {
+          const next = new URLSearchParams(prev);
+          next.set('hotel', hotelId);
+          return next;
+        },
+        { replace: true }
+      );
+    },
+    [setParams]
+  );
+
+  // Tên KS đang mở. KS vừa chọn từ bộ chọn thì chưa có hội thoại nên chưa có dòng ở thanh bên ⇒
+  // undefined, lúc đó chỉ hiện lời mời gửi tin đầu tiên.
+  const activeHotel = useMemo(
+    () => conversations.find(item => item.hotelId === activeHotelId)?.hotel,
+    [conversations, activeHotelId]
+  );
 
   const messages = useMemo(() => conversation?.messages ?? [], [conversation]);
 
@@ -100,6 +132,10 @@ export default function MessagesPage() {
   // Tin đẩy về real-time (câu trả lời của lễ tân). Ghi thẳng vào cache của hội thoại đang mở.
   const handleSocketMessage = useCallback(
     (message: ConversationSocketMessage) => {
+      // Không dùng `?? null`: khoá `null` là của hội thoại TOÀN SÀN (khung chat nổi) — ghi nhầm vào
+      // đó là đổ tin của khách sạn này sang luồng khác. Ở đây socket chỉ chạy khi đã có hội thoại,
+      // tức `activeHotelId` chắc chắn có giá trị.
+      if (!activeHotelId) return;
       queryClient.setQueryData<MyConversationResponse | null>(
         ['chat', 'my-conversation', activeHotelId],
         old => {
@@ -169,6 +205,16 @@ export default function MessagesPage() {
     }
   };
 
+  const picker = isPickerOpen ? (
+    <HotelPickerPanel
+      onClose={() => setIsPickerOpen(false)}
+      onSelect={hotelId => {
+        setIsPickerOpen(false);
+        selectHotel(hotelId);
+      }}
+    />
+  ) : null;
+
   if (isLoading) {
     return (
       <div className="flex h-96 items-center justify-center">
@@ -177,14 +223,27 @@ export default function MessagesPage() {
     );
   }
 
-  if (conversations.length === 0) {
+  // Chưa nhắn với KS nào VÀ cũng chưa chọn KS nào ⇒ mời chọn khách sạn. Đây là đường DUY NHẤT để
+  // bắt đầu, vì khung chat nổi đã chuyển thành trợ lý toàn sàn (không còn gắn khách sạn).
+  if (conversations.length === 0 && !activeHotelId) {
     return (
-      <div className="flex h-96 flex-col items-center justify-center gap-2 text-center">
-        <MessageSquare className="size-9 text-on-surface-variant/40" />
-        <p className="text-sm text-on-surface-variant">
-          {tAccount('messages.empty')}
-        </p>
-      </div>
+      <>
+        <div className="flex h-96 flex-col items-center justify-center gap-3 text-center">
+          <MessageSquare className="size-9 text-on-surface-variant/40" />
+          <p className="max-w-sm text-sm text-on-surface-variant">
+            {tAccount('messages.empty')}
+          </p>
+          <Button
+            type="button"
+            className="rounded-full"
+            onClick={() => setIsPickerOpen(true)}
+          >
+            <Plus className="mr-1.5 size-4" />
+            {tAccount('messages.newChat')}
+          </Button>
+        </div>
+        {picker}
+      </>
     );
   }
 
@@ -193,7 +252,8 @@ export default function MessagesPage() {
     // ~208px (navbar + py-10 + header chào mừng) — thêm tiêu đề nữa là khung chat bị dìm xuống và lùn đi.
     // Chiều cao trừ 14rem (224px) ≈ đúng phần bị chiếm, nên khung chat ăn gần hết chiều cao còn lại
     // mà không tràn xuống dưới nếp gấp; min-h giữ cho màn hình thấp vẫn dùng được.
-    <div className="flex h-[calc(100vh-14rem)] min-h-120 overflow-hidden rounded-2xl border border-outline-variant/40 bg-surface">
+    <>
+      <div className="flex h-[calc(100vh-14rem)] min-h-120 overflow-hidden rounded-2xl border border-outline-variant/40 bg-surface">
         {/* Thanh bên: các khách sạn đã nhắn. Trên mobile ẩn khi đang mở một hội thoại. */}
         <aside
           className={cn(
@@ -201,6 +261,21 @@ export default function MessagesPage() {
             activeHotelId ? 'hidden sm:block' : 'block'
           )}
         >
+          <div className="flex items-center justify-between gap-2 border-b border-outline-variant/30 px-3 py-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-on-surface-variant">
+              {tAccount('nav.messages')}
+            </span>
+            <button
+              type="button"
+              onClick={() => setIsPickerOpen(true)}
+              aria-label={tAccount('messages.newChat')}
+              title={tAccount('messages.newChat')}
+              className="rounded-full p-1 text-on-surface-variant transition-colors hover:bg-surface-container-low hover:text-on-surface"
+            >
+              <Plus className="size-4" />
+            </button>
+          </div>
+
           {conversations.map(item => {
             const isActive = item.hotelId === activeHotelId;
             return (
@@ -210,9 +285,7 @@ export default function MessagesPage() {
                 onClick={() => selectHotel(item.hotelId)}
                 className={cn(
                   'flex w-full items-start gap-3 border-b border-outline-variant/30 px-3 py-3 text-left transition-colors',
-                  isActive
-                    ? 'bg-primary/5'
-                    : 'hover:bg-surface-container-low'
+                  isActive ? 'bg-primary/5' : 'hover:bg-surface-container-low'
                 )}
               >
                 <span className="relative shrink-0">
@@ -266,7 +339,13 @@ export default function MessagesPage() {
             activeHotelId ? 'flex' : 'hidden sm:flex'
           )}
         >
-          {isLoadingThread || !conversation ? (
+          {!activeHotelId ? (
+            <div className="flex flex-1 items-center justify-center px-6 text-center">
+              <p className="text-sm text-on-surface-variant">
+                {tAccount('messages.selectPrompt')}
+              </p>
+            </div>
+          ) : isLoadingThread ? (
             <div className="flex flex-1 items-center justify-center">
               <Loader2 className="size-5 animate-spin text-on-surface-variant" />
             </div>
@@ -276,6 +355,16 @@ export default function MessagesPage() {
                 ref={threadRef}
                 className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-surface-container-lowest/40 p-4"
               >
+                {/* KS vừa chọn từ bộ chọn: chưa có hội thoại nào ⇒ mời gửi tin đầu tiên. Nhánh này
+                    trước đây rơi vào spinner vĩnh viễn vì `!conversation` bị coi là đang tải. */}
+                {!conversation && (
+                  <p className="py-8 text-center text-sm text-on-surface-variant">
+                    {tAccount('messages.startHint', {
+                      hotel: activeHotel?.name ?? '',
+                    })}
+                  </p>
+                )}
+
                 {messages.map(message => {
                   const isGuest = message.senderType === 'user';
                   const isStaff = message.senderType === 'staff';
@@ -334,41 +423,44 @@ export default function MessagesPage() {
               </div>
 
               <div className="border-t border-outline-variant/40 p-3">
-                {/* Công tắc: khách tự chọn nói chuyện với AI hay lễ tân. */}
-                <div className="mb-2 flex rounded-full border border-outline-variant/40 bg-surface-container-low p-0.5">
-                  {(
-                    [
-                      { mode: 'ai', label: t('chat.ai'), Icon: Sparkles },
-                      {
-                        mode: 'human',
-                        label: t('chat.frontDesk'),
-                        Icon: Headset,
-                      },
-                    ] as const
-                  ).map(({ mode, label, Icon }) => {
-                    const isActive = (isHandoff ? 'human' : 'ai') === mode;
-                    return (
-                      <button
-                        key={mode}
-                        type="button"
-                        onClick={() => void handleSetMode(mode)}
-                        disabled={setMode.isPending}
-                        aria-pressed={isActive}
-                        className={cn(
-                          'flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-60',
-                          isActive
-                            ? mode === 'human'
-                              ? 'bg-emerald-500/15 text-emerald-700'
-                              : 'bg-surface text-on-surface shadow-sm'
-                            : 'text-on-surface-variant hover:text-on-surface'
-                        )}
-                      >
-                        <Icon className="size-3" />
-                        {label}
-                      </button>
-                    );
-                  })}
-                </div>
+                {/* Công tắc: khách tự chọn nói chuyện với AI hay lễ tân. Cần có hội thoại rồi mới
+                    đổi được chế độ nên chỉ hiện sau khi đã gửi tin đầu tiên. */}
+                {conversation && (
+                  <div className="mb-2 flex rounded-full border border-outline-variant/40 bg-surface-container-low p-0.5">
+                    {(
+                      [
+                        { mode: 'ai', label: t('chat.ai'), Icon: Sparkles },
+                        {
+                          mode: 'human',
+                          label: t('chat.frontDesk'),
+                          Icon: Headset,
+                        },
+                      ] as const
+                    ).map(({ mode, label, Icon }) => {
+                      const isActive = (isHandoff ? 'human' : 'ai') === mode;
+                      return (
+                        <button
+                          key={mode}
+                          type="button"
+                          onClick={() => void handleSetMode(mode)}
+                          disabled={setMode.isPending}
+                          aria-pressed={isActive}
+                          className={cn(
+                            'flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-60',
+                            isActive
+                              ? mode === 'human'
+                                ? 'bg-emerald-500/15 text-emerald-700'
+                                : 'bg-surface text-on-surface shadow-sm'
+                              : 'text-on-surface-variant hover:text-on-surface'
+                          )}
+                        >
+                          <Icon className="size-3" />
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
 
                 <div className="flex items-end gap-2">
                   <textarea
@@ -377,7 +469,10 @@ export default function MessagesPage() {
                     onChange={event => setDraft(event.target.value)}
                     onKeyDown={event => {
                       // Bộ gõ tiếng Việt: Enter khi đang ghép chữ là để chốt chữ, không phải để gửi.
-                      if (event.nativeEvent.isComposing || event.keyCode === 229)
+                      if (
+                        event.nativeEvent.isComposing ||
+                        event.keyCode === 229
+                      )
                         return;
                       if (event.key === 'Enter' && !event.shiftKey) {
                         event.preventDefault();
@@ -407,6 +502,8 @@ export default function MessagesPage() {
             </>
           )}
         </div>
-    </div>
+      </div>
+      {picker}
+    </>
   );
 }

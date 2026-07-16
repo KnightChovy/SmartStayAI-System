@@ -208,6 +208,14 @@
     "submitError": "Không thể gửi đánh giá. Vui lòng thử lại."
   },
   "messages": {
-    "empty": "Bạn chưa nhắn với khách sạn nào. Mở khung chat ở góc màn hình để bắt đầu."
+    "empty": "Bạn chưa nhắn với khách sạn nào. Chọn một khách sạn để bắt đầu trao đổi với lễ tân.",
+    "newChat": "Nhắn với khách sạn",
+    "pickHotel": "Chọn khách sạn bạn muốn nhắn",
+    "searchHotel": "Tìm khách sạn…",
+    "noHotel": "Không tìm thấy khách sạn phù hợp.",
+    "startHint": "Gửi tin đầu tiên để bắt đầu trao đổi với lễ tân {{hotel}}.",
+    "selectPrompt": "Chọn một khách sạn bên trái để xem cuộc trò chuyện.",
+    "close": "Đóng",
+    "showingCount": "Đang hiện {{shown}}/{{total}} khách sạn. Gõ tên thành phố để thu hẹp."
   }
 }
