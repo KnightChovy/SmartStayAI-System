@@ -26,6 +26,8 @@ export interface DatePickerProps {
   className?: string;
 
   clearable?: boolean;
+  /** Nhãn nút xoá ngày — truyền vào khi ở vùng đã i18n (mặc định giữ tiếng Việt cho portal partner). */
+  clearLabel?: string;
 }
 
 function parseDay(value?: string | null): Date | undefined {
@@ -45,6 +47,7 @@ export function DatePicker({
   ariaInvalid,
   className,
   clearable = true,
+  clearLabel = 'Xoá ngày',
 }: DatePickerProps) {
   const [open, setOpen] = React.useState(false);
   const selected = parseDay(value);
@@ -108,7 +111,7 @@ export function DatePicker({
               }}
             >
               <X className="size-3.5" />
-              Xoá ngày
+              {clearLabel}
             </Button>
           </div>
         ) : null}

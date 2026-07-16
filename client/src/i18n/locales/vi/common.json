@@ -3,14 +3,15 @@
     "home": "Trang chủ",
     "deals": "Ưu đãi",
     "destinations": "Điểm đến",
-    "stays": "Chỗ nghỉ",
     "listProperty": "Đăng chỗ nghỉ",
     "login": "Đăng nhập",
     "register": "Đăng ký",
     "logout": "Đăng xuất",
     "loggingOut": "Đang đăng xuất...",
     "dashboard": "Bảng điều khiển",
-    "myAccount": "Tài khoản của tôi"
+    "myAccount": "Tài khoản của tôi",
+    "openMenu": "Mở menu",
+    "closeMenu": "Đóng menu"
   },
   "language": {
     "label": "Ngôn ngữ",
@@ -32,5 +33,7 @@
   "nights_other": "{{count}} đêm",
   "guestsCount_one": "{{count}} khách",
   "guestsCount_other": "{{count}} khách",
-  "qrEmptyHint": "Mã QR e-voucher sẽ hiển thị sau khi đơn được xác nhận / thanh toán."
+  "qrEmptyHint": "Mã QR e-voucher sẽ hiển thị sau khi đơn được xác nhận / thanh toán.",
+  "clearDate": "Xoá ngày",
+  "search": "Tìm kiếm"
 }

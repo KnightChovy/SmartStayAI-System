@@ -1,6 +1,6 @@
 import { CalendarClock, LogIn, Loader2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { formatDateShort } from '@/utils/formatDate';
+import { formatDate } from '@/utils/formatDate';
 
 interface CheckInConfirmModalProps {
   open: boolean;
@@ -74,7 +74,7 @@ export function CheckInConfirmModal({
             <Row label="Room type" value={roomTypeName} />
             <Row
               label="Stay"
-              value={`${formatDateShort(checkInDate)} → ${formatDateShort(checkOutDate)} (${numNights} night${numNights === 1 ? '' : 's'})`}
+              value={`${formatDate(checkInDate)} → ${formatDate(checkOutDate)} (${numNights} night${numNights === 1 ? '' : 's'})`}
             />
             {voucherCode && <Row label="Voucher" value={voucherCode} mono />}
           </dl>

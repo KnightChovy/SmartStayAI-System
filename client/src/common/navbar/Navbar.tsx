@@ -29,6 +29,12 @@ export interface CommonNavbarProps {
   rightContent?: React.ReactNode;
   /** Rendered before the default actions (bell + avatar). Kept even when the default block is used. */
   leadingActions?: React.ReactNode;
+  /** Replaces the default (display-only) search box with a portal-specific one. */
+  searchSlot?: React.ReactNode;
+  /** Replaces the default inert bell button — pass a real notifications panel. */
+  bellSlot?: React.ReactNode;
+  /** Replaces the default inert help button — pass a real help menu. */
+  helpSlot?: React.ReactNode;
   showDate?: boolean;
   userName?: string;
 }
@@ -40,6 +46,9 @@ export default function CommonNavbar({
   onSearch,
   rightContent,
   leadingActions,
+  searchSlot,
+  bellSlot,
+  helpSlot,
   showDate = true,
   userName = 'User',
 }: CommonNavbarProps) {
@@ -94,32 +103,38 @@ export default function CommonNavbar({
             ))}
         </div>
 
-        <div className="relative w-full max-w-[500px]">
-          <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            className="h-8 w-full rounded-sm bg-white-container-low pl-8 text-xs"
-            placeholder={searchPlaceholder}
-            value={searchValue}
-            onChange={handleSearchChange}
-          />
-        </div>
+        {searchSlot ?? (
+          <div className="relative w-full max-w-[500px]">
+            <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              className="h-8 w-full rounded-sm bg-white-container-low pl-8 text-xs"
+              placeholder={searchPlaceholder}
+              value={searchValue}
+              onChange={handleSearchChange}
+            />
+          </div>
+        )}
 
         <div className="flex items-center gap-2">
           {leadingActions}
           {rightContent || (
             <>
-              <button
-                className="inline-flex size-8 items-center justify-center rounded-full border border-outline-variant/40"
-                type="button"
-              >
-                <Bell className="size-3.5" />
-              </button>
-              <button
-                className="inline-flex size-8 items-center justify-center rounded-full border border-outline-variant/40"
-                type="button"
-              >
-                <HelpCircle className="size-3.5" />
-              </button>
+              {bellSlot ?? (
+                <button
+                  className="inline-flex size-8 items-center justify-center rounded-full border border-outline-variant/40"
+                  type="button"
+                >
+                  <Bell className="size-3.5" />
+                </button>
+              )}
+              {helpSlot ?? (
+                <button
+                  className="inline-flex size-8 items-center justify-center rounded-full border border-outline-variant/40"
+                  type="button"
+                >
+                  <HelpCircle className="size-3.5" />
+                </button>
+              )}
               <div className="h-6 w-px bg-outline-variant/40" />
               <DropdownMenu>
                 <DropdownMenuTrigger className="flex items-center gap-2 rounded-full p-1 pr-2 outline-none transition-colors hover:bg-surface-container-low data-[state=open]:bg-surface-container-low cursor-pointer">

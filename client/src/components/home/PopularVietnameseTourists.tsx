@@ -1,68 +1,107 @@
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
+import { MapPin } from 'lucide-react';
+import { useSearchHotels } from '@/hooks/hotels';
+import type { HotelSearchResult } from '@/types/hotel.types';
 
+/** Điểm đến suy ra từ danh sách khách sạn thật. */
+interface Destination {
+  city: string;
+  hotelCount: number;
+  img: string | null;
+}
+
+/** Ảnh đại diện của một khách sạn: ưu tiên ảnh primary, sau đó ảnh đầu tiên. */
+function coverOf(hotel: HotelSearchResult): string | null {
+  const images = hotel.images ?? [];
+  return (images.find(i => i.isPrimary) ?? images[0])?.url ?? null;
+}
+
+/**
+ * Điểm đến phổ biến — gom từ chính khách sạn đang bán (`GET /hotels`), KHÔNG hardcode.
+ * Trước đây khối này liệt kê Singapore / Thái Lan / Hàn Quốc / Nhật Bản: sàn chỉ có khách sạn
+ * ở Việt Nam nên bấm vào luôn ra 0 kết quả. Suy từ dữ liệu thật thì mỗi thẻ chắc chắn dẫn tới
+ * một trang search có phòng, và tự cập nhật khi partner mở bán ở thành phố mới.
+ */
 export default function PopularVietnameseTourists() {
   const navigate = useNavigate();
   const { t } = useTranslation('home');
-  const destinations = [
-    {
-      city: 'Singapore',
-      name: t('popular.singapore.name'),
-      desc: t('popular.singapore.desc'),
-      img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAd-hkER3UuTQlK6lbHLjLXOOhe_yU3CTlU9JlHrH9PG3Um60Itp0JjXAWixThdgmGZU2udYfaqPRHF_qrl6SXA3C5G4n3R8sMAgQVqMANXr2KDucRQtm6IeOmGeDHGegpDIhXNYeVUR8Cucy7YD0y-mUYAHks3H7Eq2A0Hoda49xfDhBT7knd6nKIX-d6jIVdty3KjyDCEdzktPYNvFDvOmn7Azlup6U5pwWLWXF3-QP6h_Ae-dJ0mErF6TTUJlXH90u3pTvI6FTTf',
-    },
-    {
-      city: 'Thailand',
-      name: t('popular.thailand.name'),
-      desc: t('popular.thailand.desc'),
-      img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDgKeUfZ7kGY8qU1muxQFwxxte7noVhzaIxn11chzfkBy1Y_yrzegbZ30Ag59N_Xyc8b2iTLMG5D_d12vRAQGlXHan-bTMDl0PDMzbrUbfcTsfopOSseyJv1mqJUJsnMzvaSWuIWtkX02Z_j_J6e9Xe1oK8DE8HiqufpYFGn9uW1Z4XZSBDLmhoNpYXY3LMfMZiMwaU2i4XrwrOVuPEYExeXwfmJ922U9Fo2zXGUBN18uu4ZjoaF2LbXZoMgP5k6bA0BTA-j2tCL5ke',
-    },
-    {
-      city: 'South Korea',
-      name: t('popular.korea.name'),
-      desc: t('popular.korea.desc'),
-      img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBGOEAoS4KxA_K8BYCwvSEYzOW6KhAVpyfmA4L2i7rr1olyX4khQAnJ0F81FjbGmN8GVS1yHQ0NKjncikzLTvcLl-3XxAOvDhOap-l-ckaMb7CwXlRolUtkJ7XwRd2ZQTUV5kUEmWZCM52okS-1PFk_qo35-xPBhgvg15lHuciXqdDupXznjInfuCmvBSHrkpw0yqv8PFkaOvPoeDitlgJfI_br7twBK9zqpU-YOfV-ofKzdUO9vIpy4rDOTJhEzvcCpcHZ2lRWSADg',
-    },
-    {
-      city: 'Japan',
-      name: t('popular.japan.name'),
-      desc: t('popular.japan.desc'),
-      img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAssoyTZax5jYTodEJ2brm0_3ROCW3IppsbfuRRlkOJGNcJCEBc0dHZBEZICWfRJjUa726fowJv6dtNCQ-ZNL_i4xv1ORnSEnN6bjEQVxEgWVcO8gXgpKCFURMX4KchxkmAhim3D6fM3qFCIqKmNPlokxbUK6x79kPOBKABKhF9E4O3CQmUnMHsbnI0w_96PLuC_EUD0ogneSzFkAMw56Aa1ACL6bxRk81kEWnti9fm4i-AQ_5v5VML9taTL2k3_TJ6brSxM2cjEbZz',
-    },
-  ];
+  const { data, isLoading } = useSearchHotels({ limit: 50 });
+
+  const destinations = useMemo<Destination[]>(() => {
+    const byCity = new Map<string, Destination>();
+    for (const hotel of data?.results ?? []) {
+      const existing = byCity.get(hotel.city);
+      if (existing) {
+        existing.hotelCount += 1;
+        existing.img ??= coverOf(hotel);
+      } else {
+        byCity.set(hotel.city, {
+          city: hotel.city,
+          hotelCount: 1,
+          img: coverOf(hotel),
+        });
+      }
+    }
+    return [...byCity.values()]
+      .sort((a, b) => b.hotelCount - a.hotelCount)
+      .slice(0, 8);
+  }, [data]);
+
+  // Chưa có khách sạn nào đang bán → ẩn hẳn khối thay vì hiện lưới rỗng.
+  if (!isLoading && destinations.length === 0) return null;
 
   return (
     <section className="max-w-7xl mx-auto px-margin-mobile md:px-8 mb-section-gap w-full">
       <h2 className="font-be-vietnam text-2xl font-bold text-on-surface mb-8">
         {t('popular.title')}
       </h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-        {destinations.map(dest => {
-          const name = dest.name;
-          return (
-            <div
+
+      {isLoading ? (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="animate-pulse">
+              <div className="h-36 sm:h-48 rounded-3xl bg-surface-container-low" />
+              <div className="mt-3 h-4 w-2/3 rounded bg-surface-container-low" />
+              <div className="mt-1.5 h-3 w-1/2 rounded bg-surface-container-low" />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+          {destinations.map(dest => (
+            <button
               key={dest.city}
+              type="button"
               onClick={() => navigate(`/search?city=${encodeURIComponent(dest.city)}`)}
-              className="group cursor-pointer"
+              className="group text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary rounded-3xl"
             >
-              <div className="h-48 rounded-3xl overflow-hidden mb-3 relative shadow-md">
-                <img
-                  alt={name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  src={dest.img}
-                />
-                <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors"></div>
+              <div className="h-36 sm:h-48 rounded-3xl overflow-hidden mb-3 relative shadow-md bg-surface-container-low">
+                {dest.img ? (
+                  <img
+                    alt={dest.city}
+                    loading="lazy"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    src={dest.img}
+                  />
+                ) : (
+                  <div className="flex h-full items-center justify-center text-on-surface-variant">
+                    <MapPin className="size-6" aria-hidden="true" />
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors" />
               </div>
               <h4 className="font-bold text-on-surface font-be-vietnam text-base">
-                {name}
+                {dest.city}
               </h4>
               <p className="text-xs text-on-surface-variant font-be-vietnam">
-                {dest.desc}
+                {t('popular.stays', { count: dest.hotelCount })}
               </p>
-            </div>
-          );
-        })}
-      </div>
+            </button>
+          ))}
+        </div>
+      )}
     </section>
   );
 }

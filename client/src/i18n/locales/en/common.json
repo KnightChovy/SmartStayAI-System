@@ -3,14 +3,15 @@
     "home": "Home",
     "deals": "Deals",
     "destinations": "Destinations",
-    "stays": "Stays",
     "listProperty": "List your property",
-    "login": "Log in",
-    "register": "Register",
+    "login": "Sign in",
+    "register": "Sign up",
     "logout": "Log out",
     "loggingOut": "Logging out...",
     "dashboard": "Dashboard",
-    "myAccount": "My Account"
+    "myAccount": "My Account",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu"
   },
   "language": {
     "label": "Language",
@@ -32,5 +33,7 @@
   "nights_other": "{{count}} nights",
   "guestsCount_one": "{{count}} guest",
   "guestsCount_other": "{{count}} guests",
-  "qrEmptyHint": "The e-voucher QR will appear once your booking is confirmed / paid."
+  "qrEmptyHint": "The e-voucher QR will appear once your booking is confirmed / paid.",
+  "clearDate": "Clear date",
+  "search": "Search"
 }

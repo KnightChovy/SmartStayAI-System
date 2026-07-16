@@ -11,7 +11,6 @@ export const ROUTES = {
   hotelDetail: (hotelId: string = ':hotelId') => `/hotels/${hotelId}`,
   destinations: '/destinations',
   deals: '/deals',
-  accommodationTypes: '/accommodation-types',
   // Landing "List your property" — mời chủ khách sạn đăng ký làm Hotel Partner
   listYourProperty: '/list-your-property',
   blog: '/blog',

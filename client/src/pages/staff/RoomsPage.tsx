@@ -1,4 +1,6 @@
-import { useState, type ComponentType } from 'react';
+import { useMemo, useState, type ComponentType } from 'react';
+import { Link, useSearchParams } from 'react-router';
+import { toast } from 'sonner';
 import {
   DoorOpen,
   BedDouble,
@@ -8,6 +10,7 @@ import {
   ChevronDown,
   Check,
   Loader2,
+  UserRound,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import {
@@ -16,9 +19,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useHotelRooms, useUpdateRoomStatus } from '@/hooks/staff';
+import { useHotelRooms, useHotelBookings, useUpdateRoomStatus } from '@/hooks/staff';
 import { useStaffHotelStore } from '@/stores/staffHotelStore';
+import { ConfirmDialog } from '@/components/hotel-partner/shared/ConfirmDialog';
 import type { RoomStatus, StaffRoom } from '@/types/staff.types';
+import { ROUTES } from '@/constants/routes';
+import { formatDate } from '@/utils/formatDate';
 import { errorMessage } from '@/utils/errorMessage';
 
 interface StatusMeta {
@@ -67,15 +73,47 @@ const STATUS_META: Record<RoomStatus, StatusMeta> = {
 
 const STATUS_ORDER: RoomStatus[] = ['available', 'occupied', 'cleaning', 'maintenance'];
 
+/** Changing to these leaves the room unsellable, so they get a confirmation step. */
+const SENSITIVE: RoomStatus[] = ['maintenance', 'occupied'];
+
+/** The guest currently in a room, joined from the in-house bookings. */
+interface RoomGuest {
+  bookingId: string;
+  name: string;
+  checkOutDate: string;
+}
+
 export default function RoomsPage() {
   const hotel = useStaffHotelStore(state => state.hotel);
   const { data: rooms, isLoading, isError, error } = useHotelRooms(hotel?.id);
+  const { data: bookingData } = useHotelBookings(hotel?.id, { limit: 100 });
   const updateStatus = useUpdateRoomStatus(hotel?.id);
-  const [actionError, setActionError] = useState<string | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [filter, setFilter] = useState<RoomStatus | 'all'>('all');
+  const [confirm, setConfirm] = useState<{ room: StaffRoom; status: RoomStatus } | null>(
+    null
+  );
+  // Set by the global search ("Room 101") so the tile can be pointed out on arrival.
+  const [params] = useSearchParams();
+  const highlightRoom = params.get('room');
 
   const allRooms = rooms ?? [];
+
+  // Who is in each room right now — the booking list already carries its assigned rooms.
+  const guestByRoomId = useMemo(() => {
+    const map = new Map<string, RoomGuest>();
+    for (const b of bookingData?.results ?? []) {
+      if (b.status !== 'checked_in') continue;
+      for (const link of b.bookingRooms) {
+        map.set(link.roomId, {
+          bookingId: b.id,
+          name: b.customer.fullName,
+          checkOutDate: b.checkOutDate,
+        });
+      }
+    }
+    return map;
+  }, [bookingData]);
   const counts = STATUS_ORDER.reduce<Record<RoomStatus, number>>(
     (acc, s) => {
       acc[s] = allRooms.filter(r => r.status === s).length;
@@ -86,27 +124,44 @@ export default function RoomsPage() {
 
   const visibleRooms = filter === 'all' ? allRooms : allRooms.filter(r => r.status === filter);
 
-  const handleChange = async (room: StaffRoom, status: RoomStatus) => {
-    if (status === room.status) return;
-    setActionError(null);
+  const applyChange = async (room: StaffRoom, status: RoomStatus) => {
     setPendingId(room.id);
     try {
       await updateStatus.mutateAsync({ roomId: room.id, status });
+      toast.success(`Room ${room.roomNumber} set to ${STATUS_META[status].label}.`);
     } catch (err) {
-      setActionError(errorMessage(err, 'Could not change room status.'));
+      toast.error(errorMessage(err, 'Could not change room status.'));
     } finally {
       setPendingId(null);
     }
   };
 
-  // Group rooms by floor
-  const byFloor = visibleRooms.reduce<Record<number, StaffRoom[]>>((acc, room) => {
-    (acc[room.floor] ??= []).push(room);
-    return acc;
-  }, {});
-  const floors = Object.keys(byFloor)
-    .map(Number)
-    .sort((a, b) => a - b);
+  /** Sensitive statuses confirm first; the rest apply straight away. */
+  const requestChange = (room: StaffRoom, status: RoomStatus) => {
+    if (status === room.status) return;
+    if (SENSITIVE.includes(status)) setConfirm({ room, status });
+    else void applyChange(room, status);
+  };
+
+  // Group rooms by floor, natural-sorted within each floor so "Deluxe-2" precedes "Deluxe-10".
+  const byFloor = new Map<number | null, StaffRoom[]>();
+  for (const room of visibleRooms) {
+    const list = byFloor.get(room.floor);
+    if (list) list.push(room);
+    else byFloor.set(room.floor, [room]);
+  }
+  for (const list of byFloor.values()) {
+    list.sort((a, b) =>
+      a.roomNumber.localeCompare(b.roomNumber, undefined, {
+        numeric: true,
+        sensitivity: 'base',
+      })
+    );
+  }
+  // Rooms with no floor recorded sort last.
+  const floors = [...byFloor.keys()].sort(
+    (a, b) => (a ?? Number.MAX_SAFE_INTEGER) - (b ?? Number.MAX_SAFE_INTEGER)
+  );
 
   return (
     <div className="space-y-5">
@@ -116,6 +171,16 @@ export default function RoomsPage() {
           <p className="text-sm text-slate-500">
             {allRooms.length} rooms · {hotel?.name}
           </p>
+        </div>
+
+        {/* Always-on colour legend so a tile's dot can be read without clicking. */}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+          {STATUS_ORDER.map(s => (
+            <span key={s} className="flex items-center gap-1.5 text-xs text-slate-500">
+              <span className={cn('size-2 rounded-full', STATUS_META[s].dot)} />
+              {STATUS_META[s].label}
+            </span>
+          ))}
         </div>
       </div>
 
@@ -144,11 +209,6 @@ export default function RoomsPage() {
         })}
       </div>
 
-      {actionError && (
-        <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
-          {actionError}
-        </div>
-      )}
       {isError && (
         <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
           <AlertTriangle className="mt-0.5 size-4 shrink-0" />
@@ -163,26 +223,59 @@ export default function RoomsPage() {
 
       {!isLoading &&
         !isError &&
-        floors.map(floor => (
-          <section key={floor} className="space-y-2.5">
-            <div className="flex items-center gap-2">
-              <h2 className="text-sm font-semibold text-slate-700">Floor {floor}</h2>
-              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500">
-                {byFloor[floor].length} rooms
-              </span>
-            </div>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-              {byFloor[floor].map(room => (
-                <RoomTile
-                  key={room.id}
-                  room={room}
-                  pending={pendingId === room.id}
-                  onChange={handleChange}
-                />
-              ))}
-            </div>
-          </section>
-        ))}
+        floors.map(floor => {
+          const floorRooms = byFloor.get(floor) ?? [];
+          return (
+            <section key={floor ?? 'unknown'} className="space-y-2.5">
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm font-semibold text-slate-700">
+                  {floor == null ? 'Floor not set' : `Floor ${floor}`}
+                </h2>
+                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500">
+                  {floorRooms.length} room{floorRooms.length === 1 ? '' : 's'}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                {floorRooms.map(room => (
+                  <RoomTile
+                    key={room.id}
+                    room={room}
+                    pending={pendingId === room.id}
+                    highlighted={room.roomNumber === highlightRoom}
+                    guest={guestByRoomId.get(room.id)}
+                    onChange={requestChange}
+                  />
+                ))}
+              </div>
+            </section>
+          );
+        })}
+
+      <ConfirmDialog
+        open={!!confirm}
+        onClose={() => setConfirm(null)}
+        onConfirm={async () => {
+          if (!confirm) return;
+          const { room, status } = confirm;
+          setConfirm(null);
+          await applyChange(room, status);
+        }}
+        loading={updateStatus.isPending}
+        destructive={confirm?.status === 'maintenance'}
+        title={
+          confirm
+            ? `Set room ${confirm.room.roomNumber} to ${STATUS_META[confirm.status].label}?`
+            : ''
+        }
+        confirmLabel={confirm ? STATUS_META[confirm.status].label : 'Confirm'}
+        message={
+          confirm?.status === 'maintenance'
+            ? `Room ${confirm.room.roomNumber} will stop being offered to guests until you set it back to Available.`
+            : confirm
+              ? `Room ${confirm.room.roomNumber} will be marked as occupied. Normally check-in does this automatically — only set it by hand if the room map is out of sync.`
+              : ''
+        }
+      />
     </div>
   );
 }
@@ -227,10 +320,14 @@ function FilterChip({
 function RoomTile({
   room,
   pending,
+  highlighted,
+  guest,
   onChange,
 }: {
   room: StaffRoom;
   pending: boolean;
+  highlighted?: boolean;
+  guest?: RoomGuest;
   onChange: (room: StaffRoom, status: RoomStatus) => void;
 }) {
   const meta = STATUS_META[room.status];
@@ -241,7 +338,8 @@ function RoomTile({
       className={cn(
         'relative flex flex-col rounded-xl border p-3 transition-all',
         meta.tile,
-        pending && 'opacity-60'
+        pending && 'opacity-60',
+        highlighted && 'ring-2 ring-slate-900 ring-offset-2'
       )}
     >
       <div className="mb-2 flex items-start justify-between">
@@ -255,9 +353,27 @@ function RoomTile({
       </div>
 
       <p className="text-lg leading-tight font-semibold text-slate-900">{room.roomNumber}</p>
-      <p className="mb-3 truncate text-xs text-slate-500" title={room.roomType.name}>
+      <p className="truncate text-xs text-slate-500" title={room.roomType.name}>
         {room.roomType.name}
       </p>
+
+      {/* Who's in the room matters most when it's occupied — link straight to their booking. */}
+      {guest ? (
+        <Link
+          to={ROUTES.staffBookingDetail(guest.bookingId)}
+          className="mt-2 mb-3 block rounded-lg bg-white/70 px-2 py-1.5 hover:bg-white"
+        >
+          <span className="flex items-center gap-1 truncate text-xs font-medium text-slate-700">
+            <UserRound className="size-3 shrink-0 text-slate-400" />
+            <span className="truncate">{guest.name}</span>
+          </span>
+          <span className="mt-0.5 block text-[11px] text-slate-500">
+            Out {formatDate(guest.checkOutDate)}
+          </span>
+        </Link>
+      ) : (
+        <div className="mb-3" />
+      )}
 
       <DropdownMenu>
         <DropdownMenuTrigger

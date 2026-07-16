@@ -180,7 +180,8 @@ export interface CheckOutPayload {
 export interface HousekeepingRoomSummary {
   id: string;
   roomNumber: string;
-  floor: number;
+  /** Nullable in the DB (`Room.floor Int?`). */
+  floor: number | null;
   status: RoomStatus;
 }
 
@@ -204,7 +205,8 @@ export interface StaffRoom {
   hotelId: string;
   roomTypeId: string;
   roomNumber: string;
-  floor: number;
+  /** Nullable in the DB (`Room.floor Int?`) — a room may have no floor recorded. */
+  floor: number | null;
   status: RoomStatus;
   notes: string | null;
   roomType: { id: string; name: string };

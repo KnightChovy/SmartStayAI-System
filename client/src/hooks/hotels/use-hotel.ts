@@ -1,18 +1,25 @@
 import { useQuery } from '@tanstack/react-query';
 import { hotelService } from '@/services/hotel.service';
 import { queryKeys } from '@/constants/queryKeys';
-import type { HotelSearchResult } from '@/types/hotel.types';
+import type { HotelDetail, HotelSearchResult } from '@/types/hotel.types';
 
 /**
- * Lấy thông tin khách sạn theo id (fallback search vì backend chưa có
- * endpoint riêng). `initialData` cho phép truyền dữ liệu sẵn từ router state
- * để không phải gọi lại khi điều hướng từ trang search.
+ * Chi tiết khách sạn (`GET /hotels/:id`, public) — kèm tiện nghi / chính sách / địa điểm lân cận.
+ *
+ * `seed` là bản tóm tắt sẵn có từ router state (trang search) — dùng làm `placeholderData` để
+ * header hiện ngay, KHÔNG dùng `initialData` (sẽ khiến query coi như đã fresh và không bao giờ
+ * gọi API chi tiết, mất tiện nghi/chính sách).
  */
-export function useHotel(hotelId: string, initialData?: HotelSearchResult | null) {
+export function useHotel(hotelId: string, seed?: HotelSearchResult | null) {
+  /** Bản tóm tắt + các relation rỗng, để header hiện ngay trong lúc chờ chi tiết. */
+  const placeholder: HotelDetail | undefined = seed
+    ? { ...seed, amenities: [], policies: [], nearbyPlaces: [], contacts: [] }
+    : undefined;
+
   return useQuery({
     queryKey: queryKeys.hotels.detail(hotelId),
     queryFn: () => hotelService.getById(hotelId),
     enabled: !!hotelId,
-    initialData: initialData ?? undefined,
+    placeholderData: placeholder,
   });
 }

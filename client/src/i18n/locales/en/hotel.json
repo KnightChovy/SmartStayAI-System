@@ -1,5 +1,4 @@
 {
-  "backToResults": "Back to results",
   "location": "Location",
   "checkInTime": "Check-in {{time}}",
   "checkOutTime": " · Check-out {{time}}",
@@ -8,16 +7,117 @@
   "noRoomsTitle": "No rooms available",
   "noRoomsDesc": "There are no rooms matching your dates or guest count. Try different dates.",
   "pickDates": "Pick dates to book",
+  "starHotel_one": "{{count}}-star hotel",
+  "starHotel_other": "{{count}}-star hotel",
+  "starAria": "Property class: {{count}} out of 5 stars",
+  "galleryAlt": "{{name}} — photo {{index}} of {{total}}",
+  "trust": {
+    "verified": "Verified property",
+    "securePayment": "Secure payment",
+    "instantVoucher": "Instant e-voucher"
+  },
+  "amenities": {
+    "title": "Amenities",
+    "showAll": "Show all {{count}} amenities",
+    "showLess": "Show less"
+  },
+  "policies": {
+    "title": "Policies",
+    "checkInOut": "Check-in / Check-out",
+    "from": "From {{time}}",
+    "until": "Until {{time}}",
+    "cancellation": "Cancellation",
+    "children": "Children",
+    "pets": "Pets",
+    "petsNotAllowed": "Pets are not allowed",
+    "petsAllowed": "Pets are allowed",
+    "petsOnRequest": "Pets allowed on request",
+    "smoking": "Smoking",
+    "smokingAllowed": "Smoking allowed",
+    "smokingNotAllowed": "Non-smoking throughout",
+    "minGuestAge": "Minimum age",
+    "minGuestAgeValue": "Guests must be {{age}} or older to check in",
+    "maxStay": "Maximum stay",
+    "maxStayValue_one": "Up to {{count}} night per booking",
+    "maxStayValue_other": "Up to {{count}} nights per booking",
+    "deposit": "Security deposit",
+    "depositValue": "{{amount}} taken at check-in, refunded at check-out",
+    "languages": "Languages spoken",
+    "tax": "Tax",
+    "fee": "Fee",
+    "parking": "Parking",
+    "internet": "Internet"
+  },
+  "nearby": {
+    "title": "What's nearby",
+    "minutes": "{{count}} min"
+  },
+  "reviews": {
+    "title": "Guest reviews",
+    "count_one": "{{count}} review",
+    "count_other": "{{count}} reviews",
+    "aria": "Guest score {{score}} out of 5, based on {{count}} reviews",
+    "newTitle": "New on Smart Stay",
+    "newDesc": "This property doesn't have guest reviews yet. Be the first to review it after your stay.",
+    "guest": "Guest",
+    "showingRecent": "Showing the {{shown}} most recent of {{total}} reviews.",
+    "sampleNote": "Scores are averaged from the {{limit}} most recent reviews.",
+    "photoAlt": "Guest photo of this property",
+    "cleanliness": "Cleanliness",
+    "service": "Service",
+    "locationScore": "Location",
+    "value": "Value",
+    "exceptional": "Exceptional",
+    "excellent": "Excellent",
+    "veryGood": "Very good",
+    "good": "Good",
+    "score": "Review score"
+  },
   "room": {
     "upTo": "Up to {{count}}",
     "roomsLeft_one": "Only {{count}} room left!",
     "roomsLeft_other": "Only {{count}} rooms left!",
     "roomsAvailable": "{{count}} rooms available",
-    "nightsTotal_one": "{{count}} night total",
-    "nightsTotal_other": "{{count}} nights total",
+    "nightsTotal_one": "{{count}} night",
+    "nightsTotal_other": "{{count}} nights",
     "totalSuffix": "total",
     "from": "From",
     "perNight": "/ night",
-    "bookNow": "Book now"
-  }
+    "bookNow": "Book now",
+    "inclTaxes": "Includes taxes & fees",
+    "adults_one": "{{count}} adult",
+    "adults_other": "{{count}} adults",
+    "children_one": "{{count}} child",
+    "children_other": "{{count}} children",
+    "nonSmoking": "Non-smoking",
+    "privateBathroom": "Private bathroom",
+    "balcony": "Balcony",
+    "bedsLabel": "Beds",
+    "bestValue": "Best value"
+  },
+  "gallery": {
+    "close": "Close gallery",
+    "prev": "Previous photo",
+    "next": "Next photo",
+    "viewAll": "View all {{count}} photos"
+  },
+  "compare": {
+    "toggle": "Compare rooms",
+    "hide": "Hide comparison",
+    "caption": "Room comparison — differences are highlighted",
+    "feature": "Feature",
+    "price": "Price",
+    "occupancy": "Sleeps",
+    "bed": "Bed",
+    "size": "Size",
+    "view": "View",
+    "included": "Included",
+    "notIncluded": "Not included"
+  },
+  "contacts": {
+    "title": "Contact the property",
+    "phone": "Phone",
+    "email": "Email"
+  },
+  "viewDetails": "View details"
 }

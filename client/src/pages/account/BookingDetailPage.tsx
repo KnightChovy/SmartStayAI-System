@@ -1,8 +1,7 @@
 import { useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router';
+import { useNavigate, useParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import {
-  ArrowLeft,
   CalendarDays,
   CheckCircle2,
   Download,
@@ -15,6 +14,7 @@ import {
 import { useBooking, useCancelBooking } from '@/hooks/bookings';
 import { useMyReviews } from '@/hooks/account';
 import { ROUTES } from '@/constants/routes';
+import BackLink from '@/components/shared/BackLink';
 import BookingStatusBadge from '@/components/shared/BookingStatusBadge';
 import PriceSummary from '@/components/shared/PriceSummary';
 import QRVoucher from '@/components/shared/QRVoucher';
@@ -106,12 +106,7 @@ export default function BookingDetailPage() {
 
   return (
     <div>
-      <Link
-        to={ROUTES.accountBookings}
-        className="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-on-surface-variant hover:text-primary"
-      >
-        <ArrowLeft className="size-4" /> {t('detail.back')}
-      </Link>
+      <BackLink fallbackTo={ROUTES.accountBookings} />
 
       <div className="flex flex-col gap-6 lg:flex-row">
         {/* Main */}

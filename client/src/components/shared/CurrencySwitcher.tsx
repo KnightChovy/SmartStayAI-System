@@ -28,7 +28,7 @@ export function CurrencySwitcher({ className }: CurrencySwitcherProps) {
     <DropdownMenu>
       <DropdownMenuTrigger
         className={cn(
-          'flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm font-semibold text-on-surface-variant hover:text-primary transition-colors outline-none cursor-pointer',
+          'flex min-h-11 cursor-pointer items-center gap-1 rounded-lg px-2 text-sm font-semibold text-on-surface-variant transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary',
           className
         )}
         aria-label={t('currency.label')}
