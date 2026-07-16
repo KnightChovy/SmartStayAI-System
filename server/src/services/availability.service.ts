@@ -1,7 +1,21 @@
 import { Prisma } from '@prisma/client';
-import type { PricingRule } from '@prisma/client';
+import type { PricingRule, HotelPolicyType, ChargeFrequency } from '@prisma/client';
 import prisma from '../config/prisma';
 import { toUtcDate, eachNightOfStay } from '../utils/dates';
+
+/** Một dòng chính sách thuế/phí của khách sạn, đủ để tính ra tiền. */
+export interface TaxFeePolicy {
+  policyType: HotelPolicyType;
+  amount: Prisma.Decimal | null;
+  isPercentage: boolean;
+  chargeFrequency: ChargeFrequency | null;
+}
+
+/** Thuế + phí dịch vụ của một kỳ ở, tách riêng để hiển thị bảng phân tích giá. */
+export interface TaxFeeBreakdown {
+  taxAmount: Prisma.Decimal;
+  feeAmount: Prisma.Decimal;
+}
 
 /** Loại phòng cần báo giá: id + khách sạn (để khớp pricing rule) + giá gốc mỗi đêm. */
 export interface RoomTypePriceInput {
@@ -26,15 +40,86 @@ export interface StayQuote {
 }
 
 /**
- * Tính tồn kho + giá phòng theo từng đêm, dùng chung cho tìm khách sạn / tìm phòng / đặt phòng.
+ * Tính tồn kho + giá phòng, dùng chung cho tìm khách sạn / tìm phòng / đặt phòng. Đây là nơi DUY
+ * NHẤT quyết định giá, để số báo cho khách lúc tìm phòng và số bị tính lúc đặt không thể lệch nhau.
  *
  * Tồn kho: bảng room_availability (mỗi dòng = 1 loại phòng × 1 đêm). Đêm chưa có dòng nghĩa là
  * chưa ai đặt ⇒ còn nguyên số phòng vật lý (đếm bảng rooms). Cột available_rooms không dùng
  * (luôn suy từ totalRooms - bookedRooms để khỏi lệch dữ liệu).
  *
  * Giá một đêm: (priceOverride của đêm đó ?? basePrice) rồi áp pricing rule (xem priceForNight).
+ * Thuế/phí tính trên tiền phòng cả kỳ ở (xem computeTaxAndFees).
  */
 export class AvailabilityService {
+  /** Chính sách thuế/phí đang hiệu lực của các khách sạn — chỉ lấy loại thực sự cộng vào tiền đơn. */
+  getTaxFeePolicies = async (hotelIds: string[]): Promise<Map<string, TaxFeePolicy[]>> => {
+    const byHotel = new Map<string, TaxFeePolicy[]>();
+    if (hotelIds.length === 0) {
+      return byHotel;
+    }
+    const rows = await prisma.hotelPolicy.findMany({
+      where: { hotelId: { in: hotelIds }, policyType: { in: ['tax', 'fee'] } },
+      select: { hotelId: true, policyType: true, amount: true, isPercentage: true, chargeFrequency: true },
+    });
+    for (const row of rows) {
+      const list = byHotel.get(row.hotelId) ?? [];
+      list.push(row);
+      byHotel.set(row.hotelId, list);
+    }
+    return byHotel;
+  };
+
+  /**
+   * Tính thuế + phí dịch vụ từ HotelPolicy của khách sạn.
+   *
+   * Mỗi dòng policy loại 'tax'/'fee' có:
+   *  - isPercentage = true  ⇒ amount là PHẦN TRĂM tính trên tiền phòng (subtotal)
+   *  - isPercentage = false ⇒ amount là số tiền tuyệt đối, nhân theo chargeFrequency:
+   *      per_stay             × 1
+   *      per_night            × số đêm
+   *      per_person           × số khách
+   *      per_person_per_night × số khách × số đêm
+   * Phần trăm luôn tính trên subtotal (không nhân tiếp theo đêm/khách — subtotal đã gồm đủ số đêm rồi),
+   * nếu không sẽ tính thuế chồng thuế.
+   *
+   * Chỉ lấy 'tax' và 'fee' — 'deposit' là tiền cọc thu/trả tại khách sạn, KHÔNG cộng vào giá đơn;
+   * 'cancellation'/'parking'/'internet' là mô tả, không phải khoản thu bắt buộc.
+   */
+  computeTaxAndFees = (
+    policies: TaxFeePolicy[],
+    subtotal: Prisma.Decimal,
+    numNights: number,
+    numGuests: number
+  ): TaxFeeBreakdown => {
+    let taxAmount = new Prisma.Decimal(0);
+    let feeAmount = new Prisma.Decimal(0);
+
+    for (const policy of policies) {
+      if ((policy.policyType !== 'tax' && policy.policyType !== 'fee') || !policy.amount) {
+        continue;
+      }
+      let value: Prisma.Decimal;
+      if (policy.isPercentage) {
+        value = subtotal.mul(policy.amount).div(100);
+      } else {
+        const multipliers: Record<ChargeFrequency, number> = {
+          per_stay: 1,
+          per_night: numNights,
+          per_person: numGuests,
+          per_person_per_night: numGuests * numNights,
+        };
+        value = policy.amount.mul(multipliers[policy.chargeFrequency ?? 'per_stay']);
+      }
+      value = value.toDecimalPlaces(2);
+      if (policy.policyType === 'tax') {
+        taxAmount = taxAmount.add(value);
+      } else {
+        feeAmount = feeAmount.add(value);
+      }
+    }
+    return { taxAmount, feeAmount };
+  };
+
   /** Toàn bộ rule đang bật của các khách sạn — lọc khớp từng đêm bằng JS vì số rule mỗi khách sạn nhỏ. */
   getActivePricingRules = async (hotelIds: string[]): Promise<PricingRule[]> => {
     if (hotelIds.length === 0) {

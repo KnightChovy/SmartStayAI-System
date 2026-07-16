@@ -2283,8 +2283,12 @@ paths:
       summary: Search room types within a hotel (with filters)
       description: >
         Public. Filters by capacity, price range, bed type and view type. When checkIn/checkOut
-        are provided, each room type includes numNights, availableRooms and totalPrice for the
-        stay (per-night priceOverride applied), and sold-out room types are excluded.
+        are provided, sold-out room types are excluded and each room type carries the full price
+        breakdown for the stay: numNights, availableRooms, subtotal (room charge with pricing
+        rules and per-night priceOverride applied), taxAmount, feeAmount and totalPrice.
+        totalPrice = subtotal + taxAmount + feeAmount and equals booking.totalAmount, so the
+        figure shown here is exactly what the guest is charged. Note: totalPrice used to exclude
+        tax and fees.
       tags: [Hotels]
       parameters:
         - in: path
@@ -2340,11 +2344,18 @@ paths:
       summary: Create a booking
       description: >
         Authenticated customers book one room of a room type for [checkInDate, checkOutDate).
-        Prices are computed server-side (per-night priceOverride if set, else basePrice).
+        Prices are computed server-side (pricing rules and per-night priceOverride applied, plus
+        tax/fee from the hotel policies) and match what GET /hotels/{hotelId}/room-types quoted.
         Inventory is reserved per night inside a transaction, so concurrent bookings cannot
         oversell. paymentMethod "vnpay" (default) creates a "pending" booking held 15 min for online
         payment; "cash" (pay at hotel) creates a "confirmed" booking with no hold plus a pending cash
         Payment and an e-voucher — staff records the cash later via record-cash-payment.
+
+
+        REQUIRES A PHONE NUMBER: the hotel must be able to reach the guest, so the account's
+        profile must have a phone. There is no phone field in this request — the number is taken
+        from the user profile (User.phone). If it is empty the request fails with 400 and the
+        client should send the user to update their profile first (PATCH /users/me).
       tags: [Bookings]
       security:
         - bearerAuth: []
