@@ -10,6 +10,7 @@ import { bookingService } from './booking.service';
 import { hotelService } from './hotel.service';
 import { AiTool } from './ai/ai.types';
 import { setPendingAction, consumePendingAction } from './ai/pending-action.store';
+import { emitMessageToConversation, emitConversationEscalated } from '../config/socket';
 
 // Độ giống nghĩa giữa 2 vector: ~1 = trùng nghĩa, ~0 = không liên quan (cosine similarity)
 const cosine = (a: number[], b: number[]): number => {
@@ -215,6 +216,8 @@ export class ConversationService {
           where: { id: conversationId },
           data: { status: 'escalated' },
         });
+        // Real-time: đẩy ngay vào hộp thư nhân viên của khách sạn để việc mới nổi lên không cần refresh.
+        emitConversationEscalated(hotelId, { conversationId, reason: String(args.reason) });
         return `Đã chuyển cuộc trò chuyện cho lễ tân (lý do: ${String(args.reason)}). Nhân viên sẽ liên hệ với bạn sớm.`;
       },
     },
@@ -471,7 +474,7 @@ export class ConversationService {
     }
 
     // (3) Lưu tin nhắn của khách (senderId null cho khách vãng lai)
-    await prisma.message.create({
+    const userMessage = await prisma.message.create({
       data: {
         conversationId: conversation.id,
         senderType: 'user',
@@ -485,6 +488,8 @@ export class ConversationService {
     //      của khách (để nhân viên thấy trong hộp thư S04) và báo khách chờ. Tránh bot nói chen.
     if (conversation.status === 'escalated') {
       await prisma.conversation.update({ where: { id: conversation.id }, data: { lastMessageAt: new Date() } });
+      // Real-time: đẩy tin khách cho nhân viên đang mở hội thoại (bot im nên tin này KHÔNG về qua đường HTTP nào khác).
+      emitMessageToConversation(conversation.id, userMessage);
       return { conversationId: conversation.id, reply: HANDOFF_NOTICE };
     }
 
@@ -558,13 +563,15 @@ export class ConversationService {
       await this.assertWithinQuota(currentUser, conversation.id);
     }
 
-    await prisma.message.create({
+    const userMessage = await prisma.message.create({
       data: { conversationId: conversation.id, senderType: 'user', senderId: ownerId, content: text, messageType: 'text' },
     });
 
     // (3b) BÀN GIAO: hội thoại 'escalated' ⇒ bot im, chỉ phát một mẩu báo chờ nhân viên (xem sendMessage)
     if (conversation.status === 'escalated') {
       const escalatedConvId = conversation.id;
+      // Real-time: đẩy tin khách cho nhân viên đang mở hội thoại (bot im nên tin này chỉ tới staff qua socket).
+      emitMessageToConversation(escalatedConvId, userMessage);
       async function* waiting(): AsyncGenerator<string> {
         yield HANDOFF_NOTICE;
         await prisma.conversation.update({ where: { id: escalatedConvId }, data: { lastMessageAt: new Date() } });
@@ -707,6 +714,8 @@ export class ConversationService {
       where: { id: conversationId },
       data: { status: 'active', assignedTo: currentUser.id, lastMessageAt: new Date() },
     });
+    // Real-time: đẩy câu trả lời của nhân viên về cho khách đang mở khung chat (không cần khách reload/poll).
+    emitMessageToConversation(conversationId, saved);
     return saved;
   };
 
