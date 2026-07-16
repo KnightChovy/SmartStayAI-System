@@ -1,61 +1,60 @@
-import { delay, readMock, writeMock } from './mock/mockStore';
-import type { AppNotification } from '@/types/account.types';
+import { api } from '@/lib/api';
+import type {
+  AppNotification,
+  MarkAllReadResponse,
+  NotificationsParams,
+  NotificationsResponse,
+  UnreadCountResponse,
+} from '@/types/account.types';
 
-/** [MOCK] Thông báo. Backend chưa có endpoint notifications. */
-const KEY = 'notifications';
+/**
+ * Thông báo của người dùng đang đăng nhập (`/v1/notifications`).
+ * Mọi endpoint đều yêu cầu đăng nhập (`auth()`); quyền sở hữu do BE kiểm ở tầng service —
+ * thao tác lên thông báo của người khác trả **404** (không phải 403) để không lộ sự tồn tại.
+ *
+ * ⚠️ BE KHÔNG đẩy thông báo qua socket (không có room theo user) ⇒ đây là luồng **pull**,
+ * badge chưa đọc phải tự poll/refetch.
+ */
 
-const SEED: AppNotification[] = [
-  {
-    id: 'n1',
-    type: 'booking_confirmed',
-    title: 'Booking confirmed',
-    body: 'Your stay at Lotus Riverside Hotel is confirmed. See you soon!',
-    createdAt: '2026-06-10T09:00:00Z',
-    readAt: null,
-  },
-  {
-    id: 'n2',
-    type: 'check_in_reminder',
-    title: 'Check-in tomorrow',
-    body: 'Reminder: your check-in at Pearl Bay Resort is tomorrow at 14:00.',
-    createdAt: '2026-06-09T08:00:00Z',
-    readAt: null,
-  },
-  {
-    id: 'n3',
-    type: 'promotion',
-    title: 'Weekend flash deal',
-    body: 'Save up to 25% on selected sanctuaries this weekend only.',
-    createdAt: '2026-06-05T12:00:00Z',
-    readAt: '2026-06-06T07:00:00Z',
-  },
-  {
-    id: 'n4',
-    type: 'review_request',
-    title: 'How was your stay?',
-    body: 'Share your experience at Mountain Mist Lodge and earn 100 points.',
-    createdAt: '2026-05-28T15:00:00Z',
-    readAt: '2026-05-29T07:00:00Z',
-  },
-];
+/** Bỏ các field undefined/rỗng để query string gọn gàng. */
+function cleanParams<T extends object>(params: T): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== '')
+  );
+}
 
 export const notificationService = {
-  async list(): Promise<AppNotification[]> {
-    return delay(readMock(KEY, SEED));
+  /** Danh sách thông báo của chính mình (`GET /notifications`) — phân trang, kèm `unreadCount`. */
+  async list(params: NotificationsParams = {}): Promise<NotificationsResponse> {
+    const { data } = await api.get<NotificationsResponse>('/notifications', {
+      params: cleanParams(params),
+    });
+    return data;
   },
 
-  async markRead(id: string): Promise<AppNotification[]> {
-    const list = readMock(KEY, SEED).map(n =>
-      n.id === id && !n.readAt ? { ...n, readAt: new Date().toISOString() } : n
-    );
-    writeMock(KEY, list);
-    return delay(list, 100);
+  /** Số thông báo chưa đọc cho badge (`GET /notifications/unread-count`). */
+  async getUnreadCount(): Promise<UnreadCountResponse> {
+    const { data } = await api.get<UnreadCountResponse>('/notifications/unread-count');
+    return data;
   },
 
-  async markAllRead(): Promise<AppNotification[]> {
-    const now = new Date().toISOString();
-    const list = readMock(KEY, SEED).map(n => (n.readAt ? n : { ...n, readAt: now }));
-    writeMock(KEY, list);
-    return delay(list, 100);
+  /**
+   * Đánh dấu một thông báo đã đọc (`PATCH /notifications/:id/read`).
+   * Idempotent ở BE: đã đọc rồi thì giữ nguyên `readAt` cũ, không dời mốc.
+   */
+  async markRead(notificationId: string): Promise<AppNotification> {
+    const { data } = await api.patch<AppNotification>(`/notifications/${notificationId}/read`);
+    return data;
+  },
+
+  /** Đánh dấu tất cả đã đọc (`POST /notifications/read-all`). Trả `{ updated }`. */
+  async markAllRead(): Promise<MarkAllReadResponse> {
+    const { data } = await api.post<MarkAllReadResponse>('/notifications/read-all');
+    return data;
+  },
+
+  /** Xoá một thông báo của chính mình (`DELETE /notifications/:id`) — 204, không có body. */
+  async remove(notificationId: string): Promise<void> {
+    await api.delete(`/notifications/${notificationId}`);
   },
 };

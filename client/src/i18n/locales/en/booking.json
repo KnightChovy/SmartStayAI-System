@@ -16,7 +16,10 @@
     "specialRequests": "Special requests (optional)",
     "specialRequestsPlaceholder": "Late check-in, high floor, extra bed…",
     "continue": "Continue to payment",
-    "requiredMark": "required"
+    "requiredMark": "required",
+    "phoneFromProfile": "The hotel will contact this number. Change your account number in Account.",
+    "phoneWillSave": "This number will be saved to your profile so the hotel can reach you.",
+    "phoneTempNote": "Used for this booking only — your account phone number stays unchanged."
   },
   "payment": {
     "title": "Payment method",
@@ -44,7 +47,8 @@
     "redirecting": "Redirecting to VNPay…",
     "retryPayment": "Retry payment",
     "confirmPay": "Confirm & Pay",
-    "priceUpdated": "The property's final total is {{total}}, which differs from our estimate. Tap \"Retry payment\" to continue with this amount."
+    "priceUpdated": "The property's final total is {{total}}, which differs from our estimate. Tap \"Retry payment\" to continue with this amount.",
+    "tempPhoneNote": "Contact number for this booking: {{phone}}"
   },
   "summary": {
     "roomLine_one": "Room × {{count}} night",

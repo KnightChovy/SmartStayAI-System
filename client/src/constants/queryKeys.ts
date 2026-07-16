@@ -15,6 +15,9 @@ export const queryKeys = {
     detail: (hotelId: string) => ['hotels', 'detail', hotelId] as const,
     roomTypes: (hotelId: string, params: object) =>
       ['hotels', hotelId, 'room-types', params] as const,
+    /** Chi tiết một loại phòng (`GET /hotels/:hotelId/room-types/:roomTypeId`). */
+    roomTypeDetail: (hotelId: string, roomTypeId: string, params: object) =>
+      ['hotels', hotelId, 'room-types', roomTypeId, params] as const,
   },
   bookings: {
     all: ['bookings'] as const,
@@ -34,7 +37,10 @@ export const queryKeys = {
     available: ['vouchers', 'available'] as const,
   },
   notifications: {
+    /** Prefix chung — invalidate key này là quét sạch cả list lẫn badge. */
     all: ['notifications'] as const,
+    list: (params: object) => ['notifications', 'list', params] as const,
+    unreadCount: ['notifications', 'unread-count'] as const,
   },
   geo: {
     geocode: (query: string) => ['geo', 'geocode', query] as const,

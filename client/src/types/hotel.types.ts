@@ -3,7 +3,13 @@
  * (`GET /hotels`, `GET /hotels/:id`, `GET /hotels/:id/room-types`).
  * Lưu ý: các field Decimal của Prisma serialize qua JSON thành **string**.
  */
-import type { HotelContact, HotelNearbyPlace, HotelPolicy, RoomBed } from './hotel-property.types';
+import type {
+  HotelCharge,
+  HotelContact,
+  HotelNearbyPlace,
+  HotelPolicy,
+  RoomBed,
+} from './hotel-property.types';
 
 /** Chính sách thú cưng của khách sạn (khớp enum BE). */
 export type PetsPolicy = 'not_allowed' | 'allowed' | 'on_request';
@@ -47,6 +53,12 @@ export interface HotelSearchResult {
 export interface HotelDetail extends HotelSearchResult {
   amenities: { amenity: Amenity }[];
   policies: HotelPolicy[];
+  /**
+   * Khoản thu (thuế/phí) engine dùng để tính tiền — BE include ở `GET /hotels/:id`.
+   * ⚠️ Từ migration `split_policy_and_charge`, thuế/phí **không còn nằm trong `policies`**;
+   * muốn tính thuế phải đọc mảng này.
+   */
+  charges: HotelCharge[];
   nearbyPlaces: HotelNearbyPlace[];
   contacts: HotelContact[];
   roomTypes?: RoomType[];
@@ -247,7 +259,57 @@ export interface RoomType {
   /** Chỉ có khi search kèm khoảng ngày (checkIn/checkOut). */
   numNights?: number;
   availableRooms?: number;
+  /**
+   * ⚠️ `totalPrice` ở ĐÂY (`GET /hotels/:id/room-types`) là SỐ CUỐI khách trả:
+   * `subtotal + taxAmount + feeAmount` (BE `hotel.service.ts` → `getRoomTypes`).
+   * KHÔNG cộng thêm thuế lên số này nữa — sẽ tính thuế hai lần.
+   * (Khác với `RoomTypeDetail.totalPrice` = tiền phòng thuần — xem type đó.)
+   */
   totalPrice?: string;
+  /** Tiền phòng thuần cả kỳ ở (chưa thuế/phí). Đi kèm `totalPrice` khi có khoảng ngày. */
+  subtotal?: string;
+  /** Thuế thật BE tính (cùng hàm `computeTaxAndFees` lúc đặt) — không cần ước tính lại. */
+  taxAmount?: string;
+  /** Phí dịch vụ thật BE tính. */
+  feeAmount?: string;
+}
+
+/** Thông tin khách sạn tối giản mà `GET /hotels/:id/room-types/:roomTypeId` kèm theo. */
+export interface RoomTypeHotelSummary {
+  id: string;
+  name: string;
+  address: string;
+  city: string;
+  country: string;
+  starRating?: number | null;
+  checkInTime?: string | null;
+  checkOutTime?: string | null;
+}
+
+/**
+ * Chi tiết một loại phòng (`GET /hotels/:hotelId/room-types/:roomTypeId`) — public.
+ *
+ * ⚠️ Khác biệt QUAN TRỌNG so với `RoomType` của endpoint danh sách: ở đây BE **không**
+ * trả `subtotal`/`taxAmount`/`feeAmount`, và `totalPrice` là **tiền phòng thuần**
+ * (chưa thuế/phí) — xem `hotel.service.ts` → `getRoomTypeById`. Vì vậy trang chi tiết
+ * phải tự ước tính thuế từ `policies` của khách sạn (như trang checkout đang làm).
+ * `null` khi không tính được giá.
+ */
+export interface RoomTypeDetail
+  extends Omit<RoomType, 'totalPrice' | 'subtotal' | 'taxAmount' | 'feeAmount'> {
+  hotel: RoomTypeHotelSummary;
+  /** Tiền phòng thuần cả kỳ ở — chỉ có khi truyền cả checkIn + checkOut. */
+  totalPrice?: string | null;
+}
+
+/**
+ * Query của `GET /hotels/:hotelId/room-types/:roomTypeId`.
+ * BE dùng Joi `.and('checkIn','checkOut')` ⇒ phải truyền CẢ HAI hoặc KHÔNG truyền gì;
+ * gửi mỗi một cái là 400.
+ */
+export interface RoomTypeDetailParams {
+  checkIn?: string;
+  checkOut?: string;
 }
 
 /** Tham số tìm khách sạn (query string của `GET /hotels`). */

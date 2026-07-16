@@ -23,10 +23,17 @@ export class JobController {
     res.send({ settled });
   });
 
-  // Tự duyệt yêu cầu hoàn tiền khách sạn để quá hạn không phản hồi → chuyển sang chờ PM chuyển khoản
+  // Tự duyệt yêu cầu hoàn tiền khách sạn để quá hạn không phản hồi
   autoApproveRefunds = catchAsync(async (_req: Request, res: Response): Promise<void> => {
     const approved = await refundService.autoApproveStaleRefunds();
     res.send({ approved });
+  });
+
+  // Cộng vào ví các khoản hoàn đã duyệt mà khách chọn nhận qua ví — chủ yếu là các yêu cầu do cron
+  // tự duyệt (không đi qua reviewRefund nên chưa được cộng ngay)
+  creditWalletRefunds = catchAsync(async (_req: Request, res: Response): Promise<void> => {
+    const credited = await refundService.processApprovedWalletRefunds();
+    res.send({ credited });
   });
 }
 

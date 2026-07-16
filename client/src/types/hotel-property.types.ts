@@ -48,6 +48,31 @@ export type ChargeFrequency =
   | 'per_person'
   | 'per_person_per_night';
 
+// ─── Charges (khoản thu tính tiền) ───────────────────────────────────────────
+
+/**
+ * Loại khoản thu CỘNG VÀO tiền đơn (bảng `hotel_charges` của BE).
+ *
+ * ⚠️ BE đã tách `hotel_policies` làm hai (commit `db05ed4`, migration
+ * `split_policy_and_charge`): `HotelPolicy` giờ là điều khoản THUẦN VĂN BẢN cho khách đọc,
+ * còn thuế/phí engine tính tiền nằm ở `HotelCharge`. Muốn tính thuế thì đọc `hotel.charges`,
+ * KHÔNG đọc `hotel.policies` nữa.
+ */
+export type ChargeType = 'tax' | 'fee';
+
+/** Một khoản thu của khách sạn (`GET /hotels/:id` → `charges[]`). Decimal → string. */
+export interface HotelCharge {
+  id: string;
+  hotelId: string;
+  chargeType: ChargeType;
+  /** Tên hiển thị trên bảng phân tích giá, vd "VAT 8%". */
+  name: string;
+  amount: string;
+  /** `true` ⇒ `amount` là % trên tiền phòng và `chargeFrequency` bị BỎ QUA. */
+  isPercentage: boolean;
+  chargeFrequency: ChargeFrequency | null;
+}
+
 export interface HotelPolicy {
   id: string;
   hotelId: string;

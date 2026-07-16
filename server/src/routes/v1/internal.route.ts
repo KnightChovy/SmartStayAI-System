@@ -12,5 +12,6 @@ router.post('/jobs/release-holds', cronAuth, jobController.releaseHolds);
 router.post('/jobs/sweep-no-shows', cronAuth, jobController.sweepNoShows);
 router.post('/jobs/settle-commissions', cronAuth, jobController.settleCommissions);
 router.post('/jobs/auto-approve-refunds', cronAuth, jobController.autoApproveRefunds);
+router.post('/jobs/credit-wallet-refunds', cronAuth, jobController.creditWalletRefunds);
 
 export default router;

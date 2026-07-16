@@ -84,7 +84,7 @@
     "from": "Từ",
     "perNight": "/ đêm",
     "bookNow": "Đặt ngay",
-    "plusTaxesFees": "+ {{amount}} thuế & phí",
+    "inclTaxesFees": "Đã gồm {{amount}} thuế & phí",
     "noExtraTaxes": "Không thu thêm thuế & phí",
     "adults_one": "{{count}} người lớn",
     "adults_other": "{{count}} người lớn",
@@ -94,7 +94,8 @@
     "privateBathroom": "Phòng tắm riêng",
     "balcony": "Ban công",
     "bedsLabel": "Giường",
-    "bestValue": "Đáng tiền nhất"
+    "bestValue": "Đáng tiền nhất",
+    "viewDetails": "Xem chi tiết phòng"
   },
   "gallery": {
     "close": "Đóng thư viện ảnh",
@@ -120,5 +121,21 @@
     "phone": "Điện thoại",
     "email": "Email"
   },
-  "viewDetails": "Xem chi tiết"
+  "viewDetails": "Xem chi tiết",
+  "roomDetail": {
+    "notFoundTitle": "Không tìm thấy phòng",
+    "notFoundDesc": "Loại phòng này không còn được bán hoặc khách sạn đã ngừng nhận đặt.",
+    "backToHotel": "Về trang khách sạn",
+    "checkInOut": "Nhận phòng {{checkIn}} · Trả phòng {{checkOut}}",
+    "occupancy": "Sức chứa",
+    "beds": "Giường",
+    "size": "Diện tích",
+    "view": "Hướng nhìn",
+    "about": "Giới thiệu phòng",
+    "highlights": "Điểm nổi bật",
+    "amenities": "Tiện nghi trong phòng",
+    "estIncludesTaxes": "Đã gồm ~{{amount}} thuế & phí (ước tính)",
+    "soldOut": "Hết phòng cho khoảng ngày này",
+    "pickDates": "Chọn ngày để xem giá cả kỳ ở và số phòng trống."
+  }
 }

@@ -103,6 +103,8 @@
   "notifications": {
     "title": "Thông báo",
     "markAllRead": "Đánh dấu đã đọc tất cả",
+    "delete": "Xoá thông báo",
+    "actionError": "Không thực hiện được, vui lòng thử lại.",
     "emptyTitle": "Không có thông báo",
     "emptyDesc": "Bạn đã xem hết rồi."
   },
