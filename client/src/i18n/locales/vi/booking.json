@@ -26,7 +26,6 @@
     "sepayNote": "Bạn sẽ nhận mã QR để chuyển khoản — hệ thống tự đối soát và xác nhận đơn."
   },
   "trust": {
-    "inclTaxes": "Đã bao gồm thuế & phí",
     "cancellation": "Chính sách hủy",
     "cancellationFallback": "Điều kiện hủy do khách sạn quy định — xem mục Chính sách của khách sạn."
   },
@@ -44,16 +43,17 @@
     "creatingBooking": "Đang tạo đặt phòng…",
     "redirecting": "Đang chuyển tới VNPay…",
     "retryPayment": "Thử thanh toán lại",
-    "confirmPay": "Xác nhận & Thanh toán"
+    "confirmPay": "Xác nhận & Thanh toán",
+    "priceUpdated": "Tổng tiền khách sạn chốt là {{total}}, khác với số tạm tính. Bấm \"Thử thanh toán lại\" để tiếp tục với số tiền này."
   },
   "summary": {
     "roomLine_one": "Phòng × {{count}} đêm",
     "roomLine_other": "Phòng × {{count}} đêm",
     "perNightLine_one": "{{price}} × {{count}} đêm",
     "perNightLine_other": "{{price}} × {{count}} đêm",
-    "taxesFees": "Thuế & phí",
-    "included": "Đã bao gồm",
-    "totalInclTaxes": "Tổng (đã gồm thuế & phí)",
+    "tax": "Thuế",
+    "fee": "Phí dịch vụ",
+    "discount": "Giảm giá",
     "checkInFrom": "Nhận từ {{time}}",
     "checkOutUntil": "trả trước {{time}}",
     "maxOccupancy_one": "(tối đa {{count}} khách/phòng)",

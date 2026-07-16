@@ -54,7 +54,7 @@ export function DashboardKpiCards({ data, isLoading, isError, onRetry }: Dashboa
       display: formatCount(kpis.hotelPartners.value),
     },
     {
-      label: 'Active Users',
+      label: 'Users',
       icon: Users,
       color: 'text-emerald-600',
       bg: 'bg-emerald-50',
@@ -106,9 +106,18 @@ export function DashboardKpiCards({ data, isLoading, isError, onRetry }: Dashboa
               <p className="text-xs text-slate-500">{c.label}</p>
               <ArrowRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-role-manager-primary transition-colors" />
             </div>
-            <p className="text-[11px] text-slate-500 mt-2">vs previous period</p>
+            {/* Nói rõ con số đang đo cái gì: KPI nào không theo range thì hiện `note` thay vì
+                "vs previous period" — nếu không, người xem sẽ tưởng nó đổi theo bộ lọc ngày. */}
+            <p className="text-[11px] text-slate-500 mt-2">
+              {c.kpi.note ?? 'vs previous period'}
+            </p>
             <div className="mt-1">
-              <Sparkline data={c.kpi.sparkline} trend={trendOf(c.kpi.changePct)} />
+              {c.kpi.sparkline.length > 1 ? (
+                <Sparkline data={c.kpi.sparkline} trend={trendOf(c.kpi.changePct)} />
+              ) : (
+                // Giữ chỗ đúng chiều cao sparkline để 4 card không so le nhau.
+                <div className="h-8" aria-hidden />
+              )}
             </div>
           </Link>
         );

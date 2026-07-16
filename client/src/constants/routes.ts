@@ -47,9 +47,11 @@ export const ROUTES = {
   partnerStaff: '/partner/staff',
   partnerBookings: '/partner/bookings',
   partnerAmenities: '/partner/amenities',
+  partnerRefunds: '/partner/refunds',
   partnerProfile: '/partner/profile',
 
   // Cổng Platform Manager
+  managerRefunds: '/manager/refunds',
   managerProfile: '/manager/profile',
 
   // Cổng nhân viên (staff — lễ tân / housekeeping)

@@ -1,5 +1,4 @@
 import { Hotel } from 'lucide-react';
-import { formatCompactVnd, formatVndFull } from '@/utils/formatCurrency';
 import type { TopHotel } from '@/types/dashboard.types';
 import { formatCount } from './helpers';
 import { ListCardSkeleton, SectionEmpty, SectionError } from './states';
@@ -11,23 +10,29 @@ interface TopHotelsWidgetProps {
   onRetry: () => void;
 }
 
-/** AC-8: Top hotels theo revenue trong range. */
+/**
+ * Top khách sạn theo SỐ BOOKING (`GET /platform-manager/analytics` → `topHotels`).
+ *
+ * Xếp theo booking chứ không phải doanh thu, và ghi rõ "all time": BE không có doanh thu
+ * theo khách sạn ở phạm vi toàn sàn, `topHotels` cũng không lọc theo khoảng thời gian.
+ */
 export function TopHotelsWidget({ data, isLoading, isError, onRetry }: TopHotelsWidgetProps) {
   if (isLoading) return <ListCardSkeleton rows={5} />;
 
-  const max = Math.max(1, ...(data?.map(h => h.revenue) ?? [1]));
+  const max = Math.max(1, ...(data?.map(h => h.bookings) ?? [1]));
 
   return (
     <div className="bg-white rounded-xl border border-slate-200 p-6">
-      <div className="flex items-center gap-2 mb-5">
+      <div className="flex items-center gap-2 mb-1">
         <Hotel className="w-5 h-5 text-role-manager-primary" />
-        <h2 className="font-semibold text-slate-900">Top Hotels by Revenue</h2>
+        <h2 className="font-semibold text-slate-900">Top Hotels by Bookings</h2>
       </div>
+      <p className="text-xs text-slate-500 mb-5">All time · not filtered by the date range</p>
 
       {isError ? (
         <SectionError onRetry={onRetry} />
       ) : !data || data.length === 0 ? (
-        <SectionEmpty icon={Hotel} title="No revenue yet" />
+        <SectionEmpty icon={Hotel} title="No bookings yet" />
       ) : (
         <div className="space-y-3">
           {data.map((h, i) => (
@@ -36,17 +41,16 @@ export function TopHotelsWidget({ data, isLoading, isError, onRetry }: TopHotels
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2 mb-1">
                   <span className="text-sm text-slate-700 truncate">{h.name}</span>
-                  <span className="text-sm font-semibold text-slate-900 shrink-0" title={formatVndFull(h.revenue)}>
-                    {formatCompactVnd(h.revenue)}
+                  <span className="text-sm font-semibold text-slate-900 shrink-0">
+                    {formatCount(h.bookings)}
                   </span>
                 </div>
                 <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
                   <div
                     className="h-full rounded-full bg-role-manager-primary"
-                    style={{ width: `${(h.revenue / max) * 100}%` }}
+                    style={{ width: `${(h.bookings / max) * 100}%` }}
                   />
                 </div>
-                <p className="text-[11px] text-slate-500 mt-0.5">{formatCount(h.bookings)} bookings</p>
               </div>
             </div>
           ))}

@@ -88,16 +88,21 @@ export interface HotelContactInput {
   phoneType?: 'voice' | 'fax' | 'mobile' | null;
 }
 
-/** Một chính sách / phụ phí của khách sạn (thay thế toàn bộ khi PUT). */
+/** Một điều khoản cho khách ĐỌC — thuần văn bản, không ảnh hưởng tiền (thay thế toàn bộ khi PUT). */
 export interface HotelPolicyInput {
-  policyType: 'cancellation' | 'tax' | 'fee' | 'parking' | 'internet' | 'deposit';
-  code?: string | null;
+  title: string;
   description?: string | null;
-  amount?: number | null;
+  important?: boolean;
+}
+
+/** Một khoản thu CỘNG VÀO tiền đơn — engine tính giá đọc cái này (thay thế toàn bộ khi PUT). */
+export interface HotelChargeInput {
+  chargeType: 'tax' | 'fee';
+  name: string;
+  amount: number;
   isPercentage?: boolean;
+  // Chỉ dùng khi isPercentage = false; tính theo % thì bỏ qua trường này.
   chargeFrequency?: 'per_stay' | 'per_night' | 'per_person' | 'per_person_per_night' | null;
-  minAge?: number | null;
-  maxAge?: number | null;
 }
 
 /** Một địa điểm lân cận khách sạn (thay thế toàn bộ khi PUT). */

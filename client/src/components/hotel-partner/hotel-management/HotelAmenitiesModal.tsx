@@ -26,7 +26,8 @@ type Selection = Map<string, { isFree: boolean }>;
 export function HotelAmenitiesModal({ open, onClose, hotel }: HotelAmenitiesModalProps) {
   const hotelId = hotel.id;
   const hotelName = hotel.name;
-  const { data: catalog, isLoading, isError } = useAmenities();
+  // Chỉ chào tiện nghi cấp khách sạn — 'room'/'service' gán ở Room Inventory → Manage amenities.
+  const { data: catalog, isLoading, isError } = useAmenities('hotel');
   const { data: current } = useHotelAmenities(hotelId);
   const setAmenities = useSetHotelAmenities(hotelId);
 
@@ -84,6 +85,18 @@ export function HotelAmenitiesModal({ open, onClose, hotel }: HotelAmenitiesModa
     a.name.toLowerCase().includes(search.trim().toLowerCase())
   );
 
+  /**
+   * Modal chỉ thao tác trên tiện nghi cấp khách sạn. Khách sạn có thể còn dòng 'room'/'service' gán
+   * từ trước (lúc picker chưa lọc category): giữ nguyên khi lưu — không xoá ngầm thứ user không thấy.
+   */
+  const catalogIds = useMemo(
+    () => new Set((catalog ?? []).map(a => a.id)),
+    [catalog]
+  );
+  const selectedCount = Array.from(selection.keys()).filter(id =>
+    catalogIds.has(id)
+  ).length;
+
   const onCreated = (amenity: Amenity) => {
     // Tự chọn tiện nghi vừa tạo (mặc định miễn phí).
     setSelection(prev => new Map(prev).set(amenity.id, { isFree: true }));
@@ -94,7 +107,7 @@ export function HotelAmenitiesModal({ open, onClose, hotel }: HotelAmenitiesModa
       open={open}
       onClose={onClose}
       title="Hotel amenities"
-      description={`${hotelName} · ${selection.size} selected`}
+      description={`${hotelName} · ${selectedCount} selected`}
       icon={Sparkles}
       size="lg"
       footer={
@@ -204,10 +217,16 @@ export function HotelAmenitiesModal({ open, onClose, hotel }: HotelAmenitiesModa
             </div>
           )}
 
-          {selection.size > 0 && (
+          {selectedCount > 0 && (
             <button
               type="button"
-              onClick={() => setSelection(() => new Map())}
+              onClick={() =>
+                setSelection(prev => {
+                  const next = new Map(prev);
+                  catalogIds.forEach(id => next.delete(id));
+                  return next;
+                })
+              }
               className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-red-500"
             >
               <X className="w-3.5 h-3.5" /> Clear all

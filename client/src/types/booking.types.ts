@@ -1,4 +1,6 @@
 import type { BookingFormValues } from '@/validations/booking.validation';
+import type { BookingPayment, RefundStatus } from '@/types/payment.types';
+import type { HotelPolicy } from '@/types/hotel-property.types';
 
 export interface BookingDetailsFormProps {
   onSubmit: (values: BookingFormValues) => void;
@@ -70,8 +72,14 @@ export interface Booking {
   numNights: number;
   numGuests: number;
   basePricePerNight: string;
+  /** Tiền phòng thuần — CHƯA gồm thuế/phí. */
   subtotal: string;
   discountAmount: string;
+  /** Thuế (VAT…) đóng băng lúc đặt; "0" nếu KS không khai báo policy `tax`. */
+  taxAmount: string;
+  /** Phí dịch vụ đóng băng lúc đặt; "0" nếu KS không khai báo policy `fee`. */
+  feeAmount: string;
+  /** = subtotal − discountAmount + taxAmount + feeAmount. Đây là số khách thực trả. */
   totalAmount: string;
   status: BookingStatus;
   source: BookingSource;
@@ -85,6 +93,26 @@ export interface Booking {
   hotel?: BookingHotelSummary;
   roomType?: BookingRoomTypeSummary;
   voucher?: BookingVoucherSummary | null;
+  /**
+   * Thanh toán + yêu cầu hoàn tiền (BE include sẵn ở `GET /bookings/me`, `GET /bookings/:id`
+   * và response huỷ) — khách tự theo dõi được pending → approved → processed / rejected.
+   */
+  payments?: BookingPayment[];
+}
+
+/**
+ * Response `PATCH /bookings/:id/cancel` = booking đã huỷ + yêu cầu hoàn tiền vừa tạo.
+ * `refund` là **null** khi không có gì để hoàn (booking chưa thanh toán, hoặc huỷ muộn bị
+ * phạt hết theo chính sách) — KHÔNG được hiểu là "đã hoàn tiền".
+ */
+export interface CancelledRefund {
+  id: string;
+  amount: string;
+  status: RefundStatus;
+}
+
+export interface CancelBookingResponse extends Booking {
+  refund: CancelledRefund | null;
 }
 
 /**
@@ -125,7 +153,8 @@ export interface CreateBookingPayload {
   specialRequests?: string;
   /**
    * BE nhận `vnpay | sepay | cash` (mặc định `vnpay`) — khớp `booking.validation.ts`.
-   * `cash` → confirm ngay + phát voucher; `vnpay`/`sepay` → giữ chỗ 15 phút chờ thanh toán.
+   * `cash` → confirm ngay + phát voucher; `vnpay` → giữ chỗ 15 phút; `sepay` → giữ chỗ 30 phút
+   * (chuyển khoản ngân hàng chậm hơn quẹt thẻ qua cổng).
    */
   paymentMethod?: 'vnpay' | 'sepay' | 'cash';
 }
@@ -135,4 +164,28 @@ export interface MyBookingsParams {
   sortBy?: string;
   page?: number;
   limit?: number;
+}
+
+// ============================================================
+// Ước tính thuế & phí ở checkout (booking chưa tồn tại nên BE chưa có số thật)
+// ============================================================
+
+/** Kết quả ước tính — VND, khớp cách BE tính lúc tạo booking. */
+export interface TaxFeeEstimate {
+  taxAmount: number;
+  feeAmount: number;
+  /** subtotal + taxAmount + feeAmount (checkout chưa có giảm giá). */
+  total: number;
+}
+
+export interface TaxFeeEstimateInput {
+  /**
+   * Chính sách của khách sạn (`GET /hotels/:id` → `policies[]`).
+   * `undefined` = CHƯA BIẾT (chưa load xong) — khác hẳn `[]` = KS không có chính sách nào.
+   */
+  policies: HotelPolicy[] | undefined;
+  /** Tiền phòng thuần cả kỳ ở (`roomType.totalPrice`). */
+  subtotal: number;
+  numNights: number;
+  numGuests: number;
 }
