@@ -77,5 +77,18 @@
     "prev": "Previous photo",
     "next": "Next photo",
     "viewAll": "View all {{count}} photos"
+  },
+  "compare": {
+    "toggle": "Compare rooms",
+    "hide": "Hide comparison",
+    "caption": "Room comparison — differences are highlighted",
+    "feature": "Feature",
+    "price": "Price",
+    "occupancy": "Sleeps",
+    "bed": "Bed",
+    "size": "Size",
+    "view": "View",
+    "included": "Included",
+    "notIncluded": "Not included"
   }
 }

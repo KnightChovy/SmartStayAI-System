@@ -77,5 +77,18 @@
     "prev": "Ảnh trước",
     "next": "Ảnh tiếp theo",
     "viewAll": "Xem tất cả {{count}} ảnh"
+  },
+  "compare": {
+    "toggle": "So sánh phòng",
+    "hide": "Ẩn so sánh",
+    "caption": "So sánh loại phòng — ô khác biệt được tô sáng",
+    "feature": "Tiêu chí",
+    "price": "Giá",
+    "occupancy": "Số khách",
+    "bed": "Giường",
+    "size": "Diện tích",
+    "view": "Hướng nhìn",
+    "included": "Có",
+    "notIncluded": "Không có"
   }
 }

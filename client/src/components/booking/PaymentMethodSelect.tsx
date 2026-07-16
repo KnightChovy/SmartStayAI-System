@@ -1,14 +1,21 @@
-import { Banknote, CreditCard, Wallet } from 'lucide-react';
+import { Banknote, Wallet } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/cn';
 
-export type PaymentMethod = 'vnpay' | 'sepay' | 'stripe' | 'cash';
+/**
+ * Chỉ mời phương thức FE đã nối được đầu-cuối.
+ *
+ * - `stripe` (Thẻ tín dụng): BE KHÔNG hỗ trợ (`booking.validation` chỉ nhận
+ *   `vnpay | sepay | cash`, không có route stripe) → đã gỡ hẳn, đây là tuỳ chọn ma.
+ * - `sepay`: BE ĐÃ có (`POST /payments/bookings/:id/sepay` trả QR chuyển khoản +
+ *   webhook đối soát). Chưa mời ở đây vì cần luồng riêng (hiện QR + chờ webhook),
+ *   không dùng chung redirect như VNPay. Bật lại khi FE làm xong màn QR.
+ */
+export type PaymentMethod = 'vnpay' | 'cash';
 
 const METHODS = [
   { value: 'vnpay', icon: Wallet, labelKey: 'methods.vnpay.label', descKey: 'methods.vnpay.desc' },
-  { value: 'sepay', icon: Banknote, labelKey: 'methods.sepay.label', descKey: 'methods.sepay.desc' },
-  { value: 'stripe', icon: CreditCard, labelKey: 'methods.stripe.label', descKey: 'methods.stripe.desc' },
   { value: 'cash', icon: Banknote, labelKey: 'methods.cash.label', descKey: 'methods.cash.desc' },
 ] as const satisfies {
   value: PaymentMethod;

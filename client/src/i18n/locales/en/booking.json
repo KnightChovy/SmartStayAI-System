@@ -22,7 +22,8 @@
     "title": "Payment method",
     "secureNote": "You'll be securely redirected to VNPay to complete your payment.",
     "review": "Review booking",
-    "notCharged": "You won't be charged until you complete payment at the gateway."
+    "notCharged": "You won't be charged until you complete payment at the gateway.",
+    "cashNote": "No online payment needed — pay at the property on check-in. Your booking is confirmed right away."
   },
   "trust": {
     "inclTaxes": "Includes taxes & fees",

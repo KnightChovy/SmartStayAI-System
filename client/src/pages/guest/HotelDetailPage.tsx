@@ -5,6 +5,7 @@ import {
   ArrowLeft,
   BadgeCheck,
   Clock,
+  Columns3,
   Image as ImageIcon,
   MapPin,
   ShieldCheck,
@@ -25,6 +26,7 @@ import HotelPolicies from '@/components/guest/HotelPolicies';
 import HotelNearby from '@/components/guest/HotelNearby';
 import StickyBookingBar from '@/components/guest/StickyBookingBar';
 import GalleryLightbox from '@/components/guest/GalleryLightbox';
+import RoomCompareTable from '@/components/guest/RoomCompareTable';
 import DateRangePicker from '@/components/shared/DateRangePicker';
 import GuestSelector from '@/components/shared/GuestSelector';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -93,6 +95,7 @@ export default function HotelDetailPage() {
   // Gallery: ảnh khách sạn + ảnh đại diện từng loại phòng
   const [activeImage, setActiveImage] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [compareOpen, setCompareOpen] = useState(false);
   const gallery = useMemo(() => {
     const imgs = [
       ...(hotel?.images?.map(i => i.url) ?? []),
@@ -293,7 +296,28 @@ export default function HotelDetailPage() {
         ) : null}
 
         {/* Room types */}
-        <h2 className="mt-10 font-be-vietnam text-2xl font-bold text-on-surface">{t('availableRooms')}</h2>
+        <div className="mt-10 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="font-be-vietnam text-2xl font-bold text-on-surface">
+            {t('availableRooms')}
+          </h2>
+          {(roomTypes?.length ?? 0) >= 2 && (
+            <Button
+              variant="outline"
+              className="min-h-11"
+              onClick={() => setCompareOpen(v => !v)}
+              aria-expanded={compareOpen}
+            >
+              <Columns3 className="size-4" />
+              {compareOpen ? t('compare.hide') : t('compare.toggle')}
+            </Button>
+          )}
+        </div>
+
+        {compareOpen && roomTypes && (
+          <div className="mt-4">
+            <RoomCompareTable roomTypes={roomTypes} onSelect={handleSelectRoom} />
+          </div>
+        )}
         <div className="mt-5 space-y-4">
           {roomsLoading ? (
             Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-44 w-full rounded-2xl" />)

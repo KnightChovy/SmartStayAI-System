@@ -112,7 +112,7 @@ export default function BookingCheckoutPage() {
 
   const handleConfirm = async () => {
     try {
-      // Tạo booking (pending, giữ chỗ) đúng một lần; lần bấm sau chỉ tạo lại URL VNPay.
+      // Tạo booking đúng một lần; bấm lại chỉ tạo lại URL thanh toán.
       let bookingId = createdBookingId;
       if (!bookingId) {
         const values = form.getValues();
@@ -123,11 +123,21 @@ export default function BookingCheckoutPage() {
           checkOutDate: checkOut,
           numGuests: guests,
           specialRequests: values.specialRequests || undefined,
+          // Phải gửi đúng phương thức khách chọn — trước đây bỏ trống nên BE luôn
+          // mặc định 'vnpay', khiến "Thanh toán tại chỗ" vẫn bị đẩy sang VNPay.
+          paymentMethod: payment,
         });
         bookingId = booking.id;
         setCreatedBookingId(bookingId);
       }
-      // Lấy URL cổng VNPay rồi chuyển trình duyệt sang để khách thanh toán.
+
+      // Tiền mặt: BE đã confirm + phát voucher ngay, không có cổng nào để đi.
+      if (payment === 'cash') {
+        navigate(ROUTES.bookingSuccess(bookingId));
+        return;
+      }
+
+      // VNPay: lấy URL cổng rồi chuyển trình duyệt sang để khách thanh toán.
       const { paymentUrl } = await createPayment.mutateAsync(bookingId);
       window.location.href = paymentUrl;
     } catch {
@@ -242,15 +252,18 @@ export default function BookingCheckoutPage() {
                 <h2 className="font-be-vietnam text-lg font-semibold text-on-surface">{t('payment.title')}</h2>
                 <PaymentMethodSelect value={payment} onChange={setPayment} />
                 <div className="space-y-1.5 rounded-xl bg-emerald-500/5 p-3">
+                  {/* Ghi chú phải khớp phương thức đã chọn — cash không đi qua cổng nào */}
                   <p className="flex items-center gap-1.5 text-xs text-on-surface-variant">
                     <ShieldCheck className="size-4 shrink-0 text-primary" aria-hidden="true" />
-                    {t('payment.secureNote')}
+                    {payment === 'cash' ? t('payment.cashNote') : t('payment.secureNote')}
                   </p>
-                  {/* Đảo ngược rủi ro: nói rõ chưa bị trừ tiền ở bước này */}
-                  <p className="flex items-center gap-1.5 text-xs font-medium text-emerald-700">
-                    <Lock className="size-4 shrink-0" aria-hidden="true" />
-                    {t('payment.notCharged')}
-                  </p>
+                  {payment !== 'cash' && (
+                    /* Đảo ngược rủi ro: nói rõ chưa bị trừ tiền ở bước này */
+                    <p className="flex items-center gap-1.5 text-xs font-medium text-emerald-700">
+                      <Lock className="size-4 shrink-0" aria-hidden="true" />
+                      {t('payment.notCharged')}
+                    </p>
+                  )}
                 </div>
                 <div className="flex gap-3">
                   <Button
