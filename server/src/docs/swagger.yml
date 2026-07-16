@@ -22,7 +22,10 @@ tags:
   - name: Amenities
     description: Amenity catalog (list public, create by partner/admin)
   - name: Chatbot
-    description: Per-hotel AI chatbot (LLM provider is swappable via the AiProvider switch)
+    description: >
+      AI chatbot (LLM provider is swappable via the AiProvider switch). Two modes on the same endpoint:
+      send hotelId for a PER-HOTEL concierge (search/book/cancel within that hotel), or omit hotelId for
+      the PLATFORM-WIDE assistant (advisory only — finds & recommends hotels across the marketplace).
   - name: Internal
     description: Endpoints for an external scheduler (cron). Protected by the x-cron-secret header, not user JWT.
   - name: Admin
@@ -35,16 +38,19 @@ tags:
 paths:
   /conversations/messages:
     post:
-      summary: Send a message to a hotel's chatbot
+      summary: Send a message to the chatbot (per-hotel or platform-wide)
       description: >
-        Send one message to a hotel's AI chatbot. Authentication is OPTIONAL. Anonymous visitors (no token)
-        get a read-only assistant: FAQs, room/price search and general hotel info only. Authenticated guests
-        additionally get personal actions — look up their own bookings and place/cancel bookings on their
-        behalf via a two-step confirm-gate (the bot proposes a summary, then acts only after explicit
-        agreement). If conversationId is omitted a new conversation is created; otherwise the message
-        continues that conversation (the full history is replayed to the LLM each turn). An anonymous
-        conversation cannot be resumed with a token and vice versa. Returns the bot reply and the
-        conversationId to reuse next turn. No extra request fields are needed — this is driven in-chat.
+        Send one message to the AI chatbot. Authentication is OPTIONAL. Two modes selected by hotelId:
+        WITH hotelId → per-hotel concierge; WITHOUT hotelId → platform-wide assistant (advisory only:
+        it finds & recommends hotels across the marketplace via search_hotels, and does NOT book, cancel
+        or look up orders — it invites the guest to open a hotel's page for that). In per-hotel mode,
+        anonymous visitors get a read-only assistant (FAQs, room/price search, hotel info) while
+        authenticated guests additionally get personal actions — look up their own bookings and
+        place/cancel bookings via a two-step confirm-gate (the bot proposes a summary, then acts only
+        after explicit agreement). If conversationId is omitted a new conversation is created; otherwise
+        the message continues that conversation (full history replayed to the LLM each turn). An anonymous
+        conversation cannot be resumed with a token and vice versa, and a platform conversation is separate
+        from any hotel conversation. Returns the bot reply and the conversationId to reuse next turn.
       tags: [Chatbot]
       security:
         - bearerAuth: []
@@ -56,12 +62,12 @@ paths:
             schema:
               type: object
               required:
-                - hotelId
                 - message
               properties:
                 hotelId:
                   type: string
                   format: uuid
+                  description: Omit for the platform-wide assistant; send it for a specific hotel's concierge
                 conversationId:
                   type: string
                   format: uuid
@@ -70,8 +76,7 @@ paths:
                   type: string
                   maxLength: 2000
               example:
-                hotelId: 11111111-1111-1111-1111-111111111111
-                message: Khách sạn mình có hồ bơi không?
+                message: Tìm giúp mình khách sạn ở Đà Nẵng cho 2 người cuối tuần này
       responses:
         "201":
           description: Bot reply
@@ -94,8 +99,9 @@ paths:
     post:
       summary: Send a message and stream the reply (SSE)
       description: >
-        Same body and OPTIONAL-auth behaviour as /conversations/messages (anonymous = read-only,
-        authenticated = personal booking actions), but the reply is streamed token-by-token over
+        Same body and OPTIONAL-auth behaviour as /conversations/messages (omit hotelId = platform-wide
+        advisory assistant, send hotelId = per-hotel concierge; anonymous = read-only, authenticated =
+        personal booking actions in per-hotel mode), but the reply is streamed token-by-token over
         Server-Sent Events. Emits an "meta" event with the conversationId, then "chunk" events with
         partial text, then a "done" event. The full reply is saved to the DB after streaming ends.
       tags: [Chatbot]
@@ -109,12 +115,12 @@ paths:
             schema:
               type: object
               required:
-                - hotelId
                 - message
               properties:
                 hotelId:
                   type: string
                   format: uuid
+                  description: Omit for the platform-wide assistant; send it for a specific hotel's concierge
                 conversationId:
                   type: string
                   format: uuid
