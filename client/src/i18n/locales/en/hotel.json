@@ -70,7 +70,16 @@
     "from": "From",
     "perNight": "/ night",
     "bookNow": "Book now",
-    "inclTaxes": "Includes taxes & fees"
+    "inclTaxes": "Includes taxes & fees",
+    "adults_one": "{{count}} adult",
+    "adults_other": "{{count}} adults",
+    "children_one": "{{count}} child",
+    "children_other": "{{count}} children",
+    "nonSmoking": "Non-smoking",
+    "privateBathroom": "Private bathroom",
+    "balcony": "Balcony",
+    "bedsLabel": "Beds",
+    "bestValue": "Best value"
   },
   "gallery": {
     "close": "Close gallery",
@@ -90,5 +99,10 @@
     "view": "View",
     "included": "Included",
     "notIncluded": "Not included"
+  },
+  "contacts": {
+    "title": "Contact the property",
+    "phone": "Phone",
+    "email": "Email"
   }
 }

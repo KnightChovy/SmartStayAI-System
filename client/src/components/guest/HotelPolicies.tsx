@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { Baby, Clock, Dog, Info, ShieldCheck } from 'lucide-react';
+import { Baby, Clock, Dog, Info, Mail, Phone, ShieldCheck } from 'lucide-react';
 import type { HotelDetail, PetsPolicy } from '@/types/hotel.types';
 
 /** Map enum thú cưng của BE sang key i18n (literal để `t()` type-safe). */
@@ -42,6 +42,23 @@ export default function HotelPolicies({ hotel }: HotelPoliciesProps) {
   }
   if (hotel.petsPolicy) {
     rows.push({ icon: Dog, label: t('policies.pets'), value: t(PETS_KEY[hotel.petsPolicy]) });
+  }
+
+  // Liên hệ khách sạn (BE trả `contacts` + scalar phone/email) — gộp vào cùng bảng.
+  const phones = [
+    hotel.phone,
+    ...(hotel.contacts ?? []).map(c => c.phone).filter(Boolean),
+  ].filter((v, i, arr): v is string => !!v && arr.indexOf(v) === i);
+  const emails = [
+    hotel.email,
+    ...(hotel.contacts ?? []).map(c => c.email).filter(Boolean),
+  ].filter((v, i, arr): v is string => !!v && arr.indexOf(v) === i);
+
+  if (phones.length > 0) {
+    rows.push({ icon: Phone, label: t('contacts.phone'), value: phones.join(' · ') });
+  }
+  if (emails.length > 0) {
+    rows.push({ icon: Mail, label: t('contacts.email'), value: emails.join(' · ') });
   }
 
   const extra = hotel.policies ?? [];

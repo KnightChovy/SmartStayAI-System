@@ -11,12 +11,15 @@ import type { HotelDetail, HotelSearchResult } from '@/types/hotel.types';
  * gọi API chi tiết, mất tiện nghi/chính sách).
  */
 export function useHotel(hotelId: string, seed?: HotelSearchResult | null) {
+  /** Bản tóm tắt + các relation rỗng, để header hiện ngay trong lúc chờ chi tiết. */
+  const placeholder: HotelDetail | undefined = seed
+    ? { ...seed, amenities: [], policies: [], nearbyPlaces: [], contacts: [] }
+    : undefined;
+
   return useQuery({
     queryKey: queryKeys.hotels.detail(hotelId),
     queryFn: () => hotelService.getById(hotelId),
     enabled: !!hotelId,
-    placeholderData: seed
-      ? ({ ...seed, amenities: [], policies: [], nearbyPlaces: [] } satisfies HotelDetail)
-      : undefined,
+    placeholderData: placeholder,
   });
 }

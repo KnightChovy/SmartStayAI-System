@@ -3,7 +3,7 @@
  * (`GET /hotels`, `GET /hotels/:id`, `GET /hotels/:id/room-types`).
  * Lưu ý: các field Decimal của Prisma serialize qua JSON thành **string**.
  */
-import type { HotelNearbyPlace, HotelPolicy } from './hotel-property.types';
+import type { HotelContact, HotelNearbyPlace, HotelPolicy, RoomBed } from './hotel-property.types';
 
 /** Chính sách thú cưng của khách sạn (khớp enum BE). */
 export type PetsPolicy = 'not_allowed' | 'allowed' | 'on_request';
@@ -48,6 +48,7 @@ export interface HotelDetail extends HotelSearchResult {
   amenities: { amenity: Amenity }[];
   policies: HotelPolicy[];
   nearbyPlaces: HotelNearbyPlace[];
+  contacts: HotelContact[];
   roomTypes?: RoomType[];
   /** Chính sách dạng văn bản tự do do partner nhập. */
   cancellationPolicy?: string | null;
@@ -231,6 +232,8 @@ export interface RoomType {
   isNonSmoking?: boolean | null;
   hasPrivateBathroom?: boolean | null;
   hasBalcony?: boolean | null;
+  /** Cấu hình giường chi tiết (BE include ở `GET /hotels/:id/room-types`). */
+  beds?: RoomBed[];
   images: RoomTypeImage[];
   amenities: { amenity: Amenity }[];
   /** Chỉ có khi search kèm khoảng ngày (checkIn/checkOut). */

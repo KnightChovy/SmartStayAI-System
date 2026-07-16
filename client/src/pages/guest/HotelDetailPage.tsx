@@ -86,6 +86,15 @@ export default function HotelDetailPage() {
     return String(Math.min(...prices));
   }, [roomTypes, hotel]);
 
+  /** Phòng rẻ nhất → gắn nhãn "Best value" để neo lựa chọn (giảm tê liệt quyết định). */
+  const bestValueRoomId = useMemo(() => {
+    const priced = (roomTypes ?? []).filter(rt => Number(rt.totalPrice ?? rt.basePrice) > 0);
+    if (priced.length < 2) return null;
+    return priced.reduce((min, rt) =>
+      Number(rt.totalPrice ?? rt.basePrice) < Number(min.totalPrice ?? min.basePrice) ? rt : min
+    ).id;
+  }, [roomTypes]);
+
   const update = (patch: Record<string, string | undefined>) => {
     const next = new URLSearchParams(params);
     Object.entries(patch).forEach(([k, v]) => (v ? next.set(k, v) : next.delete(k)));
@@ -328,7 +337,13 @@ export default function HotelDetailPage() {
             />
           ) : (
             roomTypes.map(rt => (
-              <RoomTypeCard key={rt.id} roomType={rt} selectable onSelect={handleSelectRoom} />
+              <RoomTypeCard
+                key={rt.id}
+                roomType={rt}
+                selectable
+                onSelect={handleSelectRoom}
+                bestValue={roomTypes.length > 1 && rt.id === bestValueRoomId}
+              />
             ))
           )}
         </div>

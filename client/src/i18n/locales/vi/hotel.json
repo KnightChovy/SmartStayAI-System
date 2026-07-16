@@ -70,7 +70,16 @@
     "from": "Từ",
     "perNight": "/ đêm",
     "bookNow": "Đặt ngay",
-    "inclTaxes": "Đã bao gồm thuế & phí"
+    "inclTaxes": "Đã bao gồm thuế & phí",
+    "adults_one": "{{count}} người lớn",
+    "adults_other": "{{count}} người lớn",
+    "children_one": "{{count}} trẻ em",
+    "children_other": "{{count}} trẻ em",
+    "nonSmoking": "Không hút thuốc",
+    "privateBathroom": "Phòng tắm riêng",
+    "balcony": "Ban công",
+    "bedsLabel": "Giường",
+    "bestValue": "Đáng tiền nhất"
   },
   "gallery": {
     "close": "Đóng thư viện ảnh",
@@ -90,5 +99,10 @@
     "view": "Hướng nhìn",
     "included": "Có",
     "notIncluded": "Không có"
+  },
+  "contacts": {
+    "title": "Liên hệ khách sạn",
+    "phone": "Điện thoại",
+    "email": "Email"
   }
 }
