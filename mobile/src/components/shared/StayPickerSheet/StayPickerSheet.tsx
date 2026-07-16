@@ -180,7 +180,9 @@ export function StayPickerSheet({
           </View>
 
           {/* Footer */}
-          <View className="px-5 pt-2" style={{ paddingBottom: insets.bottom + 12 }}>
+          {/* `insets.bottom` = 0 trên máy Android dùng nút điều hướng ⇒ phải có mức sàn,
+              không thì nút Áp dụng dính sát mép dưới. */}
+          <View className="px-5 pt-2" style={{ paddingBottom: Math.max(insets.bottom, 12) + 12 }}>
             <Text size="xs" className="font-bevi text-on-surface-variant mb-2 text-center">
               {canApply
                 ? `${formatDateShort(checkIn)} → ${formatDateShort(checkOut)} · ${t('common:nights', { count: nights })}`

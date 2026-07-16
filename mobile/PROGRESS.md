@@ -24,6 +24,12 @@ This file tracks the accomplished tasks, resolved user requests, and structural/
   - `tsc` **0 lỗi**, `eslint` **sạch**, `npx expo export` build OK; grep bundle: có route `/hotel/reviews/[id]` + `/profile/my-reviews`, endpoint `/reviews/me` + `/review-stats`, và chuỗi review **cả EN lẫn VI**.
   - **Ghi nhận (chưa sửa, ngoài phạm vi)**: `client` vẫn tự tính trung bình từ mẫu 100 review kèm comment "BE chưa có endpoint stats công khai" — comment đó **đã lỗi thời**, `GET /hotels/:id/review-stats` nay là public; client nên chuyển sang dùng để hết lệch điểm với app.
 
+- [x] **Fix nút dính sát mép dưới (ReviewSheet) + 2 chỗ khác cùng lỗi**:
+  - **Nguyên nhân gốc**: khoảng đệm dưới tính bằng `insets.bottom + 12`, mà **`insets.bottom` = 0 trên máy Android điều hướng bằng nút và trên iPhone không có home indicator (SE)** ⇒ nút Lưu chỉ cách mép ~20px, nhìn như dính. Máy có thanh gesture (iPhone 14/15, Android cử chỉ) thì `insets.bottom` = 24–34 nên **không tái hiện được** — dễ bỏ sót nếu chỉ test trên máy đời mới.
+  - **Sửa**: dùng **mức sàn** `Math.max(insets.bottom, 12) + n` thay vì cộng trần. `ReviewSheet` chuyển padding vào **`contentContainerStyle`** (padding dọc đặt ở `style` của ScrollView là khung cuộn — sai chỗ, sẽ cắt nội dung) và bỏ `<View>` đệm thủ công + `mb-2` để khoảng thở chỉ đến từ **một nguồn**.
+  - **Cùng lỗi, sửa luôn**: footer "Áp dụng" của `StayPickerSheet` (dùng ở Home + đổi lịch booking) và thanh CTA dính đáy ở `booking/checkout.tsx` — đều `insets.bottom + 12`.
+  - **Kết quả (tính theo đúng công thức trong code)**: Android nút bấm / iPhone SE — nút Lưu **20px → 40px**, footer **12px → 24px**; máy có gesture giữ nguyên (vốn đã đủ). `tsc` 0 lỗi, `eslint` sạch, `expo export` build OK.
+
 ### July 17, 2026
 
 - [x] **Guest tab navigation updated to LenFolk-style floating navigation**: edge-to-edge bottom bar, accessible press/long-press behavior, and a raised central **Bookings** action. Existing guest routes and translated labels are unchanged.
