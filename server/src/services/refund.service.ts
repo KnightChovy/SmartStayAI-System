@@ -120,7 +120,117 @@ export class RefundService {
     if (reviewed.count === 0) {
       throw new ApiError(httpStatus.BAD_REQUEST, 'Yêu cầu vừa được người khác xét duyệt');
     }
+
+    // Hoàn vào ví thì tiền không rời nền tảng ⇒ cộng ngay, không phải chờ ai chuyển khoản.
+    // Hoàn về ngân hàng mới cần Platform Manager thực thi (processRefund).
+    if (payload.decision === 'approve' && refund.refundMethod === 'wallet') {
+      return this.finalizeToWallet(refundId);
+    }
     return prisma.refund.findUniqueOrThrow({ where: { id: refundId }, include: refundInclude });
+  };
+
+  /**
+   * Chốt tiền cho một yêu cầu hoàn: đánh dấu payment, tính lại hoa hồng trên phần khách sạn THỰC
+   * GIỮ, và trừ ví khách sạn đúng phần net chênh lệch.
+   *
+   * Dùng chung cho cả hoàn-vào-ví lẫn hoàn-về-ngân-hàng: hai cách chỉ khác nhau ở chỗ tiền tới tay
+   * khách bằng đường nào, còn phía khách sạn thì mất tiền y như nhau. Tách ra để hai luồng không thể
+   * tính lệch nhau.
+   */
+  private settleHotelSide = async (
+    tx: Prisma.TransactionClient,
+    refund: { amount: Prisma.Decimal },
+    payment: { id: string; amount: Prisma.Decimal },
+    booking: { id: string; hotelId: string; commission: { commissionRate: Prisma.Decimal; commissionAmount: Prisma.Decimal } | null }
+  ) => {
+    // Hoàn 100% ⇒ Payment refunded; hoàn một phần ⇒ giữ completed (bản ghi Refund là nguồn sự thật)
+    if (refund.amount.equals(payment.amount)) {
+      await tx.payment.update({ where: { id: payment.id }, data: { status: 'refunded' } });
+    }
+    if (booking.commission) {
+      const retained = payment.amount.sub(refund.amount);
+      const newCommission = retained.mul(booking.commission.commissionRate).div(100).toDecimalPlaces(2);
+      await tx.platformCommission.update({
+        where: { bookingId: booking.id },
+        data: { commissionAmount: newCommission },
+      });
+      const oldNet = payment.amount.sub(booking.commission.commissionAmount);
+      const newNet = retained.sub(newCommission);
+      await walletService.recordRefund(tx, booking.hotelId, booking.id, oldNet.sub(newNet));
+    }
+  };
+
+  /**
+   * Hoàn vào VÍ KHÁCH: cộng ví khách + chốt phía khách sạn + đánh dấu processed, tất cả trong một
+   * transaction. Không ai phải chuyển khoản vì tiền vẫn nằm trong tài khoản nền tảng — chỉ là bút toán.
+   *
+   * refundTransactionId để null có chủ đích: không có giao dịch ngân hàng nào cả; vết đối soát là
+   * bản ghi WalletTransaction của khách.
+   */
+  private finalizeToWallet = async (refundId: string) => {
+    const result = await prisma.$transaction(async (tx) => {
+      const refund = await tx.refund.findUniqueOrThrow({
+        where: { id: refundId },
+        include: {
+          payment: {
+            select: {
+              id: true,
+              amount: true,
+              booking: { select: { id: true, hotelId: true, bookingCode: true, commission: true } },
+            },
+          },
+        },
+      });
+      const { payment } = refund;
+      const { booking } = payment;
+
+      const done = await tx.refund.updateMany({
+        where: { id: refundId, status: 'approved' },
+        data: { status: 'processed', processedAt: new Date() },
+      });
+      if (done.count === 0) {
+        throw new ApiError(httpStatus.BAD_REQUEST, 'Yêu cầu này vừa được xử lý');
+      }
+
+      await walletService.creditCustomer(
+        tx,
+        refund.requestedBy,
+        refund.amount,
+        booking.id,
+        `Hoàn tiền booking ${booking.bookingCode}`
+      );
+      await this.settleHotelSide(tx, refund, payment, booking);
+
+      logger.info(`[Refund] Hoàn ${refund.amount.toString()}đ vào ví khách cho booking ${booking.bookingCode}`);
+      return tx.refund.findUniqueOrThrow({ where: { id: refundId }, include: refundInclude });
+    });
+    return result;
+  };
+
+  /**
+   * [Cron] Chốt các yêu cầu ĐÃ DUYỆT chọn hoàn vào ví nhưng chưa được cộng — ví dụ yêu cầu do cron
+   * tự duyệt (không đi qua reviewRefund). Không có bước này thì tiền treo ở 'approved' mãi mà chẳng
+   * ai chuyển, vì hoàn vào ví vốn không cần Platform Manager.
+   * @returns số yêu cầu đã cộng vào ví
+   */
+  processApprovedWalletRefunds = async (): Promise<number> => {
+    const pending = await prisma.refund.findMany({
+      where: { status: 'approved', refundMethod: 'wallet' },
+      select: { id: true },
+    });
+    let done = 0;
+    for (const r of pending) {
+      try {
+        await this.finalizeToWallet(r.id);
+        done += 1;
+      } catch (err) {
+        logger.error(`[Refund] Không cộng được vào ví cho yêu cầu ${r.id}: ${(err as Error).message}`);
+      }
+    }
+    if (done > 0) {
+      logger.info(`[Refund] Đã cộng ${done} khoản hoàn vào ví khách`);
+    }
+    return done;
   };
 
   /**
@@ -157,6 +267,13 @@ export class RefundService {
         'Chỉ xử lý được yêu cầu đã DUYỆT (approved). Yêu cầu chờ duyệt phải được khách sạn duyệt trước.'
       );
     }
+    // Hoàn vào ví được cộng tự động ngay lúc duyệt — không có gì để Platform Manager chuyển khoản
+    if (refund.refundMethod !== 'bank') {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        'Yêu cầu này khách chọn hoàn vào ví nên đã được cộng tự động, không cần chuyển khoản'
+      );
+    }
 
     const { payment } = refund;
     const { booking } = payment;
@@ -174,23 +291,7 @@ export class RefundService {
         throw new ApiError(httpStatus.BAD_REQUEST, 'Yêu cầu này vừa được xử lý');
       }
 
-      // Hoàn 100% ⇒ Payment refunded; hoàn một phần ⇒ giữ completed (bản ghi Refund là nguồn sự thật)
-      if (refund.amount.equals(payment.amount)) {
-        await tx.payment.update({ where: { id: payment.id }, data: { status: 'refunded' } });
-      }
-
-      // Hoa hồng chỉ tính trên phần khách sạn THỰC GIỮ (đã trả − đã hoàn)
-      if (booking.commission) {
-        const retained = payment.amount.sub(refund.amount);
-        const newCommission = retained.mul(booking.commission.commissionRate).div(100).toDecimalPlaces(2);
-        await tx.platformCommission.update({
-          where: { bookingId: booking.id },
-          data: { commissionAmount: newCommission },
-        });
-        const oldNet = payment.amount.sub(booking.commission.commissionAmount);
-        const newNet = retained.sub(newCommission);
-        await walletService.recordRefund(tx, booking.hotelId, booking.id, oldNet.sub(newNet));
-      }
+      await this.settleHotelSide(tx, refund, payment, booking);
 
       return tx.refund.findUniqueOrThrow({ where: { id: refundId }, include: refundInclude });
     });
@@ -230,14 +331,19 @@ export class RefundService {
   };
 
   /**
-   * Tạo yêu cầu hoàn tiền cho "tiền mồ côi": tiền đã vào nhưng booking không còn giữ chỗ
-   * (đã huỷ/hết hạn) nên khách KHÔNG có phòng. Đặt thẳng 'approved' vì đây là lỗi hệ thống,
-   * khách sạn không có gì để xét — chỉ chờ admin chuyển trả.
-   * Chạy TRONG transaction của luồng xác nhận thanh toán nên nhận `tx`.
+   * Xử lý "tiền mồ côi": tiền đã vào nhưng booking không còn giữ chỗ (đã huỷ/hết hạn) nên khách
+   * KHÔNG có phòng. Đây là lỗi hệ thống, khách sạn không có gì để xét ⇒ hoàn NGAY vào ví khách và
+   * chốt luôn ('processed'), không bắt khách chờ ai duyệt hay chuyển khoản.
+   *
+   * Vì sao vào ví mà không hỏi khách chọn: khách không hề chủ động huỷ, tiền đang treo lơ lửng —
+   * trả lại giá trị ngay quan trọng hơn việc hỏi. Khách muốn về ngân hàng thì liên hệ hỗ trợ.
+   *
+   * Chạy TRONG transaction của luồng xác nhận thanh toán nên nhận `tx` — cộng ví ngay tại đây, khỏi
+   * treo tới lượt cron.
    */
   createOrphanRefund = async (
     tx: Prisma.TransactionClient,
-    args: { paymentId: string; customerId: string; amount: Prisma.Decimal; bookingCode: string }
+    args: { paymentId: string; customerId: string; amount: Prisma.Decimal; bookingId: string; bookingCode: string }
   ) => {
     await tx.refund.create({
       data: {
@@ -245,10 +351,21 @@ export class RefundService {
         requestedBy: args.customerId,
         amount: args.amount,
         reason: `Tiền vào sau khi booking ${args.bookingCode} hết hạn giữ chỗ — khách không có phòng, hoàn toàn bộ`,
-        status: 'approved',
+        status: 'processed',
+        refundMethod: 'wallet',
         reviewedAt: new Date(),
+        processedAt: new Date(),
       },
     });
+    await tx.payment.update({ where: { id: args.paymentId }, data: { status: 'refunded' } });
+    await walletService.creditCustomer(
+      tx,
+      args.customerId,
+      args.amount,
+      args.bookingId,
+      `Hoàn tiền vào sau khi booking ${args.bookingCode} hết hạn giữ chỗ`
+    );
+    logger.warn(`[Refund] Tiền mồ côi ${args.amount.toString()}đ của booking ${args.bookingCode} đã hoàn vào ví khách`);
   };
 
   /** Trạng thái hợp lệ để lọc — dùng chung cho validation. */

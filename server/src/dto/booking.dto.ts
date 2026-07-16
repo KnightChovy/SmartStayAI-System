@@ -16,6 +16,14 @@ export interface CreateBookingDto {
   paymentMethod?: 'vnpay' | 'sepay' | 'cash';
 }
 
+/** Khách huỷ booking — kèm lựa chọn nhận tiền hoàn ở đâu. */
+export interface CancelBookingDto {
+  reason?: string;
+  // Mặc định 'wallet' (nhận ngay, không chờ ai chuyển khoản). 'bank' thì bắt buộc có bankAccount.
+  refundMethod?: 'wallet' | 'bank';
+  bankAccount?: { accountNumber: string; bankName: string; accountHolder: string };
+}
+
 /** Bộ lọc khi liệt kê booking của user. */
 export interface BookingFilter {
   status?: BookingStatus;

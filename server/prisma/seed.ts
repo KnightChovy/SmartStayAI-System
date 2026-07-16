@@ -1043,6 +1043,40 @@ const main = async (): Promise<void> => {
   }
   console.log(`  ✓ ${BOOKINGS.length} booking (kèm thanh toán, hoa hồng, ví, voucher, đánh giá)`);
 
+  // ----- Ví khách: nạp sẵn số dư để demo thanh toán bằng ví ngay, khỏi phải huỷ đơn trước -----
+  // customer@gmail.com: đủ trả trọn một đơn rẻ ⇒ demo "ví trả hết, booking confirmed ngay"
+  // customer2@gmail.com: cố tình để ÍT ⇒ demo "ví trả một phần, cổng trả phần còn lại"
+  // customer3@gmail.com: không có ví ⇒ demo trạng thái ví rỗng
+  await prisma.wallet.create({
+    data: {
+      customerId: customer1.id,
+      balanceAvailable: 2_000_000,
+      transactions: {
+        create: {
+          type: 'adjustment',
+          amount: 2_000_000,
+          balanceAfter: 2_000_000,
+          description: 'Số dư mẫu để demo thanh toán bằng ví',
+        },
+      },
+    },
+  });
+  await prisma.wallet.create({
+    data: {
+      customerId: customer2.id,
+      balanceAvailable: 300_000,
+      transactions: {
+        create: {
+          type: 'adjustment',
+          amount: 300_000,
+          balanceAfter: 300_000,
+          description: 'Số dư mẫu (ít) để demo thanh toán kết hợp ví + cổng',
+        },
+      },
+    },
+  });
+  console.log('  ✓ ví khách: customer@ 2.000.000đ (trả trọn đơn), customer2@ 300.000đ (trả kết hợp)');
+
   console.log('\nSeed xong.\n');
   console.log('Tài khoản mẫu — quy ước <role>@gmail.com / <role>123:');
   console.log('  admin@gmail.com / admin123        manager@gmail.com / manager123');

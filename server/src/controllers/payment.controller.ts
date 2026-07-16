@@ -44,6 +44,13 @@ export class PaymentController {
     res.send({ RspCode: result.rspCode, Message: result.message });
   });
 
+  // Khách dùng số dư ví trả cho booking. Ví thiếu thì trả được bao nhiêu hay bấy nhiêu, phần còn
+  // lại trả tiếp qua cổng (xem remainingToPay trong response).
+  payWithWallet = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const result = await paymentService.payWithWallet(req.params.bookingId as string, req.user as User);
+    res.status(httpStatus.CREATED).send(result);
+  });
+
   // Khách chọn trả bằng chuyển khoản ⇒ trả ảnh QR VietQR + nội dung chuyển khoản để khách quét
   createSepayPayment = catchAsync(async (req: Request, res: Response): Promise<void> => {
     const result = await paymentService.createSepayPayment(req.params.bookingId as string, req.user as User);

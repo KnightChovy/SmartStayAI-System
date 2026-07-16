@@ -17,6 +17,10 @@ router.get('/me', auth(), userController.getMe);
 router.patch('/me', auth(), validate(userValidation.updateMyProfile), userController.updateMe);
 router.patch('/me/password', auth(), validate(userValidation.changeMyPassword), userController.changeMyPassword);
 
+// Ví của khách: số dư + lịch sử giao dịch. Chỉ xem ví của CHÍNH mình (id lấy từ token, không nhận
+// qua URL) nên không cần kiểm quyền gì thêm.
+router.get('/me/wallet', auth(), userController.getMyWallet);
+
 router
   .route('/:userId')
   .get(auth('getUsers'), validate(userValidation.getUser), userController.getUser)
