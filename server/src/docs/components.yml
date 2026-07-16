@@ -757,6 +757,105 @@ components:
             bedType: { type: string, nullable: true }
             viewType: { type: string, nullable: true }
             maxOccupancy: { type: integer }
+        payments:
+          type: array
+          description: >
+            Payments of this booking, newest first, each with its refund requests — so the guest can
+            follow a cancellation end-to-end (pending → approved → processed, or rejected + reason)
+            without any extra endpoint. Raw gateway data (gatewayResponse, transactionId) is NOT exposed.
+          items:
+            type: object
+            properties:
+              id: { type: string, format: uuid }
+              paymentMethod: { type: string, enum: [vnpay, sepay, stripe, cash] }
+              status: { type: string, enum: [pending, completed, failed, refunded] }
+              amount: { type: string, description: Decimal as string }
+              paidAt: { type: string, format: date-time, nullable: true }
+              refunds:
+                type: array
+                description: Refund requests for this payment, newest first
+                items:
+                  type: object
+                  properties:
+                    id: { type: string, format: uuid }
+                    amount: { type: string }
+                    status: { type: string, enum: [pending, approved, processed, rejected] }
+                    reason: { type: string }
+                    rejectionReason: { type: string, nullable: true }
+                    reviewedAt: { type: string, format: date-time, nullable: true }
+                    processedAt: { type: string, format: date-time, nullable: true }
+                    createdAt: { type: string, format: date-time }
+
+    Refund:
+      type: object
+      description: >
+        A refund request. Lifecycle: `pending` (guest cancelled a paid booking, waiting for the hotel
+        to review) → `approved` (hotel agreed) → `processed` (admin actually transferred the money),
+        or `rejected`. Money only leaves the hotel wallet/commission at the `processed` step.
+        Orphan-money refunds (payment arrived after the hold expired) are created straight as
+        `approved` — there is nothing for the hotel to review, it is a system fault.
+      properties:
+        id: { type: string, format: uuid }
+        amount:
+          type: string
+          description: Refund amount computed from the hotel cancellation policy (Decimal as string)
+          example: '950000.00'
+        reason: { type: string, description: Why the guest asked to cancel/refund }
+        status:
+          type: string
+          enum: [pending, approved, processed, rejected]
+        rejectionReason: { type: string, nullable: true }
+        refundTransactionId:
+          type: string
+          nullable: true
+          description: Real bank/gateway transaction id, filled in at the processed step
+        reviewedAt: { type: string, format: date-time, nullable: true }
+        processedAt: { type: string, format: date-time, nullable: true }
+        createdAt: { type: string, format: date-time }
+        requesterUser:
+          type: object
+          description: Guest who asked for the refund
+          properties:
+            id: { type: string, format: uuid }
+            fullName: { type: string }
+            email: { type: string }
+            phone: { type: string, nullable: true }
+        reviewer:
+          type: object
+          nullable: true
+          description: Hotel-side user who approved/rejected
+          properties:
+            id: { type: string, format: uuid }
+            fullName: { type: string }
+        payment:
+          type: object
+          properties:
+            id: { type: string, format: uuid }
+            paymentMethod: { type: string, enum: [vnpay, sepay, stripe, cash] }
+            amount: { type: string }
+            paidAt: { type: string, format: date-time, nullable: true }
+            booking:
+              type: object
+              properties:
+                id: { type: string, format: uuid }
+                bookingCode: { type: string }
+                checkInDate: { type: string, format: date }
+                checkOutDate: { type: string, format: date }
+                totalAmount: { type: string }
+                status: { type: string }
+                cancelledAt: { type: string, format: date-time, nullable: true }
+                cancellationReason: { type: string, nullable: true }
+                hotel:
+                  type: object
+                  properties:
+                    id: { type: string, format: uuid }
+                    name: { type: string }
+                    city: { type: string }
+                roomType:
+                  type: object
+                  properties:
+                    id: { type: string, format: uuid }
+                    name: { type: string }
 
     StaffBooking:
       type: object

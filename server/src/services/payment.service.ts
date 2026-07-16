@@ -9,6 +9,7 @@ import ApiError from '../utils/ApiError';
 import { emailService } from './email.service';
 import type { VnpayParams, VnpayResult, SepayWebhookPayload, SepayPaymentInfo } from '../dto/payment.dto';
 import { walletService } from './wallet.service';
+import { refundService } from './refund.service';
 
 // Ảnh QR VietQR do SePay dựng sẵn — chỉ là URL ảnh, không cần gọi API/ký gì cả.
 const SEPAY_QR_ENDPOINT = 'https://qr.sepay.vn/img';
@@ -222,8 +223,23 @@ export class PaymentService {
         data: { status: 'confirmed', holdExpiresAt: null },
       });
       if (updated.count === 0) {
-        logger.warn(
-          `[VNPay] Đã nhận tiền cho booking ${bookingId} nhưng booking không còn pending — cần hoàn tiền thủ công`
+        // TIỀN MỒ CÔI: tiền đã vào nhưng booking không còn giữ chỗ (đã huỷ / quá hạn 15-30') ⇒ khách
+        // KHÔNG có phòng. Trước đây chỉ ghi log rồi bỏ đó — tiền nằm im, không ai biết. Giờ tạo hẳn
+        // yêu cầu hoàn tiền 'approved' (lỗi hệ thống, khách sạn không có gì để xét) để admin chuyển trả.
+        const orphan = await tx.booking.findUniqueOrThrow({
+          where: { id: bookingId },
+          select: { customerId: true, bookingCode: true },
+        });
+        const paid = await tx.payment.findUniqueOrThrow({ where: { id: paymentId }, select: { amount: true } });
+        await refundService.createOrphanRefund(tx, {
+          paymentId,
+          customerId: orphan.customerId,
+          amount: paid.amount,
+          bookingCode: orphan.bookingCode,
+        });
+        logger.error(
+          `[Payment] TIỀN MỒ CÔI: booking ${orphan.bookingCode} đã nhận ${paid.amount.toString()}đ nhưng ` +
+            `không còn pending — ĐÃ TẠO yêu cầu hoàn tiền (approved), chờ admin chuyển khoản`
         );
         return { confirmed: false as const, emailTo: null };
       }
@@ -452,21 +468,6 @@ export class PaymentService {
     };
   };
 
-  /**
-   * Thực thi hoàn tiền ở cổng thanh toán. HIỆN MÔ PHỎNG — trả về mã giao dịch hoàn giả lập, KHÔNG
-   * gọi cổng thật (sandbox VNPay không hỗ trợ test refund). Đây là ĐIỂM DUY NHẤT cần thay khi muốn
-   * hoàn tiền thật:
-   *   - VNPay  ⇒ gọi Merchant Refund API (vnp_Command=refund) bằng VNP_API_URL đã cấu hình.
-   *   - SePay  ⇒ chuyển khoản ra cho khách qua API ngân hàng (tiền nằm sẵn ở TK của bạn).
-   * Giữ chữ ký async để khi cắm cổng thật (gọi mạng) không phải đổi nơi gọi ở booking.service.
-   */
-  executeGatewayRefund = async (
-    payment: Payment,
-    amount: Prisma.Decimal
-  ): Promise<{ refundTransactionId: string; success: boolean }> => {
-    logger.info(`[Refund] (mô phỏng) hoàn ${amount.toString()} cho giao dịch ${payment.transactionId}`);
-    return { refundTransactionId: `SIMREFUND-${Date.now().toString(36).toUpperCase()}`, success: true };
-  };
 }
 
 export const paymentService = new PaymentService();

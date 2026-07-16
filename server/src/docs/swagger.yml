@@ -2477,11 +2477,21 @@ paths:
       summary: Cancel a booking
       description: >
         Owner (or manageBookings) cancels a pending/confirmed booking before its check-in date.
-        Reserved inventory is released for every night of the stay. If the booking was paid, a refund
-        is computed from the hotel's cancellation policy (default: full refund if cancelled ≥48h before
-        check-in, otherwise the first night is kept as a penalty): a Refund record is created, the
-        Payment is marked refunded on a full refund, and the platform commission is adjusted to the
-        amount the hotel actually keeps. The response includes a `refund` summary when applicable.
+        Reserved inventory is released immediately for every night of the stay.
+
+
+        If the booking was paid, the refund amount is computed from the hotel's cancellation policy
+        (default: full refund if cancelled ≥48h before check-in, otherwise the first night is kept as
+        a penalty) and a **refund REQUEST is created with status `pending`** — the money is NOT sent
+        yet. The hotel reviews it (PATCH /hotels/{hotelId}/refunds/{refundId}/review), then the
+        Platform Manager transfers the money and marks it processed
+        (PATCH /platform-manager/refunds/{refundId}/process). The
+        Payment status, platform commission and hotel wallet are only touched at that final step, so a
+        rejected request never wrongly debits the hotel.
+
+
+        The response includes a `refund` summary (`id`, `amount`, `status: pending`) when a refund is
+        due, or `null` when the policy leaves nothing to refund (late cancellation penalty).
       tags: [Bookings]
       security:
         - bearerAuth: []
@@ -2562,6 +2572,203 @@ paths:
           $ref: '#/components/responses/NotFound'
         '503':
           description: VNPay not configured
+
+  /hotels/{hotelId}/refunds:
+    get:
+      summary: List refund requests for a hotel (owner/manager/assigned staff)
+      description: >
+        Refund requests raised when a guest cancels a paid booking. The hotel side reviews them
+        (approve/reject); the Platform Manager is the one who actually transfers the money afterwards.
+        Filter by `status` to get the review queue (`pending`).
+      tags: [Refunds]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: query
+          name: status
+          schema: { type: string, enum: [pending, approved, processed, rejected] }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1, default: 1 }
+      responses:
+        '200':
+          description: Paginated refund requests (with requester, payment and booking summary)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items: { $ref: '#/components/schemas/Refund' }
+                  page: { type: integer }
+                  limit: { type: integer }
+                  totalPages: { type: integer }
+                  totalResults: { type: integer }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /hotels/{hotelId}/refunds/{refundId}/review:
+    patch:
+      summary: Approve or reject a refund request (hotel side)
+      description: >
+        Only a `pending` request can be reviewed. Approving does NOT move money — it just authorises
+        the Platform Manager to transfer it (see PATCH /platform-manager/refunds/{refundId}/process).
+        Rejecting requires a reason. Uses a conditional update so two reviewers racing cannot both win.
+      tags: [Refunds]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: path
+          name: refundId
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [decision]
+              properties:
+                decision:
+                  type: string
+                  enum: [approve, reject]
+                rejectionReason:
+                  type: string
+                  maxLength: 500
+                  description: Required when decision = reject; forbidden otherwise
+              example:
+                decision: reject
+                rejectionReason: Khách huỷ sát giờ, đã giữ phòng nên không hoàn
+      responses:
+        '200':
+          description: Reviewed refund request
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Refund' }
+        '400':
+          description: Already reviewed, or reject without a reason
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /platform-manager/refunds:
+    get:
+      summary: List refund requests platform-wide (Platform Manager)
+      description: Requires `manageCommissions`. Filter by status/hotel — use `status=approved` to get the payout queue.
+      tags: [Refunds]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: status
+          schema: { type: string, enum: [pending, approved, processed, rejected] }
+        - in: query
+          name: hotelId
+          schema: { type: string, format: uuid }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1, default: 1 }
+      responses:
+        '200':
+          description: Paginated refund requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items: { $ref: '#/components/schemas/Refund' }
+                  page: { type: integer }
+                  limit: { type: integer }
+                  totalPages: { type: integer }
+                  totalResults: { type: integer }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /platform-manager/refunds/{refundId}/process:
+    patch:
+      summary: Mark an approved refund as transferred (Platform Manager)
+      description: >
+        Requires `manageCommissions`. Call this AFTER the money has actually been transferred back to
+        the guest, passing the real bank/gateway transaction id.
+
+
+        Why the Platform Manager and not the hotel: guest money lands in the PLATFORM's bank account
+        (escrow) — the hotel wallet is only a ledger balance, so the hotel has no money to send back.
+        The hotel decides WHETHER to refund (review); the Platform Manager EXECUTES the transfer.
+
+
+        This is the ONLY place money actually leaves the hotel. In one transaction it sets the refund
+        to `processed`, marks the Payment `refunded` when the refund covers it fully, recomputes the
+        platform commission on the amount the hotel ACTUALLY KEEPS, and debits the hotel wallet by the
+        net difference. Only `approved` requests can be processed — a `pending` one must be reviewed
+        by the hotel first.
+      tags: [Refunds]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: refundId
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refundTransactionId]
+              properties:
+                refundTransactionId:
+                  type: string
+                  maxLength: 100
+                  description: Real transfer/gateway transaction id — kept for reconciliation
+              example:
+                refundTransactionId: FT26071612345678
+      responses:
+        '200':
+          description: Refund processed (commission + wallet adjusted)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Refund' }
+        '400':
+          description: Not approved yet, or already processed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
   /payments/bookings/{bookingId}/sepay:
     post:

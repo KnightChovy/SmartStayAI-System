@@ -17,3 +17,4 @@ export * as reviewValidation from './review.validation';
 export * as revenueValidation from './revenue.validation';
 export * as adminValidation from './admin.validation';
 export * as platformManagerValidation from './platform-manager.validation';
+export * as refundValidation from './refund.validation';

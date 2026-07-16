@@ -21,6 +21,9 @@ router.patch(
   adminController.settleCommission
 );
 
+// Hoàn tiền đã chuyển sang /platform-manager/refunds (platform-manager.route.ts) —
+// Platform Manager là người giữ tài khoản nhận tiền nên họ thực thi chuyển khoản hoàn.
+
 // ===== Pha 4 — Giám sát khách sạn (manageHotels) =====
 router.get('/hotels', auth('manageHotels'), validate(adminValidation.listHotels), adminController.listHotels);
 router.patch('/hotels/:hotelId', auth('manageHotels'), validate(adminValidation.updateHotelFlags), adminController.updateHotelFlags);

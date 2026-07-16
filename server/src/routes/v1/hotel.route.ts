@@ -12,6 +12,7 @@ import {
   conversationValidation,
   reviewValidation,
   revenueValidation,
+  refundValidation,
 } from '../../validations';
 import {
   hotelController,
@@ -24,6 +25,7 @@ import {
   conversationController,
   reviewController,
   revenueController,
+  refundController,
 } from '../../controllers';
 
 const router = express.Router();
@@ -188,6 +190,20 @@ router
   .route('/:hotelId/pricing-rules/:ruleId')
   .put(auth(), validate(pricingRuleValidation.updateRule), pricingRuleController.updateRule)
   .delete(auth(), validate(pricingRuleValidation.deleteRule), pricingRuleController.deleteRule);
+
+// ----- Yêu cầu hoàn tiền của khách sạn — chủ KS, manager, hoặc staff được phân công duyệt -----
+router.get(
+  '/:hotelId/refunds',
+  auth(),
+  validate(refundValidation.listHotelRefunds),
+  refundController.listHotelRefunds
+);
+router.patch(
+  '/:hotelId/refunds/:refundId/review',
+  auth(),
+  validate(refundValidation.reviewRefund),
+  refundController.reviewRefund
+);
 
 // ----- Vận hành booking (xem + check-in/out) — chủ KS, manager, hoặc staff được phân công -----
 router.get(

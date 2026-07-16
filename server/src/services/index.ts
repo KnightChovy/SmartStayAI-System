@@ -20,3 +20,4 @@ export { revenueService } from './revenue.service';
 export { adminService } from './admin.service';
 export { platformManagerService } from './platform-manager.service';
 export { auditService } from './audit.service';
+export { refundService } from './refund.service';
