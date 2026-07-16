@@ -3,8 +3,8 @@ import { View, Pressable, Linking } from 'react-native';
 import maplibregl, { type StyleSpecification } from 'maplibre-gl';
 import { Ionicons } from '@expo/vector-icons';
 import { Text } from '@/components/ui/text';
+import { GUEST_COLORS } from '@/constants/guestTheme';
 
-const GOLD = '#F5A623';
 const TILE_URL = process.env.EXPO_PUBLIC_MAP_TILE_URL ?? '';
 const ATTRIBUTION = process.env.EXPO_PUBLIC_MAP_ATTRIBUTION ?? '© VietMap';
 const MAPLIBRE_CSS = 'https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css';
@@ -60,7 +60,7 @@ export function HotelMap({ latitude, longitude, name, address, height = 160 }: H
     const el = document.createElement('div');
     el.style.cssText =
       'width:22px;height:22px;border-radius:50% 50% 50% 0;background:' +
-      GOLD + ';transform:rotate(-45deg);border:2px solid #0B1D45;box-shadow:0 2px 6px rgba(0,0,0,0.3)';
+      GUEST_COLORS.bronze + ';transform:rotate(-45deg);border:2px solid ' + GUEST_COLORS.onSurface + ';box-shadow:0 2px 6px rgba(0,0,0,0.3)';
     new maplibregl.Marker({ element: el, anchor: 'bottom' }).setLngLat([lng as number, lat as number]).addTo(map);
     return () => map.remove();
   }, [hasCoords, lat, lng]);
@@ -72,21 +72,25 @@ export function HotelMap({ latitude, longitude, name, address, height = 160 }: H
   }
 
   return (
-    <View className="bg-white rounded-2xl overflow-hidden mb-4">
+    <View className="mb-4 overflow-hidden rounded-card border border-hairline/30 bg-surface">
       {hasCoords && TILE_URL ? (
-        <div ref={containerRef} style={{ height, width: '100%', background: '#E5E7EB' }} />
+        <div ref={containerRef} style={{ height, width: '100%', background: GUEST_COLORS.surfaceContainer }} />
       ) : (
         <View className="items-center justify-center bg-blue-200" style={{ height }}>
           <Ionicons name="map" size={48} color="#3B82F6" />
         </View>
       )}
 
-      <Pressable onPress={openExternalMaps} className="p-3.5 flex-row items-center gap-2">
-        <Ionicons name="location" size={16} color={GOLD} />
-        <Text size="sm" className="text-gray-700 font-medium flex-1">{address ?? name}</Text>
+      <Pressable onPress={openExternalMaps} className="flex-row items-center gap-2 p-3.5">
+        <Ionicons name="location" size={16} color={GUEST_COLORS.bronze} />
+        <Text className="flex-1 font-bevi-medium text-on-surface-variant" size="sm">
+          {address ?? name}
+        </Text>
         <View className="flex-row items-center gap-1">
-          <Text size="xs" bold className="text-gold">Directions</Text>
-          <Ionicons name="open-outline" size={14} color={GOLD} />
+          <Text className="font-bevi-bold text-bronze" size="xs">
+            Chỉ đường
+          </Text>
+          <Ionicons name="open-outline" size={14} color={GUEST_COLORS.bronze} />
         </View>
       </Pressable>
     </View>

@@ -6,9 +6,8 @@ import { Text } from '@/components/ui/text';
 import { Heading } from '@/components/ui/heading';
 import { QuantityStepper } from '@/components/shared/QuantityStepper';
 import { toDateKey, nightsBetween, formatDateShort } from '@/utils/formatDate';
+import { GUEST_COLORS } from '@/constants/guestTheme';
 
-const NAVY = '#0B1D45';
-const GOLD = '#F5A623';
 const WEEKDAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -115,12 +114,12 @@ export function StayPickerSheet({
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View className="flex-1 bg-black/40 justify-end">
         <Pressable className="flex-1" onPress={onClose} />
-        <View className="bg-white rounded-t-3xl" style={{ maxHeight: '88%' }}>
+        <View className="bg-surface rounded-t-3xl" style={{ maxHeight: '88%' }}>
           {/* Header */}
-          <View className="flex-row items-center justify-between px-5 pt-4 pb-3 border-b border-gray-100">
-            <Heading size="lg" className="text-navy">Select dates</Heading>
+          <View className="flex-row items-center justify-between px-5 pt-4 pb-3 border-b border-hairline/30">
+            <Heading size="lg" className="font-bevi-bold text-on-surface">Select dates</Heading>
             <Pressable onPress={onClose} hitSlop={8} className="w-9 h-9 items-center justify-center">
-              <Ionicons name="close" size={22} color={NAVY} />
+              <Ionicons name="close" size={22} color={GUEST_COLORS.onSurface} />
             </Pressable>
           </View>
 
@@ -128,7 +127,7 @@ export function StayPickerSheet({
           <View className="flex-row px-4 pt-3 pb-1">
             {WEEKDAYS.map((w, i) => (
               <View key={i} className="flex-1 items-center">
-                <Text size="xs" bold className="text-gray-400">{w}</Text>
+                <Text size="xs" bold className="font-bevi-bold text-muted">{w}</Text>
               </View>
             ))}
           </View>
@@ -136,7 +135,7 @@ export function StayPickerSheet({
           <ScrollView showsVerticalScrollIndicator={false} className="px-4">
             {months.map(({ year, month, cells }) => (
               <View key={`${year}-${month}`} className="mb-4">
-                <Text bold className="text-navy mb-2 mt-1">{MONTHS[month]} {year}</Text>
+                <Text bold className="font-bevi-bold text-on-surface mb-2 mt-1">{MONTHS[month]} {year}</Text>
                 <View className="flex-row flex-wrap">
                   {cells.map((day, idx) => {
                     if (!day) return <View key={idx} style={{ width: `${100 / 7}%`, height: 44 }} />;
@@ -144,19 +143,19 @@ export function StayPickerSheet({
                     const selected = isStart || isEnd;
                     return (
                       <View key={idx} style={{ width: `${100 / 7}%`, height: 44 }} className="items-center justify-center">
-                        {inRange && <View className="absolute inset-y-1 inset-x-0 bg-amber-50" />}
+                        {inRange && <View className="absolute inset-y-1 inset-x-0 bg-bronze/10" />}
                         <Pressable
                           disabled={disabled}
                           onPress={() => handleDayPress(day)}
                           className="w-10 h-10 rounded-full items-center justify-center"
-                          style={{ backgroundColor: selected ? NAVY : inRange ? 'transparent' : 'transparent' }}
+                          style={{ backgroundColor: selected ? GUEST_COLORS.onSurface : inRange ? 'transparent' : 'transparent' }}
                         >
                           <Text
                             size="sm"
                             bold={selected}
-                            className={
-                              disabled ? 'text-gray-300' : selected ? 'text-white' : inRange ? 'text-navy' : 'text-gray-700'
-                            }
+                            className={`font-bevi-bold ${
+                              disabled ? 'text-hairline' : selected ? 'text-white' : inRange ? 'text-on-surface' : 'text-on-surface-variant'
+                            }`}
                           >
                             {day.getDate()}
                           </Text>
@@ -170,17 +169,17 @@ export function StayPickerSheet({
           </ScrollView>
 
           {/* Guests */}
-          <View className="flex-row items-center justify-between px-5 py-3 border-t border-gray-100">
+          <View className="flex-row items-center justify-between px-5 py-3 border-t border-hairline/30">
             <View>
-              <Text bold className="text-navy">Guests</Text>
-              <Text size="xs" className="text-gray-400">Max {maxGuests} for this room</Text>
+              <Text bold className="font-bevi-bold text-on-surface">Guests</Text>
+              <Text size="xs" className="font-bevi text-muted">Max {maxGuests} for this room</Text>
             </View>
             <QuantityStepper value={guests} onChange={setGuests} min={1} max={maxGuests} />
           </View>
 
           {/* Footer */}
           <View className="px-5 pt-2" style={{ paddingBottom: insets.bottom + 12 }}>
-            <Text size="xs" className="text-gray-500 mb-2 text-center">
+            <Text size="xs" className="font-bevi text-on-surface-variant mb-2 text-center">
               {canApply
                 ? `${formatDateShort(checkIn)} → ${formatDateShort(checkOut)} · ${nights} night${nights > 1 ? 's' : ''}`
                 : checkIn
@@ -190,10 +189,10 @@ export function StayPickerSheet({
             <Pressable
               disabled={!canApply}
               onPress={handleApply}
-              className="rounded-2xl py-3.5 items-center"
-              style={{ backgroundColor: canApply ? GOLD : '#E5E7EB' }}
+              className="rounded-card py-3.5 items-center"
+              style={{ backgroundColor: canApply ? GUEST_COLORS.bronze : GUEST_COLORS.hairline }}
             >
-              <Text bold className={canApply ? 'text-navy text-base' : 'text-gray-400 text-base'}>
+              <Text bold className={`font-bevi-bold ${canApply ? 'text-on-surface text-base' : 'text-muted text-base'}`}>
                 Apply dates
               </Text>
             </Pressable>

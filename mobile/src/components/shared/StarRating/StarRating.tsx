@@ -1,7 +1,7 @@
 import { View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { GUEST_COLORS } from '@/constants/guestTheme';
 
-const GOLD = '#F5A623';
 
 export interface StarRatingProps {
   /** Số sao được tô (filled). */
@@ -16,7 +16,7 @@ export interface StarRatingProps {
 }
 
 /** Hàng sao đánh giá dùng chung (thay cho `StarRow` lặp ở nhiều màn hình). */
-export function StarRating({ count, total = 5, size = 12, color = GOLD, className }: StarRatingProps) {
+export function StarRating({ count, total = 5, size = 12, color = GUEST_COLORS.bronze, className }: StarRatingProps) {
   return (
     <View className={`flex-row gap-0.5 ${className ?? ''}`}>
       {Array.from({ length: total }).map((_, i) => (
