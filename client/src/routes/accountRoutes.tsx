@@ -4,6 +4,7 @@ import AccountLayout from '@/pages/account/AccountLayout';
 import ProfilePage from '@/pages/account/ProfilePage';
 import MyBookingsPage from '@/pages/account/MyBookingsPage';
 import BookingDetailPage from '@/pages/account/BookingDetailPage';
+import MessagesPage from '@/pages/account/MessagesPage';
 import MyReviewsPage from '@/pages/account/MyReviewsPage';
 import LoyaltyPage from '@/pages/account/LoyaltyPage';
 import MyVouchersPage from '@/pages/account/MyVouchersPage';
@@ -25,6 +26,7 @@ export const accountRoute: RouteObject = {
         { path: 'profile', element: <ProfilePage /> },
         { path: 'bookings', element: <MyBookingsPage /> },
         { path: 'bookings/:bookingId', element: <BookingDetailPage /> },
+        { path: 'messages', element: <MessagesPage /> },
         { path: 'reviews', element: <MyReviewsPage /> },
         { path: 'loyalty', element: <LoyaltyPage /> },
         { path: 'vouchers', element: <MyVouchersPage /> },

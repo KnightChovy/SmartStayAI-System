@@ -35,5 +35,30 @@
   "guestsCount_other": "{{count}} guests",
   "qrEmptyHint": "The e-voucher QR will appear once your booking is confirmed / paid.",
   "clearDate": "Clear date",
-  "search": "Search"
+  "search": "Search",
+  "chat": {
+    "subtitle": "Digital concierge online",
+    "greeting": "Hello! I'm your SmartStay AI concierge. Pick a hotel below or tell me a destination and I'll help you.",
+    "chats": "Chats",
+    "newChat": "Chat with another hotel",
+    "ai": "AI assistant",
+    "frontDesk": "Front desk",
+    "connected": "Connected to the front desk — a staff member will reply here. You can keep typing.",
+    "placeholder": "Type a message…",
+    "send": "Send message",
+    "open": "Open chat",
+    "close": "Close chat",
+    "from": "from",
+    "signInPrompt": "Please sign in to chat with this hotel concierge. After signing in, I can help with rooms, amenities, and booking status.",
+    "error": "Sorry, I could not reach the concierge right now. Please try again.",
+    "switchError": "Sorry, I could not switch the conversation right now. Please try again.",
+    "quick": {
+      "stays": "Stays in Da Nang",
+      "deals": "Weekend deals",
+      "loyalty": "My loyalty points",
+      "availability": "Check room availability",
+      "amenities": "Hotel amenities",
+      "bookingStatus": "Booking status"
+    }
+  }
 }

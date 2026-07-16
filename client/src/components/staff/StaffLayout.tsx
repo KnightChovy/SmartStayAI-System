@@ -3,6 +3,7 @@ import {
   LayoutDashboard,
   ConciergeBell,
   BedDouble,
+  MessageSquare,
   Sparkles,
   Building2,
   RefreshCw,
@@ -23,6 +24,7 @@ import { ROUTES } from '@/constants/routes';
 const navItems = [
   { name: 'Overview', href: ROUTES.staffDashboard, icon: LayoutDashboard },
   { name: 'Front desk', href: ROUTES.staffFrontDesk, icon: ConciergeBell },
+  { name: 'Chat', href: ROUTES.staffChat, icon: MessageSquare },
   { name: 'Housekeeping', href: ROUTES.staffHousekeeping, icon: Sparkles },
   { name: 'Room map', href: ROUTES.staffRooms, icon: BedDouble },
 ];

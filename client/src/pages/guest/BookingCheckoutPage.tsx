@@ -324,6 +324,13 @@ export default function BookingCheckoutPage() {
                     />
                   </div>
                 </div>
+                {/*
+                  Chính sách của chính khách sạn (giờ nhận/trả, huỷ, trẻ em, thú cưng, hút thuốc,
+                  tuổi tối thiểu, số đêm tối đa, cọc, liên hệ) — khách đọc ngay ở bước điền thông
+                  tin, trước cả khi chọn phương thức thanh toán. Component tự ẩn khi khách sạn
+                  chưa nhập gì.
+                */}
+                {hotelDetail && <HotelPolicies hotel={hotelDetail} compact />}
                 <Button
                   type="submit"
                   size="lg"
@@ -409,13 +416,6 @@ export default function BookingCheckoutPage() {
                     </dd>
                   </div>
                 </dl>
-                {/*
-                  Chính sách của chính khách sạn (giờ nhận/trả, huỷ, trẻ em, thú cưng, hút thuốc,
-                  tuổi tối thiểu, số đêm tối đa, cọc, liên hệ) — khách phải thấy TRƯỚC khi trả tiền,
-                  không phải chỉ ở trang chi tiết. Component tự ẩn khi khách sạn chưa nhập gì.
-                */}
-                {hotelDetail && <HotelPolicies hotel={hotelDetail} compact />}
-
                 {createBooking.isError && (
                   <p className="rounded-xl bg-error/10 px-3 py-2 text-sm text-error">
                     {errorMessage(createBooking.error, t('confirm.errorBooking'))}
