@@ -11,6 +11,24 @@ export const sendMessage = {
   }),
 };
 
+// Khách tự gạt công tắc chế độ trả lời của hội thoại: 'human' = chuyển lễ tân, 'ai' = quay về bot.
+export const updateMode = {
+  params: Joi.object().keys({
+    conversationId: Joi.string().uuid().required(),
+  }),
+  body: Joi.object().keys({
+    mode: Joi.string().valid('ai', 'human').required(),
+    reason: Joi.string().max(500), // dùng khi chuyển sang 'human'
+  }),
+};
+
+// Khôi phục hội thoại đang mở của chính khách sau khi F5. hotelId trống = hội thoại toàn sàn.
+export const getMyConversation = {
+  query: Joi.object().keys({
+    hotelId: Joi.string().uuid(),
+  }),
+};
+
 // ===== S04: hộp thư nhân viên (staff/chủ KS) =====
 
 // Liệt kê hội thoại của một KS, lọc theo trạng thái (UI thường lọc 'escalated')
