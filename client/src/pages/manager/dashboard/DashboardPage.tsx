@@ -13,7 +13,9 @@ import type { DashboardRange } from '@/types/dashboard.types';
 import {
   useDashboardSummary,
   useDashboardTimeSeries,
+  useUsersGrowth,
   useDashboardVerifications,
+  usePendingVerificationsCount,
   useDashboardAlerts,
   useTopHotels,
   useRecentActivity,
@@ -76,25 +78,29 @@ export default function ManagerDashboardPage() {
 
   const summary = useDashboardSummary(range);
   const timeSeries = useDashboardTimeSeries(range);
-  const verifications = useDashboardVerifications(range);
+  // Không theo date-range: endpoint analytics chỉ nhận số bucket lùi từ hiện tại.
+  const usersGrowth = useUsersGrowth();
+  const verifications = useDashboardVerifications();
+  const pending = usePendingVerificationsCount();
   const alerts = useDashboardAlerts();
-  const topHotels = useTopHotels(range);
+  const topHotels = useTopHotels();
   const activity = useRecentActivity();
 
-  const pendingCount = (verifications.data ?? []).filter(v => v.status === 'pending').length;
-
+  // Xuất CHUỖI DOANH THU theo range — đây là dữ liệu duy nhất trên trang thực sự đi theo
+  // bộ lọc ngày, nên là thứ đáng export. (Top hotels là số liệu toàn thời gian.)
   const handleExportCsv = () => {
-    const rows = topHotels.data ?? [];
+    const rows = timeSeries.data?.points ?? [];
     if (rows.length === 0) {
       toast.error('No data to export for the selected period');
       return;
     }
     exportToCsv(
-      `dashboard-top-hotels-${range.from}_${range.to}`,
+      `dashboard-revenue-${range.from}_${range.to}`,
       [
-        { header: 'Hotel', value: h => h.name },
-        { header: 'Revenue (VND)', value: h => h.revenue },
-        { header: 'Bookings', value: h => h.bookings },
+        { header: 'Period', value: p => p.period },
+        { header: 'Gross booking value (VND)', value: p => p.gmv },
+        { header: 'Platform revenue (VND)', value: p => p.netRevenue },
+        { header: 'Bookings', value: p => p.bookings },
       ],
       rows
     );
@@ -152,7 +158,7 @@ export default function ManagerDashboardPage() {
 
       {/* Pending queue + Revenue trend */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <PendingQueueCard pendingCount={pendingCount} isLoading={verifications.isLoading} />
+        <PendingQueueCard pendingCount={pending.count} isLoading={pending.isLoading} />
         <div className="lg:col-span-2">
           <RevenueTrendChart
             data={timeSeries.data}
@@ -172,10 +178,10 @@ export default function ManagerDashboardPage() {
           onRetry={() => timeSeries.refetch()}
         />
         <UsersGrowthChart
-          data={timeSeries.data}
-          isLoading={timeSeries.isLoading}
-          isError={timeSeries.isError}
-          onRetry={() => timeSeries.refetch()}
+          data={usersGrowth.data}
+          isLoading={usersGrowth.isLoading}
+          isError={usersGrowth.isError}
+          onRetry={() => usersGrowth.refetch()}
         />
       </div>
 
