@@ -1,15 +1,19 @@
+import { createServer, Server } from 'http';
 import app from './app';
 import config from './config/config';
 import logger from './config/logger';
 import prisma from './config/prisma';
-import { Server } from 'http';
+import { initSocket } from './config/socket';
 
 let server: Server;
 
 prisma.$connect()
   .then(() => {
     logger.info('Connected to PostgreSQL database');
-    server = app.listen(config.port, () => {
+    // Bọc app Express trong HTTP server "trần" để Socket.IO gắn vào CÙNG cổng (dùng lại listen bên dưới).
+    server = createServer(app);
+    initSocket(server);
+    server.listen(config.port, () => {
       logger.info(`Listening to port ${config.port}`);
       if (config.env === 'development') {
         logger.info(`Swagger API Documentation available at: http://localhost:${config.port}/v1/docs`);
