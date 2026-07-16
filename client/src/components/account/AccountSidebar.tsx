@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import {
   Bell,
   CalendarCheck,
@@ -14,25 +15,26 @@ import { cn } from '@/lib/cn';
 
 interface NavItem {
   to: string;
-  label: string;
+  labelKey: 'nav.profile' | 'nav.bookings' | 'nav.reviews' | 'nav.loyalty' | 'nav.vouchers' | 'nav.notifications' | 'nav.settings';
   icon: LucideIcon;
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { to: ROUTES.accountProfile, label: 'Profile', icon: UserCircle },
-  { to: ROUTES.accountBookings, label: 'My bookings', icon: CalendarCheck },
-  { to: ROUTES.accountReviews, label: 'My reviews', icon: Star },
-  { to: ROUTES.accountLoyalty, label: 'Loyalty', icon: Gift },
-  { to: ROUTES.accountVouchers, label: 'Vouchers', icon: Ticket },
-  { to: ROUTES.accountNotifications, label: 'Notifications', icon: Bell },
-  { to: ROUTES.accountSettings, label: 'Settings', icon: Settings },
+  { to: ROUTES.accountProfile, labelKey: 'nav.profile', icon: UserCircle },
+  { to: ROUTES.accountBookings, labelKey: 'nav.bookings', icon: CalendarCheck },
+  { to: ROUTES.accountReviews, labelKey: 'nav.reviews', icon: Star },
+  { to: ROUTES.accountLoyalty, labelKey: 'nav.loyalty', icon: Gift },
+  { to: ROUTES.accountVouchers, labelKey: 'nav.vouchers', icon: Ticket },
+  { to: ROUTES.accountNotifications, labelKey: 'nav.notifications', icon: Bell },
+  { to: ROUTES.accountSettings, labelKey: 'nav.settings', icon: Settings },
 ];
 
 /** Sidebar điều hướng khu tài khoản (sticky bên trái trên desktop). */
 export default function AccountSidebar() {
+  const { t } = useTranslation('account');
   return (
     <nav className="flex gap-1 overflow-x-auto md:flex-col md:gap-1 md:overflow-visible">
-      {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
+      {NAV_ITEMS.map(({ to, labelKey, icon: Icon }) => (
         <NavLink
           key={to}
           to={to}
@@ -47,7 +49,7 @@ export default function AccountSidebar() {
           }
         >
           <Icon className="size-5" />
-          {label}
+          {t(labelKey)}
         </NavLink>
       ))}
     </nav>

@@ -1,0 +1,18 @@
+{
+  "titleCity": "Stays in {{city}}",
+  "titleDefault": "Explore stays",
+  "resultsFound": "{{count}} properties found",
+  "searching": "Searching curated sanctuaries…",
+  "filters": "Filters",
+  "destination": "Destination",
+  "cityPlaceholder": "City, e.g. Da Nang",
+  "sortBy": "Sort by",
+  "sortRecommended": "Recommended",
+  "sortStar": "Star rating: high to low",
+  "sortNewest": "Newest",
+  "errorTitle": "Something went wrong",
+  "errorDesc": "We couldn't load search results. Please try again.",
+  "emptyTitle": "No stays found",
+  "emptyDesc": "Try adjusting your dates, destination, or guest count.",
+  "pageOf": "Page {{page}} of {{total}}"
+}

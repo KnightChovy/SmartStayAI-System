@@ -1,13 +1,16 @@
 import { Link } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { CalendarDays, MapPin } from 'lucide-react';
 import type { Booking } from '@/types/booking.types';
 import { ROUTES } from '@/constants/routes';
-import { formatCurrency } from '@/utils/formatCurrency';
+import { useMoney } from '@/hooks/currency';
 import { formatDateShort } from '@/utils/formatDate';
 import BookingStatusBadge from '@/components/shared/BookingStatusBadge';
 
 /** Một dòng booking trong danh sách "Đặt phòng của tôi". */
 export default function BookingListItem({ booking }: { booking: Booking }) {
+  const { t } = useTranslation(['account', 'common']);
+  const { format } = useMoney();
   return (
     <Link
       to={ROUTES.accountBookingDetail(booking.id)}
@@ -16,7 +19,7 @@ export default function BookingListItem({ booking }: { booking: Booking }) {
       <div className="min-w-0">
         <div className="flex items-center gap-3">
           <h3 className="truncate font-be-vietnam font-semibold text-on-surface">
-            {booking.hotel?.name ?? 'Hotel'}
+            {booking.hotel?.name ?? t('hotel')}
           </h3>
           <BookingStatusBadge status={booking.status} />
         </div>
@@ -26,13 +29,13 @@ export default function BookingListItem({ booking }: { booking: Booking }) {
         <p className="mt-1 flex items-center gap-1.5 text-sm text-on-surface-variant">
           <CalendarDays className="size-3.5" />
           {formatDateShort(booking.checkInDate)} → {formatDateShort(booking.checkOutDate)} ·{' '}
-          {booking.numNights} night{booking.numNights === 1 ? '' : 's'}
+          {t('common:nights', { count: booking.numNights })}
         </p>
       </div>
       <div className="text-right">
         <p className="text-xs text-on-surface-variant">{booking.bookingCode}</p>
         <p className="font-be-vietnam text-lg font-bold text-on-surface">
-          {formatCurrency(booking.totalAmount)}
+          {format(booking.totalAmount)}
         </p>
       </div>
     </Link>

@@ -1,0 +1,68 @@
+{
+  "title": "Complete your booking",
+  "emptyTitle": "No room selected",
+  "emptyDesc": "Start by searching for a stay and picking a room to book.",
+  "findStay": "Find a stay",
+  "stepper": {
+    "guestDetails": "Guest details",
+    "payment": "Payment",
+    "confirm": "Confirm"
+  },
+  "guest": {
+    "title": "Guest details",
+    "fullName": "Full name",
+    "phone": "Phone",
+    "email": "Email",
+    "specialRequests": "Special requests (optional)",
+    "specialRequestsPlaceholder": "Late check-in, high floor, extra bed…",
+    "continue": "Continue to payment"
+  },
+  "payment": {
+    "title": "Payment method",
+    "secureNote": "You'll be securely redirected to VNPay to complete your payment.",
+    "review": "Review booking"
+  },
+  "confirm": {
+    "title": "Review & confirm",
+    "guest": "Guest",
+    "email": "Email",
+    "phone": "Phone",
+    "guests": "Guests",
+    "payment": "Payment",
+    "specialRequests": "Special requests",
+    "none": "—",
+    "errorBooking": "Could not create booking. The room may no longer be available for these dates.",
+    "errorPayment": "Could not start the VNPay payment. Please try again.",
+    "creatingBooking": "Creating booking…",
+    "redirecting": "Redirecting to VNPay…",
+    "retryPayment": "Retry payment",
+    "confirmPay": "Confirm & Pay"
+  },
+  "summary": {
+    "roomLine_one": "Room × {{count}} night",
+    "roomLine_other": "Room × {{count}} nights"
+  },
+  "methods": {
+    "vnpay": { "label": "VNPAY", "desc": "Pay via VNPAY QR / bank app" },
+    "sepay": { "label": "SePay", "desc": "Bank transfer with auto-confirm" },
+    "stripe": { "label": "Credit / Debit card", "desc": "Visa, Mastercard, JCB" },
+    "cash": { "label": "Pay at property", "desc": "Cash on check-in" }
+  },
+  "result": {
+    "successTitle": "Payment successful!",
+    "successBody": "Your booking has been confirmed and a confirmation email is on its way. You can view your voucher in My Bookings.",
+    "failedTitle": "Payment failed",
+    "failedBody": "We could not complete your payment. Your room is held briefly — you can try paying again from My Bookings before the hold expires.",
+    "bookingCode": "Booking code",
+    "viewBookings": "View my bookings",
+    "backToSearch": "Back to search"
+  },
+  "success": {
+    "title": "Booking confirmed!",
+    "body": "A confirmation has been sent to your email. Show the QR below at check-in.",
+    "bookingCode": "Booking code",
+    "totalPaid": "Total paid: ",
+    "saveVoucher": "Save voucher",
+    "viewBookings": "View my bookings"
+  }
+}

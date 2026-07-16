@@ -1,5 +1,6 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
@@ -26,6 +27,7 @@ export default function WelcomeProfileModal({
   onClose,
   onSubmit,
 }: WelcomeProfileModalProps) {
+  const { t } = useTranslation('account');
   const {
     register,
     handleSubmit,
@@ -50,10 +52,10 @@ export default function WelcomeProfileModal({
           <div className="flex items-start justify-between gap-4">
             <div>
               <h2 className="font-headline-lg-mobile text-3xl sm:text-4xl font-semibold text-on-surface">
-                Welcome to SmartStay! 🎉
+                {t('welcome.title')}
               </h2>
               <p className="text-base sm:text-lg text-on-surface-variant mt-2">
-                Confirm your details so we can personalize your stays.
+                {t('welcome.subtitle')}
               </p>
             </div>
             <button
@@ -70,7 +72,7 @@ export default function WelcomeProfileModal({
         <form onSubmit={handleSubmit(onSubmit)} className="px-10 py-8 space-y-6">
           <div>
             <Label className="font-label-sm text-label-sm text-on-surface-variant block mb-2 uppercase">
-              Full name
+              {t('welcome.fullName')}
             </Label>
             <Input
               {...register('fullName')}
@@ -87,7 +89,7 @@ export default function WelcomeProfileModal({
 
           <div>
             <Label className="font-label-sm text-label-sm text-on-surface-variant block mb-2 uppercase">
-              Email
+              {t('welcome.email')}
             </Label>
             <Input
               {...register('email')}
@@ -104,7 +106,7 @@ export default function WelcomeProfileModal({
 
           <div>
             <Label className="font-label-sm text-label-sm text-on-surface-variant block mb-2 uppercase">
-              Phone number
+              {t('welcome.phone')}
             </Label>
             <Input
               {...register('phone')}
@@ -126,14 +128,14 @@ export default function WelcomeProfileModal({
               disabled={isSubmitting}
               className="flex-1 h-14 text-base rounded-full bg-surface-container-low text-on-surface hover:bg-surface-container border-none"
             >
-              Maybe later
+              {t('welcome.maybeLater')}
             </Button>
             <Button
               type="submit"
               disabled={isSubmitting}
               className="flex-1 h-14 text-base rounded-full bg-black text-white hover:bg-black/90 border-none"
             >
-              {isSubmitting ? 'Saving…' : 'Save'}
+              {isSubmitting ? t('welcome.saving') : t('welcome.save')}
             </Button>
           </div>
         </form>

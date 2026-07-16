@@ -1,0 +1,23 @@
+{
+  "backToResults": "Back to results",
+  "location": "Location",
+  "checkInTime": "Check-in {{time}}",
+  "checkOutTime": " · Check-out {{time}}",
+  "selectDates": "Select your dates to see availability and total price.",
+  "availableRooms": "Available rooms",
+  "noRoomsTitle": "No rooms available",
+  "noRoomsDesc": "There are no rooms matching your dates or guest count. Try different dates.",
+  "pickDates": "Pick dates to book",
+  "room": {
+    "upTo": "Up to {{count}}",
+    "roomsLeft_one": "Only {{count}} room left!",
+    "roomsLeft_other": "Only {{count}} rooms left!",
+    "roomsAvailable": "{{count}} rooms available",
+    "nightsTotal_one": "{{count}} night total",
+    "nightsTotal_other": "{{count}} nights total",
+    "totalSuffix": "total",
+    "from": "From",
+    "perNight": "/ night",
+    "bookNow": "Book now"
+  }
+}

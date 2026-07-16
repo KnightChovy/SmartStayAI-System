@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useSearchParams } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { Search, SlidersHorizontal } from 'lucide-react';
 import { useSearchHotels } from '@/hooks/hotels/use-search-hotels';
 import HotelCard from '@/components/shared/HotelCard';
@@ -12,6 +13,7 @@ import type { HotelSearchParams } from '@/types/hotel.types';
 
 /** Trang kết quả tìm kiếm khách sạn — đọc/ghi bộ lọc trên URL query string. */
 export default function SearchResultsPage() {
+  const { t } = useTranslation(['search', 'common']);
   const [params, setParams] = useSearchParams();
 
   const filters: HotelSearchParams = useMemo(
@@ -55,10 +57,14 @@ export default function SearchResultsPage() {
     <div className="w-full py-10">
       <div className="mx-auto max-w-7xl px-margin-mobile md:px-8">
         <h1 className="font-be-vietnam text-3xl font-bold text-on-surface">
-          {filters.city ? `Stays in ${filters.city}` : 'Explore stays'}
+          {filters.city
+            ? t('titleCity', { city: filters.city })
+            : t('titleDefault')}
         </h1>
         <p className="mt-1 text-sm text-on-surface-variant">
-          {data ? `${data.totalResults} properties found` : 'Searching curated sanctuaries…'}
+          {data
+            ? t('resultsFound', { count: data.totalResults })
+            : t('searching')}
         </p>
 
         <div className="mt-8 flex flex-col gap-8 lg:flex-row">
@@ -66,11 +72,11 @@ export default function SearchResultsPage() {
           <aside className="lg:w-72 lg:shrink-0">
             <div className="space-y-5 rounded-2xl border border-outline-variant/30 bg-surface p-5 lg:sticky lg:top-24">
               <div className="flex items-center gap-2 text-sm font-bold text-on-surface">
-                <SlidersHorizontal className="size-4 text-primary" /> Filters
+                <SlidersHorizontal className="size-4 text-primary" /> {t('filters')}
               </div>
 
               <label className="flex flex-col gap-1">
-                <span className="text-xs font-semibold text-on-surface-variant">Destination</span>
+                <span className="text-xs font-semibold text-on-surface-variant">{t('destination')}</span>
                 <div className="flex items-center gap-2 rounded-xl border border-outline-variant/40 px-3">
                   <Search className="size-4 text-on-surface-variant" />
                   <input
@@ -79,7 +85,7 @@ export default function SearchResultsPage() {
                     onKeyDown={e => {
                       if (e.key === 'Enter') update({ city: (e.target as HTMLInputElement).value || undefined });
                     }}
-                    placeholder="City, e.g. Da Nang"
+                    placeholder={t('cityPlaceholder')}
                     className="h-11 flex-1 bg-transparent text-sm text-on-surface outline-none"
                   />
                 </div>
@@ -98,15 +104,15 @@ export default function SearchResultsPage() {
               />
 
               <label className="flex flex-col gap-1">
-                <span className="text-xs font-semibold text-on-surface-variant">Sort by</span>
+                <span className="text-xs font-semibold text-on-surface-variant">{t('sortBy')}</span>
                 <select
                   value={filters.sortBy ?? ''}
                   onChange={e => update({ sortBy: e.target.value || undefined })}
                   className="h-11 rounded-xl border border-outline-variant/40 bg-surface px-3 text-sm text-on-surface outline-none focus:border-primary"
                 >
-                  <option value="">Recommended</option>
-                  <option value="starRating:desc">Star rating: high to low</option>
-                  <option value="createdAt:desc">Newest</option>
+                  <option value="">{t('sortRecommended')}</option>
+                  <option value="starRating:desc">{t('sortStar')}</option>
+                  <option value="createdAt:desc">{t('sortNewest')}</option>
                 </select>
               </label>
             </div>
@@ -122,14 +128,14 @@ export default function SearchResultsPage() {
               </div>
             ) : isError ? (
               <EmptyState
-                title="Something went wrong"
-                description="We couldn't load search results. Please try again."
+                title={t('errorTitle')}
+                description={t('errorDesc')}
               />
             ) : results.length === 0 ? (
               <EmptyState
                 icon={Search}
-                title="No stays found"
-                description="Try adjusting your dates, destination, or guest count."
+                title={t('emptyTitle')}
+                description={t('emptyDesc')}
               />
             ) : (
               <div className="space-y-4">
@@ -148,10 +154,10 @@ export default function SearchResultsPage() {
                   disabled={(filters.page ?? 1) <= 1}
                   onClick={() => update({ page: String((filters.page ?? 1) - 1) }, false)}
                 >
-                  Previous
+                  {t('common:previous')}
                 </Button>
                 <span className="px-3 text-sm text-on-surface-variant">
-                  Page {data.page} of {data.totalPages}
+                  {t('pageOf', { page: data.page, total: data.totalPages })}
                 </span>
                 <Button
                   variant="outline"
@@ -159,7 +165,7 @@ export default function SearchResultsPage() {
                   disabled={(filters.page ?? 1) >= data.totalPages}
                   onClick={() => update({ page: String((filters.page ?? 1) + 1) }, false)}
                 >
-                  Next
+                  {t('common:next')}
                 </Button>
               </div>
             )}

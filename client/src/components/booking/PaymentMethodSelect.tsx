@@ -1,15 +1,21 @@
 import { Banknote, CreditCard, Wallet } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/cn';
 
 export type PaymentMethod = 'vnpay' | 'sepay' | 'stripe' | 'cash';
 
-const METHODS: { value: PaymentMethod; label: string; desc: string; icon: LucideIcon }[] = [
-  { value: 'vnpay', label: 'VNPAY', desc: 'Pay via VNPAY QR / bank app', icon: Wallet },
-  { value: 'sepay', label: 'SePay', desc: 'Bank transfer with auto-confirm', icon: Banknote },
-  { value: 'stripe', label: 'Credit / Debit card', desc: 'Visa, Mastercard, JCB', icon: CreditCard },
-  { value: 'cash', label: 'Pay at property', desc: 'Cash on check-in', icon: Banknote },
-];
+const METHODS = [
+  { value: 'vnpay', icon: Wallet, labelKey: 'methods.vnpay.label', descKey: 'methods.vnpay.desc' },
+  { value: 'sepay', icon: Banknote, labelKey: 'methods.sepay.label', descKey: 'methods.sepay.desc' },
+  { value: 'stripe', icon: CreditCard, labelKey: 'methods.stripe.label', descKey: 'methods.stripe.desc' },
+  { value: 'cash', icon: Banknote, labelKey: 'methods.cash.label', descKey: 'methods.cash.desc' },
+] as const satisfies {
+  value: PaymentMethod;
+  icon: LucideIcon;
+  labelKey: string;
+  descKey: string;
+}[];
 
 /** Chọn phương thức thanh toán (UI mock — chưa nối cổng thật). */
 export default function PaymentMethodSelect({
@@ -19,9 +25,12 @@ export default function PaymentMethodSelect({
   value: PaymentMethod;
   onChange: (value: PaymentMethod) => void;
 }) {
+  const { t } = useTranslation('booking');
   return (
     <div className="grid gap-3 sm:grid-cols-2">
-      {METHODS.map(({ value: v, label, desc, icon: Icon }) => {
+      {METHODS.map(({ value: v, icon: Icon, labelKey, descKey }) => {
+        const label = t(labelKey);
+        const desc = t(descKey);
         const active = v === value;
         return (
           <button

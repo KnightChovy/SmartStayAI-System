@@ -19,5 +19,18 @@
   },
   "currency": {
     "label": "Currency"
-  }
+  },
+  "checkIn": "Check-in",
+  "checkOut": "Check-out",
+  "guests": "Guests",
+  "previous": "Previous",
+  "next": "Next",
+  "back": "Back",
+  "retry": "Try again",
+  "total": "Total",
+  "nights_one": "{{count}} night",
+  "nights_other": "{{count}} nights",
+  "guestsCount_one": "{{count}} guest",
+  "guestsCount_other": "{{count}} guests",
+  "qrEmptyHint": "The e-voucher QR will appear once your booking is confirmed / paid."
 }

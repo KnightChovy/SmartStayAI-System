@@ -1,4 +1,5 @@
 import { Bell, BellRing, CheckCheck } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import {
   useMarkAllNotificationsRead,
   useMarkNotificationRead,
@@ -11,6 +12,7 @@ import { formatDateShort } from '@/utils/formatDate';
 import { cn } from '@/lib/cn';
 
 export default function NotificationsPage() {
+  const { t } = useTranslation('account');
   const { data, isLoading } = useNotifications();
   const markRead = useMarkNotificationRead();
   const markAll = useMarkAllNotificationsRead();
@@ -21,11 +23,11 @@ export default function NotificationsPage() {
     <div>
       <div className="flex items-center justify-between">
         <h2 className="font-be-vietnam text-2xl font-bold text-on-surface">
-          Notifications {unread > 0 && <span className="text-primary">({unread})</span>}
+          {t('notifications.title')} {unread > 0 && <span className="text-primary">({unread})</span>}
         </h2>
         {unread > 0 && (
           <Button variant="outline" size="sm" onClick={() => markAll.mutate()}>
-            <CheckCheck className="size-4" /> Mark all read
+            <CheckCheck className="size-4" /> {t('notifications.markAllRead')}
           </Button>
         )}
       </div>
@@ -34,7 +36,7 @@ export default function NotificationsPage() {
         {isLoading ? (
           Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-2xl" />)
         ) : !data || data.length === 0 ? (
-          <EmptyState icon={Bell} title="No notifications" description="You're all caught up." />
+          <EmptyState icon={Bell} title={t('notifications.emptyTitle')} description={t('notifications.emptyDesc')} />
         ) : (
           data.map(n => {
             const isUnread = !n.readAt;

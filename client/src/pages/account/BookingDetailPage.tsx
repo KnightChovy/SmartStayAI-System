@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import {
   ArrowLeft,
   CalendarDays,
@@ -36,6 +37,7 @@ const REFUNDABLE = new Set([
 ]);
 
 export default function BookingDetailPage() {
+  const { t } = useTranslation(['account', 'common']);
   const { bookingId = '' } = useParams();
   const navigate = useNavigate();
   const { data: booking, isLoading } = useBooking(bookingId);
@@ -64,13 +66,13 @@ export default function BookingDetailPage() {
   if (!booking) {
     return (
       <div className="rounded-2xl border border-outline-variant/30 bg-surface p-10 text-center">
-        <p className="text-on-surface-variant">Booking not found.</p>
+        <p className="text-on-surface-variant">{t('detail.notFound')}</p>
         <Button
           className="mt-4"
           variant="outline"
           onClick={() => navigate(ROUTES.accountBookings)}
         >
-          Back to my bookings
+          {t('detail.backToBookings')}
         </Button>
       </div>
     );
@@ -108,7 +110,7 @@ export default function BookingDetailPage() {
         to={ROUTES.accountBookings}
         className="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-on-surface-variant hover:text-primary"
       >
-        <ArrowLeft className="size-4" /> My bookings
+        <ArrowLeft className="size-4" /> {t('detail.back')}
       </Link>
 
       <div className="flex flex-col gap-6 lg:flex-row">
@@ -117,7 +119,7 @@ export default function BookingDetailPage() {
           <div className="rounded-2xl border border-outline-variant/30 bg-surface p-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 className="font-be-vietnam text-2xl font-bold text-on-surface">
-                {booking.hotel?.name ?? 'Hotel'}
+                {booking.hotel?.name ?? t('hotel')}
               </h2>
               <BookingStatusBadge status={booking.status} />
             </div>
@@ -129,16 +131,16 @@ export default function BookingDetailPage() {
             </p>
 
             <dl className="mt-5 grid gap-4 sm:grid-cols-2">
-              <Detail label="Booking code" value={booking.bookingCode} />
-              <Detail label="Room type" value={booking.roomType?.name ?? '—'} />
+              <Detail label={t('detail.bookingCode')} value={booking.bookingCode} />
+              <Detail label={t('detail.roomType')} value={booking.roomType?.name ?? '—'} />
               <Detail
-                label="Stay"
+                label={t('detail.stay')}
                 value={`${formatDateShort(booking.checkInDate)} → ${formatDateShort(booking.checkOutDate)}`}
                 icon={<CalendarDays className="size-4" />}
               />
               <Detail
-                label="Guests"
-                value={`${booking.numGuests} · ${booking.numNights} night${booking.numNights === 1 ? '' : 's'}`}
+                label={t('detail.guests')}
+                value={`${booking.numGuests} · ${t('common:nights', { count: booking.numNights })}`}
                 icon={<Users className="size-4" />}
               />
             </dl>
@@ -146,7 +148,7 @@ export default function BookingDetailPage() {
             {booking.specialRequests && (
               <div className="mt-4 rounded-xl bg-surface-container-low p-3 text-sm">
                 <span className="font-semibold text-on-surface">
-                  Special requests:{' '}
+                  {t('detail.specialRequests')}
                 </span>
                 <span className="text-on-surface-variant">
                   {booking.specialRequests}
@@ -156,7 +158,7 @@ export default function BookingDetailPage() {
 
             {booking.cancellationReason && (
               <div className="mt-4 rounded-xl bg-error/10 p-3 text-sm text-error">
-                Cancelled: {booking.cancellationReason}
+                {t('detail.cancelledReason', { reason: booking.cancellationReason })}
               </div>
             )}
           </div>
@@ -165,7 +167,7 @@ export default function BookingDetailPage() {
           <div className="flex flex-wrap gap-3">
             {canModify && (
               <Button variant="outline" size="lg" onClick={openModify}>
-                <PencilLine className="size-4" /> Modify
+                <PencilLine className="size-4" /> {t('detail.modify')}
               </Button>
             )}
             {canRefund && (
@@ -174,11 +176,11 @@ export default function BookingDetailPage() {
                 size="lg"
                 onClick={() => setShowRefund(true)}
               >
-                <Receipt className="size-4" /> Request refund
+                <Receipt className="size-4" /> {t('detail.requestRefund')}
               </Button>
             )}
             <Button variant="outline" size="lg" onClick={downloadInvoice}>
-              <Download className="size-4" /> Invoice
+              <Download className="size-4" /> {t('detail.invoice')}
             </Button>
             {canCancel && (
               <Button
@@ -186,7 +188,7 @@ export default function BookingDetailPage() {
                 size="lg"
                 onClick={() => setShowCancel(true)}
               >
-                <XCircle className="size-4" /> Cancel booking
+                <XCircle className="size-4" /> {t('detail.cancelBooking')}
               </Button>
             )}
             {canReview && (
@@ -196,7 +198,7 @@ export default function BookingDetailPage() {
                 onClick={() => setShowReview(true)}
               >
                 <PencilLine className="size-4" />
-                {existingReview ? 'Edit feedback' : 'Write a review'}
+                {existingReview ? t('detail.editFeedback') : t('detail.writeReview')}
               </Button>
             )}
           </div>
@@ -205,17 +207,16 @@ export default function BookingDetailPage() {
           {showModify && (
             <div className="rounded-2xl border border-outline-variant/30 bg-surface p-5">
               <h3 className="font-be-vietnam font-semibold text-on-surface">
-                Modify reservation
+                {t('detail.modifyTitle')}
               </h3>
               {modifySent ? (
                 <p className="mt-3 flex items-center gap-2 rounded-xl bg-emerald-500/10 px-3 py-2 text-sm text-emerald-700">
-                  <CheckCircle2 className="size-4" /> Modification request sent.
-                  The property will confirm availability shortly.
+                  <CheckCircle2 className="size-4" /> {t('detail.modifySent')}
                 </p>
               ) : (
                 <>
                   <p className="mt-1 text-sm text-on-surface-variant">
-                    Request new dates or guest count (subject to availability).
+                    {t('detail.modifyDesc')}
                   </p>
                   <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end">
                     <DateRangePicker
@@ -235,13 +236,13 @@ export default function BookingDetailPage() {
                       variant="outline"
                       onClick={() => setShowModify(false)}
                     >
-                      Cancel
+                      {t('detail.cancel')}
                     </Button>
                     <Button
                       className="bg-on-surface text-white hover:bg-primary"
                       onClick={() => setModifySent(true)}
                     >
-                      Send request
+                      {t('detail.sendRequest')}
                     </Button>
                   </div>
                 </>
@@ -253,26 +254,23 @@ export default function BookingDetailPage() {
           {showRefund && (
             <div className="rounded-2xl border border-outline-variant/30 bg-surface p-5">
               <h3 className="font-be-vietnam font-semibold text-on-surface">
-                Request a refund
+                {t('detail.refundTitle')}
               </h3>
               {refundSent ? (
                 <p className="mt-3 flex items-center gap-2 rounded-xl bg-emerald-500/10 px-3 py-2 text-sm text-emerald-700">
-                  <CheckCircle2 className="size-4" /> Refund request submitted
-                  for {formatCurrency(booking.totalAmount)}. Our team will
-                  review it within 3–5 business days.
+                  <CheckCircle2 className="size-4" /> {t('detail.refundSent', { amount: formatCurrency(booking.totalAmount) })}
                 </p>
               ) : (
                 <>
                   <p className="mt-1 text-sm text-on-surface-variant">
-                    Refundable amount:{' '}
-                    <strong>{formatCurrency(booking.totalAmount)}</strong>. Tell
-                    us why you’re requesting a refund.
+                    {t('detail.refundableAmount')}
+                    <strong>{formatCurrency(booking.totalAmount)}</strong>{t('detail.refundDesc')}
                   </p>
                   <textarea
                     rows={3}
                     value={refundReason}
                     onChange={e => setRefundReason(e.target.value)}
-                    placeholder="Reason for refund…"
+                    placeholder={t('detail.refundReasonPlaceholder')}
                     className="mt-3 w-full rounded-xl border border-outline-variant/40 bg-surface px-3 py-2 text-sm outline-none focus:border-primary"
                   />
                   <div className="mt-3 flex gap-3">
@@ -280,14 +278,14 @@ export default function BookingDetailPage() {
                       variant="outline"
                       onClick={() => setShowRefund(false)}
                     >
-                      Cancel
+                      {t('detail.cancel')}
                     </Button>
                     <Button
                       className="bg-on-surface text-white hover:bg-primary"
                       disabled={!refundReason.trim()}
                       onClick={() => setRefundSent(true)}
                     >
-                      Submit request
+                      {t('detail.submitRequest')}
                     </Button>
                   </div>
                 </>
@@ -299,27 +297,26 @@ export default function BookingDetailPage() {
           {showCancel && (
             <div className="rounded-2xl border border-error/30 bg-error/5 p-5">
               <h3 className="font-semibold text-on-surface">
-                Cancel this booking?
+                {t('detail.cancelTitle')}
               </h3>
               <p className="mt-1 text-sm text-on-surface-variant">
-                Tell us why you’re cancelling (optional). This action can’t be
-                undone.
+                {t('detail.cancelDesc')}
               </p>
               <textarea
                 rows={3}
                 value={reason}
                 onChange={e => setReason(e.target.value)}
-                placeholder="Reason for cancellation…"
+                placeholder={t('detail.cancelReasonPlaceholder')}
                 className="mt-3 w-full rounded-xl border border-outline-variant/40 bg-surface px-3 py-2 text-sm outline-none focus:border-primary"
               />
               {cancelBooking.isError && (
                 <p className="mt-2 text-sm text-error">
-                  Could not cancel. Please try again.
+                  {t('detail.cancelError')}
                 </p>
               )}
               <div className="mt-3 flex gap-3">
                 <Button variant="outline" onClick={() => setShowCancel(false)}>
-                  Keep booking
+                  {t('detail.keepBooking')}
                 </Button>
                 <Button
                   variant="destructive"
@@ -327,8 +324,8 @@ export default function BookingDetailPage() {
                   onClick={handleCancel}
                 >
                   {cancelBooking.isPending
-                    ? 'Cancelling…'
-                    : 'Confirm cancellation'}
+                    ? t('detail.cancelling')
+                    : t('detail.confirmCancel')}
                 </Button>
               </div>
             </div>
@@ -341,7 +338,7 @@ export default function BookingDetailPage() {
             open={showReview}
             onClose={() => setShowReview(false)}
             bookingId={booking.id}
-            hotelName={booking.hotel?.name ?? 'Hotel'}
+            hotelName={booking.hotel?.name ?? t('hotel')}
             bookingCode={booking.bookingCode}
             existingReview={existingReview}
           />
@@ -352,15 +349,15 @@ export default function BookingDetailPage() {
           <div className="space-y-6 lg:sticky lg:top-24">
             <div className="rounded-2xl border border-outline-variant/30 bg-surface p-6">
               <h3 className="mb-4 font-be-vietnam font-semibold text-on-surface">
-                Price details
+                {t('detail.priceDetails')}
               </h3>
               <PriceSummary
                 lines={[
-                  { label: 'Subtotal', value: booking.subtotal },
+                  { label: t('detail.subtotal'), value: booking.subtotal },
                   ...(Number(booking.discountAmount) > 0
                     ? [
                         {
-                          label: 'Discount',
+                          label: t('detail.discount'),
                           value: booking.discountAmount,
                           negative: true,
                         },
@@ -368,14 +365,14 @@ export default function BookingDetailPage() {
                     : []),
                 ]}
                 total={booking.totalAmount}
-                totalLabel="Total paid"
+                totalLabel={t('detail.totalPaid')}
               />
             </div>
 
             {booking.status !== 'cancelled' && (
               <div className="rounded-2xl border border-outline-variant/30 bg-surface p-6">
                 <h3 className="mb-4 text-center font-be-vietnam font-semibold text-on-surface">
-                  Your e-voucher
+                  {t('detail.evoucher')}
                 </h3>
                 <QRVoucher
                   data={booking.voucher?.qrData}

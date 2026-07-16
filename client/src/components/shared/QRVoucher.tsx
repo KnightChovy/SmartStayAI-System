@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/cn';
 
 interface QRVoucherProps {
@@ -25,8 +26,10 @@ export default function QRVoucher({
   label,
   size = 180,
   className,
-  emptyHint = 'Mã QR e-voucher sẽ hiển thị sau khi đơn được xác nhận / thanh toán.',
+  emptyHint,
 }: QRVoucherProps) {
+  const { t } = useTranslation('common');
+  const hint = emptyHint ?? t('qrEmptyHint');
   if (!data) {
     return (
       <div className={cn('flex flex-col items-center gap-3', className)}>
@@ -34,7 +37,7 @@ export default function QRVoucher({
           className="flex items-center justify-center rounded-2xl border border-dashed border-outline-variant/50 bg-surface p-4 text-center text-xs text-on-surface-variant"
           style={{ width: size, height: size }}
         >
-          {emptyHint}
+          {hint}
         </div>
         {label && (
           <p className="font-mono text-sm font-semibold tracking-wider text-on-surface">
