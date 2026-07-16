@@ -463,6 +463,32 @@ const HOTELS: SeedHotel[] = [
   },
 ];
 
+// ---------------------------------------------------------------------------
+// Ngày lễ — KHAI TAY, có chủ đích.
+//
+// Hệ thống KHÔNG có khái niệm ngày lễ: PricingRuleType chỉ có seasonal|weekend|occupancy|early_bird,
+// không có 'holiday', cũng không có lịch âm. Đây là lựa chọn thiết kế giống booking.com — nền tảng
+// cung cấp công cụ, khách sạn tự định giá — chứ không phải thiếu sót. Muốn phụ thu lễ thì tạo một
+// rule 'seasonal' trùng khoảng ngày lễ, đúng như bảng dưới.
+//
+// CẢNH BÁO BẢO TRÌ: lễ dương lịch (1/1, 30/4, 2/9) cố định hằng năm, nhưng TẾT NGUYÊN ĐÁN theo lịch
+// ÂM nên mỗi năm rơi vào một ngày dương khác — hết mùa phải cập nhật tay bảng này. Không có gì trong
+// hệ thống nhắc việc đó.
+//
+// priority 50 — CAO HƠN mọi rule khác (weekend 10, occupancy 15, seasonal 20) vì engine chỉ áp ĐÚNG
+// MỘT rule có priority cao nhất, không cộng dồn. Nhờ vậy lễ rơi vào cuối tuần thì ăn giá lễ, không
+// bị rule cuối tuần rẻ hơn giành mất.
+// ---------------------------------------------------------------------------
+const HOLIDAY_RULE_PRIORITY = 50;
+
+const HOLIDAYS: { name: string; start: string; end: string; surchargePercent: number }[] = [
+  { name: 'Quốc khánh 2/9', start: '2026-08-31', end: '2026-09-02', surchargePercent: 35 },
+  { name: 'Tết Dương lịch', start: '2026-12-31', end: '2027-01-01', surchargePercent: 25 },
+  // Mùng 1 Tết Đinh Mùi rơi vào 06/02/2027 (dương lịch) — kiểm lại khi sang năm khác
+  { name: 'Tết Nguyên đán Đinh Mùi', start: '2027-02-05', end: '2027-02-11', surchargePercent: 50 },
+  { name: 'Lễ 30/4 - 1/5', start: '2027-04-29', end: '2027-05-03', surchargePercent: 40 },
+];
+
 // Giấy tờ mỗi khách sạn phải nộp — dùng chung cho cả 4 hồ sơ
 const DOCUMENT_TYPES: VerificationDocumentType[] = [
   'business_license',
@@ -824,6 +850,30 @@ const main = async (): Promise<void> => {
   });
   console.log('\n  ✓ 4 pricing rule: weekend, seasonal, early_bird, occupancy');
 
+  // ----- Phụ thu ngày lễ: mỗi khách sạn × mỗi dịp lễ (roomTypeId để trống = áp cả khách sạn) -----
+  for (const hotel of createdHotels) {
+    for (const holiday of HOLIDAYS) {
+      await prisma.pricingRule.create({
+        data: {
+          hotelId: hotel.id,
+          name: `Phụ thu ${holiday.name}`,
+          ruleType: 'seasonal' as PricingRuleType,
+          startDate: new Date(`${holiday.start}T00:00:00Z`),
+          endDate: new Date(`${holiday.end}T00:00:00Z`),
+          dayOfWeek: [],
+          adjustmentType: 'percentage' as AdjustmentType,
+          adjustmentValue: holiday.surchargePercent,
+          priority: HOLIDAY_RULE_PRIORITY,
+          isActive: true,
+        },
+      });
+    }
+  }
+  console.log(`  ✓ ${HOLIDAYS.length} dịp lễ × ${createdHotels.length} khách sạn = ${HOLIDAYS.length * createdHotels.length} rule phụ thu lễ`);
+  for (const h of HOLIDAYS) {
+    console.log(`      ${h.name.padEnd(26)} ${h.start} → ${h.end}   +${h.surchargePercent}%`);
+  }
+
   // priceOverride một đêm "lễ" — demo giá cố định theo đêm, rule cuối tuần vẫn cộng tiếp lên giá này
   await prisma.roomAvailability.create({
     data: { roomTypeId: oceanDanang.id, hotelId: danang.id, date: daysFromNow(10), totalRooms: oceanDanang.roomCount, bookedRooms: 0, priceOverride: 2_500_000 },
@@ -1003,6 +1053,9 @@ const main = async (): Promise<void> => {
   console.log(`\n${HOTELS.length} khách sạn, mỗi khách sạn có hồ sơ pháp lý đầy đủ đã duyệt, ảnh thật từ Cloudinary.`);
   console.log('Booking để demo: BKSEED002 nhận phòng HÔM NAY (voucher VCSEED002 để test QR check-in).');
   console.log('BKSEED003 đã trả phòng và CHƯA đánh giá → dùng để test POST /reviews.');
+  console.log(`\nGiá lễ: cả ${HOTELS.length} khách sạn đều có phụ thu cho ${HOLIDAYS.length} dịp lễ (gần nhất: ${HOLIDAYS[0].name} ${HOLIDAYS[0].start}).`);
+  console.log('Lưu ý: hệ thống KHÔNG tự biết ngày lễ — phụ thu lễ là rule seasonal khai tay trong seed này.');
+  console.log('Tết theo lịch âm nên mỗi năm một ngày dương khác → phải cập nhật tay bảng HOLIDAYS.');
 };
 
 main()
