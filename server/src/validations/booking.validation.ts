@@ -8,7 +8,7 @@ export const createBooking = {
     checkOutDate: Joi.date().iso().greater(Joi.ref('checkInDate')).required(),
     numGuests: Joi.number().integer().min(1).required(),
     specialRequests: Joi.string().max(1000).allow('', null),
-    paymentMethod: Joi.string().valid('vnpay', 'cash').default('vnpay'),
+    paymentMethod: Joi.string().valid('vnpay', 'sepay', 'cash').default('vnpay'),
   }),
 };
 
