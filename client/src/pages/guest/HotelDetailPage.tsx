@@ -147,8 +147,8 @@ export default function HotelDetailPage() {
   }
 
   return (
-    // pb lớn trên mobile để thanh sticky không che nội dung cuối trang
-    <div className="w-full py-8 pb-28 lg:pb-8">
+    // pb lớn để thanh sticky (giá + CTA) không che nội dung cuối trang
+    <div className="w-full py-8 pb-28">
       <div className="mx-auto max-w-7xl px-margin-mobile md:px-8">
         <button
           onClick={() => navigate(-1)}

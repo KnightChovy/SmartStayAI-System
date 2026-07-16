@@ -124,10 +124,10 @@ export interface CreateBookingPayload {
   numGuests: number;
   specialRequests?: string;
   /**
-   * BE chỉ nhận `vnpay | cash` (mặc định `vnpay`).
-   * `cash` → BE confirm ngay + phát voucher; `vnpay` → giữ chỗ 15 phút chờ thanh toán.
+   * BE nhận `vnpay | sepay | cash` (mặc định `vnpay`) — khớp `booking.validation.ts`.
+   * `cash` → confirm ngay + phát voucher; `vnpay`/`sepay` → giữ chỗ 15 phút chờ thanh toán.
    */
-  paymentMethod?: 'vnpay' | 'cash';
+  paymentMethod?: 'vnpay' | 'sepay' | 'cash';
 }
 
 export interface MyBookingsParams {

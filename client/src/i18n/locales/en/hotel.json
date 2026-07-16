@@ -104,5 +104,6 @@
     "title": "Contact the property",
     "phone": "Phone",
     "email": "Email"
-  }
+  },
+  "viewDetails": "View details"
 }

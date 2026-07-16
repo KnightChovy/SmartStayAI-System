@@ -14,12 +14,13 @@ import {
 } from 'lucide-react';
 import { useCreateBooking } from '@/hooks/bookings';
 import { useMoney } from '@/hooks/currency';
-import { useCreateVnpayPayment } from '@/hooks/payments';
+import { useCreateSepayPayment, useCreateVnpayPayment } from '@/hooks/payments';
 import { useAuthStore } from '@/stores/authStore';
 import { ROUTES } from '@/constants/routes';
 import { guestDetailsSchema, type GuestDetailsValues } from '@/validations/checkout.validation';
 import CheckoutStepper from '@/components/booking/CheckoutStepper';
 import PaymentMethodSelect, { type PaymentMethod } from '@/components/booking/PaymentMethodSelect';
+import SepayQrModal from '@/components/booking/SepayQrModal';
 import PriceSummary from '@/components/shared/PriceSummary';
 import EmptyState from '@/components/shared/EmptyState';
 import { Button } from '@/components/ui/button';
@@ -27,6 +28,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { formatDateShort, nightsBetween } from '@/utils/formatDate';
 import type { HotelDetail, RoomType } from '@/types/hotel.types';
+import type { SepayPaymentInfo } from '@/types/payment.types';
 
 interface CheckoutState {
   /** Khách sạn truyền từ trang chi tiết — có `cancellationPolicy` để hiện ở tóm tắt. */
@@ -68,6 +70,8 @@ export default function BookingCheckoutPage() {
   const [payment, setPayment] = useState<PaymentMethod>('vnpay');
   const createBooking = useCreateBooking();
   const createPayment = useCreateVnpayPayment();
+  const createSepay = useCreateSepayPayment();
+  const [sepayInfo, setSepayInfo] = useState<SepayPaymentInfo | null>(null);
   // Giữ id booking đã tạo: bấm thanh toán lại chỉ gọi lại VNPay, không tạo booking trùng
   const [createdBookingId, setCreatedBookingId] = useState<string | null>(null);
 
@@ -134,6 +138,13 @@ export default function BookingCheckoutPage() {
       // Tiền mặt: BE đã confirm + phát voucher ngay, không có cổng nào để đi.
       if (payment === 'cash') {
         navigate(ROUTES.bookingSuccess(bookingId));
+        return;
+      }
+
+      // SePay: không redirect — hiện QR, SePay gọi webhook về BE, FE poll booking.
+      if (payment === 'sepay') {
+        const info = await createSepay.mutateAsync(bookingId);
+        setSepayInfo(info);
         return;
       }
 
@@ -341,7 +352,7 @@ export default function BookingCheckoutPage() {
                   <Button
                     size="lg"
                     className="bg-primary text-on-primary hover:bg-primary/90"
-                    disabled={createBooking.isPending || createPayment.isPending}
+                    disabled={createBooking.isPending || createPayment.isPending || createSepay.isPending}
                     onClick={handleConfirm}
                   >
                     {createBooking.isPending
@@ -412,6 +423,18 @@ export default function BookingCheckoutPage() {
           </aside>
         </div>
       </div>
+
+      {/* SePay: QR + chờ webhook đối soát (không redirect như VNPay) */}
+      <SepayQrModal
+        open={!!sepayInfo}
+        onClose={() => setSepayInfo(null)}
+        bookingId={createdBookingId ?? ''}
+        info={sepayInfo}
+        onConfirmed={() => {
+          setSepayInfo(null);
+          if (createdBookingId) navigate(ROUTES.bookingSuccess(createdBookingId));
+        }}
+      />
     </div>
   );
 }

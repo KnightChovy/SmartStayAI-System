@@ -62,7 +62,7 @@
     },
     "sepay": {
       "label": "SePay",
-      "desc": "Chuyển khoản tự động xác nhận"
+      "desc": "Chuyển khoản, tự động xác nhận"
     },
     "stripe": {
       "label": "Thẻ tín dụng / ghi nợ",
@@ -89,5 +89,19 @@
     "totalPaid": "Tổng đã thanh toán: ",
     "saveVoucher": "Lưu voucher",
     "viewBookings": "Xem đặt phòng của tôi"
+  },
+  "sepay": {
+    "title": "Chuyển khoản ngân hàng (SePay)",
+    "subtitle": "Quét QR hoặc chuyển khoản thủ công",
+    "close": "Đóng",
+    "qrAlt": "Mã VietQR cho giao dịch chuyển khoản",
+    "amount": "Số tiền",
+    "bank": "Ngân hàng",
+    "account": "Số tài khoản",
+    "content": "Nội dung chuyển khoản",
+    "keepContent": "Giữ nguyên nội dung chuyển khoản — hệ thống dựa vào đó để tự động đối soát.",
+    "waiting": "Đang chờ chuyển khoản…",
+    "payLater": "Thanh toán sau",
+    "copied": "Đã sao chép"
   }
 }

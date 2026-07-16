@@ -89,5 +89,19 @@
     "totalPaid": "Total paid: ",
     "saveVoucher": "Save voucher",
     "viewBookings": "View my bookings"
+  },
+  "sepay": {
+    "title": "Bank transfer (SePay)",
+    "subtitle": "Scan the QR or transfer manually",
+    "close": "Close",
+    "qrAlt": "VietQR code for this bank transfer",
+    "amount": "Amount",
+    "bank": "Bank",
+    "account": "Account number",
+    "content": "Transfer content",
+    "keepContent": "Keep the transfer content exactly as shown — it is how we match your payment automatically.",
+    "waiting": "Waiting for your transfer…",
+    "payLater": "Pay later",
+    "copied": "Copied"
   }
 }

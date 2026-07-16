@@ -1,4 +1,5 @@
 import { Link } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { MapPin } from 'lucide-react';
 import type { HotelSearchResult } from '@/types/hotel.types';
 import { ROUTES } from '@/constants/routes';
@@ -16,6 +17,7 @@ interface HotelCardProps {
 
 /** Thẻ khách sạn trong trang kết quả tìm kiếm. */
 export default function HotelCard({ hotel, searchQuery = '' }: HotelCardProps) {
+  const { t } = useTranslation('hotel');
   const { format } = useMoney();
   const cover = hotel.images?.[0]?.url ?? FALLBACK_IMAGE;
   const detailUrl = `${ROUTES.hotelDetail(hotel.id)}${searchQuery}`;
@@ -57,14 +59,14 @@ export default function HotelCard({ hotel, searchQuery = '' }: HotelCardProps) {
 
         <div className="mt-auto flex items-end justify-between pt-4">
           <div>
-            <p className="text-xs text-on-surface-variant">From</p>
+            <p className="text-xs text-on-surface-variant">{t('room.from')}</p>
             <p className="font-be-vietnam text-xl font-bold text-on-surface">
               {format(hotel.minPrice)}
-              <span className="text-sm font-normal text-on-surface-variant"> / night</span>
+              <span className="text-sm font-normal text-on-surface-variant"> {t('room.perNight')}</span>
             </p>
           </div>
           <span className="rounded-full bg-primary/10 px-4 py-2 text-sm font-semibold text-primary transition-colors group-hover:bg-primary group-hover:text-on-primary">
-            View details
+            {t('viewDetails')}
           </span>
         </div>
       </div>

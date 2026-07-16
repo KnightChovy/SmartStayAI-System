@@ -10,8 +10,8 @@ interface StickyBookingBarProps {
 }
 
 /**
- * Thanh giá + CTA cố định đáy màn hình trên MOBILE (Fitts / vùng ngón tay cái).
- * Ẩn trên desktop (lg+) vì ở đó danh sách phòng đã nằm trong tầm nhìn.
+ * Thanh giá + CTA cố định đáy màn hình — hiện ở MỌI kích thước (Fitts / vùng ngón
+ * tay cái trên mobile, và giữ điểm neo giá khi cuộn dài trên desktop).
  */
 export default function StickyBookingBar({ minPrice, onSelectRoom }: StickyBookingBarProps) {
   const { t } = useTranslation('hotel');
@@ -19,7 +19,7 @@ export default function StickyBookingBar({ minPrice, onSelectRoom }: StickyBooki
   if (!minPrice) return null;
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-outline-variant/40 bg-surface/95 p-3 backdrop-blur lg:hidden">
+    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-outline-variant/40 bg-surface/95 p-3 backdrop-blur">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs text-on-surface-variant">{t('room.from')}</p>
