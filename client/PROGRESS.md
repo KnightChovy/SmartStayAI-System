@@ -6,6 +6,38 @@ This file tracks the accomplished tasks, resolved user requests, and visual/func
 
 ## Completed Tasks Checklist
 
+### July 17, 2026 (continued 2)
+
+- [x] **Hotel Partner · Contacts + Nearby places — áp cùng pattern thu gọn của Policies, tách phần dùng chung**:
+  - **Tách dùng chung thay vì copy lần 3** (3 modal replace-all giờ cùng một pattern): `use-row-editor.ts` (state: `rows` + `editingIds` + `add`/`update`/`remove`/`isNew`/`isEditing`/`startEdit`/`stopEdit`, tự sinh id `new-N` cho dòng chưa lưu) và `EditableRow.tsx` (`EditableRow` — dòng thu gọn ↔ form, kèm nút Edit/Done/Remove + grid 1→2 cột; `RowSummary` — badge + meta ghép `·` + dòng chính, có `emptyPrimary` in nghiêng khi trống). `HotelPoliciesModal` viết lại trên 2 file này, xoá phần logic trùng.
+  - **Contacts**: thu gọn hiện Pill **contact type** (`CONTACT_TYPE_TONE` mới) + meta (job title · email · phone kèm loại `(Mobile)`) + tên (`No name` khi trống).
+  - **Nearby places**: thu gọn hiện Pill **category** (`NEARBY_CATEGORY_TONE` mới) + meta (`1.2 km` · transport · `15 min`) + tên. Dòng chưa có tên hiện rõ **"Unnamed place — won't be saved"** — trước đây `handleSave` lặng lẽ `filter(r => r.name.trim() !== '')`, partner không hề biết dòng của mình bị bỏ.
+  - **Không đụng hợp đồng API**: cả 3 PUT giữ nguyên payload (`id` chỉ là key client-side, không gửi lên).
+  - **Bỏ qua `RoomTypeBedsModal`**: chỉ có 2 field (bed type + quantity) nên thu gọn không giúp gì — form ngắn hơn cả dòng tóm tắt.
+  - **Verify**: `tsc` 0 lỗi, `eslint` sạch cả thư mục `property/`, `npm run build` pass.
+
+### July 17, 2026 (continued)
+
+- [x] **Hotel Partner · Hotel policies & fees — policy đã tạo thu gọn thành dòng tóm tắt, chỉ mở form khi Add/Edit**:
+  - **Vấn đề**: `HotelPoliciesModal` render **8 input cho mọi dòng cùng lúc** — 3 policy là đã phải cuộn dài, rất khó đọc lướt xem KS đang có chính sách gì.
+  - **Thu gọn mặc định**: mỗi policy đã lưu giờ là một dòng gọn — `Pill` **type** (màu theo loại qua `POLICY_TYPE_TONE` mới trong `labels.ts`) + dòng phụ chỉ ghép các field **có giá trị** (`amount` → `8%` khi `isPercentage`, ngược lại `formatCurrency` VND · charge frequency · khoảng tuổi `Age 0–12`/`Age 18+`/`Age up to 12` · code) + description (`No description` in nghiêng xám khi trống, `title` để xem full khi bị truncate) + 2 nút Edit/Remove.
+  - **Form chỉ mở khi cần**: bấm **Add policy** → dòng mới tạo ra và **tự mở form**; bấm **Edit** (icon Pencil) trên dòng đã có → mở form; nút **Check** đóng lại. Nhiều dòng mở cùng lúc được (state `editingIds: string[]`).
+  - **Key ổn định thay vì index**: `PolicyRow` thêm `id` (id thật của policy đã lưu, hoặc `new-N` từ `useRef` counter) — trước dùng `key={i}` + `update(i)`, giờ xoá dòng giữa chừng không làm trạng thái mở/đóng nhảy sang dòng khác. `update`/`remove` chuyển sang tra theo `id`.
+  - **Helper dùng chung**: `optionLabel(options, value)` trong `labels.ts` (tra nhãn enum từ danh sách option) — dùng cho cả policy type lẫn charge frequency, tái dùng được cho các editor property khác.
+  - **Không đổi hợp đồng API**: payload `PUT /hotels/:id/policies` giữ nguyên (`id` chỉ là key phía client, không gửi lên); vẫn replace-all, vẫn `'' → null`.
+  - **Verify**: `npx tsc -p tsconfig.app.json --noEmit` **0 lỗi**; `eslint` sạch trên 2 file đụng tới. Phần thị giác cần bạn xem qua (máy không drive được browser).
+
+### July 17, 2026
+
+- [x] **Hotel Partner · Hotel Detail — Amenities chỉ hiện tiện nghi cấp khách sạn (category `hotel`)**:
+  - **Nguyên nhân gốc**: section Amenities **đã** scope đúng theo khách sạn (BE `GET /hotels/:id/manage` include `amenities` theo `hotelId`) — không hề lẫn data giữa các KS. Lỗi thật nằm ở **picker**: `HotelAmenitiesModal` gọi `useAmenities()` **không truyền category** → chào toàn bộ catalog, nên partner gán được tiện nghi loại **`room`** cho chính khách sạn. Mô hình dữ liệu (`prisma/seed.ts`) tách rõ: hotel ↔ `category: 'hotel'`, room type ↔ `category: 'room'`.
+  - **Xác minh bằng DB thật** (script tạm + Prisma, đã xoá sau khi chạy): 3/4 KS sạch; **"Khách sạn Hoàng Gia Đà Nẵng" có 4 tiện nghi gán nhưng 2 cái là category `room`** (`Ban công`, `Minibar`) — đúng thứ user nhìn thấy. Sau fix: StatTile 4 → **2**, pills chỉ còn `Bãi đậu xe, Nhà hàng`.
+  - **`HotelDetailPage` (partner)**: thêm `hotelAmenities = hotel.amenities.filter(link => link.amenity.category === 'hotel')`, dùng cho **cả** StatTile "Amenities" lẫn danh sách Pill trong section (trước đó cả 2 đọc thẳng `hotel.amenities`). Tiện thể **xoá `console.log(location, 'location')`** còn sót (vi phạm quy ước 5.7 "không để console.log trong code commit").
+  - **`HotelAmenitiesModal`**: `useAmenities('hotel')` để picker khớp đúng section — nếu không lọc, partner thêm tiện nghi `room` xong sẽ **không thấy nó hiện ra** (dead-end mới).
+  - **Không xoá ngầm data cũ**: `selection` vẫn khởi tạo từ **toàn bộ** tiện nghi hiện có, nên 2 dòng `room` legacy **được giữ nguyên khi Save** (replace-all vẫn gửi lại chúng). Thêm `catalogIds` + `selectedCount` để đếm "X selected" **chỉ tính tiện nghi hiện trong catalog** (không thì modal báo "4 selected" mà chỉ 2 chip sáng); "Clear all" cũng chỉ xoá phần đang hiện. ⚠️ Hệ quả: 2 dòng legacy nằm im trong DB, không còn UI nào gỡ được ngoài Clear all + chọn lại — cần dọn thì phải nói rõ.
+  - **Phạm vi**: chỉ trang partner (đúng chỗ user đang chọn). **Guest `pages/guest/HotelDetailPage.tsx:360` vẫn `hotel.amenities.map(a => a.amenity)` chưa lọc** → khách vẫn thấy `Ban công`/`Minibar` ở mục tiện nghi khách sạn. Chưa đụng vì user chỉ yêu cầu hotel detail của partner.
+  - **Verify**: `npx tsc -p tsconfig.app.json --noEmit` **0 lỗi**; `eslint` sạch trên 2 file đụng tới. Đối chiếu schema: `Amenity.category` là cột **NOT NULL** + BE `include: { amenity: true }` ⇒ filter luôn có giá trị để so, không sợ `undefined`. Chưa drive được browser (máy không có playwright) ⇒ phần thị giác cần user xem.
+
 ### July 16, 2026 (continued 2)
 
 - [x] **Guest — dọn hardcode landing/deals, thống nhất Sign in/Sign up + back, hamburger mobile, shadcn DatePicker, fix ô Phone ở trang đặt phòng**:

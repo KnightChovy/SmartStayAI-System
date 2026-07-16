@@ -19,7 +19,7 @@ export function useRegisterPartner() {
       if (user && tokens?.access?.token && tokens?.refresh?.token) {
         setAuth(user, tokens.access.token, tokens.refresh.token);
       }
-      toast.success('Partner account created', { duration: 3000 });
+      toast.success('Partner account created', { duration: 1500 });
     },
   });
 }

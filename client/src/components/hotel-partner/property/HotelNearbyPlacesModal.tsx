@@ -1,8 +1,8 @@
-import { useState } from 'react';
-import { Loader2, MapPinned, Plus, Trash2 } from 'lucide-react';
+import { Loader2, MapPinned, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/hotel-partner/shared/Modal';
+import { Pill } from '@/components/hotel-partner/shared/Pill';
 import { ErrorState } from '@/components/hotel-partner/shared/states';
 import { ListSkeleton } from '@/components/shared/skeletons';
 import { useHotelNearbyPlaces, useSetHotelNearbyPlaces } from '@/hooks/hotel-property';
@@ -12,14 +12,18 @@ import type {
   NearbyCategory,
   TransportType,
 } from '@/types/hotel-property.types';
+import { EditableRow, RowSummary } from './EditableRow';
 import { SelectField, TextField } from './fields';
+import { useRowEditor, type RowWithId } from './use-row-editor';
 import {
   DISTANCE_UNIT_OPTIONS,
   NEARBY_CATEGORY_OPTIONS,
+  NEARBY_CATEGORY_TONE,
   TRANSPORT_TYPE_OPTIONS,
+  optionLabel,
 } from './labels';
 
-interface NearbyRow {
+interface NearbyRow extends RowWithId {
   name: string;
   category: NearbyCategory;
   distance: string;
@@ -28,20 +32,32 @@ interface NearbyRow {
   journeyMinutes: string;
 }
 
-const emptyRow: NearbyRow = {
+const emptyRow = (id: string): NearbyRow => ({
+  id,
   name: '',
   category: 'attraction',
   distance: '',
   distanceUnit: 'km',
   transportType: '',
   journeyMinutes: '',
-};
+});
 
 function toNum(v: string): number | null {
   const t = v.trim();
   if (t === '') return null;
   const n = Number(t);
   return Number.isNaN(n) ? null : n;
+}
+
+/** Thông tin phụ của một địa điểm, chỉ gồm field đã nhập. */
+function summaryBits(row: NearbyRow): string[] {
+  const bits: string[] = [];
+  const distance = row.distance.trim();
+  if (distance) bits.push(`${distance} ${row.distanceUnit}`);
+  if (row.transportType) bits.push(optionLabel(TRANSPORT_TYPE_OPTIONS, row.transportType));
+  const minutes = row.journeyMinutes.trim();
+  if (minutes) bits.push(`${minutes} min`);
+  return bits;
 }
 
 interface Props {
@@ -55,27 +71,25 @@ interface Props {
 export function HotelNearbyPlacesModal({ open, onClose, hotelId, hotelName }: Props) {
   const { data, isLoading, isError } = useHotelNearbyPlaces(hotelId);
   const setNearby = useSetHotelNearbyPlaces(hotelId);
-  const [rows, setRows] = useState<NearbyRow[] | null>(null);
 
-  const current: NearbyRow[] =
-    rows ??
-    (data ?? []).map(p => ({
-      name: p.name,
-      category: p.category,
-      distance: p.distance ?? '',
-      distanceUnit: p.distanceUnit,
-      transportType: p.transportType ?? '',
-      journeyMinutes: p.journeyMinutes != null ? String(p.journeyMinutes) : '',
-    }));
+  const seed: NearbyRow[] = (data ?? []).map(p => ({
+    id: p.id,
+    name: p.name,
+    category: p.category,
+    distance: p.distance ?? '',
+    distanceUnit: p.distanceUnit,
+    transportType: p.transportType ?? '',
+    journeyMinutes: p.journeyMinutes != null ? String(p.journeyMinutes) : '',
+  }));
 
-  const update = (i: number, patch: Partial<NearbyRow>) =>
-    setRows(current.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
-  const add = () => setRows([...current, { ...emptyRow }]);
-  const remove = (i: number) => setRows(current.filter((_, idx) => idx !== i));
+  const { rows, add, update, remove, isNew, isEditing, startEdit, stopEdit } = useRowEditor(
+    seed,
+    emptyRow
+  );
 
   const handleSave = async () => {
     // Bỏ qua dòng chưa nhập tên (BE bắt buộc name).
-    const valid = current.filter(r => r.name.trim() !== '');
+    const valid = rows.filter(r => r.name.trim() !== '');
     try {
       await setNearby.mutateAsync({
         nearbyPlaces: valid.map(r => ({
@@ -99,7 +113,7 @@ export function HotelNearbyPlacesModal({ open, onClose, hotelId, hotelName }: Pr
       open={open}
       onClose={onClose}
       title="Nearby places"
-      description={`${hotelName} · ${current.length} place(s)`}
+      description={`${hotelName} · ${rows.length} place(s)`}
       icon={MapPinned}
       size="lg"
       footer={
@@ -124,68 +138,73 @@ export function HotelNearbyPlacesModal({ open, onClose, hotelId, hotelName }: Pr
         <ErrorState label="Failed to load nearby places." />
       ) : (
         <div className="space-y-3">
-          {current.length === 0 && (
+          {rows.length === 0 && (
             <p className="py-6 text-center text-sm text-slate-400">
               No nearby places yet. Add one below.
             </p>
           )}
-          {current.map((row, i) => (
-            <div key={i} className="rounded-xl border border-slate-200 p-3">
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                  Place {i + 1}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => remove(i)}
-                  className="rounded-lg p-1 text-slate-400 hover:bg-red-50 hover:text-red-500"
-                  aria-label="Remove place"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <TextField
-                  label="Name"
-                  value={row.name}
-                  onChange={v => update(i, { name: v })}
-                  placeholder="e.g. Ben Thanh Market"
+          {rows.map(row => (
+            <EditableRow
+              key={row.id}
+              editing={isEditing(row.id)}
+              entity="place"
+              editingLabel={isNew(row.id) ? 'New place' : 'Editing place'}
+              onEdit={() => startEdit(row.id)}
+              onDone={() => stopEdit(row.id)}
+              onRemove={() => remove(row.id)}
+              summary={
+                <RowSummary
+                  badge={
+                    <Pill tone={NEARBY_CATEGORY_TONE[row.category]}>
+                      {optionLabel(NEARBY_CATEGORY_OPTIONS, row.category)}
+                    </Pill>
+                  }
+                  meta={summaryBits(row)}
+                  primary={row.name}
+                  emptyPrimary="Unnamed place — won't be saved"
                 />
-                <SelectField
-                  label="Category"
-                  value={row.category}
-                  onChange={v => update(i, { category: (v || 'attraction') as NearbyCategory })}
-                  options={NEARBY_CATEGORY_OPTIONS}
-                />
-                <TextField
-                  label="Distance"
-                  type="number"
-                  value={row.distance}
-                  onChange={v => update(i, { distance: v })}
-                  placeholder="e.g. 1.2"
-                />
-                <SelectField
-                  label="Distance unit"
-                  value={row.distanceUnit}
-                  onChange={v => update(i, { distanceUnit: (v || 'km') as DistanceUnit })}
-                  options={DISTANCE_UNIT_OPTIONS}
-                />
-                <SelectField
-                  label="Transport"
-                  value={row.transportType}
-                  onChange={v => update(i, { transportType: v as TransportType | '' })}
-                  options={TRANSPORT_TYPE_OPTIONS}
-                  emptyLabel="—"
-                />
-                <TextField
-                  label="Journey (minutes)"
-                  type="number"
-                  value={row.journeyMinutes}
-                  onChange={v => update(i, { journeyMinutes: v })}
-                  placeholder="e.g. 15"
-                />
-              </div>
-            </div>
+              }
+            >
+              <TextField
+                label="Name"
+                value={row.name}
+                onChange={v => update(row.id, { name: v })}
+                placeholder="e.g. Ben Thanh Market"
+              />
+              <SelectField
+                label="Category"
+                value={row.category}
+                onChange={v => update(row.id, { category: (v || 'attraction') as NearbyCategory })}
+                options={NEARBY_CATEGORY_OPTIONS}
+              />
+              <TextField
+                label="Distance"
+                type="number"
+                value={row.distance}
+                onChange={v => update(row.id, { distance: v })}
+                placeholder="e.g. 1.2"
+              />
+              <SelectField
+                label="Distance unit"
+                value={row.distanceUnit}
+                onChange={v => update(row.id, { distanceUnit: (v || 'km') as DistanceUnit })}
+                options={DISTANCE_UNIT_OPTIONS}
+              />
+              <SelectField
+                label="Transport"
+                value={row.transportType}
+                onChange={v => update(row.id, { transportType: v as TransportType | '' })}
+                options={TRANSPORT_TYPE_OPTIONS}
+                emptyLabel="—"
+              />
+              <TextField
+                label="Journey (minutes)"
+                type="number"
+                value={row.journeyMinutes}
+                onChange={v => update(row.id, { journeyMinutes: v })}
+                placeholder="e.g. 15"
+              />
+            </EditableRow>
           ))}
           <Button variant="outline" onClick={add} className="w-full">
             <Plus className="mr-1.5 h-4 w-4" /> Add place

@@ -78,7 +78,10 @@ export default function HotelDetailPage() {
     (sum, rt) => sum + rt._count.rooms,
     0
   );
-  console.log(location, 'location');
+  // Tiện nghi 'room'/'service' thuộc loại phòng (quản lý ở Room Inventory), không phải của khách sạn.
+  const hotelAmenities = hotel.amenities.filter(
+    link => link.amenity.category === 'hotel'
+  );
 
   const roomTypeColumns: Column<ManagedRoomType>[] = [
     {
@@ -196,7 +199,7 @@ export default function HotelDetailPage() {
         <StatTile
           icon={Sparkles}
           label="Amenities"
-          value={hotel.amenities.length}
+          value={hotelAmenities.length}
         />
         <StatTile
           icon={Clock}
@@ -226,11 +229,11 @@ export default function HotelDetailPage() {
               </Button>
             }
           >
-            {hotel.amenities.length === 0 ? (
+            {hotelAmenities.length === 0 ? (
               <p className="text-sm text-slate-400">No amenities listed.</p>
             ) : (
               <div className="flex flex-wrap gap-2">
-                {hotel.amenities.map(link => (
+                {hotelAmenities.map(link => (
                   <Pill key={link.amenityId} tone="slate">
                     {link.amenity.name}
                   </Pill>
