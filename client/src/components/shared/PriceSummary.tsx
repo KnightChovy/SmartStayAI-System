@@ -4,13 +4,8 @@ import { useMoney } from '@/hooks/currency';
 
 export interface PriceLine {
   label: string;
-  /** Giá trị tiền (string Decimal hoặc number). Bỏ qua nếu có `valueText`. */
-  value?: string | number;
-  /**
-   * Text thay cho số tiền — dùng cho dòng không có con số cụ thể,
-   * vd "Thuế & phí: Đã bao gồm" (BE gộp thuế vào tổng, không tách riêng).
-   */
-  valueText?: string;
+  /** Giá trị tiền (string Decimal hoặc number). */
+  value: string | number;
   /** Dòng giảm giá → hiển thị màu xanh + dấu trừ. */
   negative?: boolean;
   muted?: boolean;
@@ -50,12 +45,8 @@ export default function PriceSummary({
               line.negative && 'text-emerald-600'
             )}
           >
-            {line.valueText ?? (
-              <>
-                {line.negative ? '−' : ''}
-                {format(line.value ?? 0)}
-              </>
-            )}
+            {line.negative ? '−' : ''}
+            {format(line.value)}
           </span>
         </div>
       ))}

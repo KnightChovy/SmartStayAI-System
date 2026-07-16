@@ -57,8 +57,10 @@
     "cancelling": "Cancelling…",
     "confirmCancel": "Confirm cancellation",
     "priceDetails": "Price details",
-    "subtotal": "Subtotal",
+    "subtotal": "Room charge",
     "discount": "Discount",
+    "tax": "Taxes",
+    "fee": "Service fee",
     "totalPaid": "Total paid",
     "evoucher": "Your e-voucher"
   },
@@ -78,7 +80,7 @@
     "steps": {
       "pending": {
         "title": "Awaiting property review",
-        "desc": "The property is reviewing your refund request"
+        "desc": "The property is reviewing your request. If they don't respond within 3 days, it's approved automatically"
       },
       "approved": {
         "title": "Approved by the property",

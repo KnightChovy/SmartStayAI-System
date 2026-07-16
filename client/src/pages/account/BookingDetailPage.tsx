@@ -301,6 +301,11 @@ export default function BookingDetailPage() {
               <h3 className="mb-4 font-be-vietnam font-semibold text-on-surface">
                 {t('detail.priceDetails')}
               </h3>
+              {/*
+                Thứ tự khớp công thức của BE (subtotal − giảm giá + thuế + phí = tổng) để
+                khách cộng nhẩm ra đúng số cuối. Chỉ hiện dòng > 0 nên đơn cũ / khách sạn
+                không thu thuế-phí vẫn gọn như trước, không lòi dòng "0 VNĐ".
+              */}
               <PriceSummary
                 lines={[
                   { label: t('detail.subtotal'), value: booking.subtotal },
@@ -312,6 +317,12 @@ export default function BookingDetailPage() {
                           negative: true,
                         },
                       ]
+                    : []),
+                  ...(Number(booking.taxAmount) > 0
+                    ? [{ label: t('detail.tax'), value: booking.taxAmount }]
+                    : []),
+                  ...(Number(booking.feeAmount) > 0
+                    ? [{ label: t('detail.fee'), value: booking.feeAmount }]
                     : []),
                 ]}
                 total={booking.totalAmount}

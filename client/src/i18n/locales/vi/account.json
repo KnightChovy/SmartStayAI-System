@@ -57,8 +57,10 @@
     "cancelling": "Đang huỷ…",
     "confirmCancel": "Xác nhận huỷ",
     "priceDetails": "Chi tiết giá",
-    "subtotal": "Tạm tính",
+    "subtotal": "Tiền phòng",
     "discount": "Giảm giá",
+    "tax": "Thuế",
+    "fee": "Phí dịch vụ",
     "totalPaid": "Tổng đã thanh toán",
     "evoucher": "Voucher điện tử của bạn"
   },
@@ -78,7 +80,7 @@
     "steps": {
       "pending": {
         "title": "Chờ khách sạn duyệt",
-        "desc": "Khách sạn đang xem xét yêu cầu hoàn tiền của bạn"
+        "desc": "Khách sạn đang xem xét yêu cầu của bạn. Quá 3 ngày mà khách sạn chưa phản hồi thì yêu cầu tự động được duyệt"
       },
       "approved": {
         "title": "Khách sạn đã duyệt",

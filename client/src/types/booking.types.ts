@@ -1,5 +1,6 @@
 import type { BookingFormValues } from '@/validations/booking.validation';
 import type { BookingPayment, RefundStatus } from '@/types/payment.types';
+import type { HotelPolicy } from '@/types/hotel-property.types';
 
 export interface BookingDetailsFormProps {
   onSubmit: (values: BookingFormValues) => void;
@@ -71,8 +72,14 @@ export interface Booking {
   numNights: number;
   numGuests: number;
   basePricePerNight: string;
+  /** Tiền phòng thuần — CHƯA gồm thuế/phí. */
   subtotal: string;
   discountAmount: string;
+  /** Thuế (VAT…) đóng băng lúc đặt; "0" nếu KS không khai báo policy `tax`. */
+  taxAmount: string;
+  /** Phí dịch vụ đóng băng lúc đặt; "0" nếu KS không khai báo policy `fee`. */
+  feeAmount: string;
+  /** = subtotal − discountAmount + taxAmount + feeAmount. Đây là số khách thực trả. */
   totalAmount: string;
   status: BookingStatus;
   source: BookingSource;
@@ -157,4 +164,28 @@ export interface MyBookingsParams {
   sortBy?: string;
   page?: number;
   limit?: number;
+}
+
+// ============================================================
+// Ước tính thuế & phí ở checkout (booking chưa tồn tại nên BE chưa có số thật)
+// ============================================================
+
+/** Kết quả ước tính — VND, khớp cách BE tính lúc tạo booking. */
+export interface TaxFeeEstimate {
+  taxAmount: number;
+  feeAmount: number;
+  /** subtotal + taxAmount + feeAmount (checkout chưa có giảm giá). */
+  total: number;
+}
+
+export interface TaxFeeEstimateInput {
+  /**
+   * Chính sách của khách sạn (`GET /hotels/:id` → `policies[]`).
+   * `undefined` = CHƯA BIẾT (chưa load xong) — khác hẳn `[]` = KS không có chính sách nào.
+   */
+  policies: HotelPolicy[] | undefined;
+  /** Tiền phòng thuần cả kỳ ở (`roomType.totalPrice`). */
+  subtotal: number;
+  numNights: number;
+  numGuests: number;
 }
