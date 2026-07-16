@@ -1,0 +1,35 @@
+{
+  "notFound": "Hotel not found.",
+  "goBack": "Go back",
+  "checkIn": "Check-in",
+  "checkOut": "Check-out",
+  "guests": "Guests",
+  "selectRoom": "Select room",
+  "noRooms": "No rooms available for these dates",
+  "reviews": "Guest reviews",
+  "viewAll": "View all →",
+  "location": "Location",
+  "directions": "Directions",
+  "room": {
+    "unavailable": "This room is no longer available.",
+    "yourStay": "Your stay",
+    "about": "About this room",
+    "amenities": "Room amenities",
+    "priceDetails": "Price details",
+    "bookNow": "Book now",
+    "soldOut": "Sold out",
+    "onlyLeft_one": "Only {{count}} left",
+    "onlyLeft_other": "Only {{count}} left",
+    "roomsLeft_one": "{{count}} room left",
+    "roomsLeft_other": "{{count}} rooms left",
+    "viewDetails": "View details"
+  },
+  "picker": {
+    "title": "Select dates",
+    "maxGuests_one": "Max {{count}} for this room",
+    "maxGuests_other": "Max {{count}} for this room",
+    "pickCheckIn": "Pick your check-in date",
+    "pickCheckOut": "Now pick your check-out date",
+    "apply": "Apply dates"
+  }
+}

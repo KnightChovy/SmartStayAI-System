@@ -1,0 +1,32 @@
+{
+  "appName": "SmartStay AI",
+  "back": "Quay lại",
+  "skip": "Bỏ qua",
+  "next": "Tiếp theo",
+  "cancel": "Huỷ",
+  "save": "Lưu",
+  "retry": "Thử lại",
+  "loading": "Đang tải…",
+  "language": "Ngôn ngữ",
+  "total": "Tổng",
+  "from": "từ",
+  "perNight": "mỗi đêm",
+  "contactForPrice": "Liên hệ để biết giá",
+  "hotel": "Khách sạn",
+  "notFound": "Không tìm thấy",
+  "guests_one": "{{count}} khách",
+  "guests_other": "{{count}} khách",
+  "nights_one": "{{count}} đêm",
+  "nights_other": "{{count}} đêm",
+  "stars": "{{count}} sao",
+  "tabs": {
+    "home": "Trang chủ",
+    "search": "Tìm kiếm",
+    "bookings": "Đặt phòng",
+    "chat": "Trò chuyện",
+    "account": "Tài khoản"
+  },
+  "errors": {
+    "generic": "Vui lòng thử lại."
+  }
+}

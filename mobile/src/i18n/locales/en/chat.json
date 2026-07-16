@@ -1,0 +1,15 @@
+{
+  "replying": "● Replying…",
+  "selectHotel": "Select a hotel",
+  "inputPlaceholder": "Type a message…",
+  "inputDisabled": "Select a hotel to start…",
+  "empty": {
+    "title": "Ask me anything",
+    "subtitle": "I can help you find rooms, compare prices and answer questions about your stay.",
+    "suggestions": {
+      "rooms": "What rooms are available?",
+      "amenities": "What amenities do you have?",
+      "checkin": "What time is check-in?"
+    }
+  }
+}

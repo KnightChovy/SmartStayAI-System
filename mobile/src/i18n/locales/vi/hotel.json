@@ -1,0 +1,35 @@
+{
+  "notFound": "Không tìm thấy khách sạn.",
+  "goBack": "Quay lại",
+  "checkIn": "Nhận phòng",
+  "checkOut": "Trả phòng",
+  "guests": "Số khách",
+  "selectRoom": "Chọn phòng",
+  "noRooms": "Không còn phòng trống cho những ngày này",
+  "reviews": "Đánh giá của khách",
+  "viewAll": "Xem tất cả →",
+  "location": "Vị trí",
+  "directions": "Chỉ đường",
+  "room": {
+    "unavailable": "Phòng này không còn trống.",
+    "yourStay": "Kỳ nghỉ của bạn",
+    "about": "Về phòng này",
+    "amenities": "Tiện nghi phòng",
+    "priceDetails": "Chi tiết giá",
+    "bookNow": "Đặt ngay",
+    "soldOut": "Hết phòng",
+    "onlyLeft_one": "Chỉ còn {{count}} phòng",
+    "onlyLeft_other": "Chỉ còn {{count}} phòng",
+    "roomsLeft_one": "Còn {{count}} phòng",
+    "roomsLeft_other": "Còn {{count}} phòng",
+    "viewDetails": "Xem chi tiết"
+  },
+  "picker": {
+    "title": "Chọn ngày",
+    "maxGuests_one": "Tối đa {{count}} khách cho phòng này",
+    "maxGuests_other": "Tối đa {{count}} khách cho phòng này",
+    "pickCheckIn": "Chọn ngày nhận phòng",
+    "pickCheckOut": "Giờ chọn ngày trả phòng",
+    "apply": "Áp dụng"
+  }
+}
