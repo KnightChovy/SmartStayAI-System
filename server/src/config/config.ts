@@ -69,6 +69,9 @@ const envVarsSchema = Joi.object()
       .allow('')
       .default('')
       .description('Bí mật cho cron ngoài gọi /internal/jobs (header x-cron-secret)'),
+    SCHEDULER_ENABLED: Joi.boolean()
+      .default(true)
+      .description('Bật scheduler chạy nền trong app (release-holds / sweep-no-shows / settle-commissions). Đặt false nếu chạy nhiều instance và muốn tách job ra riêng'),
   })
   .unknown();
 
@@ -134,6 +137,10 @@ const config = {
     // Cần gạt của "công tắc": chọn nhà cung cấp LLM (gemini lúc dev, claude lúc demo)
     provider: envVars.AI_PROVIDER,
     geminiApiKey: envVars.GEMINI_API_KEY,
+  },
+  scheduler: {
+    // Scheduler chạy nền trong chính app. Tắt ở môi trường test để job không chạy xen vào test.
+    enabled: envVars.SCHEDULER_ENABLED && envVars.NODE_ENV !== 'test',
   },
   cron: {
     // Bí mật để cron ngoài (cron-job.org) chứng minh "tôi là cron" qua header x-cron-secret.

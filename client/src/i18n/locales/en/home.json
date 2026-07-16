@@ -27,29 +27,6 @@
       "desc": "Guaranteed exclusive rates for our intelligent members"
     }
   },
-  "promotions": {
-    "summer": {
-      "badge": "Early Bird",
-      "title": "Summer Solstice Escapes",
-      "desc": "Book 30 days in advance for 20% off.",
-      "cta": "Claim Offer"
-    },
-    "member": {
-      "badge": "Members Only",
-      "title": "Exclusive Sanctuary Rates",
-      "desc": "Unlock hidden prices for our Gold members.",
-      "cta": "Sign In to See"
-    }
-  },
-  "accommodationTypes": {
-    "title": "Search by type of accommodation",
-    "hotels": "Hotels",
-    "apartments": "Apartments",
-    "resorts": "Resorts",
-    "villas": "Villas",
-    "cabins": "Cabins",
-    "unique": "Unique Stays"
-  },
   "trending": {
     "title": "Trending Destinations",
     "properties_one": "{{count}} Property",
@@ -80,15 +57,8 @@
     "learnMore": "Learn More"
   },
   "popular": {
-    "title": "Popular with tourists from Vietnam",
-    "singapore": { "name": "Singapore", "desc": "Modern luxury & shopping" },
-    "thailand": { "name": "Thailand", "desc": "Beaches & vibrant culture" },
-    "korea": { "name": "South Korea", "desc": "K-Wave, cosmetic & historic palaces" },
-    "japan": { "name": "Japan", "desc": "Cherry blossoms & serene hot springs" }
-  },
-  "guestFavorites": {
-    "badge": "Guest Reviews",
-    "title": "The guest's favorite accommodation",
-    "subtitle": "Real words from travelers who found their perfect stay with SmartStay AI."
+    "title": "Popular destinations in Vietnam",
+    "stays_one": "{{count}} place to stay",
+    "stays_other": "{{count}} places to stay"
   }
 }

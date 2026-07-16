@@ -1,5 +1,5 @@
 import { api } from '@/lib/api';
-import type { CreateVnpayPaymentResponse } from '@/types/payment.types';
+import type { CreateVnpayPaymentResponse, SepayPaymentInfo } from '@/types/payment.types';
 
 export const paymentService = {
   /**
@@ -11,6 +11,12 @@ export const paymentService = {
     const { data } = await api.post<CreateVnpayPaymentResponse>(
       `/payments/bookings/${bookingId}/vnpay`
     );
+    return data;
+  },
+
+  /** Lấy QR chuyển khoản SePay cho booking đang chờ thanh toán (`POST /payments/bookings/:id/sepay`). */
+  async createSepay(bookingId: string): Promise<SepayPaymentInfo> {
+    const { data } = await api.post<SepayPaymentInfo>(`/payments/bookings/${bookingId}/sepay`);
     return data;
   },
 };

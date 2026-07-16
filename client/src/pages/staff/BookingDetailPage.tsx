@@ -1,13 +1,13 @@
 import { useState, type ReactNode } from 'react';
 import { Link, useParams, useLocation } from 'react-router';
+import { toast } from 'sonner';
 import {
   ArrowLeft,
   LogIn,
   LogOut,
+  Loader2,
   Banknote,
   UserX,
-  CheckCircle2,
-  AlertCircle,
   CalendarClock,
   BedDouble,
   Ticket,
@@ -26,9 +26,10 @@ import {
 import { useStaffHotelStore } from '@/stores/staffHotelStore';
 import { BookingStatusBadge, PaymentStatusBadge } from '@/components/staff/StatusBadge';
 import { CheckInConfirmModal } from '@/components/staff/CheckInConfirmModal';
+import { ConfirmDialog } from '@/components/hotel-partner/shared/ConfirmDialog';
 import { ROUTES } from '@/constants/routes';
 import { formatCurrency } from '@/utils/formatCurrency';
-import { formatDateShort, toUtcDateKey, todayUtcKey } from '@/utils/formatDate';
+import { formatDate, toUtcDateKey, todayUtcKey } from '@/utils/formatDate';
 import { errorMessage } from '@/utils/errorMessage';
 
 interface CheckInNavState {
@@ -55,7 +56,7 @@ export default function BookingDetailPage() {
   const [roomId, setRoomId] = useState('');
   const [voucherCode, setVoucherCode] = useState('');
   const [extraCharge, setExtraCharge] = useState('');
-  const [feedback, setFeedback] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
+  const [confirmNoShow, setConfirmNoShow] = useState(false);
 
   if (isLoading) return <p className="text-sm text-slate-500">Loading booking…</p>;
   if (isError || !booking)
@@ -86,13 +87,13 @@ export default function BookingDetailPage() {
     .map(r => r.room?.roomNumber ?? r.roomId.slice(0, 6))
     .join(', ');
 
+  /** Runs a front-desk action and reports the outcome. BE messages surface verbatim on failure. */
   const run = async (action: () => Promise<unknown>, okMsg: string, fallbackErr: string) => {
-    setFeedback(null);
     try {
       await action();
-      setFeedback({ type: 'ok', msg: okMsg });
+      toast.success(okMsg);
     } catch (err) {
-      setFeedback({ type: 'err', msg: errorMessage(err, fallbackErr) });
+      toast.error(errorMessage(err, fallbackErr));
     }
   };
 
@@ -101,18 +102,16 @@ export default function BookingDetailPage() {
 
   // Xác nhận check-in từ modal (quét QR): BE tự gán phòng trống, redeem voucher đã quét.
   const handleConfirmCheckIn = async () => {
-    setFeedback(null);
-    try {
-      await checkIn.mutateAsync({
-        bookingId: booking.id,
-        payload: { ...(scanVoucher ? { voucherCode: scanVoucher } : {}) },
-      });
-      setFeedback({ type: 'ok', msg: 'Guest checked in successfully.' });
-    } catch (err) {
-      setFeedback({ type: 'err', msg: errorMessage(err, 'Check-in failed.') });
-    } finally {
-      setShowCheckInConfirm(false);
-    }
+    await run(
+      () =>
+        checkIn.mutateAsync({
+          bookingId: booking.id,
+          payload: { ...(scanVoucher ? { voucherCode: scanVoucher } : {}) },
+        }),
+      'Guest checked in successfully.',
+      'Check-in failed.'
+    );
+    setShowCheckInConfirm(false);
   };
 
   return (
@@ -127,23 +126,6 @@ export default function BookingDetailPage() {
         <BookingStatusBadge status={booking.status} className="px-3 py-1 text-sm" />
       </div>
 
-      {feedback && (
-        <div
-          className={`flex items-center gap-2 rounded-lg border p-3 text-sm ${
-            feedback.type === 'ok'
-              ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-              : 'border-rose-200 bg-rose-50 text-rose-700'
-          }`}
-        >
-          {feedback.type === 'ok' ? (
-            <CheckCircle2 className="size-4" />
-          ) : (
-            <AlertCircle className="size-4" />
-          )}
-          {feedback.msg}
-        </div>
-      )}
-
       <div className="grid gap-4 lg:grid-cols-3">
         {/* Information */}
         <div className="space-y-4 lg:col-span-2">
@@ -152,7 +134,7 @@ export default function BookingDetailPage() {
             <Row label="Guests" value={`${booking.numGuests} guest(s)`} />
             <Row
               label="Check-in → Check-out"
-              value={`${formatDateShort(booking.checkInDate)} → ${formatDateShort(booking.checkOutDate)} (${booking.numNights} night(s))`}
+              value={`${formatDate(booking.checkInDate)} → ${formatDate(booking.checkOutDate)} (${booking.numNights} night(s))`}
             />
             {assignedRooms && <Row label="Assigned rooms" value={assignedRooms} />}
             {booking.specialRequests && (
@@ -162,7 +144,7 @@ export default function BookingDetailPage() {
 
           <Card title="Customer">
             <Row label="Email" value={booking.customer.email} />
-            <Row label="Phone" value={booking.customer.phone ?? '—'} />
+            <Row label="Phone" value={booking.customer.phone} />
           </Card>
 
           {booking.voucher && (
@@ -214,7 +196,7 @@ export default function BookingDetailPage() {
                 {beforeWindow && (
                   <div className="flex items-start gap-2 rounded-lg bg-amber-50 p-2.5 text-xs text-amber-700">
                     <CalendarClock className="mt-0.5 size-3.5 shrink-0" />
-                    The check-in date ({formatDateShort(booking.checkInDate)}) has not arrived yet.
+                    The check-in date ({formatDate(booking.checkInDate)}) has not arrived yet.
                     Check-in is not available.
                   </div>
                 )}
@@ -228,9 +210,14 @@ export default function BookingDetailPage() {
                     value={roomId}
                     onChange={e => setRoomId(e.target.value)}
                     disabled={beforeWindow}
-                    className="h-9 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-slate-400 focus:outline-none disabled:bg-slate-50"
+                    title={
+                      roomId
+                        ? availableRooms.find(r => r.id === roomId)?.roomNumber
+                        : 'Auto-assign an available room of this type'
+                    }
+                    className="h-9 w-full truncate rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-slate-400 focus:outline-none disabled:bg-slate-50"
                   >
-                    <option value="">Auto-select an available room</option>
+                    <option value="">Auto-assign a room</option>
                     {availableRooms.map(r => (
                       <option key={r.id} value={r.id}>
                         Room {r.roomNumber}
@@ -256,8 +243,13 @@ export default function BookingDetailPage() {
                 </div>
 
                 <Button
-                  className="w-full"
+                  className="w-full bg-emerald-600 text-white hover:bg-emerald-700"
                   disabled={busy || beforeWindow}
+                  title={
+                    beforeWindow
+                      ? `Check-in opens on ${formatDate(booking.checkInDate)}`
+                      : undefined
+                  }
                   onClick={() =>
                     run(
                       () =>
@@ -273,7 +265,12 @@ export default function BookingDetailPage() {
                     )
                   }
                 >
-                  <LogIn className="size-4" /> Check-in
+                  {checkIn.isPending ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <LogIn className="size-4" />
+                  )}
+                  Check-in
                 </Button>
               </div>
             )}
@@ -329,17 +326,13 @@ export default function BookingDetailPage() {
             )}
 
             {booking.status === 'confirmed' && (
+              // Secondary, destructive-tinted: no-show releases the room and can't be undone here,
+              // so it must not compete with Check-in for attention.
               <Button
-                variant="destructive"
-                className="w-full"
+                variant="outline"
+                className="w-full border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
                 disabled={busy}
-                onClick={() =>
-                  run(
-                    () => noShow.mutateAsync({ bookingId: booking.id }),
-                    'Marked as no-show.',
-                    'Failed to mark as no-show.'
-                  )
-                }
+                onClick={() => setConfirmNoShow(true)}
               >
                 <UserX className="size-4" /> Mark as no-show
               </Button>
@@ -362,6 +355,24 @@ export default function BookingDetailPage() {
         </div>
       </div>
 
+      <ConfirmDialog
+        open={confirmNoShow}
+        onClose={() => setConfirmNoShow(false)}
+        onConfirm={async () => {
+          await run(
+            () => noShow.mutateAsync({ bookingId: booking.id }),
+            'Marked as no-show.',
+            'Failed to mark as no-show.'
+          );
+          setConfirmNoShow(false);
+        }}
+        loading={noShow.isPending}
+        destructive
+        title="Mark as no-show?"
+        confirmLabel="Mark as no-show"
+        message={`${booking.customer.fullName} (${booking.bookingCode}) will be marked as a no-show and the held room released. This cannot be undone from the front desk.`}
+      />
+
       {booking.status === 'confirmed' && (
         <CheckInConfirmModal
           open={showCheckInConfirm}
@@ -378,7 +389,7 @@ export default function BookingDetailPage() {
           voucherCode={scanVoucher || booking.voucher?.voucherCode}
           warning={
             beforeWindow
-              ? `The check-in date (${formatDateShort(booking.checkInDate)}) has not arrived yet.`
+              ? `The check-in date (${formatDate(booking.checkInDate)}) has not arrived yet.`
               : null
           }
         />
@@ -407,11 +418,19 @@ function Card({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+/** Empty values read as "Not provided" rather than a bare dash, which looks like a bug. */
+function Row({ label, value }: { label: string; value: string | null | undefined }) {
+  const empty = value == null || value.trim() === '';
   return (
     <div className="flex justify-between gap-4 py-1 text-sm">
       <span className="text-slate-500">{label}</span>
-      <span className="text-right font-medium text-slate-900">{value}</span>
+      <span
+        className={
+          empty ? 'text-right text-slate-400 italic' : 'text-right font-medium text-slate-900'
+        }
+      >
+        {empty ? 'Not provided' : value}
+      </span>
     </div>
   );
 }

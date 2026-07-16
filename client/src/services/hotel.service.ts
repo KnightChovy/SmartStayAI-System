@@ -3,6 +3,7 @@ import type { Paginated } from '@/types/api.types';
 import type {
   AddHotelImagesDto,
   Hotel,
+  HotelDetail,
   HotelImage,
   HotelSearchParams,
   HotelSearchResult,
@@ -105,15 +106,11 @@ export const hotelService = {
   },
 
   /**
-   * Lấy thông tin khách sạn theo id.
-   * Backend hiện CHƯA có endpoint `GET /hotels/:id`, nên tạm tìm trong kết quả
-   * search (page lớn) rồi lọc theo id. Dùng cho trường hợp mở link chi tiết
-   * trực tiếp mà không có dữ liệu truyền qua router state.
+   * Chi tiết khách sạn theo id (`GET /hotels/:id`) — public, không cần đăng nhập.
+   * Trả đầy đủ tiện nghi / chính sách / địa điểm lân cận / loại phòng để dựng trang chi tiết.
    */
-  async getById(hotelId: string): Promise<HotelSearchResult | null> {
-    const { data } = await api.get<Paginated<HotelSearchResult>>('/hotels', {
-      params: { limit: 100 },
-    });
-    return data.results.find(h => h.id === hotelId) ?? null;
+  async getById(hotelId: string): Promise<HotelDetail> {
+    const { data } = await api.get<HotelDetail>(`/hotels/${hotelId}`);
+    return data;
   },
 };

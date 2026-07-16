@@ -1,5 +1,6 @@
 import { CalendarDays } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { DatePicker } from '@/components/ui/date-picker';
 import { cn } from '@/lib/cn';
 import { toDateInputValue } from '@/utils/formatDate';
 
@@ -11,15 +12,28 @@ interface DateRangePickerProps {
 }
 
 /**
- * Chọn ngày nhận/trả bằng input[type=date] gốc.
- * checkIn không được trước hôm nay; checkOut luôn sau checkIn.
+ * Chọn ngày nhận/trả — dùng chung DatePicker (shadcn Popover + Calendar) như các portal khác,
+ * thay cho `<input type="date">` gốc (mỗi trình duyệt một kiểu, trên iOS Safari là bánh xe cuộn).
+ *
+ * Ràng buộc ngày đẩy thẳng xuống lịch qua `min`/`max`: checkIn không được trước hôm nay,
+ * checkOut luôn phải sau checkIn — ngày không hợp lệ bị disable ngay trên lịch nên khách
+ * không chọn được rồi mới báo lỗi.
  */
-export default function DateRangePicker({ checkIn, checkOut, onChange, className }: DateRangePickerProps) {
+export default function DateRangePicker({
+  checkIn,
+  checkOut,
+  onChange,
+  className,
+}: DateRangePickerProps) {
   const { t } = useTranslation('common');
   const today = toDateInputValue(new Date());
 
   const handleCheckIn = (value: string) => {
-    // Nếu checkOut <= checkIn mới thì đẩy checkOut lên +1 ngày
+    if (!value) {
+      onChange({ checkIn: '', checkOut });
+      return;
+    }
+    // checkOut phải luôn sau checkIn — nếu không thì đẩy lên +1 ngày.
     let nextOut = checkOut;
     if (!checkOut || new Date(checkOut) <= new Date(value)) {
       const d = new Date(value);
@@ -29,32 +43,42 @@ export default function DateRangePicker({ checkIn, checkOut, onChange, className
     onChange({ checkIn: value, checkOut: nextOut });
   };
 
+  /** Ngày sớm nhất có thể trả phòng = hôm sau của ngày nhận. */
+  const minCheckOut = (() => {
+    if (!checkIn) return today;
+    const d = new Date(checkIn);
+    d.setDate(d.getDate() + 1);
+    return toDateInputValue(d);
+  })();
+
   return (
     <div className={cn('grid grid-cols-2 gap-2', className)}>
-      <label className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1">
         <span className="flex items-center gap-1.5 text-xs font-semibold text-on-surface-variant">
           <CalendarDays className="size-3.5" /> {t('checkIn')}
         </span>
-        <input
-          type="date"
+        <DatePicker
           value={checkIn}
+          onChange={handleCheckIn}
           min={today}
-          onChange={e => handleCheckIn(e.target.value)}
-          className="h-11 w-full min-w-0 rounded-xl border border-outline-variant/40 bg-surface px-3 text-sm text-on-surface outline-none focus:border-primary"
+          placeholder={t('checkIn')}
+          clearLabel={t('clearDate')}
+          className="rounded-xl border-outline-variant/40"
         />
-      </label>
-      <label className="flex flex-col gap-1">
+      </div>
+      <div className="flex flex-col gap-1">
         <span className="flex items-center gap-1.5 text-xs font-semibold text-on-surface-variant">
           <CalendarDays className="size-3.5" /> {t('checkOut')}
         </span>
-        <input
-          type="date"
+        <DatePicker
           value={checkOut}
-          min={checkIn || today}
-          onChange={e => onChange({ checkIn, checkOut: e.target.value })}
-          className="h-11 w-full min-w-0 rounded-xl border border-outline-variant/40 bg-surface px-3 text-sm text-on-surface outline-none focus:border-primary"
+          onChange={value => onChange({ checkIn, checkOut: value })}
+          min={minCheckOut}
+          placeholder={t('checkOut')}
+          clearLabel={t('clearDate')}
+          className="rounded-xl border-outline-variant/40"
         />
-      </label>
+      </div>
     </div>
   );
 }

@@ -66,4 +66,14 @@ i18n
     },
   });
 
+/**
+ * Đồng bộ `<html lang>` với ngôn ngữ đang dùng (WCAG 3.1.1) — nếu để `lang="en"` tĩnh
+ * trong index.html thì trình đọc màn hình sẽ phát âm sai toàn bộ nội dung tiếng Việt.
+ */
+function syncHtmlLang(lng: string) {
+  document.documentElement.lang = lng;
+}
+syncHtmlLang(i18n.resolvedLanguage ?? 'vi');
+i18n.on('languageChanged', syncHtmlLang);
+
 export default i18n;

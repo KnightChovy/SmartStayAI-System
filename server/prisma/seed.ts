@@ -575,6 +575,10 @@ async function main() {
           create: [
             { policyType: 'cancellation', description: 'Huỷ miễn phí trước 48 giờ so với giờ nhận phòng.' },
             { policyType: 'deposit', description: 'Đặt cọc minibar khi nhận phòng, hoàn lại lúc trả phòng.', amount: 200_000, isPercentage: false, chargeFrequency: 'per_stay' },
+            // Hai dòng dưới được engine tính giá đọc (booking.service.computeTaxAndFees) và cộng vào
+            // tổng đơn: một khoản theo phần trăm, một khoản cố định theo đêm.
+            { policyType: 'tax', code: 'VAT', description: 'Thuế giá trị gia tăng 8%.', amount: 8, isPercentage: true },
+            { policyType: 'fee', code: 'SERVICE', description: 'Phí dịch vụ 50.000đ mỗi đêm.', amount: 50_000, isPercentage: false, chargeFrequency: 'per_night' },
           ],
         },
         nearbyPlaces: {

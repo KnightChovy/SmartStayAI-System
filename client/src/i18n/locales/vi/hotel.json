@@ -1,5 +1,4 @@
 {
-  "backToResults": "Về kết quả tìm kiếm",
   "location": "Vị trí",
   "checkInTime": "Nhận phòng {{time}}",
   "checkOutTime": " · Trả phòng {{time}}",
@@ -8,16 +7,117 @@
   "noRoomsTitle": "Không còn phòng",
   "noRoomsDesc": "Không có phòng phù hợp với ngày hoặc số khách của bạn. Hãy thử ngày khác.",
   "pickDates": "Chọn ngày để đặt",
+  "starHotel_one": "Khách sạn {{count}} sao",
+  "starHotel_other": "Khách sạn {{count}} sao",
+  "starAria": "Hạng khách sạn: {{count}} trên 5 sao",
+  "galleryAlt": "{{name}} — ảnh {{index}} trên {{total}}",
+  "trust": {
+    "verified": "Khách sạn đã xác minh",
+    "securePayment": "Thanh toán an toàn",
+    "instantVoucher": "Nhận e-voucher ngay"
+  },
+  "amenities": {
+    "title": "Tiện nghi",
+    "showAll": "Xem tất cả {{count}} tiện nghi",
+    "showLess": "Thu gọn"
+  },
+  "policies": {
+    "title": "Chính sách",
+    "checkInOut": "Nhận phòng / Trả phòng",
+    "from": "Từ {{time}}",
+    "until": "Đến {{time}}",
+    "cancellation": "Hủy phòng",
+    "children": "Trẻ em",
+    "pets": "Thú cưng",
+    "petsNotAllowed": "Không cho phép thú cưng",
+    "petsAllowed": "Cho phép mang thú cưng",
+    "petsOnRequest": "Cho phép thú cưng nếu báo trước",
+    "smoking": "Hút thuốc",
+    "smokingAllowed": "Cho phép hút thuốc",
+    "smokingNotAllowed": "Không hút thuốc trong toàn bộ khách sạn",
+    "minGuestAge": "Độ tuổi tối thiểu",
+    "minGuestAgeValue": "Khách nhận phòng phải từ {{age}} tuổi trở lên",
+    "maxStay": "Số đêm tối đa",
+    "maxStayValue_one": "Tối đa {{count}} đêm mỗi lượt đặt",
+    "maxStayValue_other": "Tối đa {{count}} đêm mỗi lượt đặt",
+    "deposit": "Tiền cọc",
+    "depositValue": "{{amount}} thu khi nhận phòng, hoàn lại lúc trả phòng",
+    "languages": "Ngôn ngữ phục vụ",
+    "tax": "Thuế",
+    "fee": "Phụ phí",
+    "parking": "Đỗ xe",
+    "internet": "Internet"
+  },
+  "nearby": {
+    "title": "Địa điểm lân cận",
+    "minutes": "{{count}} phút"
+  },
+  "reviews": {
+    "title": "Đánh giá của khách",
+    "count_one": "{{count}} đánh giá",
+    "count_other": "{{count}} đánh giá",
+    "aria": "Điểm đánh giá của khách {{score}} trên 5, dựa trên {{count}} đánh giá",
+    "newTitle": "Mới trên Smart Stay",
+    "newDesc": "Khách sạn này chưa có đánh giá nào. Hãy là người đầu tiên đánh giá sau khi lưu trú.",
+    "guest": "Khách",
+    "showingRecent": "Đang hiện {{shown}} đánh giá mới nhất trong tổng {{total}}.",
+    "sampleNote": "Điểm được tính trung bình từ {{limit}} đánh giá mới nhất.",
+    "photoAlt": "Ảnh khách chụp tại khách sạn",
+    "cleanliness": "Sạch sẽ",
+    "service": "Dịch vụ",
+    "locationScore": "Vị trí",
+    "value": "Đáng giá tiền",
+    "exceptional": "Tuyệt hảo",
+    "excellent": "Tuyệt vời",
+    "veryGood": "Rất tốt",
+    "good": "Tốt",
+    "score": "Điểm đánh giá"
+  },
   "room": {
     "upTo": "Tối đa {{count}}",
     "roomsLeft_one": "Chỉ còn {{count}} phòng!",
     "roomsLeft_other": "Chỉ còn {{count}} phòng!",
     "roomsAvailable": "Còn {{count}} phòng",
-    "nightsTotal_one": "Tổng {{count}} đêm",
-    "nightsTotal_other": "Tổng {{count}} đêm",
+    "nightsTotal_one": "{{count}} đêm",
+    "nightsTotal_other": "{{count}} đêm",
     "totalSuffix": "tổng",
     "from": "Từ",
     "perNight": "/ đêm",
-    "bookNow": "Đặt ngay"
-  }
+    "bookNow": "Đặt ngay",
+    "inclTaxes": "Đã bao gồm thuế & phí",
+    "adults_one": "{{count}} người lớn",
+    "adults_other": "{{count}} người lớn",
+    "children_one": "{{count}} trẻ em",
+    "children_other": "{{count}} trẻ em",
+    "nonSmoking": "Không hút thuốc",
+    "privateBathroom": "Phòng tắm riêng",
+    "balcony": "Ban công",
+    "bedsLabel": "Giường",
+    "bestValue": "Đáng tiền nhất"
+  },
+  "gallery": {
+    "close": "Đóng thư viện ảnh",
+    "prev": "Ảnh trước",
+    "next": "Ảnh tiếp theo",
+    "viewAll": "Xem tất cả {{count}} ảnh"
+  },
+  "compare": {
+    "toggle": "So sánh phòng",
+    "hide": "Ẩn so sánh",
+    "caption": "So sánh loại phòng — ô khác biệt được tô sáng",
+    "feature": "Tiêu chí",
+    "price": "Giá",
+    "occupancy": "Số khách",
+    "bed": "Giường",
+    "size": "Diện tích",
+    "view": "Hướng nhìn",
+    "included": "Có",
+    "notIncluded": "Không có"
+  },
+  "contacts": {
+    "title": "Liên hệ khách sạn",
+    "phone": "Điện thoại",
+    "email": "Email"
+  },
+  "viewDetails": "Xem chi tiết"
 }

@@ -43,6 +43,16 @@ export interface HotelReviewsParams {
   page?: number;
 }
 
+/**
+ * Params cho review CÔNG KHAI của 1 khách sạn (`GET /reviews?hotelId=`) — ai cũng xem được,
+ * BE chỉ trả review `published`. Không có `status` (public luôn là published).
+ */
+export interface PublicReviewsParams {
+  sortBy?: string;
+  limit?: number;
+  page?: number;
+}
+
 export type HotelReviewsResponse = Paginated<HotelReview>;
 
 /** Thống kê tổng hợp review (`GET /hotels/:id/reviews/stats`, tính trên review đã published). */

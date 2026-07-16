@@ -436,6 +436,7 @@ model User {
   bookings                      Booking[]                   @relation("bookingCustomer")
   reviews                       Review[]                    @relation("reviewCustomer")
   refunds                       Refund[]                    @relation("refundRequester")
+  reviewedRefunds               Refund[]                    @relation("refundReviewer")
   readAlerts                    SmartAlert[]                @relation("alertReader")
   assignedConversations         Conversation[]              @relation("conversationAssignee")
   messages                      Message[]                   @relation("messageSender")
@@ -813,8 +814,14 @@ model Booking {
   numNights          Int           @map("num_nights") @db.SmallInt
   numGuests          Int           @map("num_guests") @db.SmallInt
   basePricePerNight  Decimal       @map("base_price_per_night") @db.Decimal(12, 2)
+  // Tiền phòng thuần (giá từng đêm cộng lại, đã áp pricing rule) — CHƯA gồm thuế/phí
   subtotal           Decimal       @db.Decimal(12, 2)
   discountAmount     Decimal       @default(0) @map("discount_amount") @db.Decimal(12, 2)
+  // Thuế (VAT...) và phí dịch vụ, tính từ HotelPolicy(policyType: tax|fee) tại thời điểm đặt và
+  // ĐÓNG BĂNG ở đây — khách sạn đổi chính sách sau này không được làm đổi giá đơn đã chốt.
+  // totalAmount = subtotal − discountAmount + taxAmount + feeAmount
+  taxAmount          Decimal       @default(0) @map("tax_amount") @db.Decimal(12, 2)
+  feeAmount          Decimal       @default(0) @map("fee_amount") @db.Decimal(12, 2)
   totalAmount        Decimal       @map("total_amount") @db.Decimal(12, 2)
   status             BookingStatus
   source             BookingSource
@@ -884,6 +891,8 @@ model Payment {
   @@map("payments")
 }
 
+// Yêu cầu hoàn tiền. Vòng đời: pending (khách huỷ, chờ KS duyệt) → approved → processed (đã chuyển
+// khoản thật) | rejected. Tiền chỉ thực sự rời ví/commission ở bước processed, không phải lúc huỷ.
 model Refund {
   id                  String       @id @default(uuid()) @db.Uuid
   paymentId           String       @map("payment_id") @db.Uuid
@@ -893,6 +902,11 @@ model Refund {
   amount              Decimal      @db.Decimal(12, 2)
   reason              String
   status              RefundStatus
+  // Người của khách sạn (chủ KS/manager/staff) duyệt hoặc từ chối yêu cầu
+  reviewedBy          String?      @map("reviewed_by") @db.Uuid
+  reviewer            User?        @relation("refundReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  reviewedAt          DateTime?    @map("reviewed_at")
+  rejectionReason     String?      @map("rejection_reason")
   refundTransactionId String?      @map("refund_transaction_id")
   processedAt         DateTime?    @map("processed_at")
   createdAt           DateTime     @default(now()) @map("created_at")

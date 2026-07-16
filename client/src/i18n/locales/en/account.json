@@ -31,7 +31,6 @@
     "findStay": "Find a stay"
   },
   "detail": {
-    "back": "My bookings",
     "notFound": "Booking not found.",
     "backToBookings": "Back to my bookings",
     "bookingCode": "Booking code",

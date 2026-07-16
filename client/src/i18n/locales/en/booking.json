@@ -15,12 +15,20 @@
     "email": "Email",
     "specialRequests": "Special requests (optional)",
     "specialRequestsPlaceholder": "Late check-in, high floor, extra bed…",
-    "continue": "Continue to payment"
+    "continue": "Continue to payment",
+    "requiredMark": "required"
   },
   "payment": {
     "title": "Payment method",
     "secureNote": "You'll be securely redirected to VNPay to complete your payment.",
-    "review": "Review booking"
+    "review": "Review booking",
+    "notCharged": "You won't be charged until you complete payment at the gateway.",
+    "sepayNote": "You'll get a QR code to transfer to — we confirm your booking automatically."
+  },
+  "trust": {
+    "inclTaxes": "Includes taxes & fees",
+    "cancellation": "Cancellation policy",
+    "cancellationFallback": "Cancellation terms are set by the property — see the property's policies."
   },
   "confirm": {
     "title": "Review & confirm",
@@ -40,13 +48,26 @@
   },
   "summary": {
     "roomLine_one": "Room × {{count}} night",
-    "roomLine_other": "Room × {{count}} nights"
+    "roomLine_other": "Room × {{count}} nights",
+    "perNightLine_one": "{{price}} × {{count}} night",
+    "perNightLine_other": "{{price}} × {{count}} nights",
+    "taxesFees": "Taxes & fees",
+    "included": "Included",
+    "totalInclTaxes": "Total (incl. taxes & fees)",
+    "checkInFrom": "Check in from {{time}}",
+    "checkOutUntil": "out by {{time}}",
+    "maxOccupancy_one": "(max {{count}} guest per room)",
+    "maxOccupancy_other": "(max {{count}} guests per room)"
   },
   "methods": {
-    "vnpay": { "label": "VNPAY", "desc": "Pay via VNPAY QR / bank app" },
-    "sepay": { "label": "SePay", "desc": "Bank transfer with auto-confirm" },
-    "stripe": { "label": "Credit / Debit card", "desc": "Visa, Mastercard, JCB" },
-    "cash": { "label": "Pay at property", "desc": "Cash on check-in" }
+    "vnpay": {
+      "label": "VNPAY",
+      "desc": "Pay via VNPAY QR / bank app"
+    },
+    "sepay": {
+      "label": "SePay",
+      "desc": "Bank transfer with auto-confirm"
+    }
   },
   "result": {
     "successTitle": "Payment successful!",
@@ -64,5 +85,19 @@
     "totalPaid": "Total paid: ",
     "saveVoucher": "Save voucher",
     "viewBookings": "View my bookings"
+  },
+  "sepay": {
+    "title": "Bank transfer (SePay)",
+    "subtitle": "Scan the QR or transfer manually",
+    "close": "Close",
+    "qrAlt": "VietQR code for this bank transfer",
+    "amount": "Amount",
+    "bank": "Bank",
+    "account": "Account number",
+    "content": "Transfer content",
+    "keepContent": "Keep the transfer content exactly as shown — it is how we match your payment automatically.",
+    "waiting": "Waiting for your transfer…",
+    "payLater": "Pay later",
+    "copied": "Copied"
   }
 }

@@ -1,6 +1,7 @@
-import { useMemo, type ComponentType } from 'react';
+import { useMemo, useState, type ComponentType } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { LogIn, LogOut, BedDouble, Clock, ArrowRight } from 'lucide-react';
+import { cn } from '@/lib/cn';
 import { useHotelBookings } from '@/hooks/staff';
 import { useStaffHotelStore } from '@/stores/staffHotelStore';
 import { BookingStatusBadge } from '@/components/staff/StatusBadge';
@@ -35,12 +36,18 @@ interface StatCardProps {
   value: number;
   icon: ComponentType<{ className?: string }>;
   tone: string;
+  /** Front desk filter this KPI drills into. */
+  to: string;
   loading?: boolean;
 }
 
-function StatCard({ label, value, icon: Icon, tone, loading }: StatCardProps) {
+/** KPI tile — always a link, so the number and the list behind it can't drift apart. */
+function StatCard({ label, value, icon: Icon, tone, to, loading }: StatCardProps) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4">
+    <Link
+      to={to}
+      className="group cursor-pointer rounded-xl border border-slate-200 bg-white p-4 transition-colors hover:border-slate-300 hover:bg-slate-50"
+    >
       <div className={`mb-3 flex size-9 items-center justify-center rounded-lg ${tone}`}>
         <Icon className="size-5" />
       </div>
@@ -49,8 +56,11 @@ function StatCard({ label, value, icon: Icon, tone, loading }: StatCardProps) {
       ) : (
         <p className="text-2xl font-bold text-slate-900">{value}</p>
       )}
-      <p className="mt-0.5 text-xs text-slate-500">{label}</p>
-    </div>
+      <p className="mt-0.5 flex items-center gap-1 text-xs text-slate-500">
+        {label}
+        <ArrowRight className="size-3 opacity-0 transition-opacity group-hover:opacity-100" />
+      </p>
+    </Link>
   );
 }
 
@@ -73,8 +83,8 @@ const columns: Column<HotelBooking>[] = [
   },
   {
     id: 'dates',
-    header: 'Check-in → Check-out',
-    className: 'hidden md:table-cell',
+    header: <span className="whitespace-nowrap">Check-in → Check-out</span>,
+    className: 'hidden md:table-cell whitespace-nowrap',
     cell: b => (
       <span className="text-slate-600">
         {formatDate(b.checkInDate)} → {formatDate(b.checkOutDate)}
@@ -85,15 +95,19 @@ const columns: Column<HotelBooking>[] = [
     id: 'status',
     header: 'Status',
     align: 'right',
+    className: 'whitespace-nowrap',
     cell: b => <BookingStatusBadge status={b.status} />,
   },
 ];
 
+const RANGE_OPTIONS = [7, 14, 30] as const;
+
 export default function StaffDashboardPage() {
   const hotel = useStaffHotelStore(state => state.hotel);
+  const [rangeDays, setRangeDays] = useState<number>(14);
   const { data, isLoading, isError } = useHotelBookings(hotel?.id, { limit: 100 });
 
-  const bookings: HotelBooking[] = data?.results ?? [];
+  const bookings: HotelBooking[] = useMemo(() => data?.results ?? [], [data]);
   const today = new Date();
 
   const arrivals = bookings.filter(
@@ -105,7 +119,10 @@ export default function StaffDashboardPage() {
   const inHouse = bookings.filter(b => b.status === 'checked_in');
   const pendingPayment = bookings.filter(b => b.status === 'pending');
 
-  const dailySeries = useMemo(() => buildDailySeries(bookings, 14), [bookings]);
+  const dailySeries = useMemo(
+    () => buildDailySeries(bookings, rangeDays),
+    [bookings, rangeDays]
+  );
   const statusSlices = useMemo(() => buildStatusSlices(bookings), [bookings]);
   const roomTypeBars = useMemo(() => buildRoomTypeBars(bookings), [bookings]);
 
@@ -124,21 +141,70 @@ export default function StaffDashboardPage() {
       )}
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <StatCard label="Arrivals today" value={arrivals.length} icon={LogIn} tone="bg-blue-100 text-blue-700" loading={isLoading} />
-        <StatCard label="Departures" value={departures.length} icon={LogOut} tone="bg-amber-100 text-amber-700" loading={isLoading} />
-        <StatCard label="In-house" value={inHouse.length} icon={BedDouble} tone="bg-emerald-100 text-emerald-700" loading={isLoading} />
-        <StatCard label="Awaiting payment" value={pendingPayment.length} icon={Clock} tone="bg-rose-100 text-rose-700" loading={isLoading} />
+        <StatCard
+          label="Arrivals today"
+          value={arrivals.length}
+          icon={LogIn}
+          tone="bg-blue-100 text-blue-700"
+          to={`${ROUTES.staffFrontDesk}?bucket=checkin`}
+          loading={isLoading}
+        />
+        <StatCard
+          label="Departures"
+          value={departures.length}
+          icon={LogOut}
+          tone="bg-amber-100 text-amber-700"
+          to={`${ROUTES.staffFrontDesk}?bucket=departure`}
+          loading={isLoading}
+        />
+        <StatCard
+          label="In-house"
+          value={inHouse.length}
+          icon={BedDouble}
+          tone="bg-emerald-100 text-emerald-700"
+          to={`${ROUTES.staffFrontDesk}?bucket=inhouse`}
+          loading={isLoading}
+        />
+        <StatCard
+          label="Awaiting payment"
+          value={pendingPayment.length}
+          icon={Clock}
+          tone="bg-rose-100 text-rose-700"
+          to={`${ROUTES.staffFrontDesk}?bucket=pending`}
+          loading={isLoading}
+        />
       </div>
 
       {/* Charts */}
       <div className="grid gap-6 lg:grid-cols-3">
         <ChartCard
           title="Revenue & bookings"
-          subtitle="Last 14 days"
+          subtitle={`Last ${rangeDays} days · bars = revenue (left axis), line = bookings (right axis)`}
           className="lg:col-span-3"
+          action={
+            <div className="flex shrink-0 gap-1 rounded-lg bg-slate-100 p-0.5">
+              {RANGE_OPTIONS.map(days => (
+                <button
+                  key={days}
+                  type="button"
+                  onClick={() => setRangeDays(days)}
+                  className={cn(
+                    'rounded-md px-2 py-1 text-xs font-medium transition-colors',
+                    rangeDays === days
+                      ? 'bg-white text-slate-900 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-700'
+                  )}
+                >
+                  {days}d
+                </button>
+              ))}
+            </div>
+          }
         >
           {isLoading ? (
             <Skeleton className="h-70 w-full" />
+          ) : dailySeries.every(d => d.revenue === 0 && d.bookings === 0) ? (
+            <ChartEmpty height={280} />
           ) : (
             <RevenueBookingsChart data={dailySeries} />
           )}
