@@ -6,6 +6,7 @@ import { Text } from '@/components/ui/text';
 import { Heading } from '@/components/ui/heading';
 import { useGetMyBookings } from '@/hooks/bookings';
 import type { Booking, BookingStatus } from '@/types/bookings.type';
+import { GUEST_COLORS } from '@/constants/guestTheme';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -47,7 +48,7 @@ function bookingToNotification(b: Booking): NotificationItem {
       title: 'Booking cancelled', body: `Your booking at ${hotel} was cancelled.`,
     },
     no_show: {
-      icon: 'alert-circle-outline', iconBg: '#F3F4F6', iconColor: '#6B7280',
+      icon: 'alert-circle-outline', iconBg: '#F3F4F6', iconColor: GUEST_COLORS.onSurfaceVariant,
       title: 'Missed booking', body: `You didn't check in at ${hotel}.`,
     },
   };
@@ -64,26 +65,26 @@ export default function NotificationsScreen() {
     .sort((a, b) => (a.date < b.date ? 1 : -1));
 
   return (
-    <SafeAreaView className="flex-1 bg-navy" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-on-surface" edges={['top']}>
       {/* Header */}
-      <View className="flex-row items-center gap-3 px-4 pt-2 pb-3 bg-white border-b border-gray-100">
+      <View className="flex-row items-center gap-3 px-4 pt-2 pb-3 bg-surface border-b border-hairline/30">
         <Pressable onPress={() => router.back()} hitSlop={8} className="w-9 h-9 items-center justify-center">
-          <Ionicons name="arrow-back" size={22} color="#0B1D45" />
+          <Ionicons name="arrow-back" size={22} color={GUEST_COLORS.onSurface} />
         </Pressable>
-        <Heading size="lg" className="text-navy">Notifications</Heading>
+        <Heading size="lg" className="font-bevi-bold text-on-surface">Notifications</Heading>
       </View>
 
-      <View className="flex-1 bg-white">
+      <View className="flex-1 bg-surface">
       {isLoading ? (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#0B1D45" />
+          <ActivityIndicator size="large" color={GUEST_COLORS.onSurface} />
         </View>
       ) : isError ? (
         <View className="flex-1 items-center justify-center gap-3 px-8">
-          <Ionicons name="cloud-offline-outline" size={48} color="#D1D5DB" />
-          <Text className="text-gray-400 text-center">Couldn't load notifications.</Text>
-          <Pressable onPress={() => refetch()} className="bg-navy rounded-xl px-5 py-2.5">
-            <Text bold className="text-white">Retry</Text>
+          <Ionicons name="cloud-offline-outline" size={48} color={GUEST_COLORS.hairline} />
+          <Text className="font-bevi text-muted text-center">Couldn't load notifications.</Text>
+          <Pressable onPress={() => refetch()} className="bg-on-surface rounded-field px-5 py-2.5">
+            <Text bold className="font-bevi-bold text-white">Retry</Text>
           </Pressable>
         </View>
       ) : (
@@ -95,24 +96,24 @@ export default function NotificationsScreen() {
           refreshing={isRefetching}
           ListEmptyComponent={
             <View className="items-center justify-center gap-3 mt-24">
-              <Ionicons name="notifications-off-outline" size={56} color="#D1D5DB" />
-              <Text bold className="text-gray-400 text-base">No notifications yet</Text>
-              <Text size="sm" className="text-gray-300 text-center">
+              <Ionicons name="notifications-off-outline" size={56} color={GUEST_COLORS.hairline} />
+              <Text bold className="font-bevi-bold text-muted text-base">No notifications yet</Text>
+              <Text size="sm" className="font-bevi text-hairline text-center">
                 Updates about your bookings will appear here.
               </Text>
             </View>
           }
           renderItem={({ item }) => (
-            <View className="flex-row items-start gap-3 bg-white rounded-2xl p-4 border border-gray-100">
+            <View className="flex-row items-start gap-3 bg-surface rounded-card p-4 border border-hairline/30">
               <View className="w-10 h-10 rounded-full items-center justify-center" style={{ backgroundColor: item.iconBg }}>
                 <Ionicons name={item.icon} size={20} color={item.iconColor} />
               </View>
               <View className="flex-1">
                 <View className="flex-row items-center justify-between">
-                  <Text bold className="text-navy text-sm flex-1 mr-2" numberOfLines={1}>{item.title}</Text>
-                  <Text size="2xs" className="text-gray-400">{item.date}</Text>
+                  <Text bold className="font-bevi-bold text-on-surface text-sm flex-1 mr-2" numberOfLines={1}>{item.title}</Text>
+                  <Text size="2xs" className="font-bevi text-muted">{item.date}</Text>
                 </View>
-                <Text size="sm" className="text-gray-600 mt-0.5 leading-5">{item.body}</Text>
+                <Text size="sm" className="font-bevi text-on-surface-variant mt-0.5 leading-5">{item.body}</Text>
               </View>
             </View>
           )}
