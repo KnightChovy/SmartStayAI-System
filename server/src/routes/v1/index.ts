@@ -12,6 +12,7 @@ import amenityRoute from './amenity.route';
 import internalRoute from './internal.route';
 import adminRoute from './admin.route';
 import platformManagerRoute from './platform-manager.route';
+import notificationRoute from './notification.route';
 import docsRoute from './docs.route';
 
 const router = express.Router();
@@ -71,6 +72,11 @@ const defaultRoutes = [
     // Analytics & hiệu suất toàn sàn cho Platform Manager (admin cũng truy cập được)
     path: '/platform-manager',
     route: platformManagerRoute,
+  },
+  {
+    // Thông báo của người dùng đang đăng nhập (in-app notifications)
+    path: '/notifications',
+    route: notificationRoute,
   },
   {
     // Swagger UI — bật ở MỌI môi trường (kể cả production) để FE/hội đồng xem tài liệu API khi deploy
