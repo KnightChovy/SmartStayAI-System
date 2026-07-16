@@ -72,7 +72,7 @@ export class RefundService {
     return this.query(where, options);
   };
 
-  /** [Admin/PM] Danh sách yêu cầu hoàn tiền TOÀN SÀN, lọc thêm theo khách sạn nếu cần. */
+  /** [Platform Manager] Danh sách yêu cầu hoàn tiền TOÀN SÀN, lọc thêm theo khách sạn nếu cần. */
   listAllRefunds = async (filter: RefundFilter, options: RefundQueryOptions) => {
     const where: Prisma.RefundWhereInput = {};
     if (filter.status) {
@@ -121,11 +121,16 @@ export class RefundService {
   };
 
   /**
-   * [Admin] Đánh dấu ĐÃ CHUYỂN KHOẢN xong cho một yêu cầu đã duyệt.
+   * [Platform Manager] Đánh dấu ĐÃ CHUYỂN KHOẢN xong cho một yêu cầu đã được khách sạn duyệt.
+   *
+   * Vì sao là Platform Manager mà không phải khách sạn: tiền khách trả nằm ở TÀI KHOẢN CỦA PLATFORM
+   * (mô hình escrow) — ví khách sạn chỉ là con số ghi sổ, KS không cầm tiền nên không thể tự hoàn.
+   * Khách sạn quyết định CÓ hoàn hay không (reviewRefund), Platform Manager THỰC THI chuyển khoản.
+   *
    * Đây là nơi DUY NHẤT tiền thực sự rời khỏi khách sạn — trong một transaction:
    *   Refund → processed, Payment → refunded (nếu hoàn 100%),
    *   commission tính lại trên phần KS THỰC GIỮ, và ví trừ đúng phần net chênh lệch.
-   * @param refundTransactionId mã giao dịch chuyển khoản THẬT do admin nhập (không phải mã giả lập)
+   * @param payload.refundTransactionId mã giao dịch chuyển khoản THẬT (không phải mã giả lập)
    */
   processRefund = async (refundId: string, currentUser: User, payload: ProcessRefundDto) => {
     const refund = await prisma.refund.findUnique({

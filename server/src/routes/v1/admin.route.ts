@@ -1,8 +1,8 @@
 import express from 'express';
 import auth from '../../middlewares/auth';
 import validate from '../../middlewares/validate';
-import { adminValidation, refundValidation } from '../../validations';
-import { adminController, refundController } from '../../controllers';
+import { adminValidation } from '../../validations';
+import { adminController } from '../../controllers';
 
 const router = express.Router();
 
@@ -21,16 +21,8 @@ router.patch(
   adminController.settleCommission
 );
 
-// ===== Hoàn tiền — admin xem toàn sàn + đánh dấu đã chuyển khoản (manageCommissions) =====
-// Duyệt/từ chối là việc của khách sạn (PATCH /hotels/:hotelId/refunds/:refundId/review),
-// admin chỉ THỰC THI chuyển khoản cho các yêu cầu đã được duyệt.
-router.get('/refunds', auth('manageCommissions'), validate(refundValidation.listAllRefunds), refundController.listAllRefunds);
-router.patch(
-  '/refunds/:refundId/process',
-  auth('manageCommissions'),
-  validate(refundValidation.processRefund),
-  refundController.processRefund
-);
+// Hoàn tiền đã chuyển sang /platform-manager/refunds (platform-manager.route.ts) —
+// Platform Manager là người giữ tài khoản nhận tiền nên họ thực thi chuyển khoản hoàn.
 
 // ===== Pha 4 — Giám sát khách sạn (manageHotels) =====
 router.get('/hotels', auth('manageHotels'), validate(adminValidation.listHotels), adminController.listHotels);

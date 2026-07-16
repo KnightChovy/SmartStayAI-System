@@ -2483,8 +2483,9 @@ paths:
         If the booking was paid, the refund amount is computed from the hotel's cancellation policy
         (default: full refund if cancelled ≥48h before check-in, otherwise the first night is kept as
         a penalty) and a **refund REQUEST is created with status `pending`** — the money is NOT sent
-        yet. The hotel reviews it (PATCH /hotels/{hotelId}/refunds/{refundId}/review), then the admin
-        transfers the money and marks it processed (PATCH /admin/refunds/{refundId}/process). The
+        yet. The hotel reviews it (PATCH /hotels/{hotelId}/refunds/{refundId}/review), then the
+        Platform Manager transfers the money and marks it processed
+        (PATCH /platform-manager/refunds/{refundId}/process). The
         Payment status, platform commission and hotel wallet are only touched at that final step, so a
         rejected request never wrongly debits the hotel.
 
@@ -2577,7 +2578,7 @@ paths:
       summary: List refund requests for a hotel (owner/manager/assigned staff)
       description: >
         Refund requests raised when a guest cancels a paid booking. The hotel side reviews them
-        (approve/reject); the platform admin is the one who actually transfers the money afterwards.
+        (approve/reject); the Platform Manager is the one who actually transfers the money afterwards.
         Filter by `status` to get the review queue (`pending`).
       tags: [Refunds]
       security:
@@ -2621,7 +2622,7 @@ paths:
       summary: Approve or reject a refund request (hotel side)
       description: >
         Only a `pending` request can be reviewed. Approving does NOT move money — it just authorises
-        the platform admin to transfer it (see PATCH /admin/refunds/{refundId}/process).
+        the Platform Manager to transfer it (see PATCH /platform-manager/refunds/{refundId}/process).
         Rejecting requires a reason. Uses a conditional update so two reviewers racing cannot both win.
       tags: [Refunds]
       security:
@@ -2671,9 +2672,9 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /admin/refunds:
+  /platform-manager/refunds:
     get:
-      summary: List refund requests platform-wide (admin/PM)
+      summary: List refund requests platform-wide (Platform Manager)
       description: Requires `manageCommissions`. Filter by status/hotel — use `status=approved` to get the payout queue.
       tags: [Refunds]
       security:
@@ -2711,12 +2712,17 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
 
-  /admin/refunds/{refundId}/process:
+  /platform-manager/refunds/{refundId}/process:
     patch:
-      summary: Mark an approved refund as transferred (admin)
+      summary: Mark an approved refund as transferred (Platform Manager)
       description: >
         Requires `manageCommissions`. Call this AFTER the money has actually been transferred back to
         the guest, passing the real bank/gateway transaction id.
+
+
+        Why the Platform Manager and not the hotel: guest money lands in the PLATFORM's bank account
+        (escrow) — the hotel wallet is only a ledger balance, so the hotel has no money to send back.
+        The hotel decides WHETHER to refund (review); the Platform Manager EXECUTES the transfer.
 
 
         This is the ONLY place money actually leaves the hotel. In one transaction it sets the refund
