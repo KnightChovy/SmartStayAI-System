@@ -37,28 +37,20 @@
   "clearDate": "Xoá ngày",
   "search": "Tìm kiếm",
   "chat": {
-    "subtitle": "Trợ lý số đang trực",
-    "greeting": "Xin chào! Tôi là trợ lý AI của SmartStay. Bạn chọn một khách sạn bên dưới, hoặc cho tôi biết bạn muốn đi đâu nhé.",
-    "chats": "Đoạn chat",
-    "newChat": "Nhắn với khách sạn khác",
+    "subtitle": "Trợ lý tìm khách sạn toàn sàn",
+    "greeting": "Xin chào! Tôi là trợ lý AI của SmartStay. Bạn muốn nghỉ ở đâu, khoảng ngày nào? Tôi sẽ tìm và gợi ý khách sạn phù hợp trên sàn.",
     "ai": "Trợ lý AI",
     "frontDesk": "Lễ tân",
-    "connected": "Đã kết nối lễ tân — nhân viên sẽ trả lời ngay tại đây. Bạn cứ nhắn tiếp.",
     "placeholder": "Nhập tin nhắn…",
     "send": "Gửi tin nhắn",
     "open": "Mở khung chat",
     "close": "Đóng khung chat",
-    "from": "từ",
-    "signInPrompt": "Vui lòng đăng nhập để chat với lễ tân khách sạn này. Sau khi đăng nhập, tôi có thể giúp bạn về phòng, tiện nghi và tình trạng đặt phòng.",
     "error": "Xin lỗi, hiện chưa kết nối được với trợ lý. Bạn thử lại giúp nhé.",
     "switchError": "Xin lỗi, hiện chưa chuyển được cuộc trò chuyện. Bạn thử lại giúp nhé.",
     "quick": {
       "stays": "Chỗ nghỉ ở Đà Nẵng",
-      "deals": "Ưu đãi cuối tuần",
-      "loyalty": "Điểm tích luỹ của tôi",
-      "availability": "Còn phòng trống không?",
-      "amenities": "Tiện nghi khách sạn",
-      "bookingStatus": "Tình trạng đặt phòng"
+      "hanoi": "Khách sạn ở Hà Nội",
+      "suggest": "Gợi ý khách sạn cho tôi"
     }
   }
 }

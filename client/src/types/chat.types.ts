@@ -1,16 +1,8 @@
 /**
- * Type cho chat Digital Concierge. Model theo DB `messages`:
- * - senderType: user | ai_bot | staff | system  → ở client gộp 'user' | 'ai'
+ * Type cho chat của khách. Model theo DB `messages`:
+ * - senderType: user | ai_bot | staff | system  → ở client gộp 'user' | 'ai' | 'staff'
  * - messageType: text | quick_reply | booking_card | image
- * `recommendations` ứng với booking_card (gợi ý phòng/khách sạn).
  */
-export interface ChatRecommendation {
-  id: string;
-  name: string;
-  city: string;
-  minPrice: string | null;
-  imageUrl?: string;
-}
 
 /** Ai nói câu này, theo góc nhìn khung chat của khách ('staff' = lễ tân người thật). */
 export type ChatSender = 'user' | 'ai' | 'staff';
@@ -21,8 +13,6 @@ export interface Message {
   sender: ChatSender;
   text: string;
   time: string;
-  /** Gợi ý khách sạn (booking_card) — bấm để mở trang chi tiết. */
-  recommendations?: ChatRecommendation[];
   /** Quick reply gợi ý cho người dùng bấm nhanh. */
   quickReplies?: string[];
 }
@@ -55,16 +45,14 @@ export interface ConversationSocketMessage {
   createdAt: string;
 }
 
-/** Kết quả AI trả về (mock engine). */
-export interface ChatReply {
-  text: string;
-  recommendations?: ChatRecommendation[];
-  quickReplies?: string[];
-}
-
-/** Body gửi tới `POST /conversations/messages`. */
+/**
+ * Body gửi tới `POST /conversations/messages`.
+ * - CÓ `hotelId`  → concierge của MỘT khách sạn (tra/đặt/huỷ phòng, chuyển được cho lễ tân).
+ * - KHÔNG `hotelId` → trợ lý TOÀN SÀN: chỉ tư vấn & tìm/gợi ý khách sạn trên sàn.
+ */
 export interface SendChatMessageDto {
-  hotelId: string;
+  /** Bỏ trống = chế độ toàn sàn (khung chat nổi). */
+  hotelId?: string;
   conversationId?: string;
   message: string;
 }
@@ -87,29 +75,42 @@ export interface SendChatMessageStreamHandlers {
 
 /**
  * `GET /conversations/me?hotelId=` — hội thoại đang mở của khách + lịch sử, để khung chat khôi phục
- * sau khi F5. `null` khi khách chưa từng chat với KS này (hoặc chưa đăng nhập).
+ * sau khi F5. `null` khi khách chưa từng chat ở scope này (hoặc chưa đăng nhập).
+ * `hotelId` null = hội thoại TOÀN SÀN (gọi endpoint không kèm `hotelId`).
  */
 export interface MyConversationResponse extends ConversationHandoffState {
   id: string;
-  hotelId: string;
+  hotelId: string | null;
   messages: ConversationSocketMessage[];
 }
 
+/** Khách sạn của một dòng hội thoại. `null` ở dòng toàn sàn — xem `MyConversationListItem`. */
+export interface MyConversationHotel {
+  id: string;
+  name: string;
+  city: string;
+  imageUrl: string | null;
+}
+
 /**
- * Một dòng trong thanh bên "đã nhắn với khách sạn nào" của khách (`GET /conversations/mine`).
+ * Một dòng trong danh sách hội thoại của khách (`GET /conversations/mine`).
+ * `hotelId`/`hotel` là **null** cho hội thoại TOÀN SÀN (khung chat nổi) — BE trả `hotel: null` vì
+ * hội thoại đó không gắn khách sạn nào. Trang `/account/messages` chỉ nhắn với lễ tân từng khách
+ * sạn nên lọc bỏ dòng này bằng `isHotelConversation`.
  */
 export interface MyConversationListItem extends ConversationHandoffState {
   id: string;
-  hotelId: string;
+  hotelId: string | null;
   lastMessage: string | null;
   lastMessageSender: ChatSenderType | null;
   lastMessageAt: string | null;
-  hotel: {
-    id: string;
-    name: string;
-    city: string;
-    imageUrl: string | null;
-  };
+  hotel: MyConversationHotel | null;
+}
+
+/** Dòng hội thoại CHẮC CHẮN gắn khách sạn — thu hẹp từ `MyConversationListItem`. */
+export interface HotelConversationListItem extends MyConversationListItem {
+  hotelId: string;
+  hotel: MyConversationHotel;
 }
 
 /** Khách muốn ai trả lời mình: trợ lý AI hay lễ tân người thật. */
@@ -129,7 +130,7 @@ export interface SetConversationModeDto {
 /** Response của endpoint mode: bản ghi hội thoại + cờ handoff. */
 export interface SetConversationModeResponse extends ConversationHandoffState {
   id: string;
-  hotelId: string;
+  hotelId: string | null;
 }
 
 export interface SendChatMessageStreamPayload {
