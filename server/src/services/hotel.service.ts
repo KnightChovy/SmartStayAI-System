@@ -20,6 +20,32 @@ import type { AmenityAssignmentInput } from '../dto/amenity.dto';
 
 export class HotelService {
   /**
+   * Điểm đánh giá công khai của MỘT NHÓM khách sạn, gom trong đúng một query để danh sách không
+   * bị N+1. Chỉ tính đánh giá 'published' — bằng đúng tập khách xem được ở trang đánh giá.
+   *
+   * Khách sạn chưa có đánh giá nào ⇒ avgRating = null chứ KHÔNG phải 0: "chưa có điểm" khác hẳn
+   * "bị chấm 0 điểm", để FE hiện "Chưa có đánh giá" thay vì 0 sao.
+   */
+  private getRatingSummaries = async (hotelIds: string[]) => {
+    const rows = await prisma.review.groupBy({
+      by: ['hotelId'],
+      where: { hotelId: { in: hotelIds }, status: 'published' },
+      _avg: { overallRating: true },
+      _count: { _all: true },
+    });
+    return new Map(
+      rows.map((row) => [
+        row.hotelId,
+        {
+          // Làm tròn 1 chữ số ngay ở BE để thẻ danh sách và trang chi tiết không hiện lệch nhau
+          avgRating: row._avg.overallRating === null ? null : Math.round(row._avg.overallRating * 10) / 10,
+          reviewCount: row._count._all,
+        },
+      ])
+    );
+  };
+
+  /**
    * Lấy khách sạn cho thao tác quản trị: chỉ chủ partner của khách sạn hoặc người có quyền
    * manageHotels (platform_manager/admin) được phép. Dùng chung cho mọi API quản lý
    * loại phòng / phòng / pricing rule.
@@ -365,10 +391,13 @@ export class HotelService {
       prisma.hotel.count({ where }),
     ]);
 
+    const ratings = await this.getRatingSummaries(hotels.map((hotel) => hotel.id));
+
     // Giá "từ" của khách sạn = basePrice thấp nhất trong các loại phòng phù hợp
     const results = hotels.map(({ roomTypes, ...hotel }) => ({
       ...hotel,
       minPrice: roomTypes.length > 0 ? Prisma.Decimal.min(...roomTypes.map((rt) => rt.basePrice)) : null,
+      ...(ratings.get(hotel.id) ?? { avgRating: null, reviewCount: 0 }),
     }));
 
     return { results, page, limit, totalPages: Math.ceil(totalResults / limit), totalResults };
@@ -402,7 +431,10 @@ export class HotelService {
     if (!hotel) {
       throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy khách sạn');
     }
-    return hotel;
+    // Điểm đánh giá dùng chung một cách tính với danh sách ⇒ thẻ KS và trang chi tiết luôn khớp nhau.
+    // Bảng phân tích chi tiết (5 tiêu chí + phân bố sao) nằm ở GET /hotels/:hotelId/review-stats.
+    const ratings = await this.getRatingSummaries([hotel.id]);
+    return { ...hotel, ...(ratings.get(hotel.id) ?? { avgRating: null, reviewCount: 0 }) };
   };
 
   /**

@@ -58,6 +58,12 @@ export class ReviewController {
     res.send(stats);
   });
 
+  // [Public] Thống kê đánh giá cho trang chi tiết khách sạn
+  getPublicHotelReviewStats = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const stats = await reviewService.getPublicHotelReviewStats(req.params.hotelId as string);
+    res.send(stats);
+  });
+
   // Chi tiết một đánh giá
   getReview = catchAsync(async (req: Request, res: Response): Promise<void> => {
     const review = await reviewService.getReviewById(req.params.reviewId as string);
