@@ -1,7 +1,7 @@
 import httpStatus from 'http-status';
 import { randomBytes } from 'crypto';
 import { Prisma } from '@prisma/client';
-import type { User, BookingStatus, RefundStatus, HotelPolicyType, ChargeFrequency } from '@prisma/client';
+import type { User, BookingStatus, RefundStatus } from '@prisma/client';
 import prisma from '../config/prisma';
 import ApiError from '../utils/ApiError';
 import { roleRights } from '../config/roles';
@@ -100,57 +100,6 @@ interface CancellationPolicy {
   latePenalty: string;
 }
 
-/**
- * Tính thuế + phí dịch vụ của một booking từ HotelPolicy của khách sạn.
- *
- * Mỗi dòng policy loại 'tax'/'fee' có:
- *  - isPercentage = true  ⇒ amount là PHẦN TRĂM tính trên tiền phòng (subtotal)
- *  - isPercentage = false ⇒ amount là số tiền tuyệt đối, nhân theo chargeFrequency:
- *      per_stay             × 1
- *      per_night            × số đêm
- *      per_person           × số khách
- *      per_person_per_night × số khách × số đêm
- * Phần trăm luôn tính trên subtotal (không nhân tiếp theo đêm/khách — subtotal đã gồm đủ số đêm rồi),
- * nếu không sẽ tính thuế chồng thuế.
- *
- * Chỉ lấy 'tax' và 'fee' — 'deposit' là tiền cọc thu/trả tại khách sạn, KHÔNG cộng vào giá đơn;
- * 'cancellation'/'parking'/'internet' là mô tả, không phải khoản thu bắt buộc.
- */
-const computeTaxAndFees = (
-  policies: { policyType: HotelPolicyType; amount: Prisma.Decimal | null; isPercentage: boolean; chargeFrequency: ChargeFrequency | null }[],
-  subtotal: Prisma.Decimal,
-  numNights: number,
-  numGuests: number
-): { taxAmount: Prisma.Decimal; feeAmount: Prisma.Decimal } => {
-  let taxAmount = new Prisma.Decimal(0);
-  let feeAmount = new Prisma.Decimal(0);
-
-  for (const policy of policies) {
-    if ((policy.policyType !== 'tax' && policy.policyType !== 'fee') || !policy.amount) {
-      continue;
-    }
-    let value: Prisma.Decimal;
-    if (policy.isPercentage) {
-      value = subtotal.mul(policy.amount).div(100);
-    } else {
-      const multipliers: Record<ChargeFrequency, number> = {
-        per_stay: 1,
-        per_night: numNights,
-        per_person: numGuests,
-        per_person_per_night: numGuests * numNights,
-      };
-      value = policy.amount.mul(multipliers[policy.chargeFrequency ?? 'per_stay']);
-    }
-    value = value.toDecimalPlaces(2);
-    if (policy.policyType === 'tax') {
-      taxAmount = taxAmount.add(value);
-    } else {
-      feeAmount = feeAmount.add(value);
-    }
-  }
-  return { taxAmount, feeAmount };
-};
-
 const readCancellationPolicy = (settings: Prisma.JsonValue | null): CancellationPolicy => {
   const parsed = settings as unknown as { cancellation?: Partial<CancellationPolicy> } | null;
   return {
@@ -228,6 +177,19 @@ export class BookingService {
   };
 
   createBooking = async (customerId: string, payload: CreateBookingDto) => {
+    // Khách sạn phải liên lạc được với khách (đổi phòng, tới muộn, sự cố) nên booking BẮT BUỘC có
+    // số điện thoại. Không nhận số qua payload mà lấy từ hồ sơ tài khoản (User.phone) — một nguồn
+    // duy nhất, khỏi lệch giữa các đơn. Hồ sơ chưa có số ⇒ chặn ở đây để FE nhắc khách cập nhật.
+    // Đặt trước mọi thao tác khác, và đặt trong service (không phải controller) để LUỒNG NÀO cũng
+    // bị chặn — kể cả đặt phòng qua chatbot AI.
+    const customer = await prisma.user.findUnique({ where: { id: customerId }, select: { phone: true } });
+    if (!customer?.phone?.trim()) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        'Vui lòng cập nhật số điện thoại trong hồ sơ trước khi đặt phòng'
+      );
+    }
+
     // Dọn các giữ chỗ hết hạn trước để chúng không chiếm mất tồn kho của lượt đặt này
     await this.releaseExpiredHolds();
 
@@ -269,10 +231,7 @@ export class BookingService {
     const priceInput = { id: roomType.id, hotelId: roomType.hotelId, basePrice: roomType.basePrice };
 
     // Chính sách thuế/phí ĐANG hiệu lực — đọc một lần ở đây rồi đóng băng vào booking bên dưới
-    const taxFeePolicies = await prisma.hotelPolicy.findMany({
-      where: { hotelId: roomType.hotelId, policyType: { in: ['tax', 'fee'] } },
-      select: { policyType: true, amount: true, isPercentage: true, chargeFrequency: true },
-    });
+    const taxFeePolicies = (await availabilityService.getTaxFeePolicies([roomType.hotelId])).get(roomType.hotelId) ?? [];
 
     return prisma.$transaction(async (tx) => {
       const physicalRooms = await tx.room.count({ where: { roomTypeId: roomType.id } });
@@ -302,7 +261,12 @@ export class BookingService {
         subtotal = subtotal.add(availabilityService.priceForNight(priceInput, night, row, pricingRules, today));
       }
 
-      const { taxAmount, feeAmount } = computeTaxAndFees(taxFeePolicies, subtotal, nights.length, payload.numGuests);
+      const { taxAmount, feeAmount } = availabilityService.computeTaxAndFees(
+        taxFeePolicies,
+        subtotal,
+        nights.length,
+        payload.numGuests
+      );
 
       const isCash = method === 'cash';
       const holdMinutes = method === 'sepay' ? SEPAY_HOLD_MINUTES : HOLD_MINUTES;

@@ -124,6 +124,9 @@ router.get(
   roomTypeController.listRoomTypes
 );
 
+// Chi tiết một loại phòng cho guest — public. Đặt SAU '/manage' (literal) để param không nuốt route đó.
+router.get('/:hotelId/room-types/:roomTypeId', validate(hotelValidation.getRoomType), hotelController.getRoomType);
+
 router.put(
   '/:hotelId/room-types/:roomTypeId',
   auth(),
@@ -318,6 +321,16 @@ router.delete(
   auth(),
   validate(staffValidation.removeStaff),
   staffController.removeStaff
+);
+
+// Thống kê đánh giá cho trang chi tiết của KHÁCH — public, không cần đăng nhập.
+// Số liệu giống hệt '/reviews/stats' của partner (cùng một hàm tính, chỉ đếm review đã published);
+// tách endpoint riêng vì phạm vi xem khác nhau: bản này CHỈ trả khách sạn đang mở bán, còn bản
+// partner cho chủ KS xem cả khách sạn chưa lên sàn.
+router.get(
+  '/:hotelId/review-stats',
+  validate(reviewValidation.getPublicHotelReviewStats),
+  reviewController.getPublicHotelReviewStats
 );
 
 // ----- Đánh giá của khách sạn (partner xem review KS mình + thống kê) -----

@@ -29,6 +29,8 @@ tags:
     description: Platform-wide admin dashboard & oversight (admin / platform_manager)
   - name: PlatformManager
     description: Platform analytics & hotel performance scoring (platform_manager / admin)
+  - name: Notifications
+    description: In-app notifications for the authenticated user (list, unread badge, mark read, delete)
 
 paths:
   /conversations/messages:
@@ -2283,8 +2285,12 @@ paths:
       summary: Search room types within a hotel (with filters)
       description: >
         Public. Filters by capacity, price range, bed type and view type. When checkIn/checkOut
-        are provided, each room type includes numNights, availableRooms and totalPrice for the
-        stay (per-night priceOverride applied), and sold-out room types are excluded.
+        are provided, sold-out room types are excluded and each room type carries the full price
+        breakdown for the stay: numNights, availableRooms, subtotal (room charge with pricing
+        rules and per-night priceOverride applied), taxAmount, feeAmount and totalPrice.
+        totalPrice = subtotal + taxAmount + feeAmount and equals booking.totalAmount, so the
+        figure shown here is exactly what the guest is charged. Note: totalPrice used to exclude
+        tax and fees.
       tags: [Hotels]
       parameters:
         - in: path
@@ -2335,16 +2341,150 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  /notifications:
+    get:
+      summary: List the current user's notifications
+      description: >
+        Paginated list of the authenticated user's own notifications (newest first). Filter by
+        `type` or `unreadOnly=true`. The response also includes `unreadCount` (total unread across
+        all types) so the client can render a badge without a second request.
+      tags: [Notifications]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: unreadOnly
+          schema:
+            type: boolean
+          description: When true, only notifications that have not been read yet
+        - in: query
+          name: type
+          schema:
+            type: string
+            enum: [booking_confirmed, payment_success, check_in_reminder, review_request, alert, promotion, partner_approved]
+        - in: query
+          name: sortBy
+          schema:
+            type: string
+          description: 'field:asc|desc, e.g. createdAt:desc'
+        - in: query
+          name: limit
+          schema:
+            type: integer
+        - in: query
+          name: page
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Paginated notifications of the current user (with unreadCount)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PaginatedNotifications' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /notifications/unread-count:
+    get:
+      summary: Get the current user's unread notification count
+      tags: [Notifications]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Unread count for the badge
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  unreadCount: { type: integer, example: 3 }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /notifications/read-all:
+    post:
+      summary: Mark all the current user's notifications as read
+      tags: [Notifications]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Number of notifications updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  updated: { type: integer, example: 5 }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /notifications/{notificationId}/read:
+    patch:
+      summary: Mark one notification as read
+      description: >
+        Marks a single notification (owned by the authenticated user) as read. Idempotent —
+        an already-read notification keeps its original readAt timestamp.
+      tags: [Notifications]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: notificationId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The updated notification
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Notification' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /notifications/{notificationId}:
+    delete:
+      summary: Delete one of the current user's notifications
+      tags: [Notifications]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: notificationId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /bookings:
     post:
       summary: Create a booking
       description: >
         Authenticated customers book one room of a room type for [checkInDate, checkOutDate).
-        Prices are computed server-side (per-night priceOverride if set, else basePrice).
+        Prices are computed server-side (pricing rules and per-night priceOverride applied, plus
+        tax/fee from the hotel policies) and match what GET /hotels/{hotelId}/room-types quoted.
         Inventory is reserved per night inside a transaction, so concurrent bookings cannot
         oversell. paymentMethod "vnpay" (default) creates a "pending" booking held 15 min for online
         payment; "cash" (pay at hotel) creates a "confirmed" booking with no hold plus a pending cash
         Payment and an e-voucher — staff records the cash later via record-cash-payment.
+
+
+        REQUIRES A PHONE NUMBER: the hotel must be able to reach the guest, so the account's
+        profile must have a phone. There is no phone field in this request — the number is taken
+        from the user profile (User.phone). If it is empty the request fails with 400 and the
+        client should send the user to update their profile first (PATCH /users/me).
       tags: [Bookings]
       security:
         - bearerAuth: []
@@ -3939,6 +4079,29 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
 
+  /hotels/{hotelId}/review-stats:
+    get:
+      summary: Get public review stats of a hotel (guest)
+      description: >
+        Aggregate review stats (total, average per category, star distribution) over the hotel's
+        published reviews — for the guest-facing hotel detail page. No authentication required.
+        Only listed hotels are returned; unlisted/unapproved hotels give 404 so their existence
+        is not leaked. Same numbers as the partner endpoint /hotels/{hotelId}/reviews/stats,
+        which additionally covers hotels that are not listed yet.
+      tags: [Reviews]
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Aggregate review stats
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReviewStats' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
   /hotels/{hotelId}/reviews/stats:
     get:
       summary: Get review stats of my hotel (partner)
@@ -4041,6 +4204,38 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
 
   /hotels/{hotelId}/room-types/{roomTypeId}:
+    get:
+      summary: Get one room type detail (guest)
+      description: >
+        Public. Returns full detail of a single active room type belonging to a listed hotel
+        (hotel isActive + isListed) — images, amenities, beds and minimal hotel info. When
+        checkIn/checkOut are provided the response also includes numNights, availableRooms and
+        totalPrice for the stay (per-night priceOverride applied). Returns 404 if the room type
+        is hidden or belongs to a hotel that is not on sale.
+      tags: [Hotels]
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: path
+          name: roomTypeId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: query
+          name: checkIn
+          schema: { type: string, format: date }
+        - in: query
+          name: checkOut
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: Room type detail (plus availability and total price when dates given)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RoomType' }
+        '404':
+          $ref: '#/components/responses/NotFound'
     put:
       summary: Update a room type
       description: Hotel owner or manageHotels. All fields optional; set isActive=false to stop selling.

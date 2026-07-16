@@ -83,6 +83,13 @@ export const getHotelReviewStats = {
   }),
 };
 
+// [Public] Thống kê đánh giá cho trang chi tiết của khách
+export const getPublicHotelReviewStats = {
+  params: Joi.object().keys({
+    hotelId: Joi.string().uuid().required(),
+  }),
+};
+
 // Chi tiết một đánh giá
 export const getReview = {
   params: Joi.object().keys({
