@@ -1,15 +1,18 @@
 import { useLocation, useNavigate, useParams } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { CalendarDays, CheckCircle2, Download, MapPin } from 'lucide-react';
 import { useBooking } from '@/hooks/bookings';
 import { ROUTES } from '@/constants/routes';
 import QRVoucher from '@/components/shared/QRVoucher';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { formatCurrency } from '@/utils/formatCurrency';
+import { useMoney } from '@/hooks/currency';
 import { formatDateShort } from '@/utils/formatDate';
 import type { Booking } from '@/types/booking.types';
 
 export default function BookingSuccessPage() {
+  const { t } = useTranslation(['booking', 'common']);
+  const { format } = useMoney();
   const { bookingId = '' } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -40,18 +43,17 @@ export default function BookingSuccessPage() {
               <CheckCircle2 className="size-9" />
             </div>
             <h1 className="mt-4 font-be-vietnam text-2xl font-bold text-on-surface">
-              Booking confirmed!
+              {t('success.title')}
             </h1>
             <p className="mt-1 text-sm text-on-surface-variant">
-              A confirmation has been sent to your email. Show the QR below at
-              check-in.
+              {t('success.body')}
             </p>
           </div>
 
           <div className="grid gap-8 p-6 sm:grid-cols-[1fr_auto] sm:items-center">
             <div className="space-y-3">
               <div>
-                <p className="text-xs text-on-surface-variant">Booking code</p>
+                <p className="text-xs text-on-surface-variant">{t('success.bookingCode')}</p>
                 <p className="font-be-vietnam text-xl font-bold tracking-wider text-on-surface">
                   {booking?.bookingCode ?? '—'}
                 </p>
@@ -67,14 +69,14 @@ export default function BookingSuccessPage() {
                 {formatDateShort(booking?.checkInDate)} →{' '}
                 {formatDateShort(booking?.checkOutDate)}
                 {booking
-                  ? ` · ${booking.numNights} night${booking.numNights === 1 ? '' : 's'}`
+                  ? ` · ${t('common:nights', { count: booking.numNights })}`
                   : ''}
               </p>
               {booking && (
                 <p className="text-sm">
-                  <span className="text-on-surface-variant">Total paid: </span>
+                  <span className="text-on-surface-variant">{t('success.totalPaid')}</span>
                   <span className="font-semibold text-on-surface">
-                    {formatCurrency(booking.totalAmount)}
+                    {format(booking.totalAmount)}
                   </span>
                 </p>
               )}
@@ -93,14 +95,14 @@ export default function BookingSuccessPage() {
               className="flex-1"
               onClick={() => window.print()}
             >
-              <Download className="size-4" /> Save voucher
+              <Download className="size-4" /> {t('success.saveVoucher')}
             </Button>
             <Button
               size="lg"
               className="flex-1 bg-on-surface text-white hover:bg-primary"
               onClick={() => navigate(ROUTES.accountBookings)}
             >
-              View my bookings
+              {t('success.viewBookings')}
             </Button>
           </div>
         </div>

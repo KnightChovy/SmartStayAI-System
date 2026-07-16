@@ -1,0 +1,155 @@
+{
+  "notFound": {
+    "title": "Không tìm thấy trang",
+    "desc": "Trang bạn tìm không tồn tại hoặc có thể đã được chuyển đi.",
+    "backHome": "Về trang chủ",
+    "explore": "Khám phá chỗ nghỉ"
+  },
+  "about": {
+    "eyebrow": "Câu chuyện của chúng tôi",
+    "title": "Về SmartStay AI",
+    "description": "Chúng tôi tái định nghĩa du lịch cao cấp qua khám phá thông minh và trải nghiệm liền mạch, lấy con người làm trung tâm.",
+    "imageAlt": "Một khách sạn đối tác của SmartStay",
+    "p1": "SmartStay AI ra đời từ một niềm tin đơn giản: tìm được nơi lưu trú hoàn hảo nên thư thái như chính kỳ nghỉ đó. Bằng cách kết hợp gu tuyển chọn với trí tuệ nhân tạo, chúng tôi kết nối du khách với những chốn nghỉ đồng điệu với cảm xúc họ mong muốn.",
+    "p2": "Từ trợ lý AI trả lời mọi câu hỏi trong vài giây đến cảnh báo thông minh giữ cho chuyến đi đúng lịch, mỗi tính năng đều nhằm loại bỏ trở ngại — để bạn tập trung vào trải nghiệm.",
+    "whatWeValue": "Giá trị của chúng tôi",
+    "stats": [
+      { "value": "500+", "label": "Chỗ nghỉ đã xác minh" },
+      { "value": "120K", "label": "Khách hài lòng" },
+      { "value": "15", "label": "Thành phố trên thế giới" },
+      { "value": "4.9", "label": "Điểm đánh giá trung bình" }
+    ],
+    "values": [
+      { "title": "Thông minh từ thiết kế", "desc": "AI dẫn dắt từng bước — từ khám phá đến trợ lý — để du lịch trở nên nhẹ nhàng." },
+      { "title": "Sang trọng tĩnh lặng", "desc": "Chúng tôi tuyển chọn những chỗ nghỉ yên tĩnh, có bản sắc thay vì ồn ào, đại trà." },
+      { "title": "Đối tác là trên hết", "desc": "Chúng tôi phát triển cùng đối tác khách sạn qua công cụ công bằng, minh bạch." }
+    ]
+  },
+  "careers": {
+    "eyebrow": "Cùng đồng hành",
+    "title": "Tuyển dụng tại SmartStay",
+    "description": "Cùng chúng tôi kiến tạo tương lai của du lịch thông minh. Chúng tôi tuyển vì sự tò mò, tay nghề và sự tận tâm.",
+    "openPositions": "Vị trí đang tuyển",
+    "apply": "Ứng tuyển",
+    "perks": [
+      "Startup tăng trưởng nhanh",
+      "Thân thiện làm từ xa",
+      "Hỗ trợ chi phí du lịch",
+      "Ngân sách học tập"
+    ],
+    "openings": [
+      { "title": "Kỹ sư Frontend cấp cao", "team": "Kỹ thuật", "location": "TP. Hồ Chí Minh · Hybrid", "type": "Toàn thời gian" },
+      { "title": "Kỹ sư AI/ML", "team": "Nền tảng AI", "location": "Từ xa", "type": "Toàn thời gian" },
+      { "title": "Product Designer", "team": "Thiết kế", "location": "Hà Nội · Hybrid", "type": "Toàn thời gian" },
+      { "title": "Quản lý Đối tác Khách sạn", "team": "Tăng trưởng", "location": "Đà Nẵng · Tại văn phòng", "type": "Toàn thời gian" },
+      { "title": "Chuyên viên Chăm sóc Khách hàng", "team": "Hỗ trợ", "location": "Từ xa", "type": "Hợp đồng" }
+    ]
+  },
+  "safety": {
+    "eyebrow": "An toàn của bạn là trên hết",
+    "title": "Thông tin an toàn",
+    "description": "Cách SmartStay bảo vệ mọi khách hàng — từ khi đặt phòng đến khi trả phòng.",
+    "tipsTitle": "Mẹo an toàn cho du khách",
+    "pillars": [
+      { "title": "Chỗ nghỉ đã xác minh", "desc": "Mọi đối tác khách sạn đều vượt qua xác minh danh tính, giấy phép và chất lượng trước khi mở bán." },
+      { "title": "Thanh toán an toàn", "desc": "Giao dịch qua cổng mã hoá, đạt chuẩn PCI. Chúng tôi không bao giờ lưu đầy đủ dữ liệu thẻ." },
+      { "title": "Tiêu chuẩn sức khoẻ", "desc": "Đối tác cam kết quy trình vệ sinh nâng cao và biện pháp an toàn minh bạch tại chỗ." },
+      { "title": "Hỗ trợ 24/7", "desc": "Đội ngũ và trợ lý AI của chúng tôi luôn sẵn sàng suốt ngày đêm, trước và trong kỳ nghỉ." }
+    ],
+    "tips": [
+      "Luôn liên lạc và thanh toán qua SmartStay — không bao giờ chuyển tiền ngoài nền tảng.",
+      "Xem các tiện nghi an toàn của chỗ nghỉ (báo khói, khoá) trên trang khách sạn.",
+      "Giữ sẵn bản sao xác nhận đặt phòng và các số liên hệ khẩn cấp.",
+      "Báo cáo bất cứ điều gì bất thường qua trang Báo cáo vấn đề — chúng tôi xử lý nhanh."
+    ]
+  },
+  "blog": {
+    "eyebrow": "Câu chuyện & góc nhìn",
+    "title": "Blog SmartStay",
+    "description": "Cảm hứng du lịch, tin sản phẩm và mẹo cho nhà thám hiểm hiện đại.",
+    "posts": [
+      { "category": "Cẩm nang du lịch", "title": "10 chốn nghỉ ẩn mình ở Việt Nam cho kỳ nghỉ sang trọng tĩnh lặng", "excerpt": "Từ biệt thự Đà Lạt mờ sương đến phòng suite Hội An lung linh đèn lồng, đây là những chỗ nghỉ đội ngũ chúng tôi luôn muốn giới thiệu.", "author": "Mai Trần", "date": "18/06/2026" },
+      { "category": "Sản phẩm", "title": "Trợ lý AI của chúng tôi thực sự hiểu điều bạn muốn như thế nào", "excerpt": "Hé lộ hậu trường công nghệ biến một câu hỏi bình thường thành lượt đặt phòng hoàn hảo.", "author": "David Kim", "date": "10/06/2026" },
+      { "category": "Mẹo", "title": "Nghệ thuật đặt phòng phút chót (mà không căng thẳng)", "excerpt": "Cảnh báo thông minh, giá linh hoạt và vài thói quen giúp chuyến đi tuỳ hứng trở nên nhẹ nhàng.", "author": "Sarah Johnson", "date": "29/05/2026" }
+    ]
+  },
+  "press": {
+    "eyebrow": "Trên báo chí",
+    "title": "Báo chí & Truyền thông",
+    "description": "Tin tức, thông báo và tài nguyên mới nhất dành cho phóng viên.",
+    "mediaKit": "Bộ tài liệu truyền thông",
+    "mediaKitDesc": "Logo, hướng dẫn thương hiệu và tiểu sử lãnh đạo trong một lượt tải.",
+    "downloadKit": "Tải bộ tài liệu",
+    "recentCoverage": "Bài viết gần đây",
+    "inquiries": "Liên hệ báo chí: ",
+    "releases": [
+      { "date": "05/2026", "source": "TechCrunch", "title": "SmartStay AI huy động 20 triệu USD đưa trợ lý AI đến khách sạn boutique" },
+      { "date": "03/2026", "source": "Skift", "title": "Cách tuyển chọn \"sang trọng tĩnh lặng\" của SmartStay định hình lại khám phá du lịch" },
+      { "date": "01/2026", "source": "VnExpress", "title": "Startup lưu trú Việt Nam mở rộng ra 15 thành phố khắp châu Á" },
+      { "date": "11/2025", "source": "The Verge", "title": "Bên trong AI lên kế hoạch cho kỳ nghỉ sang trọng tiếp theo của bạn" }
+    ]
+  },
+  "help": {
+    "eyebrow": "Chúng tôi luôn ở đây để giúp",
+    "title": "Trung tâm trợ giúp",
+    "description": "Giải đáp những câu hỏi thường gặp nhất, cùng các cách liên hệ đội ngũ bất cứ lúc nào.",
+    "searchPlaceholder": "Tìm một chủ đề...",
+    "faqTitle": "Câu hỏi thường gặp",
+    "categories": [
+      { "title": "Đặt phòng & Đặt chỗ", "desc": "Tìm phòng, đổi ngày và quản lý các kỳ nghỉ sắp tới." },
+      { "title": "Thanh toán & Hoàn tiền", "desc": "Phương thức thanh toán, hoá đơn, VNPay và thời gian hoàn tiền." },
+      { "title": "Tài khoản & Đăng nhập", "desc": "Đặt lại mật khẩu, cài đặt hồ sơ và thành viên tích điểm." },
+      { "title": "Trong kỳ nghỉ", "desc": "Nhận phòng, yêu cầu trợ lý và hỗ trợ tại chỗ." }
+    ],
+    "faqs": [
+      { "q": "Làm sao để thay đổi hoặc huỷ đặt phòng?", "a": "Mở Đặt phòng của tôi từ menu tài khoản, chọn đặt phòng và bấm Thay đổi hoặc Huỷ. Điều kiện tuỳ vào loại giá bạn đã đặt — xem Chính sách huỷ để biết chi tiết." },
+      { "q": "Khi nào tôi nhận được tiền hoàn?", "a": "Khoản hoàn được duyệt sẽ trả về phương thức thanh toán ban đầu trong 5–10 ngày làm việc, tuỳ ngân hàng hoặc thời gian xử lý của VNPay." },
+      { "q": "Trợ lý AI hoạt động thế nào?", "a": "Trợ lý AI của chúng tôi trả lời câu hỏi về khách sạn, gợi ý phòng và giúp bạn đặt — sẵn sàng 24/7 từ bong bóng chat trên mọi trang khách sạn." },
+      { "q": "Thông tin thanh toán của tôi có an toàn không?", "a": "Có. Thanh toán được xử lý qua cổng mã hoá đạt chuẩn PCI. SmartStay không bao giờ lưu đầy đủ số thẻ của bạn." }
+    ]
+  },
+  "cancellation": {
+    "eyebrow": "Linh hoạt phù hợp với bạn",
+    "title": "Chính sách huỷ",
+    "description": "Hiểu rõ từng loại giá để bạn đặt phòng với sự yên tâm tuyệt đối.",
+    "howToCancel": "Cách huỷ",
+    "tiers": [
+      { "name": "Linh hoạt", "refund": "Hoàn tiền 100%", "window": "Huỷ trước nhận phòng đến 24 giờ", "desc": "Kế hoạch thay đổi — nhận lại 100% khi huỷ trước ít nhất một ngày." },
+      { "name": "Tiêu chuẩn", "refund": "Hoàn 50%", "window": "Huỷ trước nhận phòng đến 5 ngày", "desc": "Mức giá cân bằng. Hoàn một nửa giá trị đặt phòng trong thời hạn." },
+      { "name": "Không hoàn tiền", "refund": "Không hoàn", "window": "Giá tốt nhất, không thay đổi", "desc": "Giá thấp nhất đổi lại một đặt phòng cam kết, cố định." }
+    ],
+    "steps": [
+      "Vào Đặt phòng của tôi từ menu tài khoản.",
+      "Chọn đặt phòng bạn muốn thay đổi.",
+      "Bấm Huỷ và xác nhận — bạn sẽ thấy ngay số tiền hoàn.",
+      "Tiền hoàn về phương thức thanh toán ban đầu trong 5–10 ngày làm việc."
+    ]
+  },
+  "report": {
+    "eyebrow": "Chúng tôi rất coi trọng điều này",
+    "title": "Báo cáo vấn đề",
+    "description": "Hãy cho chúng tôi biết chuyện gì đã xảy ra. Đội Tin cậy & An toàn xem xét mọi báo cáo.",
+    "receivedTitle": "Đã nhận báo cáo",
+    "receivedBody": "Cảm ơn bạn đã thông báo. Đội ngũ của chúng tôi sẽ xem xét báo cáo và liên hệ qua email nếu cần thêm thông tin.",
+    "submitAnother": "Gửi báo cáo khác",
+    "fullName": "Họ và tên",
+    "namePlaceholder": "Tên của bạn",
+    "email": "Email",
+    "emailPlaceholder": "ban@vidu.com",
+    "typeLabel": "Loại vấn đề",
+    "selectTopic": "Chọn một chủ đề",
+    "bookingCode": "Mã đặt phòng (không bắt buộc)",
+    "bookingPlaceholder": "vd. BKMQI8WO17C4B983",
+    "whatHappened": "Chuyện gì đã xảy ra?",
+    "detailsPlaceholder": "Mô tả vấn đề càng chi tiết càng tốt...",
+    "submit": "Gửi báo cáo",
+    "topics": [
+      "Vấn đề an toàn",
+      "Sự cố thanh toán",
+      "Chỗ nghỉ không đúng mô tả",
+      "Hành vi không phù hợp",
+      "Lỗi kỹ thuật",
+      "Khác"
+    ]
+  }
+}

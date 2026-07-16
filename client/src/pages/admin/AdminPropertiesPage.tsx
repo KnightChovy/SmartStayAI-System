@@ -45,8 +45,16 @@ export function AdminPropertiesPage() {
       )}
       {!isLoading && !isError && (
         <AdminTable
-          headers={['Property', 'Location', 'Partner', 'Status', 'Created', 'Actions']}
+          headers={[
+            'Property',
+            'Location',
+            'Partner',
+            'Status',
+            'Created',
+            'Actions',
+          ]}
           rows={rows}
+          showStatusIcons
           renderLastColumn={row => {
             const hotel = data?.results.find(item => item.id === row[5]);
             if (!hotel) return null;

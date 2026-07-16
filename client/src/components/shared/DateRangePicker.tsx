@@ -1,4 +1,5 @@
 import { CalendarDays } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/cn';
 import { toDateInputValue } from '@/utils/formatDate';
 
@@ -14,6 +15,7 @@ interface DateRangePickerProps {
  * checkIn không được trước hôm nay; checkOut luôn sau checkIn.
  */
 export default function DateRangePicker({ checkIn, checkOut, onChange, className }: DateRangePickerProps) {
+  const { t } = useTranslation('common');
   const today = toDateInputValue(new Date());
 
   const handleCheckIn = (value: string) => {
@@ -31,7 +33,7 @@ export default function DateRangePicker({ checkIn, checkOut, onChange, className
     <div className={cn('grid grid-cols-2 gap-2', className)}>
       <label className="flex flex-col gap-1">
         <span className="flex items-center gap-1.5 text-xs font-semibold text-on-surface-variant">
-          <CalendarDays className="size-3.5" /> Check-in
+          <CalendarDays className="size-3.5" /> {t('checkIn')}
         </span>
         <input
           type="date"
@@ -43,7 +45,7 @@ export default function DateRangePicker({ checkIn, checkOut, onChange, className
       </label>
       <label className="flex flex-col gap-1">
         <span className="flex items-center gap-1.5 text-xs font-semibold text-on-surface-variant">
-          <CalendarDays className="size-3.5" /> Check-out
+          <CalendarDays className="size-3.5" /> {t('checkOut')}
         </span>
         <input
           type="date"

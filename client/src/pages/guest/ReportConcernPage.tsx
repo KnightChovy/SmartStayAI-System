@@ -1,17 +1,11 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import InfoPageHeader from '../../components/shared/InfoPageHeader';
 import { Button } from '../../components/ui/button';
 
-const topics = [
-  'Safety issue',
-  'Payment problem',
-  'Property misrepresentation',
-  'Inappropriate behavior',
-  'Technical bug',
-  'Other',
-];
-
 export default function ReportConcernPage() {
+  const { t } = useTranslation('pages');
+  const topics = t('report.topics', { returnObjects: true });
   const [submitted, setSubmitted] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -23,9 +17,9 @@ export default function ReportConcernPage() {
   return (
     <div className="py-12 w-full">
       <InfoPageHeader
-        eyebrow="We take this seriously"
-        title="Report a Concern"
-        description="Tell us what happened. Our Trust & Safety team reviews every report."
+        eyebrow={t('report.eyebrow')}
+        title={t('report.title')}
+        description={t('report.description')}
       />
 
       <div className="max-w-2xl mx-auto px-margin-mobile md:px-8">
@@ -37,17 +31,16 @@ export default function ReportConcernPage() {
               </span>
             </div>
             <h2 className="font-be-vietnam text-2xl font-bold text-on-surface mb-2">
-              Report received
+              {t('report.receivedTitle')}
             </h2>
             <p className="text-on-surface-variant font-be-vietnam mb-6">
-              Thank you for letting us know. Our team will review your report and
-              follow up by email if we need more details.
+              {t('report.receivedBody')}
             </p>
             <Button
               onClick={() => setSubmitted(false)}
               className="rounded-full px-6"
             >
-              Submit another report
+              {t('report.submitAnother')}
             </Button>
           </div>
         ) : (
@@ -58,23 +51,23 @@ export default function ReportConcernPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div>
                 <label className="block text-sm font-semibold text-on-surface mb-2 font-be-vietnam">
-                  Full name
+                  {t('report.fullName')}
                 </label>
                 <input
                   required
                   type="text"
-                  placeholder="Your name"
+                  placeholder={t('report.namePlaceholder')}
                   className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant/60 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all font-be-vietnam"
                 />
               </div>
               <div>
                 <label className="block text-sm font-semibold text-on-surface mb-2 font-be-vietnam">
-                  Email
+                  {t('report.email')}
                 </label>
                 <input
                   required
                   type="email"
-                  placeholder="you@example.com"
+                  placeholder={t('report.emailPlaceholder')}
                   className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant/60 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all font-be-vietnam"
                 />
               </div>
@@ -82,7 +75,7 @@ export default function ReportConcernPage() {
 
             <div>
               <label className="block text-sm font-semibold text-on-surface mb-2 font-be-vietnam">
-                Type of concern
+                {t('report.typeLabel')}
               </label>
               <select
                 required
@@ -90,11 +83,11 @@ export default function ReportConcernPage() {
                 className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant/60 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all font-be-vietnam"
               >
                 <option value="" disabled>
-                  Select a topic
+                  {t('report.selectTopic')}
                 </option>
-                {topics.map(t => (
-                  <option key={t} value={t}>
-                    {t}
+                {topics.map(topic => (
+                  <option key={topic} value={topic}>
+                    {topic}
                   </option>
                 ))}
               </select>
@@ -102,29 +95,29 @@ export default function ReportConcernPage() {
 
             <div>
               <label className="block text-sm font-semibold text-on-surface mb-2 font-be-vietnam">
-                Booking code (optional)
+                {t('report.bookingCode')}
               </label>
               <input
                 type="text"
-                placeholder="e.g. BKMQI8WO17C4B983"
+                placeholder={t('report.bookingPlaceholder')}
                 className="w-full h-12 px-4 rounded-xl bg-surface-container-low border border-outline-variant/60 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all font-be-vietnam"
               />
             </div>
 
             <div>
               <label className="block text-sm font-semibold text-on-surface mb-2 font-be-vietnam">
-                What happened?
+                {t('report.whatHappened')}
               </label>
               <textarea
                 required
                 rows={5}
-                placeholder="Describe the issue in as much detail as you can..."
+                placeholder={t('report.detailsPlaceholder')}
                 className="w-full px-4 py-3 rounded-xl bg-surface-container-low border border-outline-variant/60 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all font-be-vietnam resize-none"
               />
             </div>
 
             <Button type="submit" className="w-full h-12 rounded-full">
-              Submit report
+              {t('report.submit')}
             </Button>
           </form>
         )}

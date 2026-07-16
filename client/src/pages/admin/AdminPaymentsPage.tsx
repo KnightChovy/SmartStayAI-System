@@ -133,7 +133,7 @@ export function AdminPaymentsPage() {
             </p>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="admin-payment-status-filter">Status</Label>
+            <Label htmlFor="admin-payment-status-filter" className="mr-1.5">Status</Label>
             <select
               className="h-9 w-44 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-ring focus:ring-3 focus:ring-ring/50"
               id="admin-payment-status-filter"

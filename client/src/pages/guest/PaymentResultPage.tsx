@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { CheckCircle2, XCircle } from 'lucide-react';
 import { queryKeys } from '@/constants/queryKeys';
@@ -13,6 +14,7 @@ import type { PaymentResultStatus } from '@/types/payment.types';
  * Backend đã xác minh chữ ký + cập nhật booking; trang này chỉ hiển thị kết quả.
  */
 export default function PaymentResultPage() {
+  const { t } = useTranslation('booking');
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -42,17 +44,15 @@ export default function PaymentResultPage() {
             </div>
 
             <h1 className="mt-4 font-be-vietnam text-2xl font-bold text-on-surface">
-              {success ? 'Payment successful!' : 'Payment failed'}
+              {success ? t('result.successTitle') : t('result.failedTitle')}
             </h1>
             <p className="mt-2 max-w-md text-sm text-on-surface-variant">
-              {success
-                ? 'Your booking has been confirmed and a confirmation email is on its way. You can view your voucher in My Bookings.'
-                : 'We could not complete your payment. Your room is held briefly — you can try paying again from My Bookings before the hold expires.'}
+              {success ? t('result.successBody') : t('result.failedBody')}
             </p>
 
             {bookingCode && (
               <div className="mt-6 rounded-xl bg-surface-container-low px-5 py-3">
-                <p className="text-xs text-on-surface-variant">Booking code</p>
+                <p className="text-xs text-on-surface-variant">{t('result.bookingCode')}</p>
                 <p className="font-be-vietnam text-lg font-bold tracking-wider text-on-surface">
                   {bookingCode}
                 </p>
@@ -65,11 +65,11 @@ export default function PaymentResultPage() {
                 className="bg-on-surface text-white hover:bg-primary"
                 onClick={() => navigate(ROUTES.accountBookings)}
               >
-                View my bookings
+                {t('result.viewBookings')}
               </Button>
               {!success && (
                 <Button variant="outline" size="lg" onClick={() => navigate(ROUTES.search)}>
-                  Back to search
+                  {t('result.backToSearch')}
                 </Button>
               )}
             </div>

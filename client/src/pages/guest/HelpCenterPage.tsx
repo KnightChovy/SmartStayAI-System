@@ -1,57 +1,21 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import InfoPageHeader from '../../components/shared/InfoPageHeader';
 
-const categories = [
-  {
-    icon: 'travel_explore',
-    title: 'Booking & Reservations',
-    desc: 'Find rooms, modify dates, and manage your upcoming stays.',
-  },
-  {
-    icon: 'payments',
-    title: 'Payments & Refunds',
-    desc: 'Payment methods, invoices, VNPay and refund timelines.',
-  },
-  {
-    icon: 'login',
-    title: 'Account & Login',
-    desc: 'Password resets, profile settings, and loyalty membership.',
-  },
-  {
-    icon: 'support_agent',
-    title: 'During Your Stay',
-    desc: 'Check-in, concierge requests, and on-site assistance.',
-  },
-];
-
-const faqs = [
-  {
-    q: 'How do I modify or cancel my booking?',
-    a: 'Open My Bookings from your account menu, select the reservation, and choose Modify or Cancel. Eligibility depends on the rate you booked — see Cancellation Options for details.',
-  },
-  {
-    q: 'When will I receive my refund?',
-    a: 'Approved refunds are returned to your original payment method within 5–10 business days, depending on your bank or VNPay processing times.',
-  },
-  {
-    q: 'How does the AI concierge work?',
-    a: 'Our AI concierge answers questions about a hotel, suggests rooms, and helps you book — available 24/7 from the chat bubble on every hotel page.',
-  },
-  {
-    q: 'Is my payment information secure?',
-    a: 'Yes. Payments are processed through encrypted, PCI-compliant gateways. SmartStay never stores your full card number.',
-  },
-];
+const CATEGORY_ICONS = ['travel_explore', 'payments', 'login', 'support_agent'];
 
 export default function HelpCenterPage() {
+  const { t } = useTranslation('pages');
   const [open, setOpen] = useState<number | null>(0);
+  const categories = t('help.categories', { returnObjects: true });
+  const faqs = t('help.faqs', { returnObjects: true });
 
   return (
     <div className="py-12 w-full">
       <InfoPageHeader
-        eyebrow="We're here to help"
-        title="Help Center"
-        description="Answers to the most common questions, plus ways to reach our team anytime."
+        eyebrow={t('help.eyebrow')}
+        title={t('help.title')}
+        description={t('help.description')}
       />
 
       <div className="max-w-3xl mx-auto px-margin-mobile md:px-8 mb-14">
@@ -61,7 +25,7 @@ export default function HelpCenterPage() {
           </span>
           <input
             type="search"
-            placeholder="Search for a topic..."
+            placeholder={t('help.searchPlaceholder')}
             className="w-full h-14 pl-12 pr-4 rounded-full bg-surface-container-low border border-outline-variant/60 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all font-be-vietnam"
           />
         </div>
@@ -69,14 +33,14 @@ export default function HelpCenterPage() {
 
       <div className="max-w-7xl mx-auto px-margin-mobile md:px-8 mb-16">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {categories.map(cat => (
+          {categories.map((cat, i) => (
             <div
               key={cat.title}
               className="p-6 rounded-3xl bg-white ring-1 ring-outline-variant/10 shadow-sm hover:shadow-md transition-shadow"
             >
               <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
                 <span className="material-symbols-outlined text-primary">
-                  {cat.icon}
+                  {CATEGORY_ICONS[i]}
                 </span>
               </div>
               <h3 className="font-bold text-on-surface font-be-vietnam mb-2">
@@ -92,7 +56,7 @@ export default function HelpCenterPage() {
 
       <div className="max-w-3xl mx-auto px-margin-mobile md:px-8">
         <h2 className="font-be-vietnam text-2xl font-bold text-on-surface mb-6">
-          Frequently asked questions
+          {t('help.faqTitle')}
         </h2>
         <div className="space-y-3">
           {faqs.map((faq, i) => (

@@ -49,6 +49,7 @@ export interface AdminUsersTableProps {
   onEdit: (user: AdminUser) => void;
   onDelete: (user: AdminUser) => void;
   isDeleting?: boolean;
+  pagination?: ReactNode;
 }
 
 export interface AdminPageHeaderProps {
@@ -61,6 +62,8 @@ export interface AdminTableProps {
   headers: string[];
   rows: string[][];
   renderLastColumn?: (row: string[]) => ReactNode;
+  footer?: ReactNode;
+  showStatusIcons?: boolean;
 }
 
 // ============================================================

@@ -8,6 +8,34 @@ This file tracks the accomplished tasks, resolved user requests, and visual/func
 
 ### July 14, 2026
 
+- [x] **i18n — dịch TOÀN BỘ trang khách (guest/customer) vi/en, 6 batch + LanguageSwitcher/CurrencySwitcher**:
+  - **Hạ tầng**: `react-i18next` + `i18next` + language-detector; `src/i18n/` config + type-safe `i18next.d.ts`; namespace `common/auth/footer/home/search/hotel/booking/account/pages`. `LanguageSwitcher` (VI/EN) + `CurrencySwitcher` (VND/USD quy đổi qua `useMoney`/`currencyStore`) gắn ở guest Navbar, đều persist localStorage.
+  - **Batch 1 Auth+Footer**: Login/Register/Forgot/Reset/VerifyEmail/VerifyIdentity + Footer.
+  - **Batch 2 Home**: Hero + 9 section (tách key chọn khỏi nhãn ở AccommodationTypes/PopularVN để giữ query ổn định).
+  - **Batch 3 Search+Hotel**: SearchResultsPage, HotelDetailPage, shared DateRangePicker/GuestSelector/RoomTypeCard/HotelCard.
+  - **Batch 4 Booking/Payment**: BookingCheckoutPage, CheckoutStepper, PaymentMethodSelect, PriceSummary, PaymentResultPage, BookingSuccessPage.
+  - **Batch 5 Account**: layout/sidebar/status-badge/booking-list/my-bookings/booking-detail/loyalty/notifications/settings/reviews/vouchers/QRVoucher + CommonProfilePage/ProfileForm + WelcomeProfileModal/ReviewModal.
+  - **Batch 6 Static+404**: NotFound + About/Careers/Safety/Blog/Press/Help/Cancellation/Report (dùng `t(..., { returnObjects: true })` cho mảng dữ liệu, icon ghép theo index).
+  - **Tiền tệ**: giá duyệt/tìm quy đổi theo `useMoney`; số tiền giao dịch (checkout/booking detail/refund) giữ VND (số thực thanh toán).
+  - `tsc -p tsconfig.app.json --noEmit`: **exit 0** sau mỗi batch. Chưa dịch: message zod-validation + lỗi API (cần map mã lỗi); các portal partner/manager/admin/staff.
+
+- [x] **Admin Users/Properties — icon semantic cho Status và Verification**:
+  - Badge `Status` và `Verification` có icon bên trái theo trạng thái (active/verified, pending/review, inactive/failed); chỉ bật cho bảng Users và Properties, không ảnh hưởng các Admin table khác.
+
+- [x] **Admin Users — server-side pagination 10 users/trang**:
+  - `AdminUsersPage` gửi `limit: 10` + `page` vào API users, hiển thị khoảng bản ghi / tổng số users cùng nút Previous/Next và chỉ số trang.
+  - Đổi bộ lọc hoặc Reset tự quay về trang 1; xoá user cuối cùng ở một trang sau trang đầu tự lùi về trang trước để tránh trang rỗng.
+
+- [x] **Admin — chuẩn hoá toàn bộ table theo visual Hotel Management**:
+  - Nâng cấp `components/admin/shared/AdminTable.tsx` để toàn bộ bảng Users / Properties / Bookings / Payments / Commissions / System dùng chung khung trắng bo góc, header nền slate nhạt, spacing thoáng, phân cấp chữ rõ, cột action căn phải, hover row, empty state và status/verification badge theo semantic màu.
+  - Đồng bộ 3 bảng render riêng trong `AdminDashboardActivityLog`, `AdminTasksModal`, `AdminFileManagerModal` với cùng border, radius, header, divider, hover và focus-visible treatment; giữ nguyên logic/API/action hiện có và phạm vi chỉ trong portal Admin.
+- [x] **Hotel Partner — nối API thật cho Dashboard Overview (`/partner/dashboard`), phần nào BE chưa có thì để trống**:
+  - **Bối cảnh**: toàn bộ 8 component dashboard trước đây hardcode số liệu (1,284 bookings, 82%, $142k, top rooms, revenue target…). Yêu cầu: integrate API, cái nào thiếu bỏ trống.
+  - **Hook tổng hợp mới** `hooks/partner-dashboard/use-partner-overview.ts` (`usePartnerOverview`): gộp dữ liệu **tất cả** khách sạn của partner qua `usePartnerHotels` (`GET /hotels/mine`) rồi `useQueries` fan-out 3 endpoint/khách sạn — `/hotels/:id/revenue` (range đầu tháng→hôm nay, `groupBy=day`), `/hotels/:id/analytics` (occupancy/cancel/rating), `/hotels/:id/wallet?limit=5` (giao dịch gần đây). Trả `{ stats, series, activities, hotels, isLoading, isError }`: stats = tổng monthlyBookings/monthlyNet/monthlyGross, trung bình occupancyRate + avgRating, tổng totalRooms/totalRoomTypes/hotelCount; series = doanh thu theo ngày gộp theo `period`; activities = 6 giao dịch ví mới nhất mọi khách sạn (sort desc). Barrel `index.ts` + export type.
+  - **Component wiring**: `DashboardPage` là orchestrator (gọi hook 1 lần, truyền props + error banner). `DashboardStats` → 4 card thật (Bookings this month / Occupancy Rate + progress / Monthly Revenue net + gross / Total Rooms + room types + hotel count) có skeleton; bỏ badge % (không có comparison). `RevenueBookingChart` → nhận `data` series thật, tooltip VND custom (`ChartTooltip`, tránh lỗi type recharts formatter), YAxis compact VND, empty state khi rỗng. `RecentActivities` → feed từ wallet transactions (icon/màu theo `WalletTransactionType`, tên KS + mô tả + `formatDate`), skeleton + empty state. `VerificationStatus` → `usePartnerVerification` (4 state verified/pending/rejected/none, icon+badge tương ứng). `QuickActions` → `useNavigate` tới room-inventory/revenue/hotel-management. `DashboardHeader` → chào theo `user.fullName` (bỏ nút Export Report vô tác dụng).
+  - **Để trống (BE chưa có endpoint)**: `TopPerformingRooms` (không có doanh thu/booking theo loại phòng) + `RevenueTarget` (không có API mục tiêu) → empty state gọn, chú thích rõ trong code.
+  - `npx tsc -p tsconfig.app.json --noEmit`: **0 lỗi**; `eslint` sạch cho mọi file mới/đụng tới.
+
 - [x] **Đa ngôn ngữ (i18n vi/en) + đổi tiền tệ VND/USD trên giao diện (LanguageSwitcher + CurrencySwitcher)**:
   - **Tiền tệ (quy đổi hiển thị, base = VND)**: `stores/currencyStore.ts` (Zustand persist `app-currency`: `currency` + `vndPerUsd` mặc định 25400). `utils/formatCurrency.ts` thêm `formatMoney(vnd, currency, rate)` — BE luôn trả giá VND, USD chỉ chia tỷ giá lúc hiển thị. Hook `hooks/currency/use-money.ts` (`useMoney()` → `{ currency, format }`, tự đọc store). `components/shared/CurrencySwitcher.tsx` (dropdown ₫ VND / $ USD). **Đã migrate giá guest**: `HotelCard`, `RoomTypeCard` dùng `useMoney().format(...)` → đổi tiền tệ là giá tự quy đổi. **Lưu ý**: chỉ đổi hiển thị, booking/VNPay vẫn gửi VND gốc; revenue back-office (partner/manager/admin) giữ `formatCurrency` VND.
   - **i18n (react-i18next)**: cài `i18next` + `react-i18next` + `i18next-browser-languagedetector`. `src/i18n/index.ts` (detector localStorage `app-lang` → navigator, fallback `vi`, namespace `common`+`auth`), `i18next.d.ts` type-safe key. Locale `src/i18n/locales/{vi,en}/{common,auth}.json`. Import `./i18n` ở `main.tsx`. `components/shared/LanguageSwitcher.tsx` (dropdown VI/EN, `i18n.changeLanguage` tự lưu localStorage).
@@ -27,6 +55,7 @@ This file tracks the accomplished tasks, resolved user requests, and visual/func
 
 - [x] **Audit "fix responsive tất cả role" — không tìm thấy bảng nào thiếu responsive**:
   - Rà lại toàn bộ 9 file render `<table>` thật trong `pages/admin|hotel-partner|manager|staff` + component liên quan: **tất cả** đều đã bọc `overflow-x-auto` qua component dùng chung (`AdminTable.tsx`, `DataTable.tsx`) hoặc trực tiếp trong file. Nhận định "6 trang thiếu responsive" từ lần rà soát trước đó là sai (rà theo file riêng lẻ, bỏ sót việc bảng delegate qua wrapper dùng chung). Không sửa gì thêm ở mục này — chưa có bằng chứng cụ thể (màn hình/breakpoint nào đang vỡ) để tránh sửa mò.
+
 ### July 13, 2026
 
 - [x] **QR check-in — hardening FE để hết "quét not found" (giữ voucherCode, KHÔNG đụng BE/mobile)**:
@@ -80,6 +109,7 @@ This file tracks the accomplished tasks, resolved user requests, and visual/func
   - **Tách component** `components/manager/hotel-partners/BookingActivitiesTab.tsx` (bỏ prop mock, tự fetch `usePlatformBookings({ limit: 100, sortBy: 'createdAt:desc' })`): stat cards Confirmed/Checked-out/Pending/Cancelled đếm từ dữ liệu thật; filter search (client, theo mã/khách/KS) + select trạng thái (đủ 6 status) + select khách sạn (suy từ danh sách booking); bảng Booking ID (`bookingCode`) · Hotel (name + city) · Guest (`fullName ?? email`) · Check-in · Check-out · Amount (`formatCurrency`) · Status (badge 6 màu) · Created. **Ngày format `dd/MM/yyyy` bằng `formatDate` dùng chung** (`utils/formatDate.ts`). Có `TableSkeleton` loading / error + Try again / empty.
   - `HotelPartnersPage.tsx` giờ render `<BookingActivitiesTab />` và **xoá toàn bộ mock** (`mockPartners`, `mockBookings`, interface `HotelPartner`/`BookingActivity`, `bookingStatusConfig`, import `ChevronDown`).
   - `npx tsc -p tsconfig.app.json --noEmit`: mọi file mới/đụng tới đều sạch; tổng vẫn 21 lỗi pre-existing không liên quan.
+
 ### July 2, 2026
 
 - [x] **Platform Manager · Hotel Partners — nối API hiệu suất thật (`/performance` + `/hotels/:id/performance`), bỏ mock tab Platform Performance**:

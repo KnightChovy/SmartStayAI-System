@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { BadgeCheck, Loader2, Upload } from 'lucide-react';
 import { useUpdateProfile } from '@/hooks/account';
 import { useUpload } from '@/hooks/use-upload';
@@ -16,6 +17,7 @@ const MIN_DOB = toDateInputValue(
 );
 
 export function ProfileForm({ initial }: { initial: UserProfile }) {
+  const { t } = useTranslation('account');
   const updateProfile = useUpdateProfile();
   const upload = useUpload();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -60,7 +62,7 @@ export function ProfileForm({ initial }: { initial: UserProfile }) {
           </div>
         )}
         <div className="flex-1">
-          <Label>Profile photo</Label>
+          <Label>{t('profile.photo')}</Label>
           <div className="mt-1.5 flex flex-wrap items-center gap-2">
             <input
               ref={fileInputRef}
@@ -80,7 +82,7 @@ export function ProfileForm({ initial }: { initial: UserProfile }) {
               ) : (
                 <Upload className="size-4" />
               )}
-              {upload.isPending ? 'Uploading…' : 'Upload photo'}
+              {upload.isPending ? t('profile.uploading') : t('profile.upload')}
             </Button>
             {form.avatarUrl && (
               <Button
@@ -88,13 +90,13 @@ export function ProfileForm({ initial }: { initial: UserProfile }) {
                 variant="ghost"
                 onClick={() => set('avatarUrl', null)}
               >
-                Remove
+                {t('profile.remove')}
               </Button>
             )}
           </div>
           {upload.isError && (
             <p className="mt-1 text-xs text-error">
-              Upload failed. Try another image.
+              {t('profile.uploadError')}
             </p>
           )}
         </div>
@@ -102,19 +104,19 @@ export function ProfileForm({ initial }: { initial: UserProfile }) {
 
       {/* Basic info */}
       <div className="grid gap-4 rounded-2xl border border-outline-variant/30 bg-surface p-5 sm:grid-cols-2">
-        <Field label="Full name">
+        <Field label={t('profile.fullName')}>
           <Input
             value={form.fullName}
             onChange={e => set('fullName', e.target.value)}
           />
         </Field>
-        <Field label="Phone">
+        <Field label={t('profile.phone')}>
           <Input
             value={form.phone ?? ''}
             onChange={e => set('phone', e.target.value)}
           />
         </Field>
-        <Field label="Email" className="sm:col-span-2">
+        <Field label={t('profile.email')} className="sm:col-span-2">
           <div className="flex items-center gap-2">
             <Input
               value={form.email}
@@ -123,34 +125,34 @@ export function ProfileForm({ initial }: { initial: UserProfile }) {
             />
             {form.emailVerifiedAt && (
               <span className="flex shrink-0 items-center gap-1 text-xs font-semibold text-emerald-600">
-                <BadgeCheck className="size-4" /> Verified
+                <BadgeCheck className="size-4" /> {t('profile.verified')}
               </span>
             )}
           </div>
         </Field>
-        <Field label="Date of birth">
+        <Field label={t('profile.dob')}>
           <DatePicker
             value={form.dateOfBirth ?? ''}
             min={MIN_DOB}
             max={TODAY}
-            placeholder="Select your date of birth"
+            placeholder={t('profile.dobPlaceholder')}
             onChange={v => set('dateOfBirth', v || null)}
             className="h-8 bg-surface"
           />
         </Field>
-        <Field label="Nationality">
+        <Field label={t('profile.nationality')}>
           <Input
             value={form.nationality ?? ''}
             onChange={e => set('nationality', e.target.value)}
           />
         </Field>
-        <Field label="ID card number">
+        <Field label={t('profile.idCard')}>
           <Input
             value={form.idCardNumber ?? ''}
             onChange={e => set('idCardNumber', e.target.value)}
           />
         </Field>
-        <Field label="Passport number">
+        <Field label={t('profile.passport')}>
           <Input
             value={form.passportNumber ?? ''}
             onChange={e => set('passportNumber', e.target.value)}
@@ -160,7 +162,7 @@ export function ProfileForm({ initial }: { initial: UserProfile }) {
 
       {/* Preferences */}
       <div className="grid gap-4 rounded-2xl border border-outline-variant/30 bg-surface p-5 sm:grid-cols-2">
-        <Field label="Preferred language">
+        <Field label={t('profile.preferredLanguage')}>
           <select
             value={form.preferredLanguage}
             onChange={e =>
@@ -172,7 +174,7 @@ export function ProfileForm({ initial }: { initial: UserProfile }) {
             <option value="en">English</option>
           </select>
         </Field>
-        <Field label="Preferred currency">
+        <Field label={t('profile.preferredCurrency')}>
           <select
             value={form.preferredCurrency}
             onChange={e =>
@@ -192,7 +194,7 @@ export function ProfileForm({ initial }: { initial: UserProfile }) {
             className="size-4 accent-primary"
           />
           <span className="text-sm text-on-surface-variant">
-            Send me deals and personalized recommendations
+            {t('profile.marketingOptIn')}
           </span>
         </label>
       </div>
@@ -207,10 +209,10 @@ export function ProfileForm({ initial }: { initial: UserProfile }) {
           {updateProfile.isPending && (
             <Loader2 className="size-4 animate-spin" />
           )}
-          Save changes
+          {t('profile.saveChanges')}
         </Button>
         {saved && (
-          <span className="text-sm font-medium text-emerald-600">Saved!</span>
+          <span className="text-sm font-medium text-emerald-600">{t('profile.saved')}</span>
         )}
       </div>
     </form>

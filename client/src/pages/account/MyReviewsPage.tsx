@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MessageSquareQuote, PencilLine, Star } from 'lucide-react';
 import { useMyReviews } from '@/hooks/account';
 import StarRating from '@/components/shared/StarRating';
@@ -9,23 +10,30 @@ import { Button } from '@/components/ui/button';
 import { formatDateShort } from '@/utils/formatDate';
 import type { ReviewItem } from '@/types/account.types';
 
-const STATUS_LABEL: Record<string, { label: string; className: string }> = {
-  pending: { label: 'Pending review', className: 'bg-amber-500/10 text-amber-700' },
-  hidden: { label: 'Hidden', className: 'bg-slate-500/10 text-slate-600' },
+const STATUS_CLASS: Record<string, string> = {
+  pending: 'bg-amber-500/10 text-amber-700',
+  hidden: 'bg-slate-500/10 text-slate-600',
 };
 
 export default function MyReviewsPage() {
+  const { t } = useTranslation('account');
   const { data, isLoading } = useMyReviews();
   const [editing, setEditing] = useState<ReviewItem | null>(null);
+
+  const statusLabel = (status: string) =>
+    status === 'pending'
+      ? t('reviews.pendingReview')
+      : status === 'hidden'
+        ? t('reviews.hidden')
+        : '';
 
   return (
     <div>
       <div className="flex items-center justify-between">
-        <h2 className="font-be-vietnam text-2xl font-bold text-on-surface">My reviews</h2>
+        <h2 className="font-be-vietnam text-2xl font-bold text-on-surface">{t('reviews.title')}</h2>
       </div>
       <p className="mt-1 text-sm text-on-surface-variant">
-        Reviews you’ve shared after completed stays. Write a new one from a stay in{' '}
-        <span className="font-medium text-on-surface">My bookings</span>.
+        {t('reviews.subtitle')}
       </p>
 
       {/* List */}
@@ -35,12 +43,13 @@ export default function MyReviewsPage() {
         ) : !data || data.length === 0 ? (
           <EmptyState
             icon={Star}
-            title="No reviews yet"
-            description="Share your experience after a completed stay from My bookings."
+            title={t('reviews.emptyTitle')}
+            description={t('reviews.emptyDesc')}
           />
         ) : (
           data.map(r => {
-            const badge = STATUS_LABEL[r.status];
+            const badgeClass = STATUS_CLASS[r.status];
+            const badgeLabel = statusLabel(r.status);
             return (
               <div key={r.id} className="rounded-2xl border border-outline-variant/30 bg-surface p-5">
                 <div className="flex items-start justify-between gap-3">
@@ -50,9 +59,9 @@ export default function MyReviewsPage() {
                       <span>
                         {r.bookingCode} · {formatDateShort(r.createdAt)}
                       </span>
-                      {badge && (
-                        <span className={`rounded-full px-2 py-0.5 font-medium ${badge.className}`}>
-                          {badge.label}
+                      {badgeClass && (
+                        <span className={`rounded-full px-2 py-0.5 font-medium ${badgeClass}`}>
+                          {badgeLabel}
                         </span>
                       )}
                     </p>
@@ -64,7 +73,7 @@ export default function MyReviewsPage() {
                       size="sm"
                       onClick={() => setEditing(r)}
                     >
-                      <PencilLine className="size-3.5" /> Edit feedback
+                      <PencilLine className="size-3.5" /> {t('reviews.editFeedback')}
                     </Button>
                   </div>
                 </div>
@@ -83,7 +92,7 @@ export default function MyReviewsPage() {
                   <div className="mt-3 flex gap-2 rounded-xl bg-surface-container-low p-3">
                     <MessageSquareQuote className="size-4 shrink-0 text-primary" />
                     <div>
-                      <p className="text-xs font-semibold text-on-surface">Response from property</p>
+                      <p className="text-xs font-semibold text-on-surface">{t('reviews.responseFromProperty')}</p>
                       <p className="text-sm text-on-surface-variant">{r.managerResponse}</p>
                     </div>
                   </div>

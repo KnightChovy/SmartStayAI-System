@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowLeft, ArrowRight, BedDouble, CalendarDays, ShieldCheck, Users } from 'lucide-react';
@@ -17,13 +18,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { formatDateShort, nightsBetween } from '@/utils/formatDate';
 import type { HotelSearchResult, RoomType } from '@/types/hotel.types';
-
-const PAYMENT_LABELS: Record<PaymentMethod, string> = {
-  vnpay: 'VNPAY',
-  sepay: 'SePay',
-  stripe: 'Credit / Debit card',
-  cash: 'Pay at property',
-};
 
 interface CheckoutState {
   hotel?: HotelSearchResult | null;
@@ -43,6 +37,7 @@ function errorMessage(err: unknown, fallback: string): string {
 }
 
 export default function BookingCheckoutPage() {
+  const { t } = useTranslation(['booking', 'common']);
   const navigate = useNavigate();
   const location = useLocation();
   const user = useAuthStore(state => state.user);
@@ -79,11 +74,11 @@ export default function BookingCheckoutPage() {
       <div className="mx-auto max-w-2xl px-margin-mobile py-16 md:px-8">
         <EmptyState
           icon={BedDouble}
-          title="No room selected"
-          description="Start by searching for a stay and picking a room to book."
+          title={t('emptyTitle')}
+          description={t('emptyDesc')}
           action={
             <Button className="bg-on-surface text-white hover:bg-primary" onClick={() => navigate(ROUTES.search)}>
-              Find a stay
+              {t('findStay')}
             </Button>
           }
         />
@@ -125,10 +120,10 @@ export default function BookingCheckoutPage() {
           onClick={() => navigate(-1)}
           className="mb-4 flex items-center gap-1.5 text-sm font-semibold text-on-surface-variant hover:text-primary"
         >
-          <ArrowLeft className="size-4" /> Back
+          <ArrowLeft className="size-4" /> {t('common:back')}
         </button>
 
-        <h1 className="font-be-vietnam text-[60px] font-bold text-on-surface">Complete your booking</h1>
+        <h1 className="font-be-vietnam text-[60px] font-bold text-on-surface">{t('title')}</h1>
 
         <div className="mt-8 flex flex-col gap-8 lg:flex-row">
           {/* Main */}
@@ -143,42 +138,42 @@ export default function BookingCheckoutPage() {
                 onSubmit={goPayment}
                 className="space-y-4 rounded-2xl border border-outline-variant/30 bg-surface p-6"
               >
-                <h2 className="font-be-vietnam text-lg font-semibold text-on-surface">Guest details</h2>
+                <h2 className="font-be-vietnam text-lg font-semibold text-on-surface">{t('guest.title')}</h2>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="fullName">Full name</Label>
+                    <Label htmlFor="fullName">{t('guest.fullName')}</Label>
                     <Input id="fullName" {...form.register('fullName')} />
                     {form.formState.errors.fullName && (
                       <p className="text-xs text-error">{form.formState.errors.fullName.message}</p>
                     )}
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="phone">Phone</Label>
+                    <Label htmlFor="phone">{t('guest.phone')}</Label>
                     <Input id="phone" {...form.register('phone')} />
                     {form.formState.errors.phone && (
                       <p className="text-xs text-error">{form.formState.errors.phone.message}</p>
                     )}
                   </div>
                   <div className="flex flex-col gap-1.5 sm:col-span-2">
-                    <Label htmlFor="email">Email</Label>
+                    <Label htmlFor="email">{t('guest.email')}</Label>
                     <Input id="email" type="email" {...form.register('email')} />
                     {form.formState.errors.email && (
                       <p className="text-xs text-error">{form.formState.errors.email.message}</p>
                     )}
                   </div>
                   <div className="flex flex-col gap-1.5 sm:col-span-2">
-                    <Label htmlFor="specialRequests">Special requests (optional)</Label>
+                    <Label htmlFor="specialRequests">{t('guest.specialRequests')}</Label>
                     <textarea
                       id="specialRequests"
                       rows={3}
                       {...form.register('specialRequests')}
                       className="rounded-xl border border-outline-variant/40 bg-surface px-3 py-2 text-sm text-on-surface outline-none focus:border-primary"
-                      placeholder="Late check-in, high floor, extra bed…"
+                      placeholder={t('guest.specialRequestsPlaceholder')}
                     />
                   </div>
                 </div>
                 <Button type="submit" size="lg" className="bg-on-surface text-white hover:bg-primary">
-                  Continue to payment <ArrowRight className="size-4" />
+                  {t('guest.continue')} <ArrowRight className="size-4" />
                 </Button>
               </form>
             )}
@@ -186,22 +181,22 @@ export default function BookingCheckoutPage() {
             {/* Step 2 — Payment */}
             {step === 1 && (
               <div className="space-y-5 rounded-2xl border border-outline-variant/30 bg-surface p-6">
-                <h2 className="font-be-vietnam text-lg font-semibold text-on-surface">Payment method</h2>
+                <h2 className="font-be-vietnam text-lg font-semibold text-on-surface">{t('payment.title')}</h2>
                 <PaymentMethodSelect value={payment} onChange={setPayment} />
                 <p className="flex items-center gap-1.5 text-xs text-on-surface-variant">
                   <ShieldCheck className="size-4 text-primary" />
-                  You'll be securely redirected to VNPay to complete your payment.
+                  {t('payment.secureNote')}
                 </p>
                 <div className="flex gap-3">
                   <Button variant="outline" size="lg" onClick={() => setStep(0)}>
-                    Back
+                    {t('common:back')}
                   </Button>
                   <Button
                     size="lg"
                     className="bg-on-surface text-white hover:bg-primary"
                     onClick={() => setStep(2)}
                   >
-                    Review booking <ArrowRight className="size-4" />
+                    {t('payment.review')} <ArrowRight className="size-4" />
                   </Button>
                 </div>
               </div>
@@ -210,54 +205,55 @@ export default function BookingCheckoutPage() {
             {/* Step 3 — Confirm */}
             {step === 2 && (
               <div className="space-y-5 rounded-2xl border border-outline-variant/30 bg-surface p-6">
-                <h2 className="font-be-vietnam text-lg font-semibold text-on-surface">Review &amp; confirm</h2>
+                <h2 className="font-be-vietnam text-lg font-semibold text-on-surface">{t('confirm.title')}</h2>
                 <dl className="grid gap-3 text-sm sm:grid-cols-2">
                   <div>
-                    <dt className="text-on-surface-variant">Guest</dt>
+                    <dt className="text-on-surface-variant">{t('confirm.guest')}</dt>
                     <dd className="font-medium text-on-surface">{form.getValues('fullName')}</dd>
                   </div>
                   <div>
-                    <dt className="text-on-surface-variant">Email</dt>
+                    <dt className="text-on-surface-variant">{t('confirm.email')}</dt>
                     <dd className="font-medium text-on-surface">{form.getValues('email')}</dd>
                   </div>
                   <div>
-                    <dt className="text-on-surface-variant">Phone</dt>
+                    <dt className="text-on-surface-variant">{t('confirm.phone')}</dt>
                     <dd className="font-medium text-on-surface">{form.getValues('phone')}</dd>
                   </div>
                   <div>
-                    <dt className="text-on-surface-variant">Guests</dt>
+                    <dt className="text-on-surface-variant">{t('confirm.guests')}</dt>
                     <dd className="font-medium text-on-surface">{guests}</dd>
                   </div>
                   <div>
-                    <dt className="text-on-surface-variant">Payment</dt>
-                    <dd className="font-medium text-on-surface">{PAYMENT_LABELS[payment]}</dd>
+                    <dt className="text-on-surface-variant">{t('confirm.payment')}</dt>
+                    <dd className="font-medium text-on-surface">
+                      {{
+                        vnpay: t('methods.vnpay.label'),
+                        sepay: t('methods.sepay.label'),
+                        stripe: t('methods.stripe.label'),
+                        cash: t('methods.cash.label'),
+                      }[payment]}
+                    </dd>
                   </div>
                   <div className="sm:col-span-2">
-                    <dt className="text-on-surface-variant">Special requests</dt>
+                    <dt className="text-on-surface-variant">{t('confirm.specialRequests')}</dt>
                     <dd className="font-medium text-on-surface">
-                      {form.getValues('specialRequests')?.trim() || '—'}
+                      {form.getValues('specialRequests')?.trim() || t('confirm.none')}
                     </dd>
                   </div>
                 </dl>
                 {createBooking.isError && (
                   <p className="rounded-xl bg-error/10 px-3 py-2 text-sm text-error">
-                    {errorMessage(
-                      createBooking.error,
-                      'Could not create booking. The room may no longer be available for these dates.'
-                    )}
+                    {errorMessage(createBooking.error, t('confirm.errorBooking'))}
                   </p>
                 )}
                 {createPayment.isError && (
                   <p className="rounded-xl bg-error/10 px-3 py-2 text-sm text-error">
-                    {errorMessage(
-                      createPayment.error,
-                      'Could not start the VNPay payment. Please try again.'
-                    )}
+                    {errorMessage(createPayment.error, t('confirm.errorPayment'))}
                   </p>
                 )}
                 <div className="flex gap-3">
                   <Button variant="outline" size="lg" onClick={() => setStep(1)}>
-                    Back
+                    {t('common:back')}
                   </Button>
                   <Button
                     size="lg"
@@ -266,12 +262,12 @@ export default function BookingCheckoutPage() {
                     onClick={handleConfirm}
                   >
                     {createBooking.isPending
-                      ? 'Creating booking…'
+                      ? t('confirm.creatingBooking')
                       : createPayment.isPending
-                        ? 'Redirecting to VNPay…'
+                        ? t('confirm.redirecting')
                         : createdBookingId
-                          ? 'Retry payment'
-                          : 'Confirm & Pay'}
+                          ? t('confirm.retryPayment')
+                          : t('confirm.confirmPay')}
                   </Button>
                 </div>
               </div>
@@ -292,10 +288,10 @@ export default function BookingCheckoutPage() {
                   {formatDateShort(checkIn)} → {formatDateShort(checkOut)}
                 </p>
                 <p className="flex items-center gap-2">
-                  <BedDouble className="size-4" /> {nights} night{nights === 1 ? '' : 's'}
+                  <BedDouble className="size-4" /> {t('common:nights', { count: nights })}
                 </p>
                 <p className="flex items-center gap-2">
-                  <Users className="size-4" /> {guests} guest{guests === 1 ? '' : 's'}
+                  <Users className="size-4" /> {t('common:guestsCount', { count: guests })}
                 </p>
               </div>
 
@@ -303,7 +299,7 @@ export default function BookingCheckoutPage() {
                 <PriceSummary
                   lines={[
                     {
-                      label: `Room × ${nights} night${nights === 1 ? '' : 's'}`,
+                      label: t('summary.roomLine', { count: nights }),
                       value: subtotal,
                     },
                   ]}
