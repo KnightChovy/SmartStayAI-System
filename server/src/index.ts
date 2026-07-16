@@ -2,6 +2,7 @@ import app from './app';
 import config from './config/config';
 import logger from './config/logger';
 import prisma from './config/prisma';
+import { startScheduler } from './config/scheduler';
 import { Server } from 'http';
 
 let server: Server;
@@ -14,6 +15,8 @@ prisma.$connect()
       if (config.env === 'development') {
         logger.info(`Swagger API Documentation available at: http://localhost:${config.port}/v1/docs`);
       }
+      // Bật job nền SAU khi đã nghe cổng: DB đã sẵn sàng và Render đã thấy service "live"
+      startScheduler();
     });
   })
   .catch((error) => {

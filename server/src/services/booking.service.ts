@@ -760,7 +760,8 @@ export class BookingService {
 
   /**
    * Quét tự động các booking đã confirmed nhưng qua hết kỳ ở mà chưa nhận phòng ⇒ no-show.
-   * Dùng cho cron (chưa tự gọi ở đâu). Mốc chặt hơn bản tay (checkOutDate đã qua) để không bắt nhầm
+   * Chạy bởi scheduler trong app (config/scheduler.ts, 02:00 hằng ngày) — cũng kích tay được qua
+   * POST /internal/jobs/sweep-no-shows. Mốc chặt hơn bản tay (checkOutDate đã qua) để không bắt nhầm
    * khách check-in muộn trong kỳ ở. Mỗi booking xử lý có điều kiện để an toàn khi chạy song song.
    * @returns số booking đã đánh dấu no-show
    */
