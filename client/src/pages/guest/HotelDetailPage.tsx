@@ -266,6 +266,12 @@ export default function HotelDetailPage() {
           )}
         </div>
 
+        {/* Hỗ trợ ra quyết định: tiện nghi → chính sách → vị trí, trước khi khách chọn phòng */}
+        {hotel?.amenities && (
+          <HotelAmenities amenities={hotel.amenities.map(a => a.amenity)} />
+        )}
+        {hotel && <HotelPolicies hotel={hotel} />}
+
         {/* Map — toạ độ từ DB, hoặc geocode từ địa chỉ khi DB chưa có lat/lng */}
         {(mapLat != null && mapLng != null) || (hotel?.nearbyPlaces?.length ?? 0) > 0 ? (
           <section className="mt-6">
@@ -361,11 +367,7 @@ export default function HotelDetailPage() {
           </div>
         )}
 
-        {/* Hỗ trợ ra quyết định: tiện nghi → chính sách → bằng chứng xã hội */}
-        {hotel?.amenities && (
-          <HotelAmenities amenities={hotel.amenities.map(a => a.amenity)} />
-        )}
-        {hotel && <HotelPolicies hotel={hotel} />}
+        {/* Bằng chứng xã hội — chốt lại sau khi khách đã xem phòng */}
         <HotelReviews hotelId={hotelId} />
       </div>
 

@@ -59,6 +59,7 @@ export const ROUTES = {
   staffDashboard: '/staff/dashboard',
   staffFrontDesk: '/staff/front-desk',
   staffBookingDetail: (bookingId: string = ':bookingId') => `/staff/front-desk/${bookingId}`,
+  staffChat: '/staff/chat',
   staffHousekeeping: '/staff/housekeeping',
   staffRooms: '/staff/rooms',
 
@@ -67,6 +68,7 @@ export const ROUTES = {
   accountProfile: '/account/profile',
   accountBookings: '/account/bookings',
   accountBookingDetail: (bookingId: string = ':bookingId') => `/account/bookings/${bookingId}`,
+  accountMessages: '/account/messages',
   accountReviews: '/account/reviews',
   accountLoyalty: '/account/loyalty',
   accountVouchers: '/account/vouchers',

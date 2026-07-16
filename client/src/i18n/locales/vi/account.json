@@ -5,6 +5,7 @@
   "nav": {
     "profile": "Hồ sơ",
     "bookings": "Đặt phòng của tôi",
+    "messages": "Tin nhắn",
     "reviews": "Đánh giá của tôi",
     "loyalty": "Tích điểm",
     "vouchers": "Voucher",
@@ -203,5 +204,8 @@
     "updated": "Đánh giá của bạn đã được cập nhật.",
     "published": "Cảm ơn bạn! Đánh giá của bạn đã được đăng.",
     "submitError": "Không thể gửi đánh giá. Vui lòng thử lại."
+  },
+  "messages": {
+    "empty": "Bạn chưa nhắn với khách sạn nào. Mở khung chat ở góc màn hình để bắt đầu."
   }
 }

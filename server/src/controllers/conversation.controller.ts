@@ -17,7 +17,7 @@ export class ConversationController {
   // Bản STREAM: trả lời từng mẩu chữ qua SSE (Server-Sent Events)
   sendMessageStream = catchAsync(async (req: Request, res: Response): Promise<void> => {
     const { hotelId, conversationId, message } = req.body;
-    const { conversationId: convId, stream } = await conversationService.streamMessage(
+    const { conversationId: convId, status, handoff, stream } = await conversationService.streamMessage(
       hotelId,
       conversationId,
       (req.user as User | undefined) ?? null,
@@ -31,17 +31,47 @@ export class ConversationController {
     res.setHeader('Connection', 'keep-alive');
     res.flushHeaders();
 
-    // Gửi conversationId trước (event "meta") để client lưu, dùng cho lượt sau
-    res.write(`event: meta\ndata: ${JSON.stringify({ conversationId: convId })}\n\n`);
+    // Gửi conversationId + trạng thái TRƯỚC lượt (event "meta") để client lưu. status/handoff ở đây có
+    // thể CŨ (bot có thể tự escalate giữa lượt) — client đợi event "done" để lấy giá trị chốt.
+    res.write(`event: meta\ndata: ${JSON.stringify({ conversationId: convId, status, handoff })}\n\n`);
 
     // Bơm từng mẩu chữ (event "chunk")
     for await (const chunk of stream) {
       res.write(`event: chunk\ndata: ${JSON.stringify({ text: chunk })}\n\n`);
     }
 
-    // Báo xong (event "done") rồi đóng kênh
-    res.write('event: done\ndata: {}\n\n');
+    // Báo xong (event "done") kèm status/handoff CHỐT (đọc tươi sau lượt) rồi đóng kênh
+    const final = await conversationService.getHandoffState(convId);
+    res.write(`event: done\ndata: ${JSON.stringify(final)}\n\n`);
     res.end();
+  });
+
+  // Danh sách "đã nhắn với KS nào" của chính khách (đã đăng nhập). Khách vãng lai → [].
+  listMyConversations = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const result = await conversationService.listMyConversations((req.user as User | undefined) ?? null);
+    res.send(result);
+  });
+
+  // Khôi phục hội thoại đang mở của khách sau khi F5 (theo hotelId, trống = toàn sàn). Chưa có → null.
+  getMyConversation = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const result = await conversationService.getMyConversation(
+      (req.user as User | undefined) ?? null,
+      req.query.hotelId as string | undefined
+    );
+    // res.json để 'null' gửi đúng JSON (res.send(null) gửi body RỖNG → client JSON.parse('') ném lỗi)
+    res.json(result ?? null);
+  });
+
+  // Khách tự gạt công tắc AI ⇄ người thật cho hội thoại của mình
+  updateMode = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const { mode, reason } = req.body;
+    const result = await conversationService.setConversationMode(
+      req.params.conversationId as string,
+      (req.user as User | undefined) ?? null,
+      mode,
+      reason
+    );
+    res.send(result);
   });
 
   // ===== S04: hộp thư nhân viên — xem & trả lời hội thoại của một khách sạn =====
