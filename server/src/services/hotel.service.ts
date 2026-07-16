@@ -20,6 +20,32 @@ import type { AmenityAssignmentInput } from '../dto/amenity.dto';
 
 export class HotelService {
   /**
+   * Điểm đánh giá công khai của MỘT NHÓM khách sạn, gom trong đúng một query để danh sách không
+   * bị N+1. Chỉ tính đánh giá 'published' — bằng đúng tập khách xem được ở trang đánh giá.
+   *
+   * Khách sạn chưa có đánh giá nào ⇒ avgRating = null chứ KHÔNG phải 0: "chưa có điểm" khác hẳn
+   * "bị chấm 0 điểm", để FE hiện "Chưa có đánh giá" thay vì 0 sao.
+   */
+  private getRatingSummaries = async (hotelIds: string[]) => {
+    const rows = await prisma.review.groupBy({
+      by: ['hotelId'],
+      where: { hotelId: { in: hotelIds }, status: 'published' },
+      _avg: { overallRating: true },
+      _count: { _all: true },
+    });
+    return new Map(
+      rows.map((row) => [
+        row.hotelId,
+        {
+          // Làm tròn 1 chữ số ngay ở BE để thẻ danh sách và trang chi tiết không hiện lệch nhau
+          avgRating: row._avg.overallRating === null ? null : Math.round(row._avg.overallRating * 10) / 10,
+          reviewCount: row._count._all,
+        },
+      ])
+    );
+  };
+
+  /**
    * Lấy khách sạn cho thao tác quản trị: chỉ chủ partner của khách sạn hoặc người có quyền
    * manageHotels (platform_manager/admin) được phép. Dùng chung cho mọi API quản lý
    * loại phòng / phòng / pricing rule.
@@ -332,6 +358,10 @@ export class HotelService {
     }
     where.roomTypes = { some: roomTypeWhere };
 
+    // Giá "từ" mỗi đêm THẬT của từng khách sạn khi có khoảng ngày — chỉ tính trên loại phòng còn
+    // trống, và đã áp pricing rule + priceOverride. Rỗng khi tìm không kèm ngày (xem bên dưới).
+    const realMinPricePerNight = new Map<string, Prisma.Decimal>();
+
     // Có khoảng ngày ⇒ tính tồn kho từng loại phòng ứng viên rồi chỉ giữ khách sạn còn phòng
     if (filter.checkIn && filter.checkOut) {
       const candidates = await prisma.roomType.findMany({
@@ -339,10 +369,19 @@ export class HotelService {
         select: { id: true, hotelId: true, basePrice: true },
       });
       const quotes = await availabilityService.getStayQuotes(candidates, filter.checkIn, filter.checkOut);
-      const availableHotelIds = candidates
-        .filter((candidate) => (quotes.get(candidate.id)?.availableRooms ?? 0) > 0)
-        .map((candidate) => candidate.hotelId);
-      where.id = { in: [...new Set(availableHotelIds)] };
+      const numNights = eachNightOfStay(filter.checkIn, filter.checkOut).length;
+      const available = candidates.filter((candidate) => (quotes.get(candidate.id)?.availableRooms ?? 0) > 0);
+      where.id = { in: [...new Set(available.map((candidate) => candidate.hotelId))] };
+
+      // Tận dụng luôn quote vừa tính (không thêm truy vấn): giá mỗi đêm = tổng kỳ ở ÷ số đêm.
+      // Giá từng đêm có thể khác nhau (cuối tuần, lễ) nên đây là mức trung bình mỗi đêm.
+      for (const candidate of available) {
+        const perNight = quotes.get(candidate.id)!.totalPrice.div(numNights).toDecimalPlaces(2);
+        const current = realMinPricePerNight.get(candidate.hotelId);
+        if (!current || perNight.lessThan(current)) {
+          realMinPricePerNight.set(candidate.hotelId, perNight);
+        }
+      }
     }
 
     let orderBy: Prisma.HotelOrderByWithRelationInput = { createdAt: 'desc' };
@@ -365,10 +404,21 @@ export class HotelService {
       prisma.hotel.count({ where }),
     ]);
 
-    // Giá "từ" của khách sạn = basePrice thấp nhất trong các loại phòng phù hợp
+    const ratings = await this.getRatingSummaries(hotels.map((hotel) => hotel.id));
+
+    // Giá "từ" mỗi đêm của khách sạn:
+    // - CÓ ngày ⇒ giá thật đã áp pricing rule/priceOverride, tính từ quote ở trên. Trước đây chỗ này
+    //   lấy thẳng basePrice nên thẻ báo rẻ hơn giá thật khi phòng rẻ nhất đang dính rule tăng giá.
+    // - KHÔNG có ngày ⇒ rule phụ thuộc từng đêm nên chưa xác định được; basePrice thấp nhất là mức
+    //   trung thực nhất có thể nói ("từ ... /đêm").
+    // Chưa gồm thuế/phí (theo thông lệ hiển thị giá phòng mỗi đêm); số phải trả đầy đủ nằm ở bước
+    // chọn phòng và ở booking.
     const results = hotels.map(({ roomTypes, ...hotel }) => ({
       ...hotel,
-      minPrice: roomTypes.length > 0 ? Prisma.Decimal.min(...roomTypes.map((rt) => rt.basePrice)) : null,
+      minPrice:
+        realMinPricePerNight.get(hotel.id) ??
+        (roomTypes.length > 0 ? Prisma.Decimal.min(...roomTypes.map((rt) => rt.basePrice)) : null),
+      ...(ratings.get(hotel.id) ?? { avgRating: null, reviewCount: 0 }),
     }));
 
     return { results, page, limit, totalPages: Math.ceil(totalResults / limit), totalResults };
@@ -402,7 +452,10 @@ export class HotelService {
     if (!hotel) {
       throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy khách sạn');
     }
-    return hotel;
+    // Điểm đánh giá dùng chung một cách tính với danh sách ⇒ thẻ KS và trang chi tiết luôn khớp nhau.
+    // Bảng phân tích chi tiết (5 tiêu chí + phân bố sao) nằm ở GET /hotels/:hotelId/review-stats.
+    const ratings = await this.getRatingSummaries([hotel.id]);
+    return { ...hotel, ...(ratings.get(hotel.id) ?? { avgRating: null, reviewCount: 0 }) };
   };
 
   /**
@@ -451,12 +504,36 @@ export class HotelService {
 
     const quotes = await availabilityService.getStayQuotes(roomTypes, filter.checkIn, filter.checkOut);
     const numNights = eachNightOfStay(filter.checkIn, filter.checkOut).length;
+    // Thuế/phí tính y hệt lúc đặt (cùng hàm computeTaxAndFees) để số báo ở bước chọn phòng CHÍNH LÀ
+    // số khách sẽ trả — trước đây chỉ báo tiền phòng nên khách bị bất ngờ ở bước thanh toán.
+    const taxFeePolicies = (await availabilityService.getTaxFeePolicies([hotelId])).get(hotelId) ?? [];
+    // Số khách dùng để nhân phí per_person: lấy theo bộ lọc, không có thì coi như 1 khách
+    const numGuests = filter.guests ?? 1;
+
     return roomTypes.flatMap((roomType) => {
       const quote = quotes.get(roomType.id);
       if (!quote || quote.availableRooms <= 0) {
         return [];
       }
-      return [{ ...roomType, numNights, availableRooms: quote.availableRooms, totalPrice: quote.totalPrice }];
+      const subtotal = quote.totalPrice;
+      const { taxAmount, feeAmount } = availabilityService.computeTaxAndFees(
+        taxFeePolicies,
+        subtotal,
+        numNights,
+        numGuests
+      );
+      return [
+        {
+          ...roomType,
+          numNights,
+          availableRooms: quote.availableRooms,
+          // Tách khoản giống hệt booking: subtotal + taxAmount + feeAmount = totalPrice
+          subtotal,
+          taxAmount,
+          feeAmount,
+          totalPrice: subtotal.add(taxAmount).add(feeAmount),
+        },
+      ];
     });
   };
 }

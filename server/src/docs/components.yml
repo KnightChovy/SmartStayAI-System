@@ -514,6 +514,12 @@ components:
         hasBalcony: { type: boolean }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
+        numNights: { type: integer, description: 'Only when checkIn/checkOut are given' }
+        availableRooms: { type: integer, description: 'Only when checkIn/checkOut are given' }
+        subtotal: { type: string, description: 'Only with dates. Room charge for the whole stay (pricing rules + priceOverride applied), before tax and fees. Matches booking.subtotal' }
+        taxAmount: { type: string, description: 'Only with dates. Tax from the hotel tax policies. Matches booking.taxAmount' }
+        feeAmount: { type: string, description: 'Only with dates. Service fees from the hotel fee policies. Matches booking.feeAmount' }
+        totalPrice: { type: string, description: 'Only with dates. TOTAL PAYABLE = subtotal + taxAmount + feeAmount — the same figure as booking.totalAmount. Previously this excluded tax/fee' }
         images:
           type: array
           items: { $ref: '#/components/schemas/RoomTypeImage' }
@@ -575,7 +581,9 @@ components:
         ward: { type: string, nullable: true }
         latitude: { type: string, nullable: true }
         longitude: { type: string, nullable: true }
-        starRating: { type: integer, nullable: true }
+        starRating: { type: integer, nullable: true, description: 'Hotel star classification (1-5), not a guest score' }
+        avgRating: { type: number, nullable: true, description: 'Average guest score over published reviews, rounded to 1 decimal. null when the hotel has no review yet (not 0)' }
+        reviewCount: { type: integer, description: 'Number of published reviews' }
         checkInTime: { type: string, nullable: true }
         checkOutTime: { type: string, nullable: true }
         isActive: { type: boolean }
@@ -655,17 +663,19 @@ components:
 
     HotelSummary:
       type: object
-      description: Hotel list item from search — scalar fields + cover image + "from" price (minPrice).
+      description: Hotel list item from search — scalar fields + cover image + "from" price (minPrice) + guest rating.
       properties:
         id: { type: string, format: uuid }
         name: { type: string }
         city: { type: string }
         country: { type: string }
         address: { type: string }
-        starRating: { type: integer, nullable: true }
+        starRating: { type: integer, nullable: true, description: 'Hotel star classification (1-5), not a guest score' }
+        avgRating: { type: number, nullable: true, description: 'Average guest score over published reviews, rounded to 1 decimal. null when the hotel has no review yet (not 0)' }
+        reviewCount: { type: integer, description: 'Number of published reviews' }
         isActive: { type: boolean }
         isListed: { type: boolean }
-        minPrice: { type: string, nullable: true, description: Lowest matching room base price (Decimal as string) }
+        minPrice: { type: string, nullable: true, description: 'Lowest nightly price among matching room types (Decimal as string), excluding tax and fees. With checkIn/checkOut it is the real price for those dates (pricing rules and priceOverride applied, averaged per night, only rooms still available); without dates, rules cannot be resolved so it falls back to the lowest basePrice' }
         images:
           type: array
           description: Cover image only
