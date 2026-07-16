@@ -26,7 +26,6 @@
     "sepayNote": "You'll get a QR code to transfer to — we confirm your booking automatically."
   },
   "trust": {
-    "inclTaxes": "Includes taxes & fees",
     "cancellation": "Cancellation policy",
     "cancellationFallback": "Cancellation terms are set by the property — see the property's policies."
   },
@@ -44,16 +43,17 @@
     "creatingBooking": "Creating booking…",
     "redirecting": "Redirecting to VNPay…",
     "retryPayment": "Retry payment",
-    "confirmPay": "Confirm & Pay"
+    "confirmPay": "Confirm & Pay",
+    "priceUpdated": "The property's final total is {{total}}, which differs from our estimate. Tap \"Retry payment\" to continue with this amount."
   },
   "summary": {
     "roomLine_one": "Room × {{count}} night",
     "roomLine_other": "Room × {{count}} nights",
     "perNightLine_one": "{{price}} × {{count}} night",
     "perNightLine_other": "{{price}} × {{count}} nights",
-    "taxesFees": "Taxes & fees",
-    "included": "Included",
-    "totalInclTaxes": "Total (incl. taxes & fees)",
+    "tax": "Taxes",
+    "fee": "Service fee",
+    "discount": "Discount",
     "checkInFrom": "Check in from {{time}}",
     "checkOutUntil": "out by {{time}}",
     "maxOccupancy_one": "(max {{count}} guest per room)",

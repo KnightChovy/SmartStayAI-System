@@ -2,6 +2,7 @@ import { api } from '@/lib/api';
 import type { Paginated } from '@/types/api.types';
 import type {
   Booking,
+  CancelBookingResponse,
   CreateBookingPayload,
   CreateReviewPayload,
   UpdateReviewPayload,
@@ -36,9 +37,16 @@ export const bookingService = {
     return data;
   },
 
-  /** Hủy booking (`PATCH /bookings/:id/cancel`). */
-  async cancel(bookingId: string, reason?: string): Promise<Booking> {
-    const { data } = await api.patch<Booking>(`/bookings/${bookingId}/cancel`, { reason });
+  /**
+   * Hủy booking (`PATCH /bookings/:id/cancel`).
+   * Trả booking đã huỷ kèm `refund` — yêu cầu hoàn tiền vừa tạo ở trạng thái `pending`
+   * (chờ khách sạn duyệt), hoặc `null` khi không có khoản nào để hoàn.
+   */
+  async cancel(bookingId: string, reason?: string): Promise<CancelBookingResponse> {
+    const { data } = await api.patch<CancelBookingResponse>(
+      `/bookings/${bookingId}/cancel`,
+      { reason }
+    );
     return data;
   },
 
