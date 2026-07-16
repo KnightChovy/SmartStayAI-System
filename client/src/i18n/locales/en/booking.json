@@ -47,13 +47,30 @@
   },
   "summary": {
     "roomLine_one": "Room × {{count}} night",
-    "roomLine_other": "Room × {{count}} nights"
+    "roomLine_other": "Room × {{count}} nights",
+    "perNightLine_one": "{{price}} × {{count}} night",
+    "perNightLine_other": "{{price}} × {{count}} nights",
+    "taxesFees": "Taxes & fees",
+    "included": "Included",
+    "totalInclTaxes": "Total (incl. taxes & fees)"
   },
   "methods": {
-    "vnpay": { "label": "VNPAY", "desc": "Pay via VNPAY QR / bank app" },
-    "sepay": { "label": "SePay", "desc": "Bank transfer with auto-confirm" },
-    "stripe": { "label": "Credit / Debit card", "desc": "Visa, Mastercard, JCB" },
-    "cash": { "label": "Pay at property", "desc": "Cash on check-in" }
+    "vnpay": {
+      "label": "VNPAY",
+      "desc": "Pay via VNPAY QR / bank app"
+    },
+    "sepay": {
+      "label": "SePay",
+      "desc": "Bank transfer with auto-confirm"
+    },
+    "stripe": {
+      "label": "Credit / Debit card",
+      "desc": "Visa, Mastercard, JCB"
+    },
+    "cash": {
+      "label": "Pay at property",
+      "desc": "Cash on check-in"
+    }
   },
   "result": {
     "successTitle": "Payment successful!",

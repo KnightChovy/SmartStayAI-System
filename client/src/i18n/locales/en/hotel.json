@@ -71,5 +71,11 @@
     "perNight": "/ night",
     "bookNow": "Book now",
     "inclTaxes": "Includes taxes & fees"
+  },
+  "gallery": {
+    "close": "Close gallery",
+    "prev": "Previous photo",
+    "next": "Next photo",
+    "viewAll": "View all {{count}} photos"
   }
 }

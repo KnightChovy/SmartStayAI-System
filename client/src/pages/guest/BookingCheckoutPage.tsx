@@ -13,6 +13,7 @@ import {
   Users,
 } from 'lucide-react';
 import { useCreateBooking } from '@/hooks/bookings';
+import { useMoney } from '@/hooks/currency';
 import { useCreateVnpayPayment } from '@/hooks/payments';
 import { useAuthStore } from '@/stores/authStore';
 import { ROUTES } from '@/constants/routes';
@@ -56,6 +57,7 @@ function errorMessage(err: unknown, fallback: string): string {
 
 export default function BookingCheckoutPage() {
   const { t } = useTranslation(['booking', 'common']);
+  const { format } = useMoney();
   const navigate = useNavigate();
   const location = useLocation();
   const user = useAuthStore(state => state.user);
@@ -87,6 +89,8 @@ export default function BookingCheckoutPage() {
     if (roomType.totalPrice) return Number(roomType.totalPrice);
     return Number(roomType.basePrice) * nights;
   }, [roomType, nights]);
+  /** Giá mỗi đêm suy từ tổng (khớp tuyệt đối với tổng, tránh lệch do làm tròn). */
+  const perNight = nights > 0 ? subtotal / nights : Number(roomType?.basePrice ?? 0);
 
   // Thiếu dữ liệu phòng (vào thẳng URL) → mời quay lại tìm phòng
   if (!roomType || !checkIn || !checkOut) {
@@ -138,7 +142,7 @@ export default function BookingCheckoutPage() {
       <div className="mx-auto max-w-6xl px-margin-mobile md:px-8">
         <button
           onClick={() => navigate(-1)}
-          className="mb-4 flex items-center gap-1.5 text-sm font-semibold text-on-surface-variant hover:text-primary"
+          className="mb-4 -ml-2 flex min-h-11 items-center gap-1.5 rounded-lg px-2 text-sm font-semibold text-on-surface-variant hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         >
           <ArrowLeft className="size-4" /> {t('common:back')}
         </button>
@@ -362,17 +366,25 @@ export default function BookingCheckoutPage() {
               </div>
 
               <div className="mt-5 border-t border-outline-variant/30 pt-5">
+                {/*
+                  Breakdown từng khoản từ data sẵn có: giá/đêm × số đêm → tổng.
+                  BE gộp thuế vào `totalAmount` (không tách trường tax/fee) nên dòng
+                  Thuế & phí ghi rõ "Đã bao gồm" thay vì bịa một con số.
+                */}
                 <PriceSummary
                   lines={[
                     {
-                      label: t('summary.roomLine', { count: nights }),
+                      label: t('summary.perNightLine', {
+                        price: format(perNight),
+                        count: nights,
+                      }),
                       value: subtotal,
                     },
+                    { label: t('summary.taxesFees'), valueText: t('summary.included') },
                   ]}
                   total={subtotal}
+                  totalLabel={t('summary.totalInclTaxes')}
                 />
-                {/* Minh bạch giá + chính sách hủy ngay tại thời điểm quyết định */}
-                <p className="mt-1 text-xs text-on-surface-variant">{t('trust.inclTaxes')}</p>
                 <div className="mt-4 border-t border-outline-variant/30 pt-4">
                   <p className="flex items-center gap-1.5 text-xs font-semibold text-on-surface">
                     <ShieldCheck className="size-3.5 shrink-0 text-primary" aria-hidden="true" />

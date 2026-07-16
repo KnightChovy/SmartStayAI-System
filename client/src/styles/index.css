@@ -220,6 +220,20 @@
   html {
     font-family: 'Be Vietnam Pro', sans-serif;
   }
+
+  /*
+   * Focus ring mặc định cho mọi phần tử tương tác khi điều hướng bằng bàn phím
+   * (WCAG 2.4.7). Dùng :focus-visible nên chuột/chạm không thấy viền.
+   * Component nào cần ring riêng vẫn tự override được.
+   */
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  [tabindex]:not([tabindex='-1']):focus-visible {
+    @apply outline-2 outline-offset-2 outline-primary;
+  }
 }
 
 /* Premium Shadows & Custom UI Utils */

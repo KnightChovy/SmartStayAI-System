@@ -47,7 +47,12 @@
   },
   "summary": {
     "roomLine_one": "Phòng × {{count}} đêm",
-    "roomLine_other": "Phòng × {{count}} đêm"
+    "roomLine_other": "Phòng × {{count}} đêm",
+    "perNightLine_one": "{{price}} × {{count}} đêm",
+    "perNightLine_other": "{{price}} × {{count}} đêm",
+    "taxesFees": "Thuế & phí",
+    "included": "Đã bao gồm",
+    "totalInclTaxes": "Tổng (đã gồm thuế & phí)"
   },
   "methods": {
     "vnpay": {

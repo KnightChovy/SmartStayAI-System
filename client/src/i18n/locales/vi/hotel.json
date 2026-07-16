@@ -71,5 +71,11 @@
     "perNight": "/ đêm",
     "bookNow": "Đặt ngay",
     "inclTaxes": "Đã bao gồm thuế & phí"
+  },
+  "gallery": {
+    "close": "Đóng thư viện ảnh",
+    "prev": "Ảnh trước",
+    "next": "Ảnh tiếp theo",
+    "viewAll": "Xem tất cả {{count}} ảnh"
   }
 }

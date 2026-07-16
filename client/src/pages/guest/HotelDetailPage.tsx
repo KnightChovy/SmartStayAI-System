@@ -1,7 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, BadgeCheck, Clock, MapPin, ShieldCheck, Ticket } from 'lucide-react';
+import {
+  ArrowLeft,
+  BadgeCheck,
+  Clock,
+  Image as ImageIcon,
+  MapPin,
+  ShieldCheck,
+  Ticket,
+} from 'lucide-react';
 import { useHotel } from '@/hooks/hotels/use-hotel';
 import { useRoomTypes } from '@/hooks/hotels/use-room-types';
 import { useGeocode } from '@/hooks/geo';
@@ -16,6 +24,7 @@ import HotelAmenities from '@/components/guest/HotelAmenities';
 import HotelPolicies from '@/components/guest/HotelPolicies';
 import HotelNearby from '@/components/guest/HotelNearby';
 import StickyBookingBar from '@/components/guest/StickyBookingBar';
+import GalleryLightbox from '@/components/guest/GalleryLightbox';
 import DateRangePicker from '@/components/shared/DateRangePicker';
 import GuestSelector from '@/components/shared/GuestSelector';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -83,6 +92,7 @@ export default function HotelDetailPage() {
 
   // Gallery: ảnh khách sạn + ảnh đại diện từng loại phòng
   const [activeImage, setActiveImage] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const gallery = useMemo(() => {
     const imgs = [
       ...(hotel?.images?.map(i => i.url) ?? []),
@@ -130,14 +140,18 @@ export default function HotelDetailPage() {
       <div className="mx-auto max-w-7xl px-margin-mobile md:px-8">
         <button
           onClick={() => navigate(-1)}
-          className="mb-4 flex items-center gap-1.5 text-sm font-semibold text-on-surface-variant hover:text-primary"
+          className="mb-4 -ml-2 flex min-h-11 items-center gap-1.5 rounded-lg px-2 text-sm font-semibold text-on-surface-variant hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         >
           <ArrowLeft className="size-4" /> {t('backToResults')}
         </button>
 
-        {/* Gallery */}
-        <div className="grid gap-3 md:grid-cols-4 md:grid-rows-2">
-          <div className="overflow-hidden rounded-3xl md:col-span-2 md:row-span-2">
+        {/* Gallery — click bất kỳ ảnh nào để mở lightbox toàn màn hình (vuốt / ←→ / Esc) */}
+        <div className="relative grid gap-3 md:grid-cols-4 md:grid-rows-2">
+          <button
+            type="button"
+            onClick={() => setLightboxOpen(true)}
+            className="overflow-hidden rounded-3xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary md:col-span-2 md:row-span-2"
+          >
             <img
               src={gallery[activeImage]}
               alt={t('galleryAlt', {
@@ -147,12 +161,15 @@ export default function HotelDetailPage() {
               })}
               className="h-72 w-full object-cover md:h-full"
             />
-          </div>
+          </button>
           {gallery.slice(0, 4).map((url, i) => (
             <button
               key={url + i}
-              onClick={() => setActiveImage(gallery.indexOf(url))}
-              className="hidden overflow-hidden rounded-2xl md:block"
+              onClick={() => {
+                setActiveImage(gallery.indexOf(url));
+                setLightboxOpen(true);
+              }}
+              className="hidden overflow-hidden rounded-2xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary md:block"
             >
               <img
                 src={url}
@@ -165,7 +182,26 @@ export default function HotelDetailPage() {
               />
             </button>
           ))}
+
+          {gallery.length > 1 && (
+            <Button
+              variant="outline"
+              className="absolute bottom-3 right-3 min-h-11 bg-surface/90 backdrop-blur"
+              onClick={() => setLightboxOpen(true)}
+            >
+              <ImageIcon className="size-4" /> {t('gallery.viewAll', { count: gallery.length })}
+            </Button>
+          )}
         </div>
+
+        <GalleryLightbox
+          open={lightboxOpen}
+          onClose={() => setLightboxOpen(false)}
+          images={gallery}
+          index={activeImage}
+          onIndexChange={setActiveImage}
+          hotelName={hotel?.name ?? ''}
+        />
 
         {/* Header */}
         <div className="mt-6">
