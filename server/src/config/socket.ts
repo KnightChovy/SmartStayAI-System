@@ -66,7 +66,10 @@ const registerHandlers = (socket: Socket): void => {
         return;
       }
       const allowed = user
-        ? conversation.userId === user.id || (await canOperateHotel(conversation.hotelId, user))
+        ? conversation.userId === user.id ||
+          // Hội thoại toàn sàn (hotelId null) không thuộc KS nào ⇒ nhân viên KHÔNG join qua quyền KS được;
+          // chỉ chủ hội thoại (khớp userId) mới vào. Concierge theo KS thì kiểm quyền như cũ.
+          (conversation.hotelId !== null && (await canOperateHotel(conversation.hotelId, user)))
         : conversation.userId === null; // khách vãng lai chỉ vào được hội thoại vô danh (userId null)
       if (allowed) {
         await socket.join(conversationRoom(conversationId));
