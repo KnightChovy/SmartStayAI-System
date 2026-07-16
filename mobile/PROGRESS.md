@@ -8,6 +8,22 @@ This file tracks the accomplished tasks, resolved user requests, and structural/
 
 ## Completed Tasks Checklist
 
+### July 17, 2026 (continued)
+
+- [x] **Đánh giá khách sạn cho guest — bám theo cách client làm; sửa luôn 3 lỗ hổng ở màn chi tiết KS**:
+  - **Rà soát trước**: client viết đánh giá qua `ReviewModal` mở từ `BookingDetailPage` khi `status === 'checked_out'`, tra `useMyReviews()` để biết đã đánh giá chưa → create (`POST /reviews`) hay edit (`PATCH /reviews/:id`); trang chi tiết KS render `HotelReviews`. **Mobile trước đây thiếu HẲN phần viết đánh giá** (booking detail chỉ có Modify/Cancel, `useCreateReview` viết ra nhưng **không màn nào gọi**).
+  - **3 lỗi thật ở màn chi tiết KS (đã sửa)**:
+    1. **Điểm trung bình SAI**: tự cộng `overallRating` của đúng **5 review vừa tải** rồi chia → khách sạn 100 đánh giá vẫn ra điểm của 5 cái mới nhất. BE **có sẵn** `GET /hotels/:hotelId/review-stats` (**public**, tính trên toàn bộ review đã duyệt) — nay dùng endpoint này. ⚠️ Đường dẫn là `/review-stats` (gạch nối); `/hotels/:id/reviews/stats` là bản của **chủ KS**, khách gọi vào **401** (đã thử, xác nhận).
+    2. **"View all" là nút chết** — không `onPress`, không route. Nay có màn `app/hotel/reviews/[id].tsx` (danh sách đầy đủ + tải thêm + pull-to-refresh).
+    3. **Bỏ mất dữ liệu BE đã trả**: thẻ review cũ không render **ảnh**, **điểm thành phần** lẫn **phản hồi của khách sạn** (`managerResponse`).
+  - **Tầng dữ liệu** (1 endpoint = 1 hook, đúng AGENTS): types `MyReview`/`UpdateReviewPayload`/`ReviewStats`/`ReviewStatus`/`MyReviewsParams`; `reviewsService` thêm `getMine`/`update`/`getHotelStats`; hooks `use-my-reviews` (enabled theo đăng nhập), `use-update-review`, `use-hotel-review-stats`; thêm key `reviews.mine`/`reviews.hotelStats`.
+  - **UI mới**: `StarRating` thêm **chế độ chạm để chấm điểm** (`onRate`, hitSlop 8 vì sao 24-28px vẫn dưới ngưỡng chạm 44pt) — trước chỉ hiển thị được; `ReviewSheet` (viết/sửa, **điểm tổng suy ra = trung bình 4 tiêu chí làm tròn** đúng như client vì BE cần số nguyên 1..5; ảnh nhập bằng **URL** vì BE chỉ nhận URI, chặn sẵn 10 ảnh); `ReviewCard` dùng chung (ảnh + phản hồi KS); `HotelReviews` (điểm tổng + nhãn theo ngưỡng + 4 thanh điểm thành phần + empty state "Mới trên SmartStay" thay vì bịa điểm); màn **`profile/my-reviews`** (xem + sửa, badge `pending`/`hidden`) + link trong Profile.
+  - **Vào đúng chỗ**: nút "Viết đánh giá"/"Sửa đánh giá" ở `booking/[id]` **chỉ hiện khi `checked_out`** — khớp luật BE (`review.service.ts`: 400 "Chỉ đánh giá được sau khi đã trả phòng"), nên khách không bao giờ chạm phải lỗi đó.
+  - **i18n**: thêm `account.review.*` (25 key) + `account.reviews.*` + `hotel.reviews.*` (20 key) — en/vi **cân bằng** (hotel 50/50, account 127/127).
+  - **Verify bằng API THẬT (không đoán)**: (1) `review-stats` gọi **không token → 200**, shape khớp `ReviewStats` từng field; (2) đường dẫn partner → **401** (chứng minh chọn đúng endpoint); (3) `/reviews/me` trả `hotel`+`booking`+`status`, **không** có `customer` → khớp `MyReview`; (4) **E2E**: tạo booking → thu tiền → check-in → check-out → `POST /reviews` (**201**, BE gán `published`) → **stats total 1→2**, review hiện ở list công khai kèm ảnh + tên khách → `PATCH` sửa được, gửi `images: []` **xoá sạch ảnh**, điểm KS tự tính lại **5 → 4.5**; (5) POST vào booking `cancelled` → **400** đúng như dự kiến. **Đã xoá review test (DELETE 204), DB về nguyên trạng** (Đà Nẵng: total 1, overall 5).
+  - `tsc` **0 lỗi**, `eslint` **sạch**, `npx expo export` build OK; grep bundle: có route `/hotel/reviews/[id]` + `/profile/my-reviews`, endpoint `/reviews/me` + `/review-stats`, và chuỗi review **cả EN lẫn VI**.
+  - **Ghi nhận (chưa sửa, ngoài phạm vi)**: `client` vẫn tự tính trung bình từ mẫu 100 review kèm comment "BE chưa có endpoint stats công khai" — comment đó **đã lỗi thời**, `GET /hotels/:id/review-stats` nay là public; client nên chuyển sang dùng để hết lệch điểm với app.
+
 ### July 17, 2026
 
 - [x] **Guest tab navigation updated to LenFolk-style floating navigation**: edge-to-edge bottom bar, accessible press/long-press behavior, and a raised central **Bookings** action. Existing guest routes and translated labels are unchanged.
