@@ -3,13 +3,13 @@ import { notificationService } from '@/services/notification.service';
 import { queryKeys } from '@/constants/queryKeys';
 
 /**
- * Đánh dấu TẤT CẢ thông báo đã đọc (`POST /notifications/read-all`).
- * BE trả `{ updated: <số dòng> }` chứ không trả danh sách ⇒ invalidate để nạp lại.
+ * Xoá một thông báo của chính mình (`DELETE /notifications/:id`).
+ * BE trả 204 (không body) và chặn xoá thông báo của người khác bằng 404.
  */
-export function useMarkAllNotificationsRead() {
+export function useDeleteNotification() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: () => notificationService.markAllRead(),
+    mutationFn: (id: string) => notificationService.remove(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.notifications.all }),
   });
 }

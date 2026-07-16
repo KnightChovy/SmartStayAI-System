@@ -11,9 +11,15 @@ import type { HotelDetail, HotelSearchResult } from '@/types/hotel.types';
  * gọi API chi tiết, mất tiện nghi/chính sách).
  */
 export function useHotel(hotelId: string, seed?: HotelSearchResult | null) {
-  /** Bản tóm tắt + các relation rỗng, để header hiện ngay trong lúc chờ chi tiết. */
+  /**
+   * Bản tóm tắt + các relation rỗng, để header hiện ngay trong lúc chờ chi tiết.
+   *
+   * ⚠️ Các mảng rỗng ở đây là BỊA (seed không hề có chúng), nên nơi nào đọc `policies`/`charges`
+   * PHẢI kiểm `isPlaceholderData` trước — coi `charges: []` là thật sẽ báo "không thuế" cho
+   * khách sạn có VAT. Đừng bỏ mảng rỗng đi để "cho an toàn": thiếu field thì type vỡ.
+   */
   const placeholder: HotelDetail | undefined = seed
-    ? { ...seed, amenities: [], policies: [], nearbyPlaces: [], contacts: [] }
+    ? { ...seed, amenities: [], policies: [], charges: [], nearbyPlaces: [], contacts: [] }
     : undefined;
 
   return useQuery({

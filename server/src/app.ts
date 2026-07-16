@@ -35,8 +35,20 @@ app.use(express.urlencoded({ extended: true }));
 app.use(xss());
 app.use(mongoSanitize());
 
-// gzip compression
-app.use(compression());
+// gzip compression.
+// SSE phải chừa ra: `compressible()` coi mọi 'text/*' là nén được (khớp regex ^text/), nên
+// text/event-stream bị gom vào buffer nén và chỉ xả khi res.end() — chatbot stream mất sạch hiệu ứng
+// gõ dần (đo thật: 7 lần đẩy còn 1 lần, tới ở đúng mốc cuối). Response khác vẫn nén như cũ.
+app.use(
+  compression({
+    filter: (req: Request, res: Response) => {
+      if (String(res.getHeader('Content-Type') ?? '').includes('text/event-stream')) {
+        return false;
+      }
+      return compression.filter(req, res);
+    },
+  })
+);
 
 // enable cors
 app.use(cors());

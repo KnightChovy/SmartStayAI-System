@@ -1,11 +1,10 @@
 import { Bed, BedDouble, Check, Eye, Maximize, Star, Users } from 'lucide-react';
+import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import type { RoomType } from '@/types/hotel.types';
-import type { HotelPolicy } from '@/types/hotel-property.types';
 import { useMoney } from '@/hooks/currency';
 import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/button';
-import { estimateTaxAndFees } from '@/utils/estimateTaxAndFees';
 
 const FALLBACK_IMAGE =
   'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?q=80&w=1200&auto=format&fit=crop';
@@ -17,13 +16,8 @@ interface RoomTypeCardProps {
   selectable?: boolean;
   /** Phòng rẻ nhất trong danh sách → gắn nhãn neo lựa chọn (Hick's law). */
   bestValue?: boolean;
-  /**
-   * Chính sách của khách sạn để tính thuế/phí cộng thêm.
-   * `undefined` = chưa biết → thẻ không nói gì về thuế (không được đoán).
-   */
-  policies?: HotelPolicy[];
-  /** Số khách — cần cho chính sách tính theo đầu người. */
-  guests?: number;
+  /** Link "xem chi tiết phòng" — không truyền thì thẻ không hiện link. */
+  detailHref?: string;
 }
 
 /** Thẻ loại phòng trong trang chi tiết khách sạn. */
@@ -32,8 +26,7 @@ export default function RoomTypeCard({
   onSelect,
   selectable = false,
   bestValue = false,
-  policies,
-  guests = 1,
+  detailHref,
 }: RoomTypeCardProps) {
   const { t } = useTranslation('hotel');
   const { format } = useMoney();
@@ -46,15 +39,14 @@ export default function RoomTypeCard({
   // Chỉ hiện số phòng khi thực sự khan hiếm (≤ 5). Quảng cáo "còn nhiều phòng"
   // làm GIẢM tính cấp bách nên không hiển thị gì khi còn dư.
   const showScarcity = hasStayQuote && availableRooms > 0 && availableRooms <= 5;
-  // `totalPrice` của BE là TIỀN PHÒNG THUẦN — thuế/phí cộng thêm lúc đặt. Nói rõ phần
-  // chênh thay vì để khách tưởng đây là số cuối rồi ngã ngửa ở bước thanh toán.
-  const taxFee = estimateTaxAndFees({
-    policies,
-    subtotal: Number(roomType.totalPrice ?? 0),
-    numNights: roomType.numNights ?? 0,
-    numGuests: guests,
-  });
-  const extraTaxFee = taxFee ? taxFee.taxAmount + taxFee.feeAmount : 0;
+  // `GET /hotels/:id/room-types` giờ trả TÁCH KHOẢN THẬT (subtotal + taxAmount + feeAmount
+  // = totalPrice), tính bằng đúng hàm `computeTaxAndFees` lúc đặt ⇒ `totalPrice` ĐÃ GỒM
+  // thuế/phí. Trước đây thẻ này coi `totalPrice` là tiền phòng thuần rồi ước tính thuế
+  // cộng thêm lên trên → khách bị tính thuế HAI LẦN. Nay đọc thẳng số của BE, không ước tính.
+  const taxFeeTotal =
+    roomType.taxAmount != null && roomType.feeAmount != null
+      ? Number(roomType.taxAmount) + Number(roomType.feeAmount)
+      : null;
 
   return (
     <div className="flex flex-col overflow-hidden rounded-2xl border border-outline-variant/30 bg-surface md:flex-row">
@@ -65,7 +57,15 @@ export default function RoomTypeCard({
       <div className="flex flex-1 flex-col p-5">
         <div className="flex flex-wrap items-center gap-2">
           {/* h3: nằm dưới h2 "Available rooms" — không nhảy cấp (WCAG 1.3.1) */}
-          <h3 className="font-be-vietnam text-lg font-semibold text-on-surface">{roomType.name}</h3>
+          <h3 className="font-be-vietnam text-lg font-semibold text-on-surface">
+            {detailHref ? (
+              <Link to={detailHref} className="hover:text-primary hover:underline">
+                {roomType.name}
+              </Link>
+            ) : (
+              roomType.name
+            )}
+          </h3>
           {bestValue && (
             <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-bold text-primary">
               <Star className="size-3 fill-current" aria-hidden="true" /> {t('room.bestValue')}
@@ -184,11 +184,11 @@ export default function RoomTypeCard({
                 <p className="font-be-vietnam text-xl font-bold text-on-surface">
                   {format(roomType.totalPrice)}
                 </p>
-                {/* Chưa biết chính sách (`null`) → im lặng, không đoán thay khách sạn. */}
-                {taxFee && (
+                {/* BE không tách khoản (`null`) → im lặng, không đoán thay khách sạn. */}
+                {taxFeeTotal != null && (
                   <p className="text-xs text-on-surface-variant">
-                    {extraTaxFee > 0
-                      ? t('room.plusTaxesFees', { amount: format(extraTaxFee) })
+                    {taxFeeTotal > 0
+                      ? t('room.inclTaxesFees', { amount: format(taxFeeTotal) })
                       : t('room.noExtraTaxes')}
                   </p>
                 )}
@@ -204,15 +204,25 @@ export default function RoomTypeCard({
             )}
           </div>
 
-          {selectable && (
-            <Button
-              size="lg"
-              className="min-h-11 bg-primary text-on-primary hover:bg-primary/90"
-              onClick={() => onSelect?.(roomType)}
-            >
-              {t('room.bookNow')}
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            {detailHref && (
+              <Link
+                to={detailHref}
+                className="inline-flex min-h-11 items-center rounded-xl px-3 text-sm font-semibold text-primary hover:bg-primary/5 hover:underline"
+              >
+                {t('room.viewDetails')}
+              </Link>
+            )}
+            {selectable && (
+              <Button
+                size="lg"
+                className="min-h-11 bg-primary text-on-primary hover:bg-primary/90"
+                onClick={() => onSelect?.(roomType)}
+              >
+                {t('room.bookNow')}
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </div>

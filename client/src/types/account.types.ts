@@ -84,7 +84,7 @@ export interface LoyaltyAccount {
   transactions: LoyaltyTransaction[];
 }
 
-// ----- Notifications -----
+// ----- Notifications (`/v1/notifications`, khớp model Prisma `Notification`) -----
 export type NotificationType =
   | 'booking_confirmed'
   | 'payment_success'
@@ -94,13 +94,59 @@ export type NotificationType =
   | 'promotion'
   | 'partner_approved';
 
+export type NotificationChannel = 'push' | 'email' | 'sms' | 'in_app';
+export type NotificationStatus = 'pending' | 'sent' | 'failed' | 'read';
+
 export interface AppNotification {
   id: string;
+  userId: string;
   type: NotificationType;
   title: string;
   body: string;
-  createdAt: string;
+  /** Payload tự do BE đính kèm (vd `{ bookingId }`). Không có schema cố định. */
+  data?: unknown;
+  channel: NotificationChannel;
+  status: NotificationStatus;
+  sentAt?: string | null;
+  /**
+   * Mốc đã đọc. ⚠️ Đây là NGUỒN THẬT của trạng thái đọc — mọi query của BE lọc theo
+   * `readAt: null`, không nhìn `status`. Đừng suy trạng thái đọc từ `status`.
+   */
   readAt?: string | null;
+  createdAt: string;
+}
+
+/** Query của `GET /v1/notifications`. */
+export interface NotificationsParams {
+  unreadOnly?: boolean;
+  type?: NotificationType;
+  sortBy?: string;
+  limit?: number;
+  page?: number;
+}
+
+/**
+ * Response của `GET /v1/notifications` — phân trang chuẩn + `unreadCount`.
+ * `unreadCount` là TỔNG chưa đọc của người dùng, BE cố tình tính bỏ qua bộ lọc
+ * nên badge vẫn đúng kể cả khi đang xem danh sách đã lọc.
+ */
+export interface NotificationsResponse {
+  results: AppNotification[];
+  page: number;
+  limit: number;
+  totalPages: number;
+  totalResults: number;
+  unreadCount: number;
+}
+
+/** Response của `GET /v1/notifications/unread-count`. */
+export interface UnreadCountResponse {
+  unreadCount: number;
+}
+
+/** Response của `POST /v1/notifications/read-all` — số dòng vừa cập nhật (key là `updated`). */
+export interface MarkAllReadResponse {
+  updated: number;
 }
 
 // ----- Reviews -----

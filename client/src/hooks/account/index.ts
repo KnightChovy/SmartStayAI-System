@@ -4,5 +4,6 @@ export { useLoyalty } from './use-loyalty';
 export { useNotifications } from './use-notifications';
 export { useMarkNotificationRead } from './use-mark-notification-read';
 export { useMarkAllNotificationsRead } from './use-mark-all-notifications-read';
+export { useDeleteNotification } from './use-delete-notification';
 export { useMyReviews } from './use-my-reviews';
 export { useAvailablePromotions } from './use-available-promotions';

@@ -48,11 +48,10 @@ export default function HotelDetailPage() {
 
   // Hotel summary có thể đã được truyền qua router state từ trang search
   const stateHotel = (location.state as { hotel?: HotelSearchResult } | null)?.hotel ?? null;
-  const { data: hotel, isLoading: hotelLoading, isPlaceholderData } = useHotel(hotelId, stateHotel);
-  // Placeholder của `useHotel` là seed + relation RỖNG, mà seed ở đây là bản tóm tắt từ trang
-  // search (không hề có policies) ⇒ `policies: []` lúc này là BỊA. Chỉ đọc khi query đã về,
-  // không thì để `undefined` = chưa biết → thẻ phòng im lặng thay vì hứa "không thu thêm".
-  const hotelPolicies = isPlaceholderData ? undefined : hotel?.policies;
+  const { data: hotel, isLoading: hotelLoading } = useHotel(hotelId, stateHotel);
+  // Không còn ước tính thuế ở đây nữa: `GET /hotels/:id/room-types` đã trả thuế/phí THẬT
+  // (`taxAmount`/`feeAmount`) nên `RoomTypeCard` đọc thẳng số của BE. Nhờ vậy cũng hết phải
+  // canh `isPlaceholderData` để tránh đọc nhầm `policies: []` bịa ra từ placeholder.
 
   const checkIn = params.get('checkIn') ?? '';
   const checkOut = params.get('checkOut') ?? '';
@@ -81,6 +80,15 @@ export default function HotelDetailPage() {
     [checkIn, checkOut, guests]
   );
   const { data: roomTypes, isLoading: roomsLoading } = useRoomTypes(hotelId, roomParams);
+
+  /** Ngày/số khách đang chọn, mang sang trang chi tiết phòng để nó báo đúng giá kỳ ở. */
+  const roomQuery = useMemo(() => {
+    const q = new URLSearchParams();
+    if (checkIn) q.set('checkIn', checkIn);
+    if (checkOut) q.set('checkOut', checkOut);
+    q.set('guests', String(guests));
+    return q.toString();
+  }, [checkIn, checkOut, guests]);
 
   // Giá "từ" cho thanh sticky: `GET /hotels/:id` không trả `minPrice` (field đó chỉ có ở
   // list search), nên suy từ basePrice thấp nhất của các loại phòng đang hiển thị.
@@ -348,8 +356,7 @@ export default function HotelDetailPage() {
                 selectable
                 onSelect={handleSelectRoom}
                 bestValue={roomTypes.length > 1 && rt.id === bestValueRoomId}
-                policies={hotelPolicies}
-                guests={guests}
+                detailHref={`${ROUTES.roomTypeDetail(rt.hotelId, rt.id)}?${roomQuery}`}
               />
             ))
           )}

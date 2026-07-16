@@ -16,7 +16,10 @@
     "specialRequests": "Yêu cầu đặc biệt (không bắt buộc)",
     "specialRequestsPlaceholder": "Nhận phòng muộn, tầng cao, thêm giường…",
     "continue": "Tiếp tục thanh toán",
-    "requiredMark": "bắt buộc"
+    "requiredMark": "bắt buộc",
+    "phoneFromProfile": "Khách sạn sẽ liên hệ số này. Đổi số tài khoản trong mục Tài khoản.",
+    "phoneWillSave": "Số này sẽ được lưu vào hồ sơ của bạn để khách sạn liên hệ.",
+    "phoneTempNote": "Số này chỉ dùng cho đơn này, không làm thay đổi SĐT tài khoản của bạn."
   },
   "payment": {
     "title": "Phương thức thanh toán",
@@ -44,7 +47,8 @@
     "redirecting": "Đang chuyển tới VNPay…",
     "retryPayment": "Thử thanh toán lại",
     "confirmPay": "Xác nhận & Thanh toán",
-    "priceUpdated": "Tổng tiền khách sạn chốt là {{total}}, khác với số tạm tính. Bấm \"Thử thanh toán lại\" để tiếp tục với số tiền này."
+    "priceUpdated": "Tổng tiền khách sạn chốt là {{total}}, khác với số tạm tính. Bấm \"Thử thanh toán lại\" để tiếp tục với số tiền này.",
+    "tempPhoneNote": "Số liên hệ cho đơn này: {{phone}}"
   },
   "summary": {
     "roomLine_one": "Phòng × {{count}} đêm",

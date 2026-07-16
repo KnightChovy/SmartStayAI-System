@@ -1,6 +1,6 @@
 import type { BookingFormValues } from '@/validations/booking.validation';
 import type { BookingPayment, RefundStatus } from '@/types/payment.types';
-import type { HotelPolicy } from '@/types/hotel-property.types';
+import type { HotelCharge } from '@/types/hotel-property.types';
 
 export interface BookingDetailsFormProps {
   onSubmit: (values: BookingFormValues) => void;
@@ -180,11 +180,15 @@ export interface TaxFeeEstimate {
 
 export interface TaxFeeEstimateInput {
   /**
-   * Chính sách của khách sạn (`GET /hotels/:id` → `policies[]`).
-   * `undefined` = CHƯA BIẾT (chưa load xong) — khác hẳn `[]` = KS không có chính sách nào.
+   * Khoản thu thuế/phí của khách sạn (`GET /hotels/:id` → `charges[]`).
+   *
+   * ⚠️ Trước đây là `policies[]`, nhưng BE đã tách thuế/phí sang bảng `hotel_charges`
+   * (migration `split_policy_and_charge`) ⇒ `policies` không còn khoản tiền nào để tính.
+   *
+   * `undefined` = CHƯA BIẾT (chưa load xong) — khác hẳn `[]` = KS không thu khoản nào.
    */
-  policies: HotelPolicy[] | undefined;
-  /** Tiền phòng thuần cả kỳ ở (`roomType.totalPrice`). */
+  charges: HotelCharge[] | undefined;
+  /** Tiền phòng thuần cả kỳ ở (chưa thuế/phí). */
   subtotal: number;
   numNights: number;
   numGuests: number;

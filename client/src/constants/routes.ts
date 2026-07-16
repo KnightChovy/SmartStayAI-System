@@ -9,6 +9,9 @@ export const ROUTES = {
   home: '/',
   search: '/search',
   hotelDetail: (hotelId: string = ':hotelId') => `/hotels/${hotelId}`,
+  /** Chi tiết một loại phòng (`GET /hotels/:hotelId/room-types/:roomTypeId`). */
+  roomTypeDetail: (hotelId: string = ':hotelId', roomTypeId: string = ':roomTypeId') =>
+    `/hotels/${hotelId}/rooms/${roomTypeId}`,
   destinations: '/destinations',
   deals: '/deals',
   // Landing "List your property" — mời chủ khách sạn đăng ký làm Hotel Partner

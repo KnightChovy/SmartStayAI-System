@@ -103,6 +103,8 @@
   "notifications": {
     "title": "Notifications",
     "markAllRead": "Mark all read",
+    "delete": "Delete notification",
+    "actionError": "Something went wrong, please try again.",
     "emptyTitle": "No notifications",
     "emptyDesc": "You're all caught up."
   },

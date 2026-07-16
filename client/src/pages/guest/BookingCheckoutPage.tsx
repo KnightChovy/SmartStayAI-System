@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   ArrowRight,
@@ -16,7 +16,7 @@ import {
   ShieldCheck,
   Users,
 } from 'lucide-react';
-import { useProfile } from '@/hooks/account';
+import { useProfile, useUpdateProfile } from '@/hooks/account';
 import { useCreateBooking } from '@/hooks/bookings';
 import { useMoney } from '@/hooks/currency';
 import { useHotel } from '@/hooks/hotels';
@@ -96,6 +96,7 @@ export default function BookingCheckoutPage() {
   const [step, setStep] = useState(0);
   const [payment, setPayment] = useState<PaymentMethod>('vnpay');
   const createBooking = useCreateBooking();
+  const updateProfile = useUpdateProfile();
   const createPayment = useCreateVnpayPayment();
   const createSepay = useCreateSepayPayment();
   const [sepayInfo, setSepayInfo] = useState<SepayPaymentInfo | null>(null);
@@ -135,27 +136,50 @@ export default function BookingCheckoutPage() {
     resetOptions: { keepDirtyValues: true },
   });
 
+  // SĐT tài khoản — nguồn DUY NHẤT mà BE dùng để liên hệ khách (xem `handleConfirm`).
+  const profilePhone = profile?.phone?.trim() ?? '';
+  // Khách đã có số trong hồ sơ nhưng đang gõ số khác ⇒ số tạm cho đơn này. Theo dõi ô nhập để
+  // ghi chú bên dưới đổi ngay lúc gõ, không phải đợi submit mới biết.
+  // Dùng `useWatch` (không phải `form.watch`) vì `watch` trả về hàm mới mỗi lần render nên
+  // React Compiler bỏ qua memo hoá cả component.
+  const watchedPhone = useWatch({ control: form.control, name: 'phone' })?.trim() ?? '';
+  const isTempPhoneTyped = !!profilePhone && !!watchedPhone && watchedPhone !== profilePhone;
+
   const nights = nightsBetween(checkIn, checkOut);
+  // TIỀN PHÒNG THUẦN (chưa thuế/phí). ⚠️ `roomType.totalPrice` từ `GET /hotels/:id/room-types`
+  // giờ ĐÃ GỒM thuế/phí, nên KHÔNG được dùng làm subtotal nữa — trước đây dùng nó rồi cộng
+  // tiếp thuế ước tính ⇒ khách thấy thuế hai lần. `subtotal` là field BE trả riêng cho đúng
+  // khoản này; thiếu (vd phòng lấy từ endpoint chi tiết) thì mới suy từ giá đêm.
   const subtotal = useMemo(() => {
     if (!roomType) return 0;
-    if (roomType.totalPrice) return Number(roomType.totalPrice);
+    if (roomType.subtotal != null) return Number(roomType.subtotal);
     return Number(roomType.basePrice) * nights;
   }, [roomType, nights]);
   /** Giá mỗi đêm suy từ tổng (khớp tuyệt đối với tổng, tránh lệch do làm tròn). */
   const perNight = nights > 0 ? subtotal / nights : Number(roomType?.basePrice ?? 0);
 
   // `useHotel` dựng placeholder = seed + các relation RỖNG, nên trong lúc chờ API,
-  // `hotelDetail.policies` là `[]` BỊA RA — đọc thẳng sẽ tính ra "không thuế" cho KS có VAT 8%.
-  // Chỉ tin `hotelDetail` khi query đã về; chưa về thì dùng policies của seed (trang chi tiết
+  // `hotelDetail.charges` là `[]` BỊA RA — đọc thẳng sẽ tính ra "không thuế" cho KS có VAT 8%.
+  // Chỉ tin `hotelDetail` khi query đã về; chưa về thì dùng charges của seed (trang chi tiết
   // truyền nguyên `HotelDetail` sang nên thường đã có sẵn), còn không thì `undefined` = chưa biết.
-  const policies = isPlaceholderData ? hotelSeed?.policies : hotelDetail?.policies;
+  const charges = isPlaceholderData ? hotelSeed?.charges : hotelDetail?.charges;
 
-  // Thuế/phí chỉ có số thật sau khi tạo booking, nên trước đó phải tự tính — nếu không
-  // khách thấy tổng thấp hơn số VNPay/SePay charge. Số thật (nếu có) luôn thắng.
-  const estimate = useMemo(
-    () => estimateTaxAndFees({ policies, subtotal, numNights: nights, numGuests: guests }),
-    [policies, subtotal, nights, guests]
+  // Thuế/phí BE đã tính sẵn ở `GET /hotels/:id/room-types` (cùng hàm với lúc đặt) ⇒ ưu tiên
+  // dùng số đó. Chỉ khi thiếu (phòng lấy từ endpoint chi tiết — endpoint đó KHÔNG trả thuế)
+  // mới ước tính từ `charges`; không tính thì khách thấy tổng thấp hơn số VNPay/SePay charge.
+  const quoted = useMemo(() => {
+    if (roomType?.taxAmount == null || roomType?.feeAmount == null) return null;
+    const taxAmount = Number(roomType.taxAmount);
+    const feeAmount = Number(roomType.feeAmount);
+    return { taxAmount, feeAmount, total: subtotal + taxAmount + feeAmount };
+  }, [roomType, subtotal]);
+
+  const estimated = useMemo(
+    () => estimateTaxAndFees({ charges, subtotal, numNights: nights, numGuests: guests }),
+    [charges, subtotal, nights, guests]
   );
+
+  const estimate = quoted ?? estimated;
 
   // Booking đã tạo ⇒ chỉ hiện số của server. Chưa có ⇒ ước tính; chưa biết chính sách ⇒
   // về đúng hành vi cũ (chỉ tiền phòng) thay vì khẳng định "không thuế".
@@ -193,13 +217,36 @@ export default function BookingCheckoutPage() {
       let bookingId = createdBookingId;
       if (!bookingId) {
         const values = form.getValues();
+
+        // ----- SĐT: BE đọc `User.phone`, KHÔNG nhận qua payload (gửi vào là 400 "phone is not
+        // allowed"), và chặn đặt khi hồ sơ chưa có số. Xem `booking.service.ts` → `createBooking`.
+        const typedPhone = values.phone?.trim();
+        const profilePhone = profile?.phone?.trim();
+
+        // Hồ sơ CHƯA có số ⇒ buộc phải lưu lên hồ sơ, không thì BE chặn và khách không đặt được
+        // dù đã điền SĐT ngay trên màn hình. Ô nhập có ghi chú rõ là số sẽ được lưu vào hồ sơ.
+        if (!profilePhone && typedPhone) {
+          await updateProfile.mutateAsync({ phone: typedPhone });
+        }
+
+        // Hồ sơ ĐÃ có số mà khách gõ số khác ⇒ coi là **số tạm cho đơn này**, KHÔNG đụng vào hồ sơ
+        // (rất có thể là số người khác — đặt hộ bạn bè, số liên hệ chuyến đi). Nhưng BE vẫn gọi
+        // `User.phone`, nên số tạm phải đi kèm ghi chú thì lễ tân mới thấy — nếu không, ô SĐT chỉ
+        // là trang trí và khách tưởng KS sẽ gọi số vừa gõ.
+        const isTempPhone = !!profilePhone && !!typedPhone && typedPhone !== profilePhone;
+        const notes = [
+          values.specialRequests?.trim() || null,
+          isTempPhone ? t('confirm.tempPhoneNote', { phone: typedPhone }) : null,
+        ].filter(Boolean);
+
         const booking = await createBooking.mutateAsync({
           hotelId: roomType.hotelId,
           roomTypeId: roomType.id,
           checkInDate: checkIn,
           checkOutDate: checkOut,
           numGuests: guests,
-          specialRequests: values.specialRequests || undefined,
+          // BE giới hạn 1000 ký tự — cắt bớt còn hơn để 400 chặn cả lượt đặt.
+          specialRequests: notes.length ? notes.join('\n').slice(0, 1000) : undefined,
           // Phải gửi đúng phương thức khách chọn — trước đây bỏ trống nên BE luôn
           // mặc định 'vnpay', khiến "Thanh toán tại chỗ" vẫn bị đẩy sang VNPay.
           paymentMethod: payment,
@@ -292,8 +339,19 @@ export default function BookingCheckoutPage() {
                       aria-invalid={!!form.formState.errors.phone}
                       {...form.register('phone')}
                     />
-                    {form.formState.errors.phone && (
+                    {form.formState.errors.phone ? (
                       <p className="text-xs text-error">{form.formState.errors.phone.message}</p>
+                    ) : (
+                      /* Ô này phải nói đúng số phận của cái số vừa gõ: hồ sơ trống thì nó sẽ được
+                         lưu vào hồ sơ (BE bắt buộc mới đặt được); hồ sơ đã có số mà gõ khác thì
+                         chỉ là số tạm cho đơn này, tài khoản không đổi. */
+                      <p className="text-xs text-on-surface-variant">
+                        {!profilePhone
+                          ? t('guest.phoneWillSave')
+                          : isTempPhoneTyped
+                            ? t('guest.phoneTempNote')
+                            : t('guest.phoneFromProfile')}
+                      </p>
                     )}
                   </div>
                   <div className="flex flex-col gap-1.5 sm:col-span-2">
