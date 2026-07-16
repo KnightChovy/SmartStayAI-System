@@ -203,7 +203,9 @@ export default function BookingCheckoutScreen() {
         {/* Sticky CTA */}
         <View
           className="absolute bottom-0 left-0 right-0 bg-surface border-t border-hairline/30 flex-row items-center justify-between px-5 pt-3"
-          style={{ paddingBottom: insets.bottom + 12 }}
+          // Mức sàn 12: `insets.bottom` = 0 trên máy Android dùng nút điều hướng, để trần
+          // thì nút Tiếp tục dính sát mép màn hình.
+          style={{ paddingBottom: Math.max(insets.bottom, 12) + 12 }}
         >
           <View>
             <Text size="2xs" className="font-bevi text-muted">{t('common:total')}</Text>

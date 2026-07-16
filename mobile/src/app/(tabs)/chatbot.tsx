@@ -108,7 +108,7 @@ export default function ChatbotScreen() {
         )}
 
         {/* Input */}
-        <View className="flex-row items-end gap-2.5 px-4 py-3 border-t border-hairline/30 bg-surface">
+        <View className="flex-row items-end gap-2.5 px-4 py-3 border-t border-hairline/30 bg-surface mb-4">
           <TextInput
             className="flex-1 min-h-11 max-h-28 bg-canvas rounded-[22px] px-4 py-2.5 font-bevi text-sm text-on-surface"
             placeholder={activeHotelId ? t('chat:inputPlaceholder') : t('chat:inputDisabled')}

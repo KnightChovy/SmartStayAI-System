@@ -168,9 +168,17 @@ export function ReviewSheet({
 
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
             <ScrollView
-              className="px-5"
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
+              // Padding đặt ở contentContainerStyle, KHÔNG phải style của ScrollView:
+              // style là khung cuộn, padding dọc ở đó sẽ cắt nội dung khi cuộn.
+              contentContainerStyle={{
+                paddingHorizontal: 20,
+                // `insets.bottom` = 0 trên đa số máy Android (điều hướng bằng nút) nên
+                // không thể dựa vào nó để lấy khoảng thở — phải có mức sàn, nếu không
+                // nút Lưu dính sát mép dưới sheet.
+                paddingBottom: Math.max(insets.bottom, 12) + 28,
+              }}
             >
               <View className="mt-4 rounded-card border border-hairline/30 bg-surface-low p-3.5">
                 <Text className="font-bevi-bold text-on-surface" size="sm">
@@ -284,7 +292,9 @@ export function ReviewSheet({
                 </Text>
               )}
 
-              <View className="mb-2 mt-6">
+              {/* Khoảng thở dưới nút do `contentContainerStyle.paddingBottom` lo — để ở
+                  một chỗ, tránh hai nguồn margin cộng dồn khó chỉnh. */}
+              <View className="mt-6">
                 <LuxButton
                   label={
                     isPending
@@ -300,7 +310,6 @@ export function ReviewSheet({
                   disabled={!form.content.trim()}
                 />
               </View>
-              <View style={{ height: insets.bottom + 12 }} />
             </ScrollView>
           </KeyboardAvoidingView>
         </View>
