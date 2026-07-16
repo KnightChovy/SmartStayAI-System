@@ -8,16 +8,68 @@
   "noRoomsTitle": "Không còn phòng",
   "noRoomsDesc": "Không có phòng phù hợp với ngày hoặc số khách của bạn. Hãy thử ngày khác.",
   "pickDates": "Chọn ngày để đặt",
+  "starHotel_one": "Khách sạn {{count}} sao",
+  "starHotel_other": "Khách sạn {{count}} sao",
+  "starAria": "Hạng khách sạn: {{count}} trên 5 sao",
+  "galleryAlt": "{{name}} — ảnh {{index}} trên {{total}}",
+  "trust": {
+    "verified": "Khách sạn đã xác minh",
+    "securePayment": "Thanh toán an toàn",
+    "instantVoucher": "Nhận e-voucher ngay"
+  },
+  "amenities": {
+    "title": "Tiện nghi",
+    "showAll": "Xem tất cả {{count}} tiện nghi",
+    "showLess": "Thu gọn"
+  },
+  "policies": {
+    "title": "Chính sách",
+    "checkInOut": "Nhận phòng / Trả phòng",
+    "from": "Từ {{time}}",
+    "until": "Đến {{time}}",
+    "cancellation": "Hủy phòng",
+    "children": "Trẻ em",
+    "pets": "Thú cưng",
+    "petsNotAllowed": "Không cho phép thú cưng",
+    "petsAllowed": "Cho phép mang thú cưng",
+    "petsOnRequest": "Cho phép thú cưng nếu báo trước"
+  },
+  "nearby": {
+    "title": "Địa điểm lân cận",
+    "minutes": "{{count}} phút"
+  },
+  "reviews": {
+    "title": "Đánh giá của khách",
+    "count_one": "{{count}} đánh giá",
+    "count_other": "{{count}} đánh giá",
+    "aria": "Điểm đánh giá của khách {{score}} trên 5, dựa trên {{count}} đánh giá",
+    "newTitle": "Mới trên Smart Stay",
+    "newDesc": "Khách sạn này chưa có đánh giá nào. Hãy là người đầu tiên đánh giá sau khi lưu trú.",
+    "guest": "Khách",
+    "showingRecent": "Đang hiện {{shown}} đánh giá mới nhất trong tổng {{total}}.",
+    "sampleNote": "Điểm được tính trung bình từ {{limit}} đánh giá mới nhất.",
+    "photoAlt": "Ảnh khách chụp tại khách sạn",
+    "cleanliness": "Sạch sẽ",
+    "service": "Dịch vụ",
+    "locationScore": "Vị trí",
+    "value": "Đáng giá tiền",
+    "exceptional": "Tuyệt hảo",
+    "excellent": "Tuyệt vời",
+    "veryGood": "Rất tốt",
+    "good": "Tốt",
+    "score": "Điểm đánh giá"
+  },
   "room": {
     "upTo": "Tối đa {{count}}",
     "roomsLeft_one": "Chỉ còn {{count}} phòng!",
     "roomsLeft_other": "Chỉ còn {{count}} phòng!",
     "roomsAvailable": "Còn {{count}} phòng",
-    "nightsTotal_one": "Tổng {{count}} đêm",
-    "nightsTotal_other": "Tổng {{count}} đêm",
+    "nightsTotal_one": "{{count}} đêm",
+    "nightsTotal_other": "{{count}} đêm",
     "totalSuffix": "tổng",
     "from": "Từ",
     "perNight": "/ đêm",
-    "bookNow": "Đặt ngay"
+    "bookNow": "Đặt ngay",
+    "inclTaxes": "Đã bao gồm thuế & phí"
   }
 }

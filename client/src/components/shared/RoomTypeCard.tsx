@@ -25,6 +25,9 @@ export default function RoomTypeCard({ roomType, onSelect, selectable = false }:
   const availableRooms = roomType.availableRooms ?? 0;
   // Sắp hết phòng (≤ 3) → badge tông đỏ tạo cảm giác cần đặt sớm
   const isLowStock = hasStayQuote && availableRooms > 0 && availableRooms <= 3;
+  // Chỉ hiện số phòng khi thực sự khan hiếm (≤ 5). Quảng cáo "còn nhiều phòng"
+  // làm GIẢM tính cấp bách nên không hiển thị gì khi còn dư.
+  const showScarcity = hasStayQuote && availableRooms > 0 && availableRooms <= 5;
 
   return (
     <div className="flex flex-col overflow-hidden rounded-2xl border border-outline-variant/30 bg-surface md:flex-row">
@@ -33,7 +36,8 @@ export default function RoomTypeCard({ roomType, onSelect, selectable = false }:
       </div>
 
       <div className="flex flex-1 flex-col p-5">
-        <h4 className="font-be-vietnam text-lg font-semibold text-on-surface">{roomType.name}</h4>
+        {/* h3: nằm dưới h2 "Available rooms" — không nhảy cấp (WCAG 1.3.1) */}
+        <h3 className="font-be-vietnam text-lg font-semibold text-on-surface">{roomType.name}</h3>
 
         <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5 text-sm text-on-surface-variant">
           <span className="flex items-center gap-1.5">
@@ -56,15 +60,15 @@ export default function RoomTypeCard({ roomType, onSelect, selectable = false }:
           )}
         </div>
 
-        {/* Badge số phòng trống — chỉ hiện khi đã chọn ngày (có quote tồn kho) */}
-        {hasStayQuote && (
+        {/* Badge khan hiếm — chỉ hiện khi còn ≤ 5 phòng (xem `showScarcity`) */}
+        {showScarcity && (
           <span
             className={cn(
               'mt-3 inline-flex w-fit items-center gap-2 rounded-full px-3.5 py-1.5 text-sm font-bold',
               isLowStock ? 'bg-error/10 text-error' : 'bg-tertiary/10 text-tertiary'
             )}
           >
-            <BedDouble className="size-4" />
+            <BedDouble className="size-4" aria-hidden="true" />
             {isLowStock
               ? t('room.roomsLeft', { count: availableRooms })
               : t('room.roomsAvailable', { count: availableRooms })}
@@ -93,12 +97,14 @@ export default function RoomTypeCard({ roomType, onSelect, selectable = false }:
             {hasStayQuote ? (
               <>
                 <p className="text-xs text-on-surface-variant">
-                  {t('room.nightsTotal', { count: roomType.numNights ?? 0 })}
+                  {t('room.nightsTotal', { count: roomType.numNights ?? 0 })} ·{' '}
+                  {t('room.totalSuffix')}
                 </p>
                 <p className="font-be-vietnam text-xl font-bold text-on-surface">
                   {format(roomType.totalPrice)}
-                  <span className="text-sm font-normal text-on-surface-variant"> {t('room.totalSuffix')}</span>
                 </p>
+                {/* Minh bạch giá: nói rõ tổng đã gồm thuế & phí, không để "total" mơ hồ */}
+                <p className="text-xs text-on-surface-variant">{t('room.inclTaxes')}</p>
               </>
             ) : (
               <>
@@ -114,7 +120,7 @@ export default function RoomTypeCard({ roomType, onSelect, selectable = false }:
           {selectable && (
             <Button
               size="lg"
-              className="bg-primary text-on-primary hover:bg-primary/90"
+              className="min-h-11 bg-primary text-on-primary hover:bg-primary/90"
               onClick={() => onSelect?.(roomType)}
             >
               {t('room.bookNow')}

@@ -1,8 +1,9 @@
 /**
  * Type cho khách sạn / loại phòng — model theo response của backend
- * (`GET /hotels`, `GET /hotels/:id/room-types`).
+ * (`GET /hotels`, `GET /hotels/:id`, `GET /hotels/:id/room-types`).
  * Lưu ý: các field Decimal của Prisma serialize qua JSON thành **string**.
  */
+import type { HotelNearbyPlace, HotelPolicy } from './hotel-property.types';
 
 /** Chính sách thú cưng của khách sạn (khớp enum BE). */
 export type PetsPolicy = 'not_allowed' | 'allowed' | 'on_request';
@@ -36,6 +37,27 @@ export interface HotelSearchResult {
   images: HotelImage[];
   /** basePrice thấp nhất trong các loại phòng phù hợp; null nếu chưa có. */
   minPrice: string | null;
+}
+
+/**
+ * Chi tiết khách sạn công khai (`GET /hotels/:id`) — KHÔNG cần đăng nhập.
+ * BE trả đầy đủ hơn `HotelSearchResult` rất nhiều: tiện nghi, chính sách, địa điểm lân cận,
+ * loại phòng và toàn bộ field chính sách dạng scalar. Dùng cho trang chi tiết guest.
+ */
+export interface HotelDetail extends HotelSearchResult {
+  amenities: { amenity: Amenity }[];
+  policies: HotelPolicy[];
+  nearbyPlaces: HotelNearbyPlace[];
+  roomTypes?: RoomType[];
+  /** Chính sách dạng văn bản tự do do partner nhập. */
+  cancellationPolicy?: string | null;
+  childrenPolicy?: string | null;
+  petsPolicy?: PetsPolicy | null;
+  isSmokingAllowed?: boolean | null;
+  minGuestAge?: number | null;
+  languagesSpoken?: string[] | null;
+  phone?: string | null;
+  email?: string | null;
 }
 
 /**

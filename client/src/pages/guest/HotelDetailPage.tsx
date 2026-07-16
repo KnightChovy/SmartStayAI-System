@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Clock, MapPin } from 'lucide-react';
+import { ArrowLeft, BadgeCheck, Clock, MapPin, ShieldCheck, Ticket } from 'lucide-react';
 import { useHotel } from '@/hooks/hotels/use-hotel';
 import { useRoomTypes } from '@/hooks/hotels/use-room-types';
 import { useGeocode } from '@/hooks/geo';
@@ -11,6 +11,11 @@ import StarRating from '@/components/shared/StarRating';
 import RoomTypeCard from '@/components/shared/RoomTypeCard';
 import HotelMap from '@/components/shared/HotelMap';
 import EmptyState from '@/components/shared/EmptyState';
+import HotelReviews from '@/components/guest/HotelReviews';
+import HotelAmenities from '@/components/guest/HotelAmenities';
+import HotelPolicies from '@/components/guest/HotelPolicies';
+import HotelNearby from '@/components/guest/HotelNearby';
+import StickyBookingBar from '@/components/guest/StickyBookingBar';
 import DateRangePicker from '@/components/shared/DateRangePicker';
 import GuestSelector from '@/components/shared/GuestSelector';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -62,6 +67,14 @@ export default function HotelDetailPage() {
   );
   const { data: roomTypes, isLoading: roomsLoading } = useRoomTypes(hotelId, roomParams);
 
+  // Giá "từ" cho thanh sticky: `GET /hotels/:id` không trả `minPrice` (field đó chỉ có ở
+  // list search), nên suy từ basePrice thấp nhất của các loại phòng đang hiển thị.
+  const fromPrice = useMemo(() => {
+    const prices = (roomTypes ?? []).map(rt => Number(rt.basePrice)).filter(p => p > 0);
+    if (prices.length === 0) return hotel?.minPrice ?? null;
+    return String(Math.min(...prices));
+  }, [roomTypes, hotel]);
+
   const update = (patch: Record<string, string | undefined>) => {
     const next = new URLSearchParams(params);
     Object.entries(patch).forEach(([k, v]) => (v ? next.set(k, v) : next.delete(k)));
@@ -112,7 +125,8 @@ export default function HotelDetailPage() {
   }
 
   return (
-    <div className="w-full py-8">
+    // pb lớn trên mobile để thanh sticky không che nội dung cuối trang
+    <div className="w-full py-8 pb-28 lg:pb-8">
       <div className="mx-auto max-w-7xl px-margin-mobile md:px-8">
         <button
           onClick={() => navigate(-1)}
@@ -124,7 +138,15 @@ export default function HotelDetailPage() {
         {/* Gallery */}
         <div className="grid gap-3 md:grid-cols-4 md:grid-rows-2">
           <div className="overflow-hidden rounded-3xl md:col-span-2 md:row-span-2">
-            <img src={gallery[activeImage]} alt={hotel?.name ?? 'Hotel'} className="h-72 w-full object-cover md:h-full" />
+            <img
+              src={gallery[activeImage]}
+              alt={t('galleryAlt', {
+                name: hotel?.name ?? '',
+                index: activeImage + 1,
+                total: gallery.length,
+              })}
+              className="h-72 w-full object-cover md:h-full"
+            />
           </div>
           {gallery.slice(0, 4).map((url, i) => (
             <button
@@ -132,7 +154,15 @@ export default function HotelDetailPage() {
               onClick={() => setActiveImage(gallery.indexOf(url))}
               className="hidden overflow-hidden rounded-2xl md:block"
             >
-              <img src={url} alt="" className="h-full w-full object-cover transition hover:opacity-90" />
+              <img
+                src={url}
+                alt={t('galleryAlt', {
+                  name: hotel?.name ?? '',
+                  index: i + 1,
+                  total: gallery.length,
+                })}
+                className="h-full w-full object-cover transition hover:opacity-90"
+              />
             </button>
           ))}
         </div>
@@ -143,37 +173,69 @@ export default function HotelDetailPage() {
             {hotel?.name ?? 'Hotel'}
           </h1>
           <div className="mt-2 flex flex-wrap items-center gap-4 text-sm text-on-surface-variant">
-            {hotel?.starRating ? <StarRating value={hotel.starRating} size={16} /> : null}
+            {/* Sao = HẠNG khách sạn (khác điểm đánh giá của khách ở mục Reviews) */}
+            {hotel?.starRating ? (
+              <span
+                className="flex items-center gap-1.5"
+                aria-label={t('starAria', { count: hotel.starRating })}
+              >
+                <StarRating value={hotel.starRating} size={16} />
+                <span>{t('starHotel', { count: hotel.starRating })}</span>
+              </span>
+            ) : null}
             {hotel && (
               <span className="flex items-center gap-1.5">
-                <MapPin className="size-4" />
+                <MapPin className="size-4" aria-hidden="true" />
                 {formatAddress(hotel.address, hotel.district, hotel.city, hotel.country)}
               </span>
             )}
             {hotel?.checkInTime && (
               <span className="flex items-center gap-1.5">
-                <Clock className="size-4" /> {t('checkInTime', { time: hotel.checkInTime })}
+                <Clock className="size-4" aria-hidden="true" />{' '}
+                {t('checkInTime', { time: hotel.checkInTime })}
                 {hotel.checkOutTime ? t('checkOutTime', { time: hotel.checkOutTime }) : ''}
               </span>
             )}
           </div>
+
+          {/* Dải niềm tin */}
+          <ul className="mt-3 flex flex-wrap gap-2">
+            {[
+              { icon: BadgeCheck, label: t('trust.verified') },
+              { icon: ShieldCheck, label: t('trust.securePayment') },
+              { icon: Ticket, label: t('trust.instantVoucher') },
+            ].map(({ icon: Icon, label }) => (
+              <li
+                key={label}
+                className="flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-700"
+              >
+                <Icon className="size-3.5" aria-hidden="true" /> {label}
+              </li>
+            ))}
+          </ul>
+
           {hotel?.description && (
             <p className="mt-4 max-w-3xl text-on-surface-variant">{hotel.description}</p>
           )}
         </div>
 
         {/* Map — toạ độ từ DB, hoặc geocode từ địa chỉ khi DB chưa có lat/lng */}
-        {mapLat != null && mapLng != null && (
-          <div className="mt-6">
-            <h2 className="mb-3 font-be-vietnam text-xl font-bold text-on-surface">{t('location')}</h2>
-            <HotelMap
-              latitude={mapLat}
-              longitude={mapLng}
-              label={hotel?.name}
-              className="h-72 w-full overflow-hidden rounded-2xl border border-outline-variant/30"
-            />
-          </div>
-        )}
+        {(mapLat != null && mapLng != null) || (hotel?.nearbyPlaces?.length ?? 0) > 0 ? (
+          <section className="mt-6">
+            <h2 className="mb-3 font-be-vietnam text-2xl font-bold text-on-surface">
+              {t('location')}
+            </h2>
+            {mapLat != null && mapLng != null && (
+              <HotelMap
+                latitude={mapLat}
+                longitude={mapLng}
+                label={hotel?.name}
+                className="h-72 w-full overflow-hidden rounded-2xl border border-outline-variant/30"
+              />
+            )}
+            {hotel?.nearbyPlaces && <HotelNearby places={hotel.nearbyPlaces} />}
+          </section>
+        ) : null}
 
         {/* Stay picker */}
         <div
@@ -222,7 +284,22 @@ export default function HotelDetailPage() {
             </Button>
           </div>
         )}
+
+        {/* Hỗ trợ ra quyết định: tiện nghi → chính sách → bằng chứng xã hội */}
+        {hotel?.amenities && (
+          <HotelAmenities amenities={hotel.amenities.map(a => a.amenity)} />
+        )}
+        {hotel && <HotelPolicies hotel={hotel} />}
+        <HotelReviews hotelId={hotelId} />
       </div>
+
+      {/* Mobile: giá + CTA luôn trong tầm ngón tay */}
+      <StickyBookingBar
+        minPrice={fromPrice}
+        onSelectRoom={() =>
+          document.getElementById('stay-picker')?.scrollIntoView({ behavior: 'smooth' })
+        }
+      />
     </div>
   );
 }

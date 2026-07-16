@@ -15,12 +15,19 @@
     "email": "Email",
     "specialRequests": "Special requests (optional)",
     "specialRequestsPlaceholder": "Late check-in, high floor, extra bed…",
-    "continue": "Continue to payment"
+    "continue": "Continue to payment",
+    "requiredMark": "required"
   },
   "payment": {
     "title": "Payment method",
     "secureNote": "You'll be securely redirected to VNPay to complete your payment.",
-    "review": "Review booking"
+    "review": "Review booking",
+    "notCharged": "You won't be charged until you complete payment at the gateway."
+  },
+  "trust": {
+    "inclTaxes": "Includes taxes & fees",
+    "cancellation": "Cancellation policy",
+    "cancellationFallback": "Cancellation terms are set by the property — see the property's policies."
   },
   "confirm": {
     "title": "Review & confirm",

@@ -3,6 +3,7 @@ import type {
   HotelReviewsParams,
   HotelReviewsResponse,
   HotelReviewStats,
+  PublicReviewsParams,
 } from '@/types/hotel-review.types';
 
 /** Bỏ các field undefined/null/rỗng để query string gọn gàng. */
@@ -27,6 +28,20 @@ export const hotelReviewService = {
   /** Thống kê tổng hợp review của 1 khách sạn — `GET /hotels/:id/reviews/stats`. */
   async getStats(hotelId: string): Promise<HotelReviewStats> {
     const { data } = await api.get<HotelReviewStats>(`/hotels/${hotelId}/reviews/stats`);
+    return data;
+  },
+
+  /**
+   * Review CÔNG KHAI của 1 khách sạn (`GET /reviews?hotelId=`) — dùng cho trang chi tiết guest.
+   * BE chỉ trả review `published`; không cần đăng nhập.
+   */
+  async listPublic(
+    hotelId: string,
+    params: PublicReviewsParams = {}
+  ): Promise<HotelReviewsResponse> {
+    const { data } = await api.get<HotelReviewsResponse>('/reviews', {
+      params: cleanParams({ hotelId, ...params }),
+    });
     return data;
   },
 };

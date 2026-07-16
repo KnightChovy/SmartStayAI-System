@@ -3,7 +3,15 @@ import { useLocation, useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ArrowLeft, ArrowRight, BedDouble, CalendarDays, ShieldCheck, Users } from 'lucide-react';
+import {
+  ArrowLeft,
+  ArrowRight,
+  BedDouble,
+  CalendarDays,
+  Lock,
+  ShieldCheck,
+  Users,
+} from 'lucide-react';
 import { useCreateBooking } from '@/hooks/bookings';
 import { useCreateVnpayPayment } from '@/hooks/payments';
 import { useAuthStore } from '@/stores/authStore';
@@ -17,14 +25,24 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { formatDateShort, nightsBetween } from '@/utils/formatDate';
-import type { HotelSearchResult, RoomType } from '@/types/hotel.types';
+import type { HotelDetail, RoomType } from '@/types/hotel.types';
 
 interface CheckoutState {
-  hotel?: HotelSearchResult | null;
+  /** Khách sạn truyền từ trang chi tiết — có `cancellationPolicy` để hiện ở tóm tắt. */
+  hotel?: HotelDetail | null;
   roomType?: RoomType;
   checkIn?: string;
   checkOut?: string;
   guests?: number;
+}
+
+/** Dấu bắt buộc cho label — có text ẩn cho screen reader (WCAG 3.3.2). */
+function RequiredMark({ label }: { label: string }) {
+  return (
+    <span className="text-error" aria-hidden="false">
+      *<span className="sr-only"> ({label})</span>
+    </span>
+  );
 }
 
 /** Lấy message lỗi từ axios error (nếu có) mà không dùng `any`. */
@@ -53,6 +71,8 @@ export default function BookingCheckoutPage() {
 
   const form = useForm<GuestDetailsValues>({
     resolver: zodResolver(guestDetailsSchema),
+    // Xác thực ngay khi rời ô (phòng ngừa lỗi) thay vì chỉ khi submit.
+    mode: 'onBlur',
     defaultValues: {
       fullName: user?.fullName ?? '',
       email: user?.email ?? '',
@@ -123,7 +143,8 @@ export default function BookingCheckoutPage() {
           <ArrowLeft className="size-4" /> {t('common:back')}
         </button>
 
-        <h1 className="font-be-vietnam text-[60px] font-bold text-on-surface">{t('title')}</h1>
+        {/* H1 ~30px: nhãn trang không được lấn át form + giá (cấp bậc trực quan) */}
+        <h1 className="font-be-vietnam text-3xl font-bold text-on-surface">{t('title')}</h1>
 
         <div className="mt-8 flex flex-col gap-8 lg:flex-row">
           {/* Main */}
@@ -141,22 +162,50 @@ export default function BookingCheckoutPage() {
                 <h2 className="font-be-vietnam text-lg font-semibold text-on-surface">{t('guest.title')}</h2>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="fullName">{t('guest.fullName')}</Label>
-                    <Input id="fullName" {...form.register('fullName')} />
+                    <Label htmlFor="fullName">
+                      {t('guest.fullName')} <RequiredMark label={t('guest.requiredMark')} />
+                    </Label>
+                    <Input
+                      id="fullName"
+                      autoComplete="name"
+                      aria-required="true"
+                      aria-invalid={!!form.formState.errors.fullName}
+                      {...form.register('fullName')}
+                    />
                     {form.formState.errors.fullName && (
                       <p className="text-xs text-error">{form.formState.errors.fullName.message}</p>
                     )}
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="phone">{t('guest.phone')}</Label>
-                    <Input id="phone" {...form.register('phone')} />
+                    <Label htmlFor="phone">
+                      {t('guest.phone')} <RequiredMark label={t('guest.requiredMark')} />
+                    </Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      inputMode="tel"
+                      autoComplete="tel"
+                      aria-required="true"
+                      aria-invalid={!!form.formState.errors.phone}
+                      {...form.register('phone')}
+                    />
                     {form.formState.errors.phone && (
                       <p className="text-xs text-error">{form.formState.errors.phone.message}</p>
                     )}
                   </div>
                   <div className="flex flex-col gap-1.5 sm:col-span-2">
-                    <Label htmlFor="email">{t('guest.email')}</Label>
-                    <Input id="email" type="email" {...form.register('email')} />
+                    <Label htmlFor="email">
+                      {t('guest.email')} <RequiredMark label={t('guest.requiredMark')} />
+                    </Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      inputMode="email"
+                      autoComplete="email"
+                      aria-required="true"
+                      aria-invalid={!!form.formState.errors.email}
+                      {...form.register('email')}
+                    />
                     {form.formState.errors.email && (
                       <p className="text-xs text-error">{form.formState.errors.email.message}</p>
                     )}
@@ -172,7 +221,12 @@ export default function BookingCheckoutPage() {
                     />
                   </div>
                 </div>
-                <Button type="submit" size="lg" className="bg-on-surface text-white hover:bg-primary">
+                <Button
+                  type="submit"
+                  size="lg"
+                  className="min-h-12 bg-on-surface text-white hover:bg-primary"
+                  disabled={!form.formState.isValid}
+                >
                   {t('guest.continue')} <ArrowRight className="size-4" />
                 </Button>
               </form>
@@ -183,17 +237,29 @@ export default function BookingCheckoutPage() {
               <div className="space-y-5 rounded-2xl border border-outline-variant/30 bg-surface p-6">
                 <h2 className="font-be-vietnam text-lg font-semibold text-on-surface">{t('payment.title')}</h2>
                 <PaymentMethodSelect value={payment} onChange={setPayment} />
-                <p className="flex items-center gap-1.5 text-xs text-on-surface-variant">
-                  <ShieldCheck className="size-4 text-primary" />
-                  {t('payment.secureNote')}
-                </p>
+                <div className="space-y-1.5 rounded-xl bg-emerald-500/5 p-3">
+                  <p className="flex items-center gap-1.5 text-xs text-on-surface-variant">
+                    <ShieldCheck className="size-4 shrink-0 text-primary" aria-hidden="true" />
+                    {t('payment.secureNote')}
+                  </p>
+                  {/* Đảo ngược rủi ro: nói rõ chưa bị trừ tiền ở bước này */}
+                  <p className="flex items-center gap-1.5 text-xs font-medium text-emerald-700">
+                    <Lock className="size-4 shrink-0" aria-hidden="true" />
+                    {t('payment.notCharged')}
+                  </p>
+                </div>
                 <div className="flex gap-3">
-                  <Button variant="outline" size="lg" onClick={() => setStep(0)}>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="min-h-12"
+                    onClick={() => setStep(0)}
+                  >
                     {t('common:back')}
                   </Button>
                   <Button
                     size="lg"
-                    className="bg-on-surface text-white hover:bg-primary"
+                    className="min-h-12 bg-on-surface text-white hover:bg-primary"
                     onClick={() => setStep(2)}
                   >
                     {t('payment.review')} <ArrowRight className="size-4" />
@@ -305,6 +371,17 @@ export default function BookingCheckoutPage() {
                   ]}
                   total={subtotal}
                 />
+                {/* Minh bạch giá + chính sách hủy ngay tại thời điểm quyết định */}
+                <p className="mt-1 text-xs text-on-surface-variant">{t('trust.inclTaxes')}</p>
+                <div className="mt-4 border-t border-outline-variant/30 pt-4">
+                  <p className="flex items-center gap-1.5 text-xs font-semibold text-on-surface">
+                    <ShieldCheck className="size-3.5 shrink-0 text-primary" aria-hidden="true" />
+                    {t('trust.cancellation')}
+                  </p>
+                  <p className="mt-1 text-xs text-on-surface-variant">
+                    {hotel?.cancellationPolicy || t('trust.cancellationFallback')}
+                  </p>
+                </div>
               </div>
             </div>
           </aside>

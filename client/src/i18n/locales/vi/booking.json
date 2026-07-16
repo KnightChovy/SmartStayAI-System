@@ -15,12 +15,19 @@
     "email": "Email",
     "specialRequests": "Yêu cầu đặc biệt (không bắt buộc)",
     "specialRequestsPlaceholder": "Nhận phòng muộn, tầng cao, thêm giường…",
-    "continue": "Tiếp tục thanh toán"
+    "continue": "Tiếp tục thanh toán",
+    "requiredMark": "bắt buộc"
   },
   "payment": {
     "title": "Phương thức thanh toán",
     "secureNote": "Bạn sẽ được chuyển an toàn tới VNPay để hoàn tất thanh toán.",
-    "review": "Xem lại đặt phòng"
+    "review": "Xem lại đặt phòng",
+    "notCharged": "Bạn chưa bị trừ tiền cho tới khi hoàn tất thanh toán tại cổng."
+  },
+  "trust": {
+    "inclTaxes": "Đã bao gồm thuế & phí",
+    "cancellation": "Chính sách hủy",
+    "cancellationFallback": "Điều kiện hủy do khách sạn quy định — xem mục Chính sách của khách sạn."
   },
   "confirm": {
     "title": "Xem lại & xác nhận",
@@ -43,10 +50,22 @@
     "roomLine_other": "Phòng × {{count}} đêm"
   },
   "methods": {
-    "vnpay": { "label": "VNPAY", "desc": "Thanh toán qua QR VNPAY / app ngân hàng" },
-    "sepay": { "label": "SePay", "desc": "Chuyển khoản tự động xác nhận" },
-    "stripe": { "label": "Thẻ tín dụng / ghi nợ", "desc": "Visa, Mastercard, JCB" },
-    "cash": { "label": "Thanh toán tại nơi ở", "desc": "Tiền mặt khi nhận phòng" }
+    "vnpay": {
+      "label": "VNPAY",
+      "desc": "Thanh toán qua QR VNPAY / app ngân hàng"
+    },
+    "sepay": {
+      "label": "SePay",
+      "desc": "Chuyển khoản tự động xác nhận"
+    },
+    "stripe": {
+      "label": "Thẻ tín dụng / ghi nợ",
+      "desc": "Visa, Mastercard, JCB"
+    },
+    "cash": {
+      "label": "Thanh toán tại nơi ở",
+      "desc": "Tiền mặt khi nhận phòng"
+    }
   },
   "result": {
     "successTitle": "Thanh toán thành công!",
