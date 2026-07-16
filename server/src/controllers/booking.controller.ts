@@ -41,6 +41,12 @@ export class BookingController {
     res.send(booking);
   });
 
+  // Xem trước tiền hoàn trước khi khách bấm huỷ
+  getRefundPreview = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const preview = await bookingService.getRefundPreview(req.params.bookingId as string, req.user as User);
+    res.send(preview);
+  });
+
   cancelBooking = catchAsync(async (req: Request, res: Response): Promise<void> => {
     const booking = await bookingService.cancelBooking(
       req.params.bookingId as string,

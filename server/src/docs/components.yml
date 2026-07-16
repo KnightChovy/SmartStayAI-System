@@ -584,6 +584,10 @@ components:
         starRating: { type: integer, nullable: true, description: 'Hotel star classification (1-5), not a guest score' }
         avgRating: { type: number, nullable: true, description: 'Average guest score over published reviews, rounded to 1 decimal. null when the hotel has no review yet (not 0)' }
         reviewCount: { type: integer, description: 'Number of published reviews' }
+        cancellationRule:
+          allOf:
+            - $ref: '#/components/schemas/CancellationRule'
+          description: 'Returned on the public hotel detail. The numbers that decide the refund — not the free-text cancellationPolicy field'
         checkInTime: { type: string, nullable: true }
         checkOutTime: { type: string, nullable: true }
         isActive: { type: boolean }
@@ -724,6 +728,37 @@ components:
       properties:
         voucherCode: { type: string }
         usedAt: { type: string, format: date-time, nullable: true }
+
+    CancellationRule:
+      type: object
+      description: >
+        The cancellation terms that actually decide the refund, by number. A hotel may also write
+        free-text descriptions (hotel.cancellationPolicy and the policies[cancellation] row) — those
+        are for reading only and are NOT tied to these numbers, so show these values next to the
+        text rather than trusting the text alone.
+      properties:
+        freeUntilHours: { type: integer, description: 'Cancel more than this many hours before check-in time to get a 100% refund' }
+        latePenalty: { type: string, enum: [first_night, full], description: 'What is kept on a late cancellation: the first night, or everything' }
+
+    RefundPreview:
+      type: object
+      description: What the guest gets back if they cancel right now, and why.
+      properties:
+        bookingId: { type: string, format: uuid }
+        bookingCode: { type: string }
+        status: { type: string, enum: [pending, confirmed, checked_in, checked_out, cancelled, no_show] }
+        canCancel: { type: boolean, description: 'False when already checked in / cancelled, or check-in date has arrived' }
+        cannotCancelReason: { type: string, nullable: true, description: 'Why canCancel is false; null when it is true' }
+        isPaid: { type: boolean, description: 'False when nothing has been paid yet — then there is no money to refund' }
+        paidAmount: { type: string, description: 'Decimal as string' }
+        refundAmount: { type: string, description: 'Refunded if cancelling now' }
+        penaltyAmount: { type: string, description: 'paidAmount - refundAmount — the part kept by the hotel' }
+        freeUntilHours: { type: integer }
+        latePenalty: { type: string, enum: [first_night, full] }
+        isFreeCancellation: { type: boolean, description: 'True while still inside the free window (refundAmount = paidAmount)' }
+        hoursBeforeCheckIn: { type: number, description: 'Hours left until check-in time; negative once it has passed' }
+        freeUntilMoment: { type: string, format: date-time, description: 'Cancel before this instant for a full refund — use it for a countdown' }
+        checkInMoment: { type: string, format: date-time, description: 'Check-in date combined with the hotel check-in time' }
 
     Booking:
       type: object

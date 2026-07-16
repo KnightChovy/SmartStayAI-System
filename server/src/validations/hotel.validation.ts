@@ -64,6 +64,20 @@ export const updateHotel = {
       renovationYear: Joi.number().integer().min(1800).max(2100).allow(null),
       isSmokingAllowed: Joi.boolean(),
       petsPolicy: Joi.string().valid('not_allowed', 'allowed', 'on_request').allow(null),
+      // Chính sách huỷ THẬT — đây là con số quyết định tiền hoàn cho khách. Khác hẳn
+      // `cancellationPolicy` ngay dưới (chỉ là đoạn mô tả cho khách đọc, không ảnh hưởng tiền).
+      // KHÔNG bật .unknown(): gõ sai khoá (vd 'freeUntilHour') sẽ bị chặn 400 thay vì im lặng rơi
+      // về mặc định 48h — chính cái bẫy đó đã khiến chính sách của KS bị phớt lờ bấy lâu nay.
+      settings: Joi.object().keys({
+        cancellation: Joi.object()
+          .keys({
+            // Trần 2160h = 90 ngày: đủ cho cả villa/resort mùa cao điểm (chính sách 60-90 ngày),
+            // vẫn chặn được số vô lý. 0 = không bao giờ được huỷ miễn phí.
+            freeUntilHours: Joi.number().integer().min(0).max(2160).required(),
+            latePenalty: Joi.string().valid('first_night', 'full').required(),
+          })
+          .required(),
+      }),
       cancellationPolicy: Joi.string().max(5000).allow('', null),
       childrenPolicy: Joi.string().max(5000).allow('', null),
       minGuestAge: Joi.number().integer().min(0).max(120).allow(null),
