@@ -208,6 +208,14 @@
     "submitError": "Could not submit your review. Please try again."
   },
   "messages": {
-    "empty": "You haven't messaged any hotel yet. Open the chat bubble to start."
+    "empty": "You haven't messaged any hotel yet. Pick a hotel to start chatting with its front desk.",
+    "newChat": "Message a hotel",
+    "pickHotel": "Pick a hotel to message",
+    "searchHotel": "Search hotels…",
+    "noHotel": "No matching hotel found.",
+    "startHint": "Send the first message to start chatting with the {{hotel}} front desk.",
+    "selectPrompt": "Pick a hotel on the left to view the conversation.",
+    "close": "Close",
+    "showingCount": "Showing {{shown}} of {{total}} hotels. Type a city to narrow down."
   }
 }

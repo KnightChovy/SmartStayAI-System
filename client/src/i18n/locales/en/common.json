@@ -37,28 +37,20 @@
   "clearDate": "Clear date",
   "search": "Search",
   "chat": {
-    "subtitle": "Digital concierge online",
-    "greeting": "Hello! I'm your SmartStay AI concierge. Pick a hotel below or tell me a destination and I'll help you.",
-    "chats": "Chats",
-    "newChat": "Chat with another hotel",
+    "subtitle": "Platform-wide hotel assistant",
+    "greeting": "Hi! I'm the SmartStay AI assistant. Where would you like to stay, and for which dates? I'll find and suggest hotels on the platform.",
     "ai": "AI assistant",
     "frontDesk": "Front desk",
-    "connected": "Connected to the front desk — a staff member will reply here. You can keep typing.",
     "placeholder": "Type a message…",
     "send": "Send message",
     "open": "Open chat",
     "close": "Close chat",
-    "from": "from",
-    "signInPrompt": "Please sign in to chat with this hotel concierge. After signing in, I can help with rooms, amenities, and booking status.",
     "error": "Sorry, I could not reach the concierge right now. Please try again.",
     "switchError": "Sorry, I could not switch the conversation right now. Please try again.",
     "quick": {
       "stays": "Stays in Da Nang",
-      "deals": "Weekend deals",
-      "loyalty": "My loyalty points",
-      "availability": "Check room availability",
-      "amenities": "Hotel amenities",
-      "bookingStatus": "Booking status"
+      "hanoi": "Hotels in Hanoi",
+      "suggest": "Suggest a hotel for me"
     }
   }
 }
