@@ -2,6 +2,7 @@ import { View, Pressable, Dimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { Text } from '@/components/ui/text';
+import { useTranslation } from 'react-i18next';
 import { getPrimaryImageUrl } from '@/utils/hotel';
 import { formatVnd } from '@/utils/formatCurrency';
 import type { RoomType } from '@/types/hotels.type';
@@ -27,6 +28,7 @@ export interface RoomTypeCardProps {
 
 /** Thẻ một loại phòng — ảnh, thông số, giá; bấm để mở chi tiết phòng. */
 export function RoomTypeCard({ room, selected = false, onPress }: RoomTypeCardProps) {
+  const { t } = useTranslation(['hotel', 'common']);
   const roomImg = getPrimaryImageUrl(room.images);
   const meta = roomMeta(room);
   const lowStock =
@@ -52,7 +54,7 @@ export function RoomTypeCard({ room, selected = false, onPress }: RoomTypeCardPr
         )}
         {soldOut && (
           <View className="absolute inset-0 bg-black/40 items-center justify-center">
-            <Text bold className="font-bevi-bold text-white">Sold out</Text>
+            <Text bold className="font-bevi-bold text-white">{t('hotel:room.soldOut')}</Text>
           </View>
         )}
       </View>
@@ -66,7 +68,7 @@ export function RoomTypeCard({ room, selected = false, onPress }: RoomTypeCardPr
             <Text size="2xs" className="font-bevi text-muted">/ night</Text>
           </View>
           <View className="flex-row items-center gap-1.5 bg-on-surface rounded-field px-4 py-2.5">
-            <Text size="sm" bold className="font-bevi-bold text-white">View details</Text>
+            <Text size="sm" bold className="font-bevi-bold text-white">{t('hotel:room.viewDetails')}</Text>
             <Ionicons name="chevron-forward" size={14} color={GUEST_COLORS.white} />
           </View>
         </View>

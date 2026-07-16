@@ -4,6 +4,7 @@ import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Text } from '@/components/ui/text';
 import { Heading } from '@/components/ui/heading';
@@ -30,6 +31,7 @@ function avatarColor(seed: string): string {
 
 export default function HotelDetailScreen() {
   const router = useRouter();
+  const { t } = useTranslation(['hotel', 'common']);
   const params = useLocalSearchParams<{
     id: string; checkIn?: string; checkOut?: string; guests?: string;
   }>();
@@ -93,9 +95,9 @@ export default function HotelDetailScreen() {
       <View className="flex-1 bg-canvas items-center justify-center gap-3 px-8" style={{ paddingTop: insets.top }}>
         <StatusBar style="dark" />
         <Ionicons name="alert-circle-outline" size={48} color={GUEST_COLORS.hairline} />
-        <Text className="font-bevi text-muted text-center">Hotel not found.</Text>
+        <Text className="font-bevi text-muted text-center">{t('hotel:notFound')}</Text>
         <Pressable onPress={() => router.back()} className="bg-on-surface rounded-field px-5 py-2.5">
-          <Text bold className="font-bevi-bold text-white">Go back</Text>
+          <Text bold className="font-bevi-bold text-white">{t('hotel:goBack')}</Text>
         </Pressable>
       </View>
     );
@@ -204,16 +206,16 @@ export default function HotelDetailScreen() {
           <Pressable onPress={() => setPickerOpen(true)} className="bg-surface rounded-card p-4 mb-3.5 flex-row items-center">
             <View className="flex-1 flex-row items-center gap-4">
               <View>
-                <Text size="2xs" className="font-bevi text-muted uppercase">Check-in</Text>
+                <Text size="2xs" className="font-bevi text-muted uppercase">{t('hotel:checkIn')}</Text>
                 <Text bold className="font-bevi-bold text-on-surface text-sm">{formatDateShort(checkIn)}</Text>
               </View>
               <Ionicons name="arrow-forward" size={16} color={GUEST_COLORS.muted} />
               <View>
-                <Text size="2xs" className="font-bevi text-muted uppercase">Check-out</Text>
+                <Text size="2xs" className="font-bevi text-muted uppercase">{t('hotel:checkOut')}</Text>
                 <Text bold className="font-bevi-bold text-on-surface text-sm">{formatDateShort(checkOut)}</Text>
               </View>
               <View className="border-l border-hairline/30 pl-4">
-                <Text size="2xs" className="font-bevi text-muted uppercase">Guests</Text>
+                <Text size="2xs" className="font-bevi text-muted uppercase">{t('hotel:guests')}</Text>
                 <Text bold className="font-bevi-bold text-on-surface text-sm">{guests}</Text>
               </View>
             </View>
@@ -223,10 +225,10 @@ export default function HotelDetailScreen() {
           </Pressable>
 
           {/* ── Select Room ── */}
-          <Heading size="lg" className="font-bevi-bold text-on-surface mb-3">Select Room</Heading>
+          <Heading size="lg" className="font-bevi-bold text-on-surface mb-3">{t('hotel:selectRoom')}</Heading>
           {rooms.length === 0 ? (
             <View className="bg-surface rounded-card p-6 items-center mb-3">
-              <Text size="sm" className="font-bevi text-muted">No rooms available for these dates</Text>
+              <Text size="sm" className="font-bevi text-muted">{t('hotel:noRooms')}</Text>
             </View>
           ) : (
             rooms.map((r) => <RoomTypeCard key={r.id} room={r} onPress={() => openRoom(r.id)} />)
@@ -236,9 +238,9 @@ export default function HotelDetailScreen() {
           {reviews.length > 0 && (
             <>
               <View className="flex-row items-center justify-between mt-2 mb-3">
-                <Heading size="lg" className="font-bevi-bold text-on-surface">Guest Reviews</Heading>
+                <Heading size="lg" className="font-bevi-bold text-on-surface">{t('hotel:reviews')}</Heading>
                 <Pressable>
-                  <Text size="sm" bold className="font-bevi-bold text-bronze">View all →</Text>
+                  <Text size="sm" bold className="font-bevi-bold text-bronze">{t('hotel:viewAll')}</Text>
                 </Pressable>
               </View>
 
@@ -269,7 +271,7 @@ export default function HotelDetailScreen() {
           )}
 
           {/* ── Location ── */}
-          <Heading size="lg" className="font-bevi-bold text-on-surface mb-3">Location</Heading>
+          <Heading size="lg" className="font-bevi-bold text-on-surface mb-3">{t('hotel:location')}</Heading>
           <HotelMap
             latitude={mapLat}
             longitude={mapLng}

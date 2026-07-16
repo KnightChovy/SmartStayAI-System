@@ -3,6 +3,7 @@ import { View, ScrollView, Pressable, TextInput, KeyboardAvoidingView, Platform 
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Text } from '@/components/ui/text';
 import { Heading } from '@/components/ui/heading';
@@ -28,6 +29,7 @@ const STEPS = ['Guest details', 'Review'] as const;
 
 export default function BookingCheckoutScreen() {
   const router = useRouter();
+  const { t } = useTranslation(['booking', 'common']);
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{
     hotelId: string; roomTypeId: string; roomName?: string; hotelName?: string;
@@ -88,7 +90,7 @@ export default function BookingCheckoutScreen() {
           >
             <Ionicons name="arrow-back" size={22} color={GUEST_COLORS.onSurface} />
           </Pressable>
-          <Heading size="lg" className="font-bevi-bold text-on-surface">Complete booking</Heading>
+          <Heading size="lg" className="font-bevi-bold text-on-surface">{t('booking:checkout.title')}</Heading>
         </View>
         {/* Stepper */}
         <View className="flex-row items-center px-5 py-3 gap-2">
@@ -131,28 +133,28 @@ export default function BookingCheckoutScreen() {
 
           {step === 0 ? (
             <>
-              <Heading size="md" className="font-bevi-bold text-on-surface mb-3">Guest details</Heading>
+              <Heading size="md" className="font-bevi-bold text-on-surface mb-3">{t('booking:checkout.steps.details')}</Heading>
               <View className="bg-surface rounded-card p-4 gap-3.5">
                 <Field
                   label="Full name" value={fullName} onChangeText={setFullName}
-                  placeholder="John Doe" error={touched ? nameError : ''} autoCapitalize="words"
+                  placeholder={t('booking:checkout.fullNamePlaceholder')} error={touched ? nameError : ''} autoCapitalize="words"
                 />
                 <Field
                   label="Email" value={email} onChangeText={setEmail}
-                  placeholder="you@example.com" error={touched ? emailError : ''}
+                  placeholder={t('booking:checkout.emailPlaceholder')} error={touched ? emailError : ''}
                   keyboardType="email-address" autoCapitalize="none"
                 />
                 <Field
                   label="Phone" value={phone} onChangeText={setPhone}
-                  placeholder="09xx xxx xxx" error={touched ? phoneError : ''}
+                  placeholder={t('booking:checkout.phonePlaceholder')} error={touched ? phoneError : ''}
                   keyboardType="phone-pad"
                 />
                 <View>
-                  <Text size="sm" bold className="font-bevi-bold text-on-surface mb-1.5">Special requests (optional)</Text>
+                  <Text size="sm" bold className="font-bevi-bold text-on-surface mb-1.5">{t('booking:checkout.specialRequests')}</Text>
                   <TextInput
                     value={specialRequests}
                     onChangeText={setSpecialRequests}
-                    placeholder="Late check-in, high floor, extra bed…"
+                    placeholder={t('booking:checkout.specialRequestsPlaceholder')}
                     placeholderTextColor={GUEST_COLORS.muted}
                     multiline
                     className="border border-hairline/50 rounded-field px-3 py-2.5 text-on-surface text-sm min-h-20"
@@ -163,7 +165,7 @@ export default function BookingCheckoutScreen() {
             </>
           ) : (
             <>
-              <Heading size="md" className="font-bevi-bold text-on-surface mb-3">Review &amp; confirm</Heading>
+              <Heading size="md" className="font-bevi-bold text-on-surface mb-3">{t('booking:checkout.steps.review')}</Heading>
               <View className="bg-surface rounded-card p-4 mb-4">
                 <ReviewRow label="Guest" value={fullName} />
                 <ReviewRow label="Email" value={email} />
@@ -171,7 +173,7 @@ export default function BookingCheckoutScreen() {
                 {specialRequests.trim() ? <ReviewRow label="Requests" value={specialRequests.trim()} /> : null}
               </View>
 
-              <Heading size="md" className="font-bevi-bold text-on-surface mb-3">Price details</Heading>
+              <Heading size="md" className="font-bevi-bold text-on-surface mb-3">{t('booking:checkout.priceDetails')}</Heading>
               <View className="bg-surface rounded-card p-4 mb-4">
                 <PriceSummary
                   lines={[{ label: `${formatVnd(params.basePrice ?? 0)} × ${nights} night${nights > 1 ? 's' : ''}`, value: subtotal }]}
@@ -204,12 +206,12 @@ export default function BookingCheckoutScreen() {
           style={{ paddingBottom: insets.bottom + 12 }}
         >
           <View>
-            <Text size="2xs" className="font-bevi text-muted">Total</Text>
+            <Text size="2xs" className="font-bevi text-muted">{t('common:total')}</Text>
             <Text bold className="font-bevi-bold text-on-surface text-xl">{formatVnd(subtotal)}</Text>
           </View>
           {step === 0 ? (
             <Pressable onPress={goReview} className="bg-on-surface rounded-card px-7 py-3.5 flex-row items-center gap-1.5">
-              <Text bold className="font-bevi-bold text-white text-[15px]">Continue</Text>
+              <Text bold className="font-bevi-bold text-white text-[15px]">{t('booking:checkout.continue')}</Text>
               <Ionicons name="arrow-forward" size={16} color={GUEST_COLORS.white} />
             </Pressable>
           ) : (

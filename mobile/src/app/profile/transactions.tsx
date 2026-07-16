@@ -2,6 +2,7 @@ import { View, FlatList, Pressable, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Text } from '@/components/ui/text';
 import { Heading } from '@/components/ui/heading';
 import { BookingStatusBadge } from '@/components/shared/BookingStatusBadge';
@@ -18,6 +19,7 @@ import { GUEST_COLORS } from '@/constants/guestTheme';
  */
 export default function TransactionsScreen() {
   const router = useRouter();
+  const { t } = useTranslation(['account', 'common']);
   const { data, isLoading, isError, refetch, isRefetching } = useGetMyBookings({ limit: 50, sortBy: 'createdAt:desc' });
   const bookings = data?.results ?? [];
 
@@ -27,7 +29,7 @@ export default function TransactionsScreen() {
         <Pressable onPress={() => router.back()} hitSlop={8} className="w-9 h-9 items-center justify-center">
           <Ionicons name="arrow-back" size={22} color={GUEST_COLORS.onSurface} />
         </Pressable>
-        <Heading size="lg" className="font-bevi-bold text-on-surface">Transaction History</Heading>
+        <Heading size="lg" className="font-bevi-bold text-on-surface">{t('account:transactions.title')}</Heading>
       </View>
 
       <View className="flex-1 bg-surface">
@@ -38,9 +40,9 @@ export default function TransactionsScreen() {
         ) : isError ? (
           <View className="flex-1 items-center justify-center gap-3 px-8">
             <Ionicons name="cloud-offline-outline" size={48} color={GUEST_COLORS.hairline} />
-            <Text className="font-bevi text-muted text-center">Couldn't load your transactions.</Text>
+            <Text className="font-bevi text-muted text-center">{t('account:transactions.error')}</Text>
             <Pressable onPress={() => refetch()} className="bg-on-surface rounded-field px-5 py-2.5">
-              <Text bold className="font-bevi-bold text-white">Retry</Text>
+              <Text bold className="font-bevi-bold text-white">{t('common:retry')}</Text>
             </Pressable>
           </View>
         ) : (
@@ -53,8 +55,8 @@ export default function TransactionsScreen() {
             ListEmptyComponent={
               <View className="items-center justify-center gap-3 mt-24">
                 <Ionicons name="receipt-outline" size={56} color={GUEST_COLORS.hairline} />
-                <Text bold className="font-bevi-bold text-muted text-base">No transactions yet</Text>
-                <Text size="sm" className="font-bevi text-hairline text-center">Your booking payments will appear here.</Text>
+                <Text bold className="font-bevi-bold text-muted text-base">{t('account:transactions.empty')}</Text>
+                <Text size="sm" className="font-bevi text-hairline text-center">{t('account:transactions.emptyBody')}</Text>
               </View>
             }
             renderItem={({ item }) => (

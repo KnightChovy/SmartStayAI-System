@@ -2,6 +2,7 @@ import { View, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Text } from '@/components/ui/text';
 import { Heading } from '@/components/ui/heading';
 import { GUEST_COLORS } from '@/constants/guestTheme';
@@ -15,6 +16,7 @@ import { GUEST_COLORS } from '@/constants/guestTheme';
  */
 export default function PaymentMethodsScreen() {
   const router = useRouter();
+  const { t } = useTranslation(['account', 'common']);
 
   return (
     <SafeAreaView className="flex-1 bg-on-surface" edges={['top']}>
@@ -22,17 +24,16 @@ export default function PaymentMethodsScreen() {
         <Pressable onPress={() => router.back()} hitSlop={8} className="w-9 h-9 items-center justify-center">
           <Ionicons name="arrow-back" size={22} color={GUEST_COLORS.onSurface} />
         </Pressable>
-        <Heading size="lg" className="font-bevi-bold text-on-surface">Payment Methods</Heading>
+        <Heading size="lg" className="font-bevi-bold text-on-surface">{t('account:paymentMethods.title')}</Heading>
       </View>
 
       <View className="flex-1 bg-canvas items-center justify-center gap-3 px-8">
         <View className="w-16 h-16 rounded-full bg-surface items-center justify-center">
           <Ionicons name="card-outline" size={32} color={GUEST_COLORS.hairline} />
         </View>
-        <Text bold className="font-bevi-bold text-on-surface text-base text-center">No saved payment methods</Text>
+        <Text bold className="font-bevi-bold text-on-surface text-base text-center">{t('account:paymentMethods.empty')}</Text>
         <Text size="sm" className="font-bevi text-muted text-center">
-          SmartStay doesn't store your card yet. You'll pay securely through VNPay each time you confirm a
-          booking.
+          {t('account:paymentMethods.emptyBody')}
         </Text>
       </View>
     </SafeAreaView>

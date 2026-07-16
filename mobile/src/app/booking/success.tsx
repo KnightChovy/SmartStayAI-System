@@ -3,6 +3,7 @@ import { View, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import * as WebBrowser from 'expo-web-browser';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Text } from '@/components/ui/text';
@@ -27,6 +28,7 @@ function errorMessage(err: unknown, fallback: string): string {
 
 export default function BookingSuccessScreen() {
   const router = useRouter();
+  const { t } = useTranslation(['booking', 'common']);
   const { bookingId = '' } = useLocalSearchParams<{ bookingId: string }>();
   const { data: booking, isLoading, refetch, isRefetching } = useGetBooking(bookingId);
   const createPayment = useCreateVnpayPayment();
@@ -64,7 +66,7 @@ export default function BookingSuccessScreen() {
           <View className="w-20 h-20 rounded-full bg-green-100 items-center justify-center">
             <Ionicons name="checkmark-circle" size={56} color="#16A34A" />
           </View>
-          <Heading size="2xl" className="font-bevi-bold text-on-surface mt-4">Booking confirmed!</Heading>
+          <Heading size="2xl" className="font-bevi-bold text-on-surface mt-4">{t('booking:success.title')}</Heading>
           <Text size="sm" className="font-bevi text-on-surface-variant text-center mt-1.5 px-6">
             {isPending
               ? 'Your room is on hold. Complete payment to secure your stay.'
@@ -76,7 +78,7 @@ export default function BookingSuccessScreen() {
         <View className="bg-surface rounded-card p-5">
           <View className="flex-row items-center justify-between mb-4">
             <View>
-              <Text size="xs" className="font-bevi text-muted">Booking code</Text>
+              <Text size="xs" className="font-bevi text-muted">{t('booking:success.bookingCode')}</Text>
               <Text bold className="font-bevi-bold text-on-surface text-2xl tracking-wider">{booking?.bookingCode ?? '—'}</Text>
             </View>
             {booking && <BookingStatusBadge status={booking.status} size="md" />}
@@ -86,7 +88,7 @@ export default function BookingSuccessScreen() {
           {booking?.bookingCode ? (
             <View className="items-center py-3 border-y border-dashed border-hairline/50 mb-4">
               <QRVoucher data={booking.voucher?.qrData ?? booking.bookingCode} />
-              <Text size="2xs" className="font-bevi text-muted mt-2">Scan at the front desk</Text>
+              <Text size="2xs" className="font-bevi text-muted mt-2">{t('booking:success.scanAtDesk')}</Text>
             </View>
           ) : null}
 
@@ -103,7 +105,7 @@ export default function BookingSuccessScreen() {
           <Row icon="people-outline" text={`${booking?.numGuests ?? 0} guest${(booking?.numGuests ?? 0) > 1 ? 's' : ''}`} />
 
           <View className="flex-row items-center justify-between border-t border-hairline/30 pt-4 mt-2">
-            <Text className="font-bevi text-on-surface-variant">Total</Text>
+            <Text className="font-bevi text-on-surface-variant">{t('common:total')}</Text>
             <Text bold className="font-bevi-bold text-on-surface text-xl">{formatVnd(booking?.totalAmount)}</Text>
           </View>
         </View>
@@ -135,13 +137,13 @@ export default function BookingSuccessScreen() {
             onPress={() => router.replace({ pathname: '/booking/[id]', params: { id: bookingId } })}
             className="flex-1 border border-hairline/50 rounded-card py-3.5 items-center"
           >
-            <Text bold className="font-bevi-bold text-on-surface text-base">View booking</Text>
+            <Text bold className="font-bevi-bold text-on-surface text-base">{t('booking:success.viewBooking')}</Text>
           </Pressable>
           <Pressable
             onPress={() => router.replace('/(tabs)/bookings')}
             className="flex-1 bg-on-surface rounded-card py-3.5 items-center"
           >
-            <Text bold className="font-bevi-bold text-white text-base">My bookings</Text>
+            <Text bold className="font-bevi-bold text-white text-base">{t('booking:success.myBookings')}</Text>
           </Pressable>
         </View>
       </View>

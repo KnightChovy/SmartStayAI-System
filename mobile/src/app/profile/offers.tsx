@@ -2,6 +2,7 @@ import { View, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Text } from '@/components/ui/text';
 import { Heading } from '@/components/ui/heading';
 import { GUEST_COLORS } from '@/constants/guestTheme';
@@ -38,6 +39,7 @@ const OFFERS = [
 
 export default function OffersScreen() {
   const router = useRouter();
+  const { t } = useTranslation(['account', 'common']);
 
   return (
     <SafeAreaView className="flex-1 bg-on-surface" edges={['top']}>
@@ -45,7 +47,7 @@ export default function OffersScreen() {
         <Pressable onPress={() => router.back()} hitSlop={8} className="w-9 h-9 items-center justify-center">
           <Ionicons name="arrow-back" size={22} color={GUEST_COLORS.onSurface} />
         </Pressable>
-        <Heading size="lg" className="font-bevi-bold text-on-surface">My Offers</Heading>
+        <Heading size="lg" className="font-bevi-bold text-on-surface">{t('account:offers.title')}</Heading>
       </View>
 
       <ScrollView className="flex-1 bg-canvas" contentContainerStyle={{ padding: 16, gap: 12 }} showsVerticalScrollIndicator={false}>
@@ -63,7 +65,7 @@ export default function OffersScreen() {
 
             <View className="mt-3 flex-row items-center justify-between rounded-field border border-dashed border-gray-300 bg-surface-low px-4 py-2.5">
               <Text bold className="font-bevi-bold text-on-surface tracking-wider">{offer.code}</Text>
-              <Text size="xs" className="font-bevi text-muted">Enter at checkout</Text>
+              <Text size="xs" className="font-bevi text-muted">{t('account:offers.enterAtCheckout')}</Text>
             </View>
           </View>
         ))}

@@ -2,6 +2,7 @@ import { View, ScrollView, Pressable, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Text } from '@/components/ui/text';
 import { Heading } from '@/components/ui/heading';
 import { GUEST_COLORS } from '@/constants/guestTheme';
@@ -33,6 +34,7 @@ const CONTACTS = [
 
 export default function HelpSupportScreen() {
   const router = useRouter();
+  const { t } = useTranslation(['account', 'common']);
 
   return (
     <SafeAreaView className="flex-1 bg-on-surface" edges={['top']}>
@@ -40,11 +42,11 @@ export default function HelpSupportScreen() {
         <Pressable onPress={() => router.back()} hitSlop={8} className="w-9 h-9 items-center justify-center">
           <Ionicons name="arrow-back" size={22} color={GUEST_COLORS.onSurface} />
         </Pressable>
-        <Heading size="lg" className="font-bevi-bold text-on-surface">Help & Support</Heading>
+        <Heading size="lg" className="font-bevi-bold text-on-surface">{t('account:help.title')}</Heading>
       </View>
 
       <ScrollView className="flex-1 bg-canvas" contentContainerStyle={{ padding: 16, gap: 12 }} showsVerticalScrollIndicator={false}>
-        <Heading size="md" className="font-bevi-bold text-on-surface px-1">Frequently asked questions</Heading>
+        <Heading size="md" className="font-bevi-bold text-on-surface px-1">{t('account:help.faq')}</Heading>
         <View className="bg-surface rounded-card overflow-hidden">
           {FAQS.map((faq, index) => (
             <View
@@ -57,7 +59,7 @@ export default function HelpSupportScreen() {
           ))}
         </View>
 
-        <Heading size="md" className="font-bevi-bold text-on-surface px-1 mt-2">Contact us</Heading>
+        <Heading size="md" className="font-bevi-bold text-on-surface px-1 mt-2">{t('account:help.contact')}</Heading>
         <View className="bg-surface rounded-card overflow-hidden">
           {CONTACTS.map((c, index) => (
             <Pressable

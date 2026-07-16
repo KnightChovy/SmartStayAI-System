@@ -4,6 +4,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Text } from '@/components/ui/text';
 import { Heading } from '@/components/ui/heading';
 import { useUpdateProfile } from '@/hooks/users';
@@ -25,6 +26,7 @@ function errorMessage(err: unknown, fallback: string): string {
 
 export default function EditProfileScreen() {
   const router = useRouter();
+  const { t } = useTranslation(['account', 'common']);
   const insets = useSafeAreaInsets();
   const user = useAuthStore((s) => s.user);
   const updateProfile = useUpdateProfile();
@@ -76,7 +78,7 @@ export default function EditProfileScreen() {
           <Pressable onPress={() => router.back()} hitSlop={8} className="w-9 h-9 items-center justify-center">
             <Ionicons name="arrow-back" size={22} color={GUEST_COLORS.onSurface} />
           </Pressable>
-          <Heading size="lg" className="font-bevi-bold text-on-surface">Edit profile</Heading>
+          <Heading size="lg" className="font-bevi-bold text-on-surface">{t('account:edit.title')}</Heading>
         </View>
       </SafeAreaView>
 
@@ -90,10 +92,10 @@ export default function EditProfileScreen() {
           </View>
 
           <View className="bg-surface rounded-card p-4 gap-3.5">
-            <Field label="Full name" value={name} onChangeText={setName} placeholder="Your name" error={touched ? nameError : ''} autoCapitalize="words" />
-            <Field label="Email" value={email} onChangeText={setEmail} placeholder="you@example.com" error={touched ? emailError : ''} keyboardType="email-address" autoCapitalize="none" />
-            <Field label="New password (optional)" value={password} onChangeText={setPassword} placeholder="Leave blank to keep current" error={touched ? passwordError : ''} secureTextEntry autoCapitalize="none" />
-            <Text size="xs" className="font-bevi text-muted">Phone number can be updated from the web app.</Text>
+            <Field label="Full name" value={name} onChangeText={setName} placeholder={t('account:edit.namePlaceholder')} error={touched ? nameError : ''} autoCapitalize="words" />
+            <Field label="Email" value={email} onChangeText={setEmail} placeholder={t('account:edit.emailPlaceholder')} error={touched ? emailError : ''} keyboardType="email-address" autoCapitalize="none" />
+            <Field label="New password (optional)" value={password} onChangeText={setPassword} placeholder={t('account:edit.newPasswordPlaceholder')} error={touched ? passwordError : ''} secureTextEntry autoCapitalize="none" />
+            <Text size="xs" className="font-bevi text-muted">{t('account:edit.phoneNote')}</Text>
           </View>
 
           {formError ? (

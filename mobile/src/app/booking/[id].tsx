@@ -3,6 +3,7 @@ import { View, ScrollView, Pressable, ActivityIndicator, Alert, RefreshControl }
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import * as WebBrowser from 'expo-web-browser';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Text } from '@/components/ui/text';
@@ -28,6 +29,7 @@ function errorMessage(err: unknown, fallback: string): string {
 
 export default function BookingDetailScreen() {
   const router = useRouter();
+  const { t } = useTranslation(['booking', 'common']);
   const insets = useSafeAreaInsets();
   const { id = '' } = useLocalSearchParams<{ id: string }>();
   const { data: booking, isLoading, isError, refetch, isRefetching } = useGetBooking(id);
@@ -47,7 +49,7 @@ export default function BookingDetailScreen() {
   }
 
   function handleCancel() {
-    Alert.alert('Cancel booking', 'Are you sure you want to cancel this booking? This cannot be undone.', [
+    Alert.alert(t('booking:detail.cancelTitle'), t('booking:detail.cancelBody'), [
       { text: 'Keep booking', style: 'cancel' },
       {
         text: 'Cancel booking',
@@ -89,9 +91,9 @@ export default function BookingDetailScreen() {
       <SafeAreaView className="flex-1 bg-canvas items-center justify-center gap-3 px-8" edges={['top']}>
         <StatusBar style="dark" />
         <Ionicons name="cloud-offline-outline" size={48} color={GUEST_COLORS.hairline} />
-        <Text className="font-bevi text-muted text-center">Couldn’t load this booking.</Text>
+        <Text className="font-bevi text-muted text-center">{t('booking:detail.error')}</Text>
         <Pressable onPress={() => refetch()} className="bg-on-surface rounded-field px-5 py-2.5">
-          <Text bold className="font-bevi-bold text-white">Retry</Text>
+          <Text bold className="font-bevi-bold text-white">{t('common:retry')}</Text>
         </Pressable>
       </SafeAreaView>
     );
@@ -108,7 +110,7 @@ export default function BookingDetailScreen() {
           <Pressable onPress={() => router.back()} hitSlop={8} className="w-9 h-9 items-center justify-center">
             <Ionicons name="arrow-back" size={22} color={GUEST_COLORS.onSurface} />
           </Pressable>
-          <Heading size="lg" className="font-bevi-bold text-on-surface">Booking details</Heading>
+          <Heading size="lg" className="font-bevi-bold text-on-surface">{t('booking:detail.title')}</Heading>
         </View>
       </SafeAreaView>
 
@@ -121,7 +123,7 @@ export default function BookingDetailScreen() {
         <View className="bg-surface rounded-card p-5 mb-3.5">
           <View className="flex-row items-center justify-between mb-3">
             <View>
-              <Text size="xs" className="font-bevi text-muted">Booking code</Text>
+              <Text size="xs" className="font-bevi text-muted">{t('booking:detail.bookingCode')}</Text>
               <Text bold className="font-bevi-bold text-on-surface text-xl tracking-wider">{booking.bookingCode}</Text>
             </View>
             <BookingStatusBadge status={booking.status} size="md" />
@@ -133,7 +135,7 @@ export default function BookingDetailScreen() {
           {booking.status !== 'cancelled' && (
             <View className="items-center pt-4 mt-1 border-t border-dashed border-hairline/50">
               <QRVoucher data={booking.voucher?.qrData ?? booking.bookingCode} label={booking.bookingCode} />
-              <Text size="2xs" className="font-bevi text-muted mt-2">Show this QR code at check-in</Text>
+              <Text size="2xs" className="font-bevi text-muted mt-2">{t('booking:detail.showQr')}</Text>
             </View>
           )}
         </View>
@@ -171,7 +173,7 @@ export default function BookingDetailScreen() {
             className="flex-row items-center justify-center gap-2 border border-hairline/50 rounded-card py-3 mb-3.5 bg-surface"
           >
             <Ionicons name="create-outline" size={18} color={GUEST_COLORS.onSurface} />
-            <Text bold className="font-bevi-bold text-on-surface">Modify reservation</Text>
+            <Text bold className="font-bevi-bold text-on-surface">{t('booking:detail.modify')}</Text>
           </Pressable>
         )}
 
@@ -179,7 +181,7 @@ export default function BookingDetailScreen() {
           <View className="bg-emerald-50 rounded-card p-4 mb-3.5 flex-row items-start gap-2.5">
             <Ionicons name="checkmark-circle" size={20} color="#16A34A" />
             <View className="flex-1">
-              <Text bold className="font-bevi-bold text-emerald-700">Modification request sent</Text>
+              <Text bold className="font-bevi-bold text-emerald-700">{t('booking:detail.modifySent')}</Text>
               <Text size="sm" className="font-bevi text-emerald-700 mt-0.5">
                 New dates: {formatDateShort(modifyRequest.checkIn)} → {formatDateShort(modifyRequest.checkOut)} ·{' '}
                 {modifyRequest.guests} guest{modifyRequest.guests > 1 ? 's' : ''}
@@ -192,7 +194,7 @@ export default function BookingDetailScreen() {
         )}
 
         {/* Price */}
-        <Heading size="md" className="font-bevi-bold text-on-surface mb-2 px-1">Price details</Heading>
+        <Heading size="md" className="font-bevi-bold text-on-surface mb-2 px-1">{t('booking:detail.priceDetails')}</Heading>
         <View className="bg-surface rounded-card p-4">
           <PriceSummary
             lines={[

@@ -3,6 +3,7 @@ import { View, ScrollView, Pressable, TextInput, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Text } from '@/components/ui/text';
 import { Heading } from '@/components/ui/heading';
 import { useUpdateProfile, useDeleteAccount } from '@/hooks/users';
@@ -20,6 +21,7 @@ function errorMessage(err: unknown, fallback: string): string {
 
 export default function SecurityScreen() {
   const router = useRouter();
+  const { t } = useTranslation(['account', 'common']);
   const updateProfile = useUpdateProfile();
   const deleteAccount = useDeleteAccount();
 
@@ -32,11 +34,11 @@ export default function SecurityScreen() {
     setFormError('');
     setSaved(false);
     if (newPassword.length < 8) {
-      setFormError('Password must be at least 8 characters.');
+      setFormError(t('account:security.tooShort'));
       return;
     }
     if (newPassword !== confirmPassword) {
-      setFormError('Passwords do not match.');
+      setFormError(t('account:security.mismatch'));
       return;
     }
     try {
@@ -45,7 +47,7 @@ export default function SecurityScreen() {
       setConfirmPassword('');
       setSaved(true);
     } catch (err) {
-      setFormError(errorMessage(err, 'Could not update your password. Please try again.'));
+      setFormError(errorMessage(err, t('account:security.updateFailed')));
     }
   }
 
@@ -63,7 +65,7 @@ export default function SecurityScreen() {
               await deleteAccount.mutateAsync();
               router.replace('/(auth)/login');
             } catch (err) {
-              Alert.alert('Error', errorMessage(err, 'Could not delete your account. Please try again.'));
+              Alert.alert('Error', errorMessage(err, t('account:security.deleteFailed')));
             }
           },
         },
@@ -77,15 +79,15 @@ export default function SecurityScreen() {
         <Pressable onPress={() => router.back()} hitSlop={8} className="w-9 h-9 items-center justify-center">
           <Ionicons name="arrow-back" size={22} color={GUEST_COLORS.onSurface} />
         </Pressable>
-        <Heading size="lg" className="font-bevi-bold text-on-surface">Security & Privacy</Heading>
+        <Heading size="lg" className="font-bevi-bold text-on-surface">{t('account:security.title')}</Heading>
       </View>
 
       <ScrollView className="flex-1 bg-canvas" contentContainerStyle={{ padding: 16, gap: 14 }} showsVerticalScrollIndicator={false}>
         <View className="bg-surface rounded-card p-4">
-          <Heading size="md" className="font-bevi-bold text-on-surface mb-1">Change password</Heading>
-          <Text size="sm" className="font-bevi text-muted mb-3">Use at least 8 characters.</Text>
+          <Heading size="md" className="font-bevi-bold text-on-surface mb-1">{t('account:security.changePassword')}</Heading>
+          <Text size="sm" className="font-bevi text-muted mb-3">{t('account:security.hint')}</Text>
 
-          <Text size="xs" className="font-bevi text-on-surface-variant mb-1">New password</Text>
+          <Text size="xs" className="font-bevi text-on-surface-variant mb-1">{t('account:security.newPassword')}</Text>
           <TextInput
             secureTextEntry
             value={newPassword}
@@ -94,7 +96,7 @@ export default function SecurityScreen() {
             placeholderTextColor={GUEST_COLORS.muted}
             className="mb-3 rounded-field border border-hairline/50 px-3.5 py-3 text-on-surface"
           />
-          <Text size="xs" className="font-bevi text-on-surface-variant mb-1">Confirm new password</Text>
+          <Text size="xs" className="font-bevi text-on-surface-variant mb-1">{t('account:security.confirmPassword')}</Text>
           <TextInput
             secureTextEntry
             value={confirmPassword}
@@ -105,7 +107,7 @@ export default function SecurityScreen() {
           />
 
           {formError ? <Text size="sm" className="font-bevi text-red-600 mb-2">{formError}</Text> : null}
-          {saved ? <Text size="sm" className="font-bevi text-green-600 mb-2">Password updated.</Text> : null}
+          {saved ? <Text size="sm" className="font-bevi text-green-600 mb-2">{t('account:security.updated')}</Text> : null}
 
           <Pressable
             disabled={updateProfile.isPending}
@@ -113,13 +115,13 @@ export default function SecurityScreen() {
             className="bg-on-surface rounded-card py-3 items-center"
           >
             <Text bold className="font-bevi-bold text-white">
-              {updateProfile.isPending ? 'Updating…' : 'Update password'}
+              {updateProfile.isPending ? t('account:security.updating') : t('account:security.update')}
             </Text>
           </Pressable>
         </View>
 
         <View className="bg-surface rounded-card p-4 border border-red-100">
-          <Heading size="md" className="font-bevi-bold text-red-600 mb-1">Delete account</Heading>
+          <Heading size="md" className="font-bevi-bold text-red-600 mb-1">{t('account:security.deleteTitle')}</Heading>
           <Text size="sm" className="font-bevi text-muted mb-3">
             Permanently remove your account and personal data. This cannot be undone.
           </Text>

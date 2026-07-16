@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Modal, View, Pressable, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { Text } from '@/components/ui/text';
 import { Heading } from '@/components/ui/heading';
 import { QuantityStepper } from '@/components/shared/QuantityStepper';
@@ -66,6 +67,7 @@ export function StayPickerSheet({
   onClose,
   onApply,
 }: StayPickerSheetProps) {
+  const { t } = useTranslation(['hotel', 'common']);
   const insets = useSafeAreaInsets();
   const [checkIn, setCheckIn] = useState<Date | null>(initialCheckIn ? new Date(initialCheckIn) : null);
   const [checkOut, setCheckOut] = useState<Date | null>(initialCheckOut ? new Date(initialCheckOut) : null);
@@ -117,7 +119,7 @@ export function StayPickerSheet({
         <View className="bg-surface rounded-t-3xl" style={{ maxHeight: '88%' }}>
           {/* Header */}
           <View className="flex-row items-center justify-between px-5 pt-4 pb-3 border-b border-hairline/30">
-            <Heading size="lg" className="font-bevi-bold text-on-surface">Select dates</Heading>
+            <Heading size="lg" className="font-bevi-bold text-on-surface">{t('hotel:picker.title')}</Heading>
             <Pressable onPress={onClose} hitSlop={8} className="w-9 h-9 items-center justify-center">
               <Ionicons name="close" size={22} color={GUEST_COLORS.onSurface} />
             </Pressable>
@@ -171,8 +173,8 @@ export function StayPickerSheet({
           {/* Guests */}
           <View className="flex-row items-center justify-between px-5 py-3 border-t border-hairline/30">
             <View>
-              <Text bold className="font-bevi-bold text-on-surface">Guests</Text>
-              <Text size="xs" className="font-bevi text-muted">Max {maxGuests} for this room</Text>
+              <Text bold className="font-bevi-bold text-on-surface">{t('hotel:guests')}</Text>
+              <Text size="xs" className="font-bevi text-muted">{t('hotel:picker.maxGuests', { count: maxGuests })}</Text>
             </View>
             <QuantityStepper value={guests} onChange={setGuests} min={1} max={maxGuests} />
           </View>
@@ -181,10 +183,10 @@ export function StayPickerSheet({
           <View className="px-5 pt-2" style={{ paddingBottom: insets.bottom + 12 }}>
             <Text size="xs" className="font-bevi text-on-surface-variant mb-2 text-center">
               {canApply
-                ? `${formatDateShort(checkIn)} → ${formatDateShort(checkOut)} · ${nights} night${nights > 1 ? 's' : ''}`
+                ? `${formatDateShort(checkIn)} → ${formatDateShort(checkOut)} · ${t('common:nights', { count: nights })}`
                 : checkIn
-                  ? 'Now pick your check-out date'
-                  : 'Pick your check-in date'}
+                  ? t('hotel:picker.pickCheckOut')
+                  : t('hotel:picker.pickCheckIn')}
             </Text>
             <Pressable
               disabled={!canApply}

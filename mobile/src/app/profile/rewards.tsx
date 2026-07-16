@@ -2,6 +2,7 @@ import { View, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Text } from '@/components/ui/text';
 import { Heading } from '@/components/ui/heading';
 import { useAuthStore } from '@/stores/authStore';
@@ -28,6 +29,7 @@ const POINTS_HISTORY = [
 
 export default function RewardsScreen() {
   const router = useRouter();
+  const { t } = useTranslation(['account', 'common']);
   const { user } = useAuthStore();
   const progressPct = Math.min(100, Math.round((TOTAL_POINTS / NEXT_THRESHOLD) * 100));
 
@@ -37,7 +39,7 @@ export default function RewardsScreen() {
         <Pressable onPress={() => router.back()} hitSlop={8} className="w-9 h-9 items-center justify-center">
           <Ionicons name="arrow-back" size={22} color={GUEST_COLORS.onSurface} />
         </Pressable>
-        <Heading size="lg" className="font-bevi-bold text-on-surface">SmartStay Plus</Heading>
+        <Heading size="lg" className="font-bevi-bold text-on-surface">{t('account:rewards.title')}</Heading>
       </View>
 
       <ScrollView className="flex-1 bg-canvas" contentContainerStyle={{ padding: 16 }} showsVerticalScrollIndicator={false}>
@@ -70,7 +72,7 @@ export default function RewardsScreen() {
           ) : null}
         </View>
 
-        <Heading size="md" className="font-bevi-bold text-on-surface mt-6 mb-2 px-1">Points history</Heading>
+        <Heading size="md" className="font-bevi-bold text-on-surface mt-6 mb-2 px-1">{t('account:rewards.history')}</Heading>
         <View className="bg-surface rounded-card overflow-hidden">
           {POINTS_HISTORY.map((tx, index) => {
             const positive = tx.points >= 0;

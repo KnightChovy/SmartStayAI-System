@@ -7,6 +7,7 @@ import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Text } from '@/components/ui/text';
 import { Heading } from '@/components/ui/heading';
@@ -24,6 +25,7 @@ type RoomMetaIcon = { icon: React.ComponentProps<typeof Ionicons>['name']; label
 
 export default function RoomDetailScreen() {
   const router = useRouter();
+  const { t } = useTranslation(['hotel', 'common']);
   const params = useLocalSearchParams<{
     id: string; hotelId: string; checkIn?: string; checkOut?: string; guests?: string;
   }>();
@@ -97,9 +99,9 @@ export default function RoomDetailScreen() {
       <View className="flex-1 bg-canvas items-center justify-center gap-3 px-8" style={{ paddingTop: insets.top }}>
         <StatusBar style="dark" />
         <Ionicons name="bed-outline" size={48} color={GUEST_COLORS.hairline} />
-        <Text className="font-bevi text-muted text-center">This room is no longer available.</Text>
+        <Text className="font-bevi text-muted text-center">{t('hotel:room.unavailable')}</Text>
         <Pressable onPress={() => router.back()} className="bg-on-surface rounded-field px-5 py-2.5">
-          <Text bold className="font-bevi-bold text-white">Go back</Text>
+          <Text bold className="font-bevi-bold text-white">{t('hotel:goBack')}</Text>
         </Pressable>
       </View>
     );
@@ -160,20 +162,20 @@ export default function RoomDetailScreen() {
           </View>
 
           {/* ── Your stay (date/guest picker) ── */}
-          <Heading size="lg" className="font-bevi-bold text-on-surface mb-3">Your stay</Heading>
+          <Heading size="lg" className="font-bevi-bold text-on-surface mb-3">{t('hotel:room.yourStay')}</Heading>
           <Pressable onPress={() => setPickerOpen(true)} className="bg-surface rounded-card p-4 mb-3.5 flex-row items-center">
             <View className="flex-1 flex-row items-center gap-4">
               <View>
-                <Text size="2xs" className="font-bevi text-muted uppercase">Check-in</Text>
+                <Text size="2xs" className="font-bevi text-muted uppercase">{t('hotel:checkIn')}</Text>
                 <Text bold className="font-bevi-bold text-on-surface text-sm">{formatDateShort(checkIn)}</Text>
               </View>
               <Ionicons name="arrow-forward" size={16} color={GUEST_COLORS.muted} />
               <View>
-                <Text size="2xs" className="font-bevi text-muted uppercase">Check-out</Text>
+                <Text size="2xs" className="font-bevi text-muted uppercase">{t('hotel:checkOut')}</Text>
                 <Text bold className="font-bevi-bold text-on-surface text-sm">{formatDateShort(checkOut)}</Text>
               </View>
               <View className="border-l border-hairline/30 pl-4">
-                <Text size="2xs" className="font-bevi text-muted uppercase">Guests</Text>
+                <Text size="2xs" className="font-bevi text-muted uppercase">{t('hotel:guests')}</Text>
                 <Text bold className="font-bevi-bold text-on-surface text-sm">{guests}</Text>
               </View>
             </View>
@@ -194,7 +196,7 @@ export default function RoomDetailScreen() {
           {/* ── Description ── */}
           {room.description ? (
             <>
-              <Heading size="lg" className="font-bevi-bold text-on-surface mb-2">About this room</Heading>
+              <Heading size="lg" className="font-bevi-bold text-on-surface mb-2">{t('hotel:room.about')}</Heading>
               <View className="bg-surface rounded-card p-4 mb-3.5">
                 <Text size="sm" className="font-bevi text-on-surface-variant leading-6">{room.description}</Text>
               </View>
@@ -204,7 +206,7 @@ export default function RoomDetailScreen() {
           {/* ── Amenities ── */}
           {room.amenities.length > 0 && (
             <>
-              <Heading size="lg" className="font-bevi-bold text-on-surface mb-2">Room amenities</Heading>
+              <Heading size="lg" className="font-bevi-bold text-on-surface mb-2">{t('hotel:room.amenities')}</Heading>
               <View className="bg-surface rounded-card p-4 mb-3.5">
                 {room.amenities.map(({ amenity }) => (
                   <View key={amenity.id} className="flex-row items-center gap-2.5 py-1.5">
@@ -217,7 +219,7 @@ export default function RoomDetailScreen() {
           )}
 
           {/* ── Price breakdown ── */}
-          <Heading size="lg" className="font-bevi-bold text-on-surface mb-2">Price details</Heading>
+          <Heading size="lg" className="font-bevi-bold text-on-surface mb-2">{t('hotel:room.priceDetails')}</Heading>
           <View className="bg-surface rounded-card p-4 mb-2">
             <PriceSummary
               lines={[{ label: `${formatVnd(room.basePrice)} × ${nights} night${nights > 1 ? 's' : ''}`, value: subtotal }]}
