@@ -12,22 +12,16 @@ import { StarRating } from '@/components/shared/StarRating';
 import { RoomTypeCard } from '@/components/shared/RoomTypeCard';
 import { StayPickerSheet } from '@/components/shared/StayPickerSheet';
 import { HotelMap } from '@/components/shared/HotelMap';
+import { HotelReviews } from '@/components/guest';
 import { useGetHotel, useGetRoomTypes } from '@/hooks/hotels';
-import { useGetReviews } from '@/hooks/reviews';
+import { useHotelReviewStats } from '@/hooks/reviews';
 import { useGeocode } from '@/hooks/geo';
-import { getHotelLocation, getInitials } from '@/utils/hotel';
+import { getHotelLocation } from '@/utils/hotel';
 import { formatDateShort, todayKey, toDateKey, addDays } from '@/utils/formatDate';
 import { GUEST_COLORS } from '@/constants/guestTheme';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 const CAROUSEL_H = 280;
-
-const AVATAR_COLORS = ['#0D9488', '#B45309', '#1D4ED8', '#7C3AED', '#DC2626', '#059669'];
-function avatarColor(seed: string): string {
-  let sum = 0;
-  for (const ch of seed) sum += ch.charCodeAt(0);
-  return AVATAR_COLORS[sum % AVATAR_COLORS.length];
-}
 
 export default function HotelDetailScreen() {
   const router = useRouter();
@@ -48,7 +42,8 @@ export default function HotelDetailScreen() {
 
   const { data: hotel, isLoading } = useGetHotel(id);
   const { data: roomTypes } = useGetRoomTypes(id, { checkIn, checkOut, guests });
-  const { data: reviewsData } = useGetReviews({ hotelId: id, limit: 5 });
+  // Danh sách review do <HotelReviews/> tự tải; ở đây chỉ cần điểm + số lượng cho phần header.
+  const { data: reviewStats } = useHotelReviewStats(id);
 
   // Toạ độ map: ưu tiên DB; nếu seed chưa có lat/lng thì geocode từ địa chỉ (VietMap).
   const fullAddress = hotel ? `${hotel.address}, ${getHotelLocation(hotel)}` : '';
@@ -58,11 +53,11 @@ export default function HotelDetailScreen() {
   const mapLng = hotel?.longitude ?? geocoded?.lng ?? null;
 
   const rooms = roomTypes ?? [];
-  const reviews = reviewsData?.results ?? [];
-  const reviewCount = reviewsData?.totalResults ?? reviews.length;
-  const reviewAvg = reviews.length
-    ? reviews.reduce((s, r) => s + r.overallRating, 0) / reviews.length
-    : null;
+  // Điểm + tổng số lấy từ endpoint thống kê (tính trên TOÀN BỘ đánh giá đã duyệt).
+  // Trước đây tự cộng trung bình của đúng 5 review vừa tải → khách sạn có 100 đánh giá
+  // vẫn ra điểm của 5 cái mới nhất, sai lệch thấy rõ.
+  const reviewCount = reviewStats?.total ?? 0;
+  const reviewAvg = reviewStats?.average.overall ?? null;
 
   const images = hotel?.images ?? [];
   const amenities = Array.from(
@@ -235,40 +230,9 @@ export default function HotelDetailScreen() {
           )}
 
           {/* ── Guest Reviews ── */}
-          {reviews.length > 0 && (
-            <>
-              <View className="flex-row items-center justify-between mt-2 mb-3">
-                <Heading size="lg" className="font-bevi-bold text-on-surface">{t('hotel:reviews')}</Heading>
-                <Pressable>
-                  <Text size="sm" bold className="font-bevi-bold text-bronze">{t('hotel:viewAll')}</Text>
-                </Pressable>
-              </View>
-
-              {reviews.map((review) => {
-                const name = review.customer?.fullName ?? 'Guest';
-                return (
-                  <View key={review.id} className="bg-surface rounded-card p-3.5 mb-3">
-                    <View className="flex-row items-center justify-between mb-2.5">
-                      <View className="flex-row items-center gap-2.5">
-                        <View className="w-[38px] h-[38px] rounded-full items-center justify-center" style={{ backgroundColor: avatarColor(name) }}>
-                          <Text size="sm" bold className="font-bevi-bold text-white">{getInitials(name)}</Text>
-                        </View>
-                        <View>
-                          <Text bold className="font-bevi-bold text-on-surface text-sm">{name}</Text>
-                          <Text size="xs" className="font-bevi text-muted">{review.createdAt.slice(0, 10)}</Text>
-                        </View>
-                      </View>
-                      <View className="bg-on-surface rounded-lg px-2 py-1">
-                        <Text size="sm" bold className="font-bevi-bold text-white">{review.overallRating}</Text>
-                      </View>
-                    </View>
-                    {review.title ? <Text bold className="font-bevi-bold text-on-surface text-sm mb-1">{review.title}</Text> : null}
-                    <Text size="sm" className="font-bevi text-on-surface-variant leading-5">{review.content}</Text>
-                  </View>
-                );
-              })}
-            </>
-          )}
+          <View className="mt-2">
+            <HotelReviews hotelId={id} />
+          </View>
 
           {/* ── Location ── */}
           <Heading size="lg" className="font-bevi-bold text-on-surface mb-3">{t('hotel:location')}</Heading>

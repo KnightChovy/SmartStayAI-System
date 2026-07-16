@@ -12,7 +12,9 @@ import { BookingStatusBadge } from '@/components/shared/BookingStatusBadge';
 import { PriceSummary } from '@/components/shared/PriceSummary';
 import { QRVoucher } from '@/components/shared/QRVoucher';
 import { StayPickerSheet, type StaySelection } from '@/components/shared/StayPickerSheet';
+import { ReviewSheet } from '@/components/guest';
 import { useGetBooking, useCancelBooking } from '@/hooks/bookings';
+import { useMyReviews } from '@/hooks/reviews';
 import { useCreateVnpayPayment } from '@/hooks/payments';
 import { formatDateLong, formatDateShort } from '@/utils/formatDate';
 import { GUEST_COLORS } from '@/constants/guestTheme';
@@ -29,7 +31,7 @@ function errorMessage(err: unknown, fallback: string): string {
 
 export default function BookingDetailScreen() {
   const router = useRouter();
-  const { t } = useTranslation(['booking', 'common']);
+  const { t } = useTranslation(['booking', 'account', 'common']);
   const insets = useSafeAreaInsets();
   const { id = '' } = useLocalSearchParams<{ id: string }>();
   const { data: booking, isLoading, isError, refetch, isRefetching } = useGetBooking(id);
@@ -38,10 +40,19 @@ export default function BookingDetailScreen() {
   const [actionError, setActionError] = useState('');
   const [showModifySheet, setShowModifySheet] = useState(false);
   const [modifyRequest, setModifyRequest] = useState<StaySelection | null>(null);
+  const [showReview, setShowReview] = useState(false);
+
+  // Đã đánh giá booking này chưa → quyết định "Viết đánh giá" hay "Sửa đánh giá".
+  // BE không kèm review vào booking và cũng chưa có `GET /bookings/:id/review`, nên tra
+  // trong danh sách đánh giá của mình — đúng cách client đang làm.
+  const { data: myReviews } = useMyReviews();
+  const existingReview = myReviews?.results.find(r => r.bookingId === id) ?? null;
 
   const canCancel = booking?.status === 'pending' || booking?.status === 'confirmed';
   const canModify = booking?.status === 'pending' || booking?.status === 'confirmed';
   const canPay = booking?.status === 'pending';
+  // BE chỉ cho đánh giá sau khi đã trả phòng (`review.service.ts`: status phải `checked_out`).
+  const canReview = booking?.status === 'checked_out';
 
   function handleApplyModify(selection: StaySelection) {
     setModifyRequest(selection);
@@ -166,6 +177,23 @@ export default function BookingDetailScreen() {
           {booking.specialRequests ? <InfoRow label="Requests" value={booking.specialRequests} /> : null}
         </View>
 
+        {/* Đánh giá — chỉ mở sau khi đã trả phòng, đúng luật của BE. */}
+        {canReview && (
+          <Pressable
+            onPress={() => setShowReview(true)}
+            className="mb-3.5 min-h-12 flex-row items-center justify-center gap-2 rounded-card bg-on-surface py-3"
+          >
+            <Ionicons
+              name={existingReview ? 'create-outline' : 'star-outline'}
+              size={18}
+              color={GUEST_COLORS.white}
+            />
+            <Text bold className="font-bevi-bold text-white">
+              {existingReview ? t('account:reviews.editFeedback') : t('account:reviews.writeReview')}
+            </Text>
+          </Pressable>
+        )}
+
         {/* Modify reservation (mock — gửi yêu cầu, giống web) */}
         {canModify && (
           <Pressable
@@ -253,6 +281,17 @@ export default function BookingDetailScreen() {
         onClose={() => setShowModifySheet(false)}
         onApply={handleApplyModify}
       />
+
+      {canReview && (
+        <ReviewSheet
+          visible={showReview}
+          onClose={() => setShowReview(false)}
+          bookingId={booking.id}
+          hotelName={booking.hotel?.name ?? t('common:hotel')}
+          bookingCode={booking.bookingCode}
+          existingReview={existingReview}
+        />
+      )}
     </View>
   );
 }

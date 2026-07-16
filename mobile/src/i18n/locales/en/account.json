@@ -30,7 +30,8 @@
     "notifications": "Notifications",
     "security": "Security & privacy",
     "help": "Help & support",
-    "about": "About"
+    "about": "About",
+    "reviews": "My reviews"
   },
   "signOut": "Sign out",
   "signOutConfirm": "Are you sure you want to sign out?",
@@ -103,11 +104,66 @@
     "empty": "No notifications yet",
     "emptyBody": "Updates about your bookings will appear here.",
     "yourHotel": "your hotel",
-    "confirmed": { "title": "Booking confirmed", "body": "Your stay at {{hotel}} is confirmed for {{date}}." },
-    "pending": { "title": "Booking pending", "body": "We're confirming your booking at {{hotel}}." },
-    "checked_in": { "title": "Checked in", "body": "Welcome to {{hotel}}! Enjoy your stay." },
-    "checked_out": { "title": "How was your stay?", "body": "Rate your recent stay at {{hotel}}." },
-    "cancelled": { "title": "Booking cancelled", "body": "Your booking at {{hotel}} was cancelled." },
-    "no_show": { "title": "Missed booking", "body": "You didn't check in at {{hotel}}." }
+    "confirmed": {
+      "title": "Booking confirmed",
+      "body": "Your stay at {{hotel}} is confirmed for {{date}}."
+    },
+    "pending": {
+      "title": "Booking pending",
+      "body": "We're confirming your booking at {{hotel}}."
+    },
+    "checked_in": {
+      "title": "Checked in",
+      "body": "Welcome to {{hotel}}! Enjoy your stay."
+    },
+    "checked_out": {
+      "title": "How was your stay?",
+      "body": "Rate your recent stay at {{hotel}}."
+    },
+    "cancelled": {
+      "title": "Booking cancelled",
+      "body": "Your booking at {{hotel}} was cancelled."
+    },
+    "no_show": {
+      "title": "Missed booking",
+      "body": "You didn't check in at {{hotel}}."
+    }
+  },
+  "review": {
+    "writeTitle": "Write a review",
+    "editTitle": "Edit your review",
+    "overall": "Overall rating",
+    "overallHint": "(average of the four below)",
+    "cleanliness": "Cleanliness",
+    "service": "Service",
+    "location": "Location",
+    "value": "Value",
+    "titleLabel": "Title",
+    "titlePlaceholder": "Sum up your stay",
+    "content": "Your review",
+    "contentPlaceholder": "What did you love? What could be better?",
+    "photos": "Photos (optional)",
+    "photoPlaceholder": "Paste an image URL…",
+    "add": "Add",
+    "publish": "Publish review",
+    "saveChanges": "Save changes",
+    "publishing": "Publishing…",
+    "saving": "Saving…",
+    "published": "Thank you! Your review has been published.",
+    "updated": "Your review has been updated.",
+    "submitError": "Could not submit your review. Please try again.",
+    "contentRequired": "Please write a few words about your stay."
+  },
+  "reviews": {
+    "title": "My reviews",
+    "subtitle": "Reviews you shared after your stays.",
+    "emptyTitle": "No reviews yet",
+    "emptyDesc": "After you check out, you can review your stay from My bookings.",
+    "error": "Couldn't load your reviews.",
+    "pendingReview": "Pending review",
+    "hidden": "Hidden",
+    "editFeedback": "Edit feedback",
+    "responseFromProperty": "Response from property",
+    "writeReview": "Write a review"
   }
 }

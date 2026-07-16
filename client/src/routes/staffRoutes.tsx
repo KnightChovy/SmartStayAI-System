@@ -7,6 +7,7 @@ import SelectHotelPage from '@/pages/staff/SelectHotelPage';
 import StaffDashboardPage from '@/pages/staff/StaffDashboardPage';
 import FrontDeskPage from '@/pages/staff/FrontDeskPage';
 import BookingDetailPage from '@/pages/staff/BookingDetailPage';
+import StaffChatPage from '@/pages/staff/StaffChatPage';
 import HousekeepingPage from '@/pages/staff/HousekeepingPage';
 import RoomsPage from '@/pages/staff/RoomsPage';
 
@@ -29,6 +30,7 @@ export const staffRoutes: RouteObject[] = [
               { path: 'dashboard', element: <StaffDashboardPage /> },
               { path: 'front-desk', element: <FrontDeskPage /> },
               { path: 'front-desk/:bookingId', element: <BookingDetailPage /> },
+              { path: 'chat', element: <StaffChatPage /> },
               { path: 'housekeeping', element: <HousekeepingPage /> },
               { path: 'rooms', element: <RoomsPage /> },
             ],

@@ -3,6 +3,12 @@ import { API_BASE_URL, api } from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
 import type {
   ChatReply,
+  ConversationHandoffState,
+  ConversationStatus,
+  MyConversationListItem,
+  MyConversationResponse,
+  SetConversationModeDto,
+  SetConversationModeResponse,
   SendChatMessageDto,
   SendChatMessageResponse,
   SendChatMessageStreamHandlers,
@@ -97,6 +103,30 @@ function pickStreamConversationId(data: unknown): string | undefined {
   return undefined;
 }
 
+const CONVERSATION_STATUSES: ConversationStatus[] = [
+  'active',
+  'resolved',
+  'escalated',
+  'closed',
+];
+
+function isConversationStatus(value: unknown): value is ConversationStatus {
+  return (
+    typeof value === 'string' &&
+    (CONVERSATION_STATUSES as string[]).includes(value)
+  );
+}
+
+/** Đọc `{ status, handoff }` từ data của event SSE 'meta'/'done'; bỏ qua nếu không đúng dạng. */
+function pickHandoffState(data: unknown): ConversationHandoffState | undefined {
+  if (!data || typeof data !== 'object') return undefined;
+  const { status, handoff } = data as { status?: unknown; handoff?: unknown };
+  if (!isConversationStatus(status) || typeof handoff !== 'boolean') {
+    return undefined;
+  }
+  return { status, handoff };
+}
+
 export const chatService = {
   /** Chatbot thật của từng khách sạn (`POST /conversations/messages`). Cần đăng nhập. */
   async sendHotelMessage(
@@ -141,6 +171,11 @@ export const chatService = {
     let buffer = '';
     let reply = '';
     let conversationId = payload.conversationId;
+    // Mặc định khi BE không gửi trạng thái (bản cũ): coi như bot đang trả lời bình thường.
+    let handoffState: ConversationHandoffState = {
+      status: 'active',
+      handoff: false,
+    };
 
     const processFrame = (frame: string) => {
       const parsed = readSseJson(frame);
@@ -151,6 +186,16 @@ export const chatService = {
         if (nextConversationId) {
           conversationId = nextConversationId;
           handlers.onConversationId?.(nextConversationId);
+        }
+      }
+
+      // 'meta' (trước khi LLM chạy) và 'done' (chốt) đều mang trạng thái bàn giao — bot có thể
+      // chuyển khách cho lễ tân giữa chừng, nên 'done' mới là giá trị đáng tin.
+      if (parsed.event === 'meta' || parsed.event === 'done') {
+        const state = pickHandoffState(parsed.data);
+        if (state) {
+          handoffState = state;
+          handlers.onHandoffState?.(state);
         }
         return;
       }
@@ -180,7 +225,49 @@ export const chatService = {
       }
     }
 
-    return { conversationId: conversationId ?? '', reply };
+    return { conversationId: conversationId ?? '', reply, ...handoffState };
+  },
+
+  /**
+   * Các khách sạn khách đã nhắn (`GET /conversations/mine`) — dựng thanh bên kiểu Messenger.
+   * Trả mảng rỗng khi khách chưa đăng nhập (BE không định danh được khách vãng lai).
+   */
+  async listMyConversations(): Promise<MyConversationListItem[]> {
+    const { data } = await api.get<MyConversationListItem[]>(
+      '/conversations/mine'
+    );
+    return data;
+  },
+
+  /**
+   * Hội thoại đang mở của khách ở một KS + lịch sử (`GET /conversations/me?hotelId=`).
+   * Không có nó thì khách F5 xong là mất `conversationId` ⇒ không join lại room socket ⇒ không bao
+   * giờ nhận được câu trả lời của lễ tân.
+   */
+  async getMyConversation(hotelId: string): Promise<MyConversationResponse | null> {
+    const { data } = await api.get<MyConversationResponse | null>(
+      '/conversations/me',
+      { params: { hotelId } }
+    );
+    return data ?? null;
+  },
+
+  /**
+   * Công tắc AI ⇄ Người thật (`PATCH /conversations/:id/mode`).
+   * 'human' đẩy hội thoại vào hàng chờ lễ tân (không phụ thuộc AI có chịu tự bàn giao hay không);
+   * 'ai' trả về cho bot. Hội thoại giữ nguyên nên **lịch sử không mất khi gạt qua lại**.
+   * Gạt lại đúng chế độ đang dùng là no-op ở BE nên bấm nhiều lần vẫn an toàn.
+   */
+  async setConversationMode({
+    conversationId,
+    mode,
+    reason,
+  }: SetConversationModeDto): Promise<SetConversationModeResponse> {
+    const { data } = await api.patch<SetConversationModeResponse>(
+      `/conversations/${conversationId}/mode`,
+      { mode, reason }
+    );
+    return data;
   },
 
   /** Fallback client-side cho các trang chưa có hotelId cụ thể. */

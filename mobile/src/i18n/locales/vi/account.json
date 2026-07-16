@@ -30,7 +30,8 @@
     "notifications": "Thông báo",
     "security": "Bảo mật & riêng tư",
     "help": "Trợ giúp & hỗ trợ",
-    "about": "Giới thiệu"
+    "about": "Giới thiệu",
+    "reviews": "Đánh giá của tôi"
   },
   "signOut": "Đăng xuất",
   "signOutConfirm": "Bạn có chắc muốn đăng xuất?",
@@ -103,11 +104,66 @@
     "empty": "Chưa có thông báo nào",
     "emptyBody": "Cập nhật về đặt phòng của bạn sẽ hiện ở đây.",
     "yourHotel": "khách sạn của bạn",
-    "confirmed": { "title": "Đã xác nhận đặt phòng", "body": "Kỳ nghỉ tại {{hotel}} đã được xác nhận cho ngày {{date}}." },
-    "pending": { "title": "Đang chờ xác nhận", "body": "Chúng tôi đang xác nhận đặt phòng của bạn tại {{hotel}}." },
-    "checked_in": { "title": "Đã nhận phòng", "body": "Chào mừng tới {{hotel}}! Chúc bạn có kỳ nghỉ vui vẻ." },
-    "checked_out": { "title": "Kỳ nghỉ thế nào?", "body": "Hãy đánh giá kỳ nghỉ vừa rồi tại {{hotel}}." },
-    "cancelled": { "title": "Đã huỷ đặt phòng", "body": "Đặt phòng của bạn tại {{hotel}} đã bị huỷ." },
-    "no_show": { "title": "Bỏ lỡ đặt phòng", "body": "Bạn đã không nhận phòng tại {{hotel}}." }
+    "confirmed": {
+      "title": "Đã xác nhận đặt phòng",
+      "body": "Kỳ nghỉ tại {{hotel}} đã được xác nhận cho ngày {{date}}."
+    },
+    "pending": {
+      "title": "Đang chờ xác nhận",
+      "body": "Chúng tôi đang xác nhận đặt phòng của bạn tại {{hotel}}."
+    },
+    "checked_in": {
+      "title": "Đã nhận phòng",
+      "body": "Chào mừng tới {{hotel}}! Chúc bạn có kỳ nghỉ vui vẻ."
+    },
+    "checked_out": {
+      "title": "Kỳ nghỉ thế nào?",
+      "body": "Hãy đánh giá kỳ nghỉ vừa rồi tại {{hotel}}."
+    },
+    "cancelled": {
+      "title": "Đã huỷ đặt phòng",
+      "body": "Đặt phòng của bạn tại {{hotel}} đã bị huỷ."
+    },
+    "no_show": {
+      "title": "Bỏ lỡ đặt phòng",
+      "body": "Bạn đã không nhận phòng tại {{hotel}}."
+    }
+  },
+  "review": {
+    "writeTitle": "Viết đánh giá",
+    "editTitle": "Sửa đánh giá",
+    "overall": "Đánh giá tổng thể",
+    "overallHint": "(trung bình 4 tiêu chí bên dưới)",
+    "cleanliness": "Sạch sẽ",
+    "service": "Dịch vụ",
+    "location": "Vị trí",
+    "value": "Đáng giá",
+    "titleLabel": "Tiêu đề",
+    "titlePlaceholder": "Tóm tắt kỳ nghỉ của bạn",
+    "content": "Nội dung đánh giá",
+    "contentPlaceholder": "Bạn thích điều gì? Điều gì có thể tốt hơn?",
+    "photos": "Ảnh (không bắt buộc)",
+    "photoPlaceholder": "Dán URL ảnh…",
+    "add": "Thêm",
+    "publish": "Đăng đánh giá",
+    "saveChanges": "Lưu thay đổi",
+    "publishing": "Đang đăng…",
+    "saving": "Đang lưu…",
+    "published": "Cảm ơn bạn! Đánh giá của bạn đã được đăng.",
+    "updated": "Đánh giá của bạn đã được cập nhật.",
+    "submitError": "Không gửi được đánh giá. Vui lòng thử lại.",
+    "contentRequired": "Hãy viết vài dòng về kỳ nghỉ của bạn."
+  },
+  "reviews": {
+    "title": "Đánh giá của tôi",
+    "subtitle": "Những đánh giá bạn đã chia sẻ sau các kỳ nghỉ.",
+    "emptyTitle": "Chưa có đánh giá",
+    "emptyDesc": "Sau khi trả phòng, bạn có thể đánh giá kỳ nghỉ từ mục Đặt phòng của tôi.",
+    "error": "Không tải được đánh giá của bạn.",
+    "pendingReview": "Chờ duyệt",
+    "hidden": "Đã ẩn",
+    "editFeedback": "Sửa đánh giá",
+    "responseFromProperty": "Phản hồi từ chỗ nghỉ",
+    "writeReview": "Viết đánh giá"
   }
 }

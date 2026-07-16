@@ -19,6 +19,7 @@ export default function ProfileScreen() {
   const benefitItems = [
     { icon: 'gift-outline' as const, label: t('account:menu.myOffers'), sub: t('account:menu.myOffersSub'), onPress: () => router.push('/profile/offers') },
     { icon: 'star-outline' as const, label: t('account:menu.rewards'), sub: t('account:menu.rewardsSub'), onPress: () => router.push('/profile/rewards') },
+    { icon: 'chatbubble-ellipses-outline' as const, label: t('account:menu.reviews'), onPress: () => router.push('/profile/my-reviews') },
   ];
 
   const financeItems = [

@@ -53,6 +53,16 @@ const DAILY_AI_MESSAGE_LIMIT = 50;
 // theo IP ở tầng route). Đặt thấp hơn: khách chưa đăng nhập chỉ nên hỏi-đáp tư vấn, không thao tác đơn.
 const GUEST_CONVERSATION_MESSAGE_LIMIT = 20;
 
+// Trần số dòng ở danh sách "đã chat với KS nào" và số tin khôi phục khi F5.
+const MAX_CONVERSATION_LIST = 30;
+const MAX_RESTORED_MESSAGES = 50;
+
+// Hội thoại đang do NGƯỜI THẬT xử lý ⇒ bot phải IM: đã chuyển lễ tân ('escalated'), HOẶC lễ tân đã nhận
+// việc và đang trả lời ('active' + có assignedTo). Chỉ khi assignedTo bị xoá (khách gạt về AI / resolve)
+// mới trả hội thoại cho bot — nếu chỉ nhìn 'status' sẽ tưởng nhầm đã về AI ngay khi lễ tân vừa reply.
+const isHumanHandling = (c: { status: ConversationStatus; assignedTo: string | null }): boolean =>
+  c.status === 'escalated' || (c.status === 'active' && c.assignedTo !== null);
+
 // #1: cache embedding FAQ theo hotelId — embed 1 lần rồi dùng lại (tránh embed lại 31 câu mỗi tin).
 //     Lưu ý: nếu FAQ của KS đổi giữa lúc server đang chạy, cache sẽ cũ tới khi restart.
 const faqEmbedCache = new Map<string, { question: string; answer: string; vector: number[] }[]>();
@@ -585,8 +595,8 @@ export class ConversationService {
       });
     }
 
-    // Trần cứng: chỉ áp cho lượt CẦN gọi AI ('escalated' không tốn LLM, xử lý ở (3b))
-    if (conversation.status !== 'escalated') {
+    // Trần cứng: chỉ áp cho lượt CẦN gọi AI (khi người thật đang xử lý thì không tốn LLM, xử lý ở (3b))
+    if (!isHumanHandling(conversation)) {
       await this.assertWithinQuota(currentUser, conversation.id);
     }
 
@@ -601,13 +611,13 @@ export class ConversationService {
       },
     });
 
-    // (3b) BÀN GIAO NGƯỜI THẬT: hội thoại đang 'escalated' ⇒ bot không tự trả lời, chỉ ghi nhận tin
-    //      của khách (để nhân viên thấy trong hộp thư S04) và báo khách chờ. Tránh bot nói chen.
-    if (conversation.status === 'escalated') {
+    // (3b) BÀN GIAO NGƯỜI THẬT: hội thoại đang do người thật xử lý ⇒ bot không tự trả lời, chỉ ghi nhận
+    //      tin của khách (để nhân viên thấy trong hộp thư S04) và báo khách chờ. Tránh bot nói chen.
+    if (isHumanHandling(conversation)) {
       await prisma.conversation.update({ where: { id: conversation.id }, data: { lastMessageAt: new Date() } });
       // Real-time: đẩy tin khách cho nhân viên đang mở hội thoại (bot im nên tin này KHÔNG về qua đường HTTP nào khác).
       emitMessageToConversation(conversation.id, userMessage);
-      return { conversationId: conversation.id, reply: HANDOFF_NOTICE };
+      return { conversationId: conversation.id, reply: HANDOFF_NOTICE, status: conversation.status, handoff: true };
     }
 
     // (4) Đọc N TIN GẦN NHẤT (không lấy toàn bộ — #2) → đổi sang mảng ChatMessage cho LLM
@@ -639,8 +649,10 @@ export class ConversationService {
     });
     await prisma.conversation.update({ where: { id: conversation.id }, data: { lastMessageAt: new Date() } });
 
-    // (7) Trả về cho lớp trên
-    return { conversationId: conversation.id, reply };
+    // (7) Trả về kèm trạng thái CHỐT (đọc tươi): bot có thể đã tự gọi escalate_to_staff GIỮA lượt,
+    //     nên handoff phải phản ánh DB sau lượt, không dựa vào bản conversation lúc đầu.
+    const { status, handoff } = await this.getHandoffState(conversation.id);
+    return { conversationId: conversation.id, reply, status, handoff };
   };
 
   // Bản STREAM: chuẩn bị (await) xong, trả về conversationId NGAY + một generator đẩy chữ dần.
@@ -650,7 +662,7 @@ export class ConversationService {
     conversationId: string | undefined,
     currentUser: User | null,
     text: string
-  ): Promise<{ conversationId: string; stream: AsyncGenerator<string> }> => {
+  ): Promise<{ conversationId: string; status: ConversationStatus; handoff: boolean; stream: AsyncGenerator<string> }> => {
     // (1)-(4): y hệt sendMessage — tìm KS (hoặc null = toàn sàn), lấy/tạo hội thoại, lưu tin khách, đọc lịch sử
     const hotel = await this.resolveHotel(hotelId);
     const scopeHotelId = hotel?.id ?? null;
@@ -666,8 +678,8 @@ export class ConversationService {
       });
     }
 
-    // Trần cứng: chỉ áp cho lượt CẦN gọi AI ('escalated' không tốn LLM, xử lý ở (3b))
-    if (conversation.status !== 'escalated') {
+    // Trần cứng: chỉ áp cho lượt CẦN gọi AI (khi người thật đang xử lý thì không tốn LLM, xử lý ở (3b))
+    if (!isHumanHandling(conversation)) {
       await this.assertWithinQuota(currentUser, conversation.id);
     }
 
@@ -675,16 +687,16 @@ export class ConversationService {
       data: { conversationId: conversation.id, senderType: 'user', senderId: ownerId, content: text, messageType: 'text' },
     });
 
-    // (3b) BÀN GIAO: hội thoại 'escalated' ⇒ bot im, chỉ phát một mẩu báo chờ nhân viên (xem sendMessage)
-    if (conversation.status === 'escalated') {
-      const escalatedConvId = conversation.id;
+    // (3b) BÀN GIAO: người thật đang xử lý ⇒ bot im, chỉ phát một mẩu báo chờ nhân viên (xem sendMessage)
+    if (isHumanHandling(conversation)) {
+      const handledConvId = conversation.id;
       // Real-time: đẩy tin khách cho nhân viên đang mở hội thoại (bot im nên tin này chỉ tới staff qua socket).
-      emitMessageToConversation(escalatedConvId, userMessage);
+      emitMessageToConversation(handledConvId, userMessage);
       async function* waiting(): AsyncGenerator<string> {
         yield HANDOFF_NOTICE;
-        await prisma.conversation.update({ where: { id: escalatedConvId }, data: { lastMessageAt: new Date() } });
+        await prisma.conversation.update({ where: { id: handledConvId }, data: { lastMessageAt: new Date() } });
       }
-      return { conversationId: escalatedConvId, stream: waiting() };
+      return { conversationId: handledConvId, status: conversation.status, handoff: true, stream: waiting() };
     }
 
     const recent = await prisma.message.findMany({
@@ -722,7 +734,157 @@ export class ConversationService {
       await prisma.conversation.update({ where: { id: convId }, data: { lastMessageAt: new Date() } });
     }
 
-    return { conversationId: convId, stream: generate() };
+    // status/handoff ở meta là trạng thái TRƯỚC lượt (bot chưa chạy) — client đợi event 'done' để lấy
+    // giá trị chốt (bot có thể tự escalate giữa lượt). Ở đây chắc chắn chưa bàn giao nên handoff=false.
+    return { conversationId: convId, status: conversation.status, handoff: false, stream: generate() };
+  };
+
+  // ===== HỘI THOẠI CỦA CHÍNH KHÁCH (đã đăng nhập) + công tắc AI ⇄ người thật =====
+
+  // Trạng thái bàn giao "chốt" của hội thoại (đọc tươi từ DB). handoff là cờ do BE tính sẵn để client
+  // không phải tự suy từ status (status 'active' vẫn có thể đang do người thật xử lý — xem isHumanHandling).
+  getHandoffState = async (
+    conversationId: string
+  ): Promise<{ status: ConversationStatus | null; handoff: boolean }> => {
+    const c = await prisma.conversation.findUnique({
+      where: { id: conversationId },
+      select: { status: true, assignedTo: true },
+    });
+    if (!c) {
+      return { status: null, handoff: false };
+    }
+    return { status: c.status, handoff: isHumanHandling(c) };
+  };
+
+  // Lấy hội thoại của CHÍNH người gọi (khoá theo userId) — 404 nếu không phải của họ / chưa đăng nhập.
+  // Tách khỏi route /hotels/* (vốn của nhân viên) để khách chỉ thao tác được trên hội thoại của mình.
+  private getOwnConversation = async (conversationId: string, currentUser: User | null) => {
+    const conversation = currentUser
+      ? await prisma.conversation.findFirst({ where: { id: conversationId, userId: currentUser.id } })
+      : null;
+    if (!conversation) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy hội thoại của bạn');
+    }
+    return conversation;
+  };
+
+  /**
+   * Danh sách "đã nhắn với KS nào" cho khách đã đăng nhập (thanh bên kiểu Messenger).
+   * distinct theo hotelId: mỗi KS/toàn-sàn chỉ 1 dòng (mới nhất) — vì gửi thiếu conversationId sẽ tạo
+   * hội thoại mới nên một khách dễ có nhiều hội thoại cùng một KS. Khách vãng lai (userId null) KHÔNG có
+   * lịch sử (lọc theo userId null sẽ khớp hội thoại vô danh của bất kỳ ai ⇒ lộ dữ liệu) nên trả rỗng.
+   */
+  listMyConversations = async (currentUser: User | null) => {
+    if (!currentUser) {
+      return [];
+    }
+    // DISTINCT ON (hotelId) đòi orderBy dẫn đầu bằng hotelId ⇒ kết quả xếp theo hotelId, không theo độ mới.
+    const rows = await prisma.conversation.findMany({
+      where: { userId: currentUser.id },
+      orderBy: [{ hotelId: 'asc' }, { lastMessageAt: 'desc' }],
+      distinct: ['hotelId'],
+      include: {
+        hotel: {
+          select: {
+            id: true,
+            name: true,
+            city: true,
+            images: { where: { isPrimary: true }, take: 1, select: { url: true } },
+          },
+        },
+        messages: { orderBy: { createdAt: 'desc' }, take: 1 },
+      },
+    });
+    // Xếp lại theo độ mới cho UI (mới nhất lên đầu) rồi mới cắt trần — vì orderBy trên là theo hotelId.
+    rows.sort((a, b) => (b.lastMessageAt?.getTime() ?? 0) - (a.lastMessageAt?.getTime() ?? 0));
+    return rows.slice(0, MAX_CONVERSATION_LIST).map((c) => ({
+      id: c.id,
+      hotelId: c.hotelId,
+      status: c.status,
+      handoff: isHumanHandling(c),
+      lastMessage: c.messages[0]?.content ?? null,
+      lastMessageSender: c.messages[0]?.senderType ?? null,
+      lastMessageAt: c.lastMessageAt,
+      // hotel = null ⇒ hội thoại TOÀN SÀN (không gắn khách sạn)
+      hotel: c.hotel
+        ? { id: c.hotel.id, name: c.hotel.name, city: c.hotel.city, imageUrl: c.hotel.images[0]?.url ?? null }
+        : null,
+    }));
+  };
+
+  /**
+   * Khôi phục hội thoại đang mở của khách sau khi F5: bản MỚI NHẤT theo (userId, hotelId) + N tin gần nhất.
+   * hotelId undefined = hội thoại toàn sàn (hotelId null). Trả null nếu chưa có / khách vãng lai.
+   * Không có endpoint này thì conversationId chỉ sống trong state FE ⇒ F5 là mất, không join lại được room
+   * socket ⇒ câu trả lời của lễ tân không tới nơi.
+   */
+  getMyConversation = async (currentUser: User | null, hotelId: string | undefined) => {
+    if (!currentUser) {
+      return null;
+    }
+    const conversation = await prisma.conversation.findFirst({
+      where: { userId: currentUser.id, hotelId: hotelId ?? null },
+      orderBy: { lastMessageAt: 'desc' },
+      include: { messages: { orderBy: { createdAt: 'desc' }, take: MAX_RESTORED_MESSAGES } },
+    });
+    if (!conversation) {
+      return null;
+    }
+    conversation.messages.reverse(); // DB trả mới→cũ; đảo lại cũ→mới cho đúng thứ tự khung chat
+    return { ...conversation, handoff: isHumanHandling(conversation) };
+  };
+
+  /**
+   * Công tắc AI ⇄ người thật do CHÍNH khách bấm. 'human' = chuyển lễ tân; 'ai' = quay về bot.
+   * Hội thoại KHÔNG đổi khi gạt ⇒ lịch sử giữ nguyên. Gạt trùng chế độ đang dùng = no-op (an toàn khi
+   * bấm nhiều lần). Chỉ ghi thêm một tin '[Hệ thống]' (senderType 'system' — không đốt quota, không lẫn
+   * người gửi). Khác nút Resolve của nhân viên: 'ai' KHÔNG đặt 'resolved' (khách chỉ đổi người trả lời).
+   */
+  setConversationMode = async (
+    conversationId: string,
+    currentUser: User | null,
+    mode: 'ai' | 'human',
+    reason?: string
+  ) => {
+    const conversation = await this.getOwnConversation(conversationId, currentUser);
+
+    if (mode === 'human') {
+      // Hội thoại toàn sàn không gắn KS ⇒ không có lễ tân nào để nhận. Chặn thay vì escalate vào hư không.
+      if (conversation.hotelId === null) {
+        throw new ApiError(
+          httpStatus.BAD_REQUEST,
+          'Cuộc trò chuyện này không gắn khách sạn nào nên chưa có nhân viên phụ trách. Vui lòng mở trang một khách sạn cụ thể để được hỗ trợ.'
+        );
+      }
+      if (isHumanHandling(conversation)) {
+        return { ...conversation, handoff: true }; // đã là người thật → no-op
+      }
+      const note = `[Hệ thống] ${reason ?? 'Khách yêu cầu gặp nhân viên.'}`;
+      const message = await prisma.message.create({
+        data: { conversationId, senderType: 'system', content: note, messageType: 'text' },
+      });
+      const updated = await prisma.conversation.update({
+        where: { id: conversationId },
+        data: { status: 'escalated', lastMessageAt: new Date() },
+      });
+      emitMessageToConversation(conversationId, message);
+      emitConversationEscalated(conversation.hotelId, { conversationId, reason: reason ?? 'Khách yêu cầu gặp nhân viên' });
+      return { ...updated, handoff: true };
+    }
+
+    // mode === 'ai': trả hội thoại về cho bot. XOÁ assignedTo là điểm kết thúc chế độ người thật.
+    if (!isHumanHandling(conversation)) {
+      return { ...conversation, handoff: false }; // đã là AI → no-op
+    }
+    const message = await prisma.message.create({
+      data: { conversationId, senderType: 'system', content: '[Hệ thống] Khách đã chuyển về trợ lý AI.', messageType: 'text' },
+    });
+    const updated = await prisma.conversation.update({
+      where: { id: conversationId },
+      data: { status: 'active', assignedTo: null, lastMessageAt: new Date() },
+    });
+    emitMessageToConversation(conversationId, message);
+    return { ...updated, handoff: false };
   };
 
   // ===== S04: HỘP THƯ NHÂN VIÊN — xem & trả lời các hội thoại (đặc biệt 'escalated') =====
@@ -825,7 +987,8 @@ export class ConversationService {
     return saved;
   };
 
-  /** Đánh dấu hội thoại đã xử lý xong ('resolved'). */
+  /** Đánh dấu hội thoại đã xử lý xong ('resolved'). Xoá assignedTo để KẾT THÚC chế độ người thật:
+   *  từ đây khách nhắn lại thì bot trả lời (isHumanHandling trở về false). */
   resolveConversation = async (hotelId: string, conversationId: string, currentUser: User) => {
     await hotelService.getOperableHotel(hotelId, currentUser);
     const conversation = await prisma.conversation.findFirst({ where: { id: conversationId, hotelId } });
@@ -834,7 +997,7 @@ export class ConversationService {
     }
     return prisma.conversation.update({
       where: { id: conversationId },
-      data: { status: 'resolved', resolvedAt: new Date() },
+      data: { status: 'resolved', assignedTo: null, resolvedAt: new Date() },
     });
   };
 }

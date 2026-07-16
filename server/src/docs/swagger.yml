@@ -79,7 +79,11 @@ paths:
                 message: Tìm giúp mình khách sạn ở Đà Nẵng cho 2 người cuối tuần này
       responses:
         "201":
-          description: Bot reply
+          description: >
+            Bot reply. handoff is a BE-computed flag: true when a human is handling the conversation
+            (escalated, or active with an assigned staff) — DO NOT infer it from status alone, because
+            status returns to "active" once staff reply while the bot must stay silent. When handoff is
+            true, reply is a "please wait for staff" notice and the bot did not run.
           content:
             application/json:
               schema:
@@ -90,10 +94,132 @@ paths:
                     format: uuid
                   reply:
                     type: string
+                  status:
+                    type: string
+                    enum: [active, escalated, resolved, closed]
+                  handoff:
+                    type: boolean
+                    description: true = a human is handling this conversation (bot stays silent)
+        "401":
+          description: A token was sent but is invalid/expired (refresh and retry). No token = anonymous, still allowed.
         "404":
           $ref: '#/components/responses/NotFound'
         "429":
           description: Rate limit or daily/conversation message quota exceeded
+
+  /conversations/mine:
+    get:
+      summary: List the caller's conversations (one row per hotel / platform)
+      description: >
+        Sidebar of "which hotels have I chatted with" for an AUTHENTICATED guest (Messenger-style).
+        One row per hotelId (most recent), sorted by recency; capped at 30. hotel is null for a
+        platform-wide conversation. Anonymous visitors get [] (they have no durable history). Each row
+        carries the BE-computed handoff flag.
+      tags: [Chatbot]
+      security:
+        - bearerAuth: []
+        - {}
+      responses:
+        "200":
+          description: Conversation list (empty array for anonymous callers)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id: { type: string, format: uuid }
+                    hotelId: { type: string, format: uuid, nullable: true }
+                    status: { type: string }
+                    handoff: { type: boolean }
+                    lastMessage: { type: string, nullable: true }
+                    lastMessageSender: { type: string, nullable: true, description: "user | ai_bot | staff | system" }
+                    lastMessageAt: { type: string, format: date-time, nullable: true }
+                    hotel:
+                      type: object
+                      nullable: true
+                      description: null = platform-wide conversation
+                      properties:
+                        id: { type: string, format: uuid }
+                        name: { type: string }
+                        city: { type: string }
+                        imageUrl: { type: string, nullable: true }
+        "401":
+          description: A token was sent but is invalid/expired
+
+  /conversations/me:
+    get:
+      summary: Restore the caller's open conversation after a refresh
+      description: >
+        Returns the caller's most recent conversation for the given hotelId (omit hotelId for the
+        platform-wide conversation) plus the last 50 messages (oldest→newest) and the handoff flag.
+        Returns null if none exists or the caller is anonymous. Without this, conversationId lives only
+        in FE state, so a refresh loses it and the guest can no longer re-join the socket room to receive
+        the staff's replies.
+      tags: [Chatbot]
+      security:
+        - bearerAuth: []
+        - {}
+      parameters:
+        - in: query
+          name: hotelId
+          required: false
+          schema: { type: string, format: uuid }
+          description: Omit for the platform-wide conversation
+      responses:
+        "200":
+          description: The conversation with messages + handoff, or null
+          content:
+            application/json:
+              schema:
+                type: object
+                nullable: true
+        "401":
+          description: A token was sent but is invalid/expired
+
+  /conversations/{conversationId}/mode:
+    patch:
+      summary: Toggle a conversation between AI and human (guest-driven)
+      description: >
+        The guest flips their OWN conversation between the AI bot and a human agent. mode=human escalates
+        (status→escalated, appends a "[Hệ thống] <reason>" system message, notifies the hotel's staff
+        mailbox in real time) — rejected with 400 for a platform-wide conversation (no hotel = no staff to
+        handle it). mode=ai returns it to the bot (status→active, clears assignedTo, appends a system note)
+        — unlike staff Resolve, it does NOT mark the conversation resolved. Flipping to the current mode is
+        a no-op (safe to press repeatedly). The conversation is never recreated, so history is preserved.
+        404 if the conversation is not the caller's.
+      tags: [Chatbot]
+      security:
+        - bearerAuth: []
+        - {}
+      parameters:
+        - in: path
+          name: conversationId
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mode]
+              properties:
+                mode: { type: string, enum: [ai, human] }
+                reason: { type: string, maxLength: 500, description: "Used when mode=human" }
+              example:
+                mode: human
+                reason: Khách yêu cầu gặp nhân viên
+      responses:
+        "200":
+          description: Updated conversation record + handoff flag
+        "400":
+          description: mode=human on a platform-wide conversation (no hotel/staff)
+        "401":
+          description: A token was sent but is invalid/expired
+        "404":
+          $ref: '#/components/responses/NotFound'
 
   /conversations/messages/stream:
     post:
@@ -102,8 +228,10 @@ paths:
         Same body and OPTIONAL-auth behaviour as /conversations/messages (omit hotelId = platform-wide
         advisory assistant, send hotelId = per-hotel concierge; anonymous = read-only, authenticated =
         personal booking actions in per-hotel mode), but the reply is streamed token-by-token over
-        Server-Sent Events. Emits an "meta" event with the conversationId, then "chunk" events with
-        partial text, then a "done" event. The full reply is saved to the DB after streaming ends.
+        Server-Sent Events. Emits a "meta" event { conversationId, status, handoff } (status/handoff here
+        may be STALE — the bot can escalate mid-turn), then "chunk" events { text }, then a "done" event
+        { status, handoff } carrying the AUTHORITATIVE post-turn state — trust this one. The full reply is
+        saved to the DB after streaming ends.
       tags: [Chatbot]
       security:
         - bearerAuth: []

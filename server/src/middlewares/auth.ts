@@ -35,16 +35,25 @@ const auth =
   };
 
 /**
- * Xác thực TUỲ CHỌN: nếu request kèm JWT hợp lệ thì gắn `req.user`; nếu thiếu/không hợp lệ/hết hạn
- * thì KHÔNG chặn — cho đi tiếp như KHÁCH VÃNG LAI (`req.user` để trống). Dùng cho chatbot: khách chưa
- * đăng nhập vẫn hỏi được (chế độ chỉ-đọc), khách đã đăng nhập có thêm quyền tra đơn/đặt/huỷ phòng.
+ * Xác thực TUỲ CHỌN: KHÔNG gửi token → cho đi tiếp như KHÁCH VÃNG LAI (chế độ chỉ-đọc). CÓ gửi token
+ * hợp lệ → gắn `req.user` (thêm quyền tra đơn/đặt/huỷ). CÓ gửi token nhưng HỎNG/HẾT HẠN → trả 401.
+ *
+ * Vì sao token hỏng phải 401 (không âm thầm hạ xuống vãng lai): nếu nuốt lỗi, hội thoại sẽ bị tạo với
+ * userId = null ⇒ khách MẤT LỊCH SỬ vĩnh viễn (/me, /mine lọc theo userId), lễ tân thấy "Guest", và
+ * client trả 2xx nên interceptor KHÔNG refresh token (chỉ refresh khi 401/403) ⇒ lỗi tự lặp mãi.
  */
 export const optionalAuth = (req: Request, res: Response, next: NextFunction): void => {
   passport.authenticate('jwt', { session: false }, (_err: Error | null, user: User | false): void => {
     if (user) {
       req.user = user;
+      return next();
     }
-    next();
+    // Có Authorization header mà xác thực vẫn trượt = token hỏng/hết hạn → báo để client refresh rồi gửi lại
+    if (req.headers.authorization) {
+      return next(new ApiError(httpStatus.UNAUTHORIZED, 'Token không hợp lệ hoặc đã hết hạn'));
+    }
+    // Không có token → khách vãng lai
+    return next();
   })(req, res, next);
 };
 
