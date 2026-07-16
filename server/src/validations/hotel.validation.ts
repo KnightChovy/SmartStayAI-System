@@ -208,3 +208,17 @@ export const getRoomTypes = {
     })
     .and('checkIn', 'checkOut'),
 };
+
+// Chi tiết một loại phòng cho guest (public) — checkIn/checkOut tuỳ chọn để kèm giá/tồn kho kỳ ở
+export const getRoomType = {
+  params: Joi.object().keys({
+    hotelId: Joi.string().uuid().required(),
+    roomTypeId: Joi.string().uuid().required(),
+  }),
+  query: Joi.object()
+    .keys({
+      checkIn: Joi.date().iso(),
+      checkOut: Joi.date().iso().greater(Joi.ref('checkIn')),
+    })
+    .and('checkIn', 'checkOut'),
+};

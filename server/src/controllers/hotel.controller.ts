@@ -24,6 +24,17 @@ export class HotelController {
     res.send(roomTypes);
   });
 
+  // Chi tiết một loại phòng cho guest — public (kèm tồn kho/giá kỳ ở khi có checkIn/checkOut)
+  getRoomType = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const filter = pick(req.query, ['checkIn', 'checkOut']);
+    const roomType = await hotelService.getRoomTypeById(
+      req.params.hotelId as string,
+      req.params.roomTypeId as string,
+      filter
+    );
+    res.send(roomType);
+  });
+
   // Khách sạn của chính partner đang đăng nhập (id lấy từ token, không nhận qua URL)
   getMyHotels = catchAsync(async (req: Request, res: Response): Promise<void> => {
     const hotels = await hotelService.getHotelsByOwner((req.user as User).id);
