@@ -7,7 +7,8 @@ import ApiError from '../utils/ApiError';
 import { roleRights } from '../config/roles';
 import { toUtcDate, eachNightOfStay } from '../utils/dates';
 import { availabilityService } from './availability.service';
-import { hotelService } from './hotel.service';
+import { hotelService, readCancellationPolicy } from './hotel.service';
+import type { CancellationPolicy } from './hotel.service';
 import type {
   CreateBookingDto,
   BookingFilter,
@@ -86,27 +87,6 @@ const generateInvoiceNumber = (): string => `INV${Date.now().toString(36)}${rand
 
 // Mã e-voucher duy nhất; cột voucher_code có unique constraint
 const generateVoucherCode = (): string => `VC${Date.now().toString(36)}${randomBytes(3).toString('hex')}`.toUpperCase();
-
-/**
- * Chính sách huỷ/hoàn tiền — kiểu "free-cancel tới hạn chót" (giống giá linh hoạt của OTA).
- * Mặc định dưới đây áp cho mọi khách sạn; KS có thể ghi đè ở hotel.settings.cancellation.
- * - freeUntilHours: huỷ trước mốc này (giờ, tính tới thời điểm nhận phòng) ⇒ hoàn 100%.
- * - latePenalty: phạt khi huỷ muộn — 'first_night' (giữ 1 đêm đầu) | 'full' (mất toàn bộ).
- */
-const DEFAULT_CANCELLATION_POLICY = { freeUntilHours: 48, latePenalty: 'first_night' };
-
-interface CancellationPolicy {
-  freeUntilHours: number;
-  latePenalty: string;
-}
-
-const readCancellationPolicy = (settings: Prisma.JsonValue | null): CancellationPolicy => {
-  const parsed = settings as unknown as { cancellation?: Partial<CancellationPolicy> } | null;
-  return {
-    freeUntilHours: parsed?.cancellation?.freeUntilHours ?? DEFAULT_CANCELLATION_POLICY.freeUntilHours,
-    latePenalty: parsed?.cancellation?.latePenalty ?? DEFAULT_CANCELLATION_POLICY.latePenalty,
-  };
-};
 
 // Thời điểm nhận phòng thực tế = ngày nhận phòng + giờ nhận phòng của KS (mặc định 14:00)
 // để tính "còn bao nhiêu giờ tới giờ nhận phòng" cho chính xác thay vì lấy nửa đêm.
@@ -335,7 +315,11 @@ export class BookingService {
    * ngay lúc huỷ thì khách sạn bị trừ oan. Tiền chỉ thực sự rời đi ở bước refundService.processRefund.
    * An toàn vì booking đã huỷ không bao giờ checked_out ⇒ cron tất toán không nhả phần tiền này.
    */
-  cancelBooking = async (bookingId: string, currentUser: User, reason?: string) => {
+  /**
+   * Lấy booking + kiểm quyền + tính sẵn tiền hoàn theo chính sách của KS. Dùng chung cho huỷ thật
+   * (cancelBooking) và xem trước (getRefundPreview) để số báo cho khách CHÍNH LÀ số sẽ được hoàn.
+   */
+  private loadBookingForCancel = async (bookingId: string, currentUser: User) => {
     const booking = await prisma.booking.findUnique({
       where: { id: bookingId },
       include: {
@@ -352,19 +336,68 @@ export class BookingService {
     if (!isOwner && !canManage) {
       throw new ApiError(httpStatus.FORBIDDEN, 'Forbidden');
     }
+
+    const policy = readCancellationPolicy(booking.hotel.settings);
+    const checkInMoment = checkInMomentOf(booking.checkInDate, booking.hotel.checkInTime);
+    const hoursBeforeCheckIn = (checkInMoment.getTime() - Date.now()) / (1000 * 60 * 60);
+
+    // Chỉ có tiền để hoàn khi booking đã thanh toán thật
+    const paidPayment = booking.payments[0] ?? null;
+    const refundAmount = paidPayment
+      ? computeRefundAmount(policy, hoursBeforeCheckIn, paidPayment.amount, booking.basePricePerNight)
+      : new Prisma.Decimal(0);
+
+    return { booking, policy, checkInMoment, hoursBeforeCheckIn, paidPayment, refundAmount };
+  };
+
+  /**
+   * Xem trước tiền hoàn TRƯỚC khi bấm huỷ — khách phải biết mình mất bao nhiêu rồi mới quyết định.
+   * Chỉ đọc, không đổi gì. Dùng chung loadBookingForCancel với cancelBooking nên con số ở đây đúng
+   * bằng con số sẽ hoàn (miễn là khách huỷ ngay; qua mốc miễn phí thì số sẽ khác, nên trả kèm
+   * freeUntilMoment để FE đếm ngược).
+   */
+  getRefundPreview = async (bookingId: string, currentUser: User) => {
+    const { booking, policy, checkInMoment, hoursBeforeCheckIn, paidPayment, refundAmount } =
+      await this.loadBookingForCancel(bookingId, currentUser);
+
+    const paidAmount = paidPayment?.amount ?? new Prisma.Decimal(0);
+    const canCancel =
+      toUtcDate(booking.checkInDate) > toUtcDate(new Date()) &&
+      (booking.status === 'pending' || booking.status === 'confirmed');
+
+    return {
+      bookingId: booking.id,
+      bookingCode: booking.bookingCode,
+      status: booking.status,
+      // Huỷ được không, và nếu không thì vì sao — để FE khỏi tự đoán luật
+      canCancel,
+      cannotCancelReason: canCancel
+        ? null
+        : toUtcDate(booking.checkInDate) <= toUtcDate(new Date())
+          ? 'Chỉ được huỷ trước ngày nhận phòng'
+          : 'Chỉ huỷ được booking đang chờ hoặc đã xác nhận',
+      isPaid: paidPayment !== null,
+      paidAmount,
+      refundAmount,
+      // Phần bị giữ lại nếu huỷ ngay bây giờ
+      penaltyAmount: paidAmount.sub(refundAmount),
+      // Chính sách đang áp + mốc thời gian, để FE giải thích "vì sao chỉ được hoàn ngần này"
+      freeUntilHours: policy.freeUntilHours,
+      latePenalty: policy.latePenalty,
+      isFreeCancellation: hoursBeforeCheckIn >= policy.freeUntilHours,
+      hoursBeforeCheckIn: Math.round(hoursBeforeCheckIn * 10) / 10,
+      // Huỷ trước mốc này thì hoàn 100%
+      freeUntilMoment: new Date(checkInMoment.getTime() - policy.freeUntilHours * 60 * 60 * 1000),
+      checkInMoment,
+    };
+  };
+
+  cancelBooking = async (bookingId: string, currentUser: User, reason?: string) => {
+    const { booking, paidPayment, refundAmount } = await this.loadBookingForCancel(bookingId, currentUser);
+
     const today = toUtcDate(new Date());
     if (toUtcDate(booking.checkInDate) <= today) {
       throw new ApiError(httpStatus.BAD_REQUEST, 'Chỉ được huỷ trước ngày nhận phòng');
-    }
-
-    // Tính tiền hoàn theo chính sách (chỉ có ý nghĩa khi booking đã thanh toán)
-    const paidPayment = booking.payments[0] ?? null;
-    let refundAmount = new Prisma.Decimal(0);
-    if (paidPayment) {
-      const policy = readCancellationPolicy(booking.hotel.settings);
-      const moment = checkInMomentOf(booking.checkInDate, booking.hotel.checkInTime);
-      const hoursBeforeCheckIn = (moment.getTime() - Date.now()) / (1000 * 60 * 60);
-      refundAmount = computeRefundAmount(policy, hoursBeforeCheckIn, paidPayment.amount, booking.basePricePerNight);
     }
 
     const nights = eachNightOfStay(booking.checkInDate, booking.checkOutDate);

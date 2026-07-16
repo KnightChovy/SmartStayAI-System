@@ -18,6 +18,30 @@ import type {
 } from '../dto/hotel.dto';
 import type { AmenityAssignmentInput } from '../dto/amenity.dto';
 
+/**
+ * Chính sách huỷ/hoàn tiền — kiểu "free-cancel tới hạn chót" (giống giá linh hoạt của OTA).
+ * - freeUntilHours: huỷ trước mốc này (giờ, tính tới thời điểm nhận phòng) ⇒ hoàn 100%.
+ * - latePenalty: phạt khi huỷ muộn — 'first_night' (giữ 1 đêm đầu) | 'full' (mất toàn bộ).
+ *
+ * Đặt ở hotel.service vì chính sách này thuộc về KHÁCH SẠN; booking.service import từ đây để dùng
+ * (chiều ngược lại sẽ tạo import vòng tròn). Mặc định dưới đây áp cho KS chưa tự cấu hình.
+ */
+export const DEFAULT_CANCELLATION_POLICY = { freeUntilHours: 48, latePenalty: 'first_night' };
+
+export interface CancellationPolicy {
+  freeUntilHours: number;
+  latePenalty: string;
+}
+
+/** Đọc chính sách huỷ đã cấu hình ở hotel.settings.cancellation, thiếu thì dùng mặc định. */
+export const readCancellationPolicy = (settings: Prisma.JsonValue | null): CancellationPolicy => {
+  const parsed = settings as unknown as { cancellation?: Partial<CancellationPolicy> } | null;
+  return {
+    freeUntilHours: parsed?.cancellation?.freeUntilHours ?? DEFAULT_CANCELLATION_POLICY.freeUntilHours,
+    latePenalty: parsed?.cancellation?.latePenalty ?? DEFAULT_CANCELLATION_POLICY.latePenalty,
+  };
+};
+
 export class HotelService {
   /**
    * Điểm đánh giá công khai của MỘT NHÓM khách sạn, gom trong đúng một query để danh sách không
@@ -183,10 +207,19 @@ export class HotelService {
   /**
    * Partner cập nhật hồ sơ khách sạn của mình (name, mô tả, địa chỉ, toạ độ, sao, giờ nhận/trả...).
    * Quyền qua getManagedHotel. Joi ở routing đã chặn các trường khoá (isActive/isListed/pháp lý).
+   *
+   * `settings` là cột Json nên gán thẳng sẽ XOÁ MẤT các khoá khác đang có; ở đây trộn vào bản cũ để
+   * cập nhật chính sách huỷ không làm mất cấu hình khác sau này.
    */
   updateHotel = async (hotelId: string, payload: UpdateHotelDto, currentUser: User) => {
-    await this.getManagedHotel(hotelId, currentUser);
-    return prisma.hotel.update({ where: { id: hotelId }, data: payload });
+    const hotel = await this.getManagedHotel(hotelId, currentUser);
+    const { settings, ...rest } = payload;
+    const data: Prisma.HotelUpdateInput = { ...rest };
+    if (settings) {
+      const current = (hotel.settings ?? {}) as Prisma.JsonObject;
+      data.settings = { ...current, cancellation: settings.cancellation };
+    }
+    return prisma.hotel.update({ where: { id: hotelId }, data });
   };
 
   /**
@@ -455,7 +488,14 @@ export class HotelService {
     // Điểm đánh giá dùng chung một cách tính với danh sách ⇒ thẻ KS và trang chi tiết luôn khớp nhau.
     // Bảng phân tích chi tiết (5 tiêu chí + phân bố sao) nằm ở GET /hotels/:hotelId/review-stats.
     const ratings = await this.getRatingSummaries([hotel.id]);
-    return { ...hotel, ...(ratings.get(hotel.id) ?? { avgRating: null, reviewCount: 0 }) };
+
+    // Chính sách huỷ bằng SỐ — đây mới là thứ quyết định tiền hoàn. Khách sạn còn hai chỗ mô tả
+    // bằng chữ (cột `cancellationPolicy` và `policies[cancellation].description`) do partner tự
+    // viết, KHÔNG ràng buộc gì với con số này. Trả kèm số thật để FE hiện cạnh phần mô tả, tránh
+    // việc khách chỉ đọc chữ rồi hiểu sai mình được hoàn bao nhiêu.
+    const cancellationRule = readCancellationPolicy(hotel.settings);
+
+    return { ...hotel, cancellationRule, ...(ratings.get(hotel.id) ?? { avgRating: null, reviewCount: 0 }) };
   };
 
   /**
