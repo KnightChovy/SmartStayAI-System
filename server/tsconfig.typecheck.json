@@ -1,0 +1,14 @@
+{
+  // Chỉ để KIỂM KIỂU, không sinh file. Tách khỏi tsconfig.json vì `npm run build` phải giữ
+  // rootDir = ./src để dist/ có đúng cấu trúc dist/index.js — kéo prisma/ vào build sẽ đẩy mọi thứ
+  // xuống dist/src/ và làm hỏng lệnh `npm start`.
+  //
+  // Có file này vì prisma/seed.ts nằm ngoài "include" của tsconfig.json nên chưa bao giờ được tsc
+  // soi: seed sai kiểu vẫn build xanh, phải chạy thật mới lòi ra. Dùng: npm run typecheck
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": "."
+  },
+  "include": ["src/**/*", "prisma/**/*"]
+}
