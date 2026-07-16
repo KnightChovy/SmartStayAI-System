@@ -1,9 +1,11 @@
 import Joi from 'joi';
 
-// Khách gửi 1 tin nhắn cho chatbot của một khách sạn
+// Khách gửi 1 tin nhắn cho chatbot.
+// - CÓ hotelId  → chat với concierge của MỘT khách sạn (tra/đặt/huỷ theo KS đó).
+// - KHÔNG hotelId → trợ lý TOÀN SÀN: chỉ tư vấn & tìm/gợi ý khách sạn trên sàn.
 export const sendMessage = {
   body: Joi.object().keys({
-    hotelId: Joi.string().uuid().required(),
+    hotelId: Joi.string().uuid(), // bỏ trống = chế độ toàn sàn
     conversationId: Joi.string().uuid(), // có thì nối tiếp hội thoại cũ, không có thì tạo mới
     message: Joi.string().max(2000).required(),
   }),
