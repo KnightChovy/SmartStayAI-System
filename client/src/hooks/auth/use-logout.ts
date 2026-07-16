@@ -17,7 +17,7 @@ export function useLogout() {
       return Promise.resolve();
     },
     onSuccess: () => {
-      toast.success('Logged out successfully', { duration: 3000 });
+      toast.success('Logged out successfully', { duration: 1500 });
     },
     onSettled: () => {
       clearAuth();

@@ -21,7 +21,10 @@ import {
   pricingRuleFormSchema,
   type PricingRuleFormValues,
 } from '@/validations/hotel-management.validation';
-import { useCreatePricingRule, useUpdatePricingRule } from '@/hooks/hotel-management';
+import {
+  useCreatePricingRule,
+  useUpdatePricingRule,
+} from '@/hooks/hotel-management';
 import type {
   ManagedRoomType,
   PricingRule,
@@ -68,7 +71,8 @@ export function PricingRuleFormModal({
       adjustmentType: rule?.adjustmentType ?? 'percentage',
       adjustmentValue: rule ? String(Number(rule.adjustmentValue)) : '',
       dayOfWeek: rule?.dayOfWeek ?? [],
-      occupancyThreshold: rule?.occupancyThreshold != null ? String(rule.occupancyThreshold) : '',
+      occupancyThreshold:
+        rule?.occupancyThreshold != null ? String(rule.occupancyThreshold) : '',
       priority: rule?.priority != null ? String(rule.priority) : '0',
       isActive: rule?.isActive ?? true,
     },
@@ -88,7 +92,9 @@ export function PricingRuleFormModal({
       adjustmentValue: Number(values.adjustmentValue),
       roomTypeId: values.roomTypeId === WHOLE_HOTEL ? null : values.roomTypeId,
       dayOfWeek: values.dayOfWeek ?? [],
-      occupancyThreshold: values.occupancyThreshold?.trim() ? Number(values.occupancyThreshold) : null,
+      occupancyThreshold: values.occupancyThreshold?.trim()
+        ? Number(values.occupancyThreshold)
+        : null,
       priority: values.priority?.trim() ? Number(values.priority) : 0,
       isActive: values.isActive,
     };
@@ -103,7 +109,8 @@ export function PricingRuleFormModal({
       onClose();
     } catch (err) {
       const message =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message ??
         (isEdit ? 'Failed to update rule' : 'Failed to create rule');
       toast.error(message);
     }
@@ -119,7 +126,9 @@ export function PricingRuleFormModal({
       open={open}
       onClose={onClose}
       title={isEdit ? 'Edit pricing rule' : 'Add pricing rule'}
-      description={isEdit ? rule?.name : 'Configure conditional price adjustments'}
+      description={
+        isEdit ? rule?.name : 'Configure conditional price adjustments'
+      }
       icon={Tag}
       size="lg"
       footer={
@@ -168,14 +177,14 @@ export function PricingRuleFormModal({
               label="Start date"
               required
               max={endDate || undefined}
-              placeholder="Chọn ngày bắt đầu"
+              placeholder="Select start date"
             />
             <DateField<PricingRuleFormValues>
               name="endDate"
               label="End date"
               required
               min={startDate || undefined}
-              placeholder="Chọn ngày kết thúc"
+              placeholder="Select end date"
             />
           </div>
 
@@ -210,7 +219,9 @@ export function PricingRuleFormModal({
           <FieldShell
             label="Days of week"
             hint="Leave empty to apply every day"
-            error={methods.formState.errors.dayOfWeek?.message as string | undefined}
+            error={
+              methods.formState.errors.dayOfWeek?.message as string | undefined
+            }
           >
             <Controller
               control={methods.control}
@@ -229,7 +240,9 @@ export function PricingRuleFormModal({
                             const next = new Set(set);
                             if (next.has(day)) next.delete(day);
                             else next.add(day);
-                            field.onChange(Array.from(next).sort((a, b) => a - b));
+                            field.onChange(
+                              Array.from(next).sort((a, b) => a - b)
+                            );
                           }}
                           className={cn(
                             'w-11 h-9 rounded-lg border text-sm font-medium transition-colors',
@@ -255,7 +268,10 @@ export function PricingRuleFormModal({
               type="number"
               hint="Higher applies first (0-1000)"
             />
-            <ToggleField<PricingRuleFormValues> name="isActive" label="Active" />
+            <ToggleField<PricingRuleFormValues>
+              name="isActive"
+              label="Active"
+            />
           </div>
         </form>
       </FormProvider>

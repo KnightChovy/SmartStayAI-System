@@ -1,17 +1,24 @@
-import { useState } from 'react';
-import { Loader2, Contact, Plus, Trash2 } from 'lucide-react';
+import { Loader2, Contact, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/hotel-partner/shared/Modal';
+import { Pill } from '@/components/hotel-partner/shared/Pill';
 import { ErrorState } from '@/components/hotel-partner/shared/states';
 import { ListSkeleton } from '@/components/shared/skeletons';
 import { useHotelContacts, useSetHotelContacts } from '@/hooks/hotel-property';
 import { errorMessage } from '@/utils/errorMessage';
 import type { ContactType, PhoneType } from '@/types/hotel-property.types';
+import { EditableRow, RowSummary } from './EditableRow';
 import { SelectField, TextField } from './fields';
-import { CONTACT_TYPE_OPTIONS, PHONE_TYPE_OPTIONS } from './labels';
+import { useRowEditor, type RowWithId } from './use-row-editor';
+import {
+  CONTACT_TYPE_OPTIONS,
+  CONTACT_TYPE_TONE,
+  PHONE_TYPE_OPTIONS,
+  optionLabel,
+} from './labels';
 
-interface ContactRow {
+interface ContactRow extends RowWithId {
   contactType: ContactType;
   name: string;
   jobTitle: string;
@@ -20,14 +27,29 @@ interface ContactRow {
   phoneType: PhoneType | '';
 }
 
-const emptyRow: ContactRow = {
+const emptyRow = (id: string): ContactRow => ({
+  id,
   contactType: 'general',
   name: '',
   jobTitle: '',
   email: '',
   phone: '',
   phoneType: '',
-};
+});
+
+/** Thông tin phụ của một contact, chỉ gồm field đã nhập. */
+function summaryBits(row: ContactRow): string[] {
+  const bits: string[] = [];
+  if (row.jobTitle.trim()) bits.push(row.jobTitle.trim());
+  if (row.email.trim()) bits.push(row.email.trim());
+  const phone = row.phone.trim();
+  if (phone) {
+    bits.push(
+      row.phoneType ? `${phone} (${optionLabel(PHONE_TYPE_OPTIONS, row.phoneType)})` : phone
+    );
+  }
+  return bits;
+}
 
 interface Props {
   open: boolean;
@@ -40,28 +62,26 @@ interface Props {
 export function HotelContactsModal({ open, onClose, hotelId, hotelName }: Props) {
   const { data, isLoading, isError } = useHotelContacts(hotelId);
   const setContacts = useSetHotelContacts(hotelId);
-  const [rows, setRows] = useState<ContactRow[] | null>(null);
 
-  const current: ContactRow[] =
-    rows ??
-    (data ?? []).map(c => ({
-      contactType: c.contactType,
-      name: c.name ?? '',
-      jobTitle: c.jobTitle ?? '',
-      email: c.email ?? '',
-      phone: c.phone ?? '',
-      phoneType: c.phoneType ?? '',
-    }));
+  const seed: ContactRow[] = (data ?? []).map(c => ({
+    id: c.id,
+    contactType: c.contactType,
+    name: c.name ?? '',
+    jobTitle: c.jobTitle ?? '',
+    email: c.email ?? '',
+    phone: c.phone ?? '',
+    phoneType: c.phoneType ?? '',
+  }));
 
-  const update = (i: number, patch: Partial<ContactRow>) =>
-    setRows(current.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
-  const add = () => setRows([...current, { ...emptyRow }]);
-  const remove = (i: number) => setRows(current.filter((_, idx) => idx !== i));
+  const { rows, add, update, remove, isNew, isEditing, startEdit, stopEdit } = useRowEditor(
+    seed,
+    emptyRow
+  );
 
   const handleSave = async () => {
     try {
       await setContacts.mutateAsync({
-        contacts: current.map(r => ({
+        contacts: rows.map(r => ({
           contactType: r.contactType,
           name: r.name.trim() || null,
           jobTitle: r.jobTitle.trim() || null,
@@ -82,7 +102,7 @@ export function HotelContactsModal({ open, onClose, hotelId, hotelName }: Props)
       open={open}
       onClose={onClose}
       title="Hotel contacts"
-      description={`${hotelName} · ${current.length} contact(s)`}
+      description={`${hotelName} · ${rows.length} contact(s)`}
       icon={Contact}
       size="lg"
       footer={
@@ -107,67 +127,72 @@ export function HotelContactsModal({ open, onClose, hotelId, hotelName }: Props)
         <ErrorState label="Failed to load contacts." />
       ) : (
         <div className="space-y-3">
-          {current.length === 0 && (
+          {rows.length === 0 && (
             <p className="py-6 text-center text-sm text-slate-400">
               No contacts yet. Add one below.
             </p>
           )}
-          {current.map((row, i) => (
-            <div key={i} className="rounded-xl border border-slate-200 p-3">
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                  Contact {i + 1}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => remove(i)}
-                  className="rounded-lg p-1 text-slate-400 hover:bg-red-50 hover:text-red-500"
-                  aria-label="Remove contact"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <SelectField
-                  label="Type"
-                  value={row.contactType}
-                  onChange={v => update(i, { contactType: (v || 'general') as ContactType })}
-                  options={CONTACT_TYPE_OPTIONS}
+          {rows.map(row => (
+            <EditableRow
+              key={row.id}
+              editing={isEditing(row.id)}
+              entity="contact"
+              editingLabel={isNew(row.id) ? 'New contact' : 'Editing contact'}
+              onEdit={() => startEdit(row.id)}
+              onDone={() => stopEdit(row.id)}
+              onRemove={() => remove(row.id)}
+              summary={
+                <RowSummary
+                  badge={
+                    <Pill tone={CONTACT_TYPE_TONE[row.contactType]}>
+                      {optionLabel(CONTACT_TYPE_OPTIONS, row.contactType)}
+                    </Pill>
+                  }
+                  meta={summaryBits(row)}
+                  primary={row.name}
+                  emptyPrimary="No name"
                 />
-                <TextField
-                  label="Name"
-                  value={row.name}
-                  onChange={v => update(i, { name: v })}
-                  placeholder="Contact name"
-                />
-                <TextField
-                  label="Job title"
-                  value={row.jobTitle}
-                  onChange={v => update(i, { jobTitle: v })}
-                  placeholder="e.g. Front desk manager"
-                />
-                <TextField
-                  label="Email"
-                  type="email"
-                  value={row.email}
-                  onChange={v => update(i, { email: v })}
-                  placeholder="name@hotel.com"
-                />
-                <TextField
-                  label="Phone"
-                  value={row.phone}
-                  onChange={v => update(i, { phone: v })}
-                  placeholder="+84..."
-                />
-                <SelectField
-                  label="Phone type"
-                  value={row.phoneType}
-                  onChange={v => update(i, { phoneType: v as PhoneType | '' })}
-                  options={PHONE_TYPE_OPTIONS}
-                  emptyLabel="—"
-                />
-              </div>
-            </div>
+              }
+            >
+              <SelectField
+                label="Type"
+                value={row.contactType}
+                onChange={v => update(row.id, { contactType: (v || 'general') as ContactType })}
+                options={CONTACT_TYPE_OPTIONS}
+              />
+              <TextField
+                label="Name"
+                value={row.name}
+                onChange={v => update(row.id, { name: v })}
+                placeholder="Contact name"
+              />
+              <TextField
+                label="Job title"
+                value={row.jobTitle}
+                onChange={v => update(row.id, { jobTitle: v })}
+                placeholder="e.g. Front desk manager"
+              />
+              <TextField
+                label="Email"
+                type="email"
+                value={row.email}
+                onChange={v => update(row.id, { email: v })}
+                placeholder="name@hotel.com"
+              />
+              <TextField
+                label="Phone"
+                value={row.phone}
+                onChange={v => update(row.id, { phone: v })}
+                placeholder="+84..."
+              />
+              <SelectField
+                label="Phone type"
+                value={row.phoneType}
+                onChange={v => update(row.id, { phoneType: v as PhoneType | '' })}
+                options={PHONE_TYPE_OPTIONS}
+                emptyLabel="—"
+              />
+            </EditableRow>
           ))}
           <Button variant="outline" onClick={add} className="w-full">
             <Plus className="mr-1.5 h-4 w-4" /> Add contact

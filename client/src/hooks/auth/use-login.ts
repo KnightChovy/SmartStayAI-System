@@ -14,7 +14,7 @@ export function useLogin() {
       if (user && tokens?.access?.token && tokens?.refresh?.token) {
         setAuth(user, tokens.access.token, tokens.refresh.token);
       }
-      toast.success('Logged in successfully', { duration: 3000 });
+      toast.success('Logged in successfully', { duration: 1500 });
     },
   });
 }
