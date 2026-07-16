@@ -4,7 +4,6 @@ import config from './config/config';
 import logger from './config/logger';
 import prisma from './config/prisma';
 import { startScheduler } from './config/scheduler';
-import { Server } from 'http';
 import { initSocket } from './config/socket';
 
 let server: Server;
