@@ -4,14 +4,15 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Text } from '@/components/ui/text';
 import { Heading } from '@/components/ui/heading';
 import { useUpdateProfile } from '@/hooks/users';
 import { useAuthStore } from '@/stores/authStore';
 import { getInitials } from '@/utils/hotel';
 import type { UpdateProfilePayload } from '@/types/users.type';
+import { GUEST_COLORS } from '@/constants/guestTheme';
 
-const NAVY = '#0B1D45';
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /** Lấy message lỗi từ axios error mà không dùng `any`. */
@@ -25,6 +26,7 @@ function errorMessage(err: unknown, fallback: string): string {
 
 export default function EditProfileScreen() {
   const router = useRouter();
+  const { t } = useTranslation(['account', 'common']);
   const insets = useSafeAreaInsets();
   const user = useAuthStore((s) => s.user);
   const updateProfile = useUpdateProfile();
@@ -69,14 +71,14 @@ export default function EditProfileScreen() {
   const initials = getInitials(name || user?.fullName);
 
   return (
-    <View className="flex-1 bg-gray-100">
+    <View className="flex-1 bg-canvas">
       <StatusBar style="dark" />
-      <SafeAreaView edges={['top']} className="bg-white">
-        <View className="flex-row items-center gap-3 px-4 pt-2 pb-3 border-b border-gray-100">
+      <SafeAreaView edges={['top']} className="bg-surface">
+        <View className="flex-row items-center gap-3 px-4 pt-2 pb-3 border-b border-hairline/30">
           <Pressable onPress={() => router.back()} hitSlop={8} className="w-9 h-9 items-center justify-center">
-            <Ionicons name="arrow-back" size={22} color={NAVY} />
+            <Ionicons name="arrow-back" size={22} color={GUEST_COLORS.onSurface} />
           </Pressable>
-          <Heading size="lg" className="text-navy">Edit profile</Heading>
+          <Heading size="lg" className="font-bevi-bold text-on-surface">{t('account:edit.title')}</Heading>
         </View>
       </SafeAreaView>
 
@@ -84,34 +86,34 @@ export default function EditProfileScreen() {
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 100 }}>
           {/* Avatar */}
           <View className="items-center py-4">
-            <View className="w-24 h-24 rounded-full bg-gold items-center justify-center">
-              <Text bold className="text-navy text-3xl">{initials}</Text>
+            <View className="w-24 h-24 rounded-full bg-bronze items-center justify-center">
+              <Text bold className="font-bevi-bold text-on-surface text-3xl">{initials}</Text>
             </View>
           </View>
 
-          <View className="bg-white rounded-2xl p-4 gap-3.5">
-            <Field label="Full name" value={name} onChangeText={setName} placeholder="Your name" error={touched ? nameError : ''} autoCapitalize="words" />
-            <Field label="Email" value={email} onChangeText={setEmail} placeholder="you@example.com" error={touched ? emailError : ''} keyboardType="email-address" autoCapitalize="none" />
-            <Field label="New password (optional)" value={password} onChangeText={setPassword} placeholder="Leave blank to keep current" error={touched ? passwordError : ''} secureTextEntry autoCapitalize="none" />
-            <Text size="xs" className="text-gray-400">Phone number can be updated from the web app.</Text>
+          <View className="bg-surface rounded-card p-4 gap-3.5">
+            <Field label="Full name" value={name} onChangeText={setName} placeholder={t('account:edit.namePlaceholder')} error={touched ? nameError : ''} autoCapitalize="words" />
+            <Field label="Email" value={email} onChangeText={setEmail} placeholder={t('account:edit.emailPlaceholder')} error={touched ? emailError : ''} keyboardType="email-address" autoCapitalize="none" />
+            <Field label="New password (optional)" value={password} onChangeText={setPassword} placeholder={t('account:edit.newPasswordPlaceholder')} error={touched ? passwordError : ''} secureTextEntry autoCapitalize="none" />
+            <Text size="xs" className="font-bevi text-muted">{t('account:edit.phoneNote')}</Text>
           </View>
 
           {formError ? (
-            <View className="bg-red-50 rounded-xl px-3 py-2.5 mt-3 flex-row items-start gap-2">
+            <View className="bg-red-50 rounded-field px-3 py-2.5 mt-3 flex-row items-start gap-2">
               <Ionicons name="alert-circle" size={18} color="#DC2626" />
-              <Text size="sm" className="text-red-600 flex-1">{formError}</Text>
+              <Text size="sm" className="font-bevi text-red-600 flex-1">{formError}</Text>
             </View>
           ) : null}
         </ScrollView>
 
-        <View className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-5 pt-3" style={{ paddingBottom: insets.bottom + 12 }}>
+        <View className="absolute bottom-0 left-0 right-0 bg-surface border-t border-hairline/30 px-5 pt-3" style={{ paddingBottom: insets.bottom + 12 }}>
           <Pressable
             disabled={updateProfile.isPending}
             onPress={handleSave}
-            className="bg-navy rounded-2xl py-3.5 items-center"
+            className="bg-on-surface rounded-card py-3.5 items-center"
             style={{ opacity: updateProfile.isPending ? 0.6 : 1 }}
           >
-            <Text bold className="text-white text-base">{updateProfile.isPending ? 'Saving…' : 'Save changes'}</Text>
+            <Text bold className="font-bevi-bold text-white text-base">{updateProfile.isPending ? 'Saving…' : 'Save changes'}</Text>
           </Pressable>
         </View>
       </KeyboardAvoidingView>
@@ -133,18 +135,18 @@ interface FieldProps {
 function Field({ label, value, onChangeText, placeholder, error, keyboardType, autoCapitalize, secureTextEntry }: FieldProps) {
   return (
     <View>
-      <Text size="sm" bold className="text-navy mb-1.5">{label}</Text>
+      <Text size="sm" bold className="font-bevi-bold text-on-surface mb-1.5">{label}</Text>
       <TextInput
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor="#9CA3AF"
+        placeholderTextColor={GUEST_COLORS.muted}
         keyboardType={keyboardType}
         autoCapitalize={autoCapitalize}
         secureTextEntry={secureTextEntry}
-        className={`border rounded-xl px-3 h-11 text-navy text-sm ${error ? 'border-red-400' : 'border-gray-200'}`}
+        className={`border rounded-field px-3 h-11 text-on-surface text-sm ${error ? 'border-red-400' : 'border-hairline/50'}`}
       />
-      {error ? <Text size="xs" className="text-red-500 mt-1">{error}</Text> : null}
+      {error ? <Text size="xs" className="font-bevi text-red-500 mt-1">{error}</Text> : null}
     </View>
   );
 }

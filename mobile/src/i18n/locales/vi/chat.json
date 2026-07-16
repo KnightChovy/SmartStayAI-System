@@ -1,0 +1,15 @@
+{
+  "replying": "● Đang trả lời…",
+  "selectHotel": "Chọn khách sạn",
+  "inputPlaceholder": "Nhập tin nhắn…",
+  "inputDisabled": "Chọn khách sạn để bắt đầu…",
+  "empty": {
+    "title": "Hỏi tôi bất cứ điều gì",
+    "subtitle": "Tôi có thể giúp bạn tìm phòng, so sánh giá và giải đáp thắc mắc về kỳ nghỉ.",
+    "suggestions": {
+      "rooms": "Còn những phòng nào?",
+      "amenities": "Khách sạn có tiện nghi gì?",
+      "checkin": "Mấy giờ được nhận phòng?"
+    }
+  }
+}

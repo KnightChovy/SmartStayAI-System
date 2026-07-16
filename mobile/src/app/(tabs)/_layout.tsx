@@ -1,54 +1,56 @@
 import { isStaff, STAFF_HOME } from '@/constants/roles';
+import { GUEST_COLORS } from '@/constants/guestTheme';
 import { useAuthStore } from '@/stores/authStore';
 import { Ionicons } from '@expo/vector-icons';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { Redirect, Tabs } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const NAVY = '#0B1D45';
-const GRAY = '#9CA3AF';
-
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
+/** `labelKey` trỏ vào `common:tabs.*` — nhãn dịch lúc render để đổi ngôn ngữ ăn ngay. */
 const TAB_CONFIG: Record<
   string,
-  { active: IoniconsName; inactive: IoniconsName; label: string }
+  { active: IoniconsName; inactive: IoniconsName; labelKey: 'home' | 'search' | 'bookings' | 'chat' | 'account' }
 > = {
-  index: { active: 'home', inactive: 'home-outline', label: 'Home' },
-  search: { active: 'search', inactive: 'search-outline', label: 'Search' },
+  index: { active: 'home', inactive: 'home-outline', labelKey: 'home' },
+  search: { active: 'search', inactive: 'search-outline', labelKey: 'search' },
   bookings: {
     active: 'calendar',
     inactive: 'calendar-outline',
-    label: 'Bookings',
+    labelKey: 'bookings',
   },
   chatbot: {
     active: 'chatbubble',
     inactive: 'chatbubble-outline',
-    label: 'Chat',
+    labelKey: 'chat',
   },
-  profile: { active: 'person', inactive: 'person-outline', label: 'Account' },
+  profile: { active: 'person', inactive: 'person-outline', labelKey: 'account' },
 };
 
 function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const { bottom } = useSafeAreaInsets();
+  const { t } = useTranslation('common');
 
   return (
     <View
+      className="flex-row items-center justify-around border-t px-2"
       style={{
-        flexDirection: 'row',
-        backgroundColor: '#FFFFFF',
-        borderTopWidth: 1,
-        borderTopColor: '#F3F4F6',
+        backgroundColor: GUEST_COLORS.surface,
+        borderColor: `${GUEST_COLORS.hairline}4D`,
+        height: 66 + bottom + 8,
         paddingTop: 8,
         paddingBottom: bottom + 8,
-        paddingHorizontal: 8,
       }}
     >
       {state.routes.map((route, index) => {
         const config = TAB_CONFIG[route.name];
         if (!config) return null;
         const focused = state.index === index;
+        const isCenterTab = route.name === 'bookings';
+        const label = t(`tabs.${config.labelKey}`);
 
         function onPress() {
           const event = navigation.emit({
@@ -56,46 +58,74 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
             target: route.key,
             canPreventDefault: true,
           });
-          if (!focused && !event.defaultPrevented)
-            navigation.navigate(route.name);
+          if (!focused && !event.defaultPrevented) {
+            navigation.navigate(route.name, route.params);
+          }
+        }
+
+        function onLongPress() {
+          navigation.emit({ type: 'tabLongPress', target: route.key });
+        }
+
+        if (isCenterTab) {
+          return (
+            <Pressable
+              key={route.key}
+              accessibilityRole="button"
+              accessibilityState={focused ? { selected: true } : {}}
+              accessibilityLabel={label}
+              onPress={onPress}
+              onLongPress={onLongPress}
+              className="h-full w-[76px] items-center justify-center gap-1"
+            >
+              <View
+                className="-mt-[30px] h-[58px] w-[58px] items-center justify-center rounded-full shadow-lg"
+                style={{
+                  backgroundColor: focused ? GUEST_COLORS.onSurface : GUEST_COLORS.brand,
+                  elevation: 12,
+                  shadowColor: GUEST_COLORS.brand,
+                  shadowOffset: { width: 0, height: 6 },
+                  shadowOpacity: 0.45,
+                  shadowRadius: 10,
+                }}
+              >
+                <Ionicons name={focused ? config.active : config.inactive} size={28} color={GUEST_COLORS.onBrand} />
+              </View>
+              <Text
+                className="text-[10px]"
+                style={{ fontFamily: 'BeVietnamPro_600SemiBold', color: GUEST_COLORS.brand }}
+                numberOfLines={1}
+              >
+                {label}
+              </Text>
+            </Pressable>
+          );
         }
 
         return (
           <Pressable
             key={route.key}
+            accessibilityRole="button"
+            accessibilityState={focused ? { selected: true } : {}}
+            accessibilityLabel={label}
             onPress={onPress}
-            style={{
-              flex: 1,
-              alignItems: 'center',
-              justifyContent: 'center',
-              paddingVertical: 4,
-              gap: 3,
-            }}
+            onLongPress={onLongPress}
+            className="h-full flex-1 items-center justify-center gap-[3px]"
           >
-            <View
-              style={{
-                width: 48,
-                height: 28,
-                borderRadius: 14,
-                backgroundColor: focused ? '#E8EEF9' : 'transparent',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Ionicons
-                name={focused ? config.active : config.inactive}
-                size={22}
-                color={focused ? NAVY : GRAY}
-              />
-            </View>
+            <Ionicons
+              name={focused ? config.active : config.inactive}
+              size={23}
+              color={focused ? GUEST_COLORS.brand : GUEST_COLORS.muted}
+            />
             <Text
+              className="text-[10px]"
               style={{
-                fontSize: 11,
-                fontWeight: focused ? '700' : '500',
-                color: focused ? NAVY : GRAY,
+                fontFamily: focused ? 'BeVietnamPro_600SemiBold' : 'BeVietnamPro_400Regular',
+                color: focused ? GUEST_COLORS.brand : GUEST_COLORS.muted,
               }}
+              numberOfLines={1}
             >
-              {config.label}
+              {label}
             </Text>
           </Pressable>
         );

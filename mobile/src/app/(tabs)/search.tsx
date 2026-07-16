@@ -4,6 +4,7 @@ import { Image } from 'expo-image';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Text } from '@/components/ui/text';
 import { StarRating } from '@/components/shared/StarRating';
 import { useDebounce } from '@/hooks/ui/use-debounce';
@@ -11,31 +12,34 @@ import { useGetHotels } from '@/hooks/hotels';
 import { getPrimaryImageUrl, getHotelLocation } from '@/utils/hotel';
 import { formatVnd } from '@/utils/formatCurrency';
 import type { HotelSearchResult } from '@/types/hotels.type';
+import { GUEST_COLORS } from '@/constants/guestTheme';
+
+/** Union chứ không phải `string`: để `t()` kiểm được key `search:filterOptions.*` lúc build. */
+type FilterId = '5star' | '4plus' | 'under1m' | 'under3m' | 'hasPrice';
 
 interface HotelFilter {
-  id: string;
-  label: string;
+  id: FilterId;
   test: (h: HotelSearchResult) => boolean;
 }
 
 /** Bộ lọc lọc trên field có thật từ API (starRating, minPrice). */
 const FILTERS: HotelFilter[] = [
-  { id: '5star', label: '5 stars', test: (h) => h.starRating === 5 },
-  { id: '4plus', label: '4+ stars', test: (h) => (h.starRating ?? 0) >= 4 },
-  { id: 'under1m', label: 'Under 1M', test: (h) => h.minPrice != null && Number(h.minPrice) < 1_000_000 },
-  { id: 'under3m', label: 'Under 3M', test: (h) => h.minPrice != null && Number(h.minPrice) < 3_000_000 },
-  { id: 'hasPrice', label: 'Available now', test: (h) => h.minPrice != null },
+  { id: '5star', test: (h) => h.starRating === 5 },
+  { id: '4plus', test: (h) => (h.starRating ?? 0) >= 4 },
+  { id: 'under1m', test: (h) => h.minPrice != null && Number(h.minPrice) < 1_000_000 },
+  { id: 'under3m', test: (h) => h.minPrice != null && Number(h.minPrice) < 3_000_000 },
+  { id: 'hasPrice', test: (h) => h.minPrice != null },
 ];
 
-const SORT_OPTIONS = ['Recommended', 'Lowest price', 'Highest rated'] as const;
+const SORT_OPTIONS = ['recommended', 'lowestPrice', 'highestRated'] as const;
 type SortOption = typeof SORT_OPTIONS[number];
 
 function sortHotels(list: HotelSearchResult[], sort: SortOption): HotelSearchResult[] {
   const copy = [...list];
-  if (sort === 'Lowest price') {
+  if (sort === 'lowestPrice') {
     return copy.sort((a, b) => Number(a.minPrice ?? Infinity) - Number(b.minPrice ?? Infinity));
   }
-  if (sort === 'Highest rated') {
+  if (sort === 'highestRated') {
     return copy.sort((a, b) => (b.starRating ?? 0) - (a.starRating ?? 0));
   }
   return copy;
@@ -43,11 +47,12 @@ function sortHotels(list: HotelSearchResult[], sort: SortOption): HotelSearchRes
 
 export default function SearchScreen() {
   const router = useRouter();
+  const { t } = useTranslation(['search', 'common']);
   const { city, checkIn, checkOut, guests } = useLocalSearchParams<{
     city?: string; checkIn?: string; checkOut?: string; guests?: string;
   }>();
   const { bottom } = useSafeAreaInsets();
-  const [sort, setSort] = useState<SortOption>('Recommended');
+  const [sort, setSort] = useState<SortOption>('recommended');
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const [saved, setSaved] = useState<Record<string, boolean>>({});
   const [query, setQuery] = useState('');
@@ -79,16 +84,16 @@ export default function SearchScreen() {
   );
 
   return (
-    <View className="flex-1 bg-gray-100">
-      <SafeAreaView edges={['top']} className="bg-navy">
+    <View className="flex-1 bg-canvas">
+      <SafeAreaView edges={['top']} className="bg-on-surface">
         {/* Search input */}
         <View className="px-4 pt-3 pb-2">
-          <View className="flex-row items-center bg-gray-100 rounded-2xl px-3 h-11">
-            <Ionicons name="search" size={18} color="#9CA3AF" />
+          <View className="flex-row items-center bg-canvas rounded-card px-3 h-11">
+            <Ionicons name="search" size={18} color={GUEST_COLORS.muted} />
             <TextInput
-              className="flex-1 text-sm text-navy ml-2"
-              placeholder="Search hotels, destinations..."
-              placeholderTextColor="#9CA3AF"
+              className="flex-1 font-bevi text-sm text-on-surface ml-2"
+              placeholder={t('search:placeholder')}
+              placeholderTextColor={GUEST_COLORS.muted}
               value={query}
               onChangeText={setQuery}
               returnKeyType="search"
@@ -96,7 +101,7 @@ export default function SearchScreen() {
             />
             {query.length > 0 && (
               <Pressable onPress={() => setQuery('')} hitSlop={8}>
-                <Ionicons name="close-circle" size={18} color="#9CA3AF" />
+                <Ionicons name="close-circle" size={18} color={GUEST_COLORS.muted} />
               </Pressable>
             )}
           </View>
@@ -109,9 +114,9 @@ export default function SearchScreen() {
               onPress={() => setActiveFilters([])}
               className="flex-row items-center gap-1.5 border border-white/30 rounded-full px-3 py-1.5"
             >
-              <Ionicons name="options-outline" size={14} color="#fff" />
-              <Text size="sm" bold className="text-white">
-                {activeFilters.length > 0 ? `Clear (${activeFilters.length})` : 'Filters'}
+              <Ionicons name="options-outline" size={14} color={GUEST_COLORS.white} />
+              <Text size="sm" bold className="font-bevi-bold text-white">
+                {activeFilters.length > 0 ? t('search:clearFilters', { count: activeFilters.length }) : t('search:filters')}
               </Text>
             </Pressable>
             {FILTERS.map((f) => {
@@ -120,10 +125,10 @@ export default function SearchScreen() {
                 <Pressable
                   key={f.id}
                   onPress={() => toggleFilter(f.id)}
-                  className={`flex-row items-center gap-1.5 rounded-full px-3 py-1.5 ${active ? 'bg-white' : 'bg-white/20'}`}
+                  className={`flex-row items-center gap-1.5 rounded-full px-3 py-1.5 ${active ? 'bg-surface' : 'bg-surface/20'}`}
                 >
-                  <Text size="sm" bold className={active ? 'text-navy' : 'text-white'}>{f.label}</Text>
-                  <Ionicons name={active ? 'checkmark' : 'add'} size={13} color={active ? '#0B1D45' : '#fff'} />
+                  <Text size="sm" bold className={`font-bevi-bold ${active ? 'text-on-surface' : 'text-white'}`}>{t(`search:filterOptions.${f.id}`)}</Text>
+                  <Ionicons name={active ? 'checkmark' : 'add'} size={13} color={active ? GUEST_COLORS.onSurface : GUEST_COLORS.white} />
                 </Pressable>
               );
             })}
@@ -136,9 +141,9 @@ export default function SearchScreen() {
             <Pressable
               key={opt}
               onPress={() => setSort(opt)}
-              className={`px-3 py-2 rounded-xl ${sort === opt ? 'bg-white' : 'bg-white/10'}`}
+              className={`px-3 py-2 rounded-field ${sort === opt ? 'bg-surface' : 'bg-surface/10'}`}
             >
-              <Text size="xs" bold className={sort === opt ? 'text-navy' : 'text-white'}>{opt}</Text>
+              <Text size="xs" bold className={`font-bevi-bold ${sort === opt ? 'text-on-surface' : 'text-white'}`}>{t(`search:sort.${opt}`)}</Text>
             </Pressable>
           ))}
         </View>
@@ -147,14 +152,14 @@ export default function SearchScreen() {
       {/* Results */}
       {isLoading ? (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#0B1D45" />
+          <ActivityIndicator size="large" color={GUEST_COLORS.onSurface} />
         </View>
       ) : isError ? (
         <View className="flex-1 items-center justify-center gap-3 px-8">
-          <Ionicons name="cloud-offline-outline" size={48} color="#D1D5DB" />
-          <Text className="text-gray-400 text-center">Couldn't load hotels. Please try again.</Text>
-          <Pressable onPress={() => refetch()} className="bg-navy rounded-xl px-5 py-2.5">
-            <Text bold className="text-white">Retry</Text>
+          <Ionicons name="cloud-offline-outline" size={48} color={GUEST_COLORS.hairline} />
+          <Text className="font-bevi text-muted text-center">{t('search:error')}</Text>
+          <Pressable onPress={() => refetch()} className="bg-on-surface rounded-field px-5 py-2.5">
+            <Text bold className="font-bevi-bold text-white">{t('common:retry')}</Text>
           </Pressable>
         </View>
       ) : (
@@ -165,14 +170,14 @@ export default function SearchScreen() {
           onRefresh={refetch}
           refreshing={isRefetching}
           ListHeaderComponent={
-            <Text size="xs" bold className="text-gray-500 uppercase mb-1">
-              {filtered.length} stays in {city ?? 'Vietnam'}
+            <Text size="xs" bold className="font-bevi-bold text-on-surface-variant uppercase mb-1">
+              {t('search:resultCount', { count: filtered.length, place: city ?? t('search:defaultPlace') })}
             </Text>
           }
           ListEmptyComponent={
             <View className="py-16 items-center gap-2">
-              <Ionicons name="bed-outline" size={44} color="#D1D5DB" />
-              <Text className="text-gray-400">No hotels found</Text>
+              <Ionicons name="bed-outline" size={44} color={GUEST_COLORS.hairline} />
+              <Text className="font-bevi text-muted">{t('search:empty')}</Text>
             </View>
           }
           renderItem={({ item }) => {
@@ -180,10 +185,10 @@ export default function SearchScreen() {
             return (
               <Pressable
                 onPress={() => router.push({ pathname: '/hotel/[id]', params: { id: item.id, ...(checkIn ? { checkIn } : {}), ...(checkOut ? { checkOut } : {}), ...(guests ? { guests } : {}) } })}
-                className="bg-white rounded-3xl overflow-hidden shadow-hard-5"
+                className="bg-surface rounded-panel overflow-hidden"
               >
                 {/* Image */}
-                <View className="h-44 bg-gray-200 overflow-hidden">
+                <View className="h-44 bg-surface-container overflow-hidden">
                   {imageUrl ? (
                     <Image source={{ uri: imageUrl }} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} />
                   ) : (
@@ -192,30 +197,30 @@ export default function SearchScreen() {
                     </View>
                   )}
                   {item.starRating ? (
-                    <View className="absolute bottom-3 left-3 bg-gold rounded-md px-2 py-1 flex-row items-center gap-1">
-                      <Ionicons name="star" size={11} color="#0B1D45" />
-                      <Text size="xs" bold className="text-navy">{item.starRating}-star</Text>
+                    <View className="absolute bottom-3 left-3 bg-bronze rounded-md px-2 py-1 flex-row items-center gap-1">
+                      <Ionicons name="star" size={11} color={GUEST_COLORS.onSurface} />
+                      <Text size="xs" bold className="font-bevi-bold text-on-surface">{t('common:stars', { count: item.starRating })}</Text>
                     </View>
                   ) : null}
                   <Pressable
                     onPress={() => setSaved((s) => ({ ...s, [item.id]: !s[item.id] }))}
-                    className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white items-center justify-center"
+                    className="absolute top-3 right-3 w-8 h-8 rounded-full bg-surface items-center justify-center"
                   >
                     <Ionicons
                       name={saved[item.id] ? 'heart' : 'heart-outline'}
                       size={18}
-                      color={saved[item.id] ? '#EF4444' : '#9CA3AF'}
+                      color={saved[item.id] ? '#EF4444' : GUEST_COLORS.muted}
                     />
                   </Pressable>
                 </View>
 
                 {/* Info */}
                 <View className="p-3.5">
-                  <Text bold className="text-navy text-base" numberOfLines={1}>{item.name}</Text>
+                  <Text bold className="font-bevi-bold text-on-surface text-base" numberOfLines={1}>{item.name}</Text>
                   {item.starRating ? <View className="mt-1"><StarRating count={item.starRating} size={11} /></View> : null}
                   <View className="flex-row items-center mt-1 gap-1">
-                    <Ionicons name="location-outline" size={12} color="#6B7280" />
-                    <Text size="xs" className="text-gray-500 flex-1" numberOfLines={1}>{getHotelLocation(item)}</Text>
+                    <Ionicons name="location-outline" size={12} color={GUEST_COLORS.onSurfaceVariant} />
+                    <Text size="xs" className="font-bevi text-on-surface-variant flex-1" numberOfLines={1}>{getHotelLocation(item)}</Text>
                   </View>
 
                   {/* Price */}
@@ -223,19 +228,19 @@ export default function SearchScreen() {
                     <View>
                       {item.minPrice ? (
                         <>
-                          <Text size="xs" className="text-gray-500">from</Text>
-                          <Text bold className="text-navy text-lg">{formatVnd(item.minPrice)}</Text>
-                          <Text size="xs" className="text-gray-500">per night</Text>
+                          <Text size="xs" className="font-bevi text-on-surface-variant">{t('common:from')}</Text>
+                          <Text bold className="font-bevi-bold text-on-surface text-lg">{formatVnd(item.minPrice)}</Text>
+                          <Text size="xs" className="font-bevi text-on-surface-variant">{t('common:perNight')}</Text>
                         </>
                       ) : (
-                        <Text size="sm" className="text-gray-400">Contact for price</Text>
+                        <Text size="sm" className="font-bevi text-muted">{t('common:contactForPrice')}</Text>
                       )}
                     </View>
                     <Pressable
                       onPress={() => router.push({ pathname: '/hotel/[id]', params: { id: item.id, ...(checkIn ? { checkIn } : {}), ...(checkOut ? { checkOut } : {}), ...(guests ? { guests } : {}) } })}
-                      className="bg-gold rounded-xl px-4 py-2.5"
+                      className="bg-bronze rounded-field px-4 py-2.5"
                     >
-                      <Text bold className="text-navy text-sm">View room</Text>
+                      <Text bold className="font-bevi-bold text-on-surface text-sm">{t('search:viewRoom')}</Text>
                     </Pressable>
                   </View>
                 </View>

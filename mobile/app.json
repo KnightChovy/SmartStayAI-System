@@ -47,7 +47,8 @@
         {
           "cameraPermission": "Cho phép SmartStay dùng camera để quét mã QR e-voucher của khách khi check-in."
         }
-      ]
+      ],
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true

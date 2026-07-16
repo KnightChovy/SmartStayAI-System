@@ -1,0 +1,169 @@
+{
+  "title": "Tài khoản",
+  "guest": "Khách",
+  "editProfile": "Sửa hồ sơ",
+  "completion": "Mức hoàn thiện hồ sơ",
+  "completeTitle": "Hoàn thiện hồ sơ của bạn",
+  "completeBody": "Bổ sung thông tin để mở khoá ưu đãi dành riêng cho bạn.",
+  "update": "Cập nhật",
+  "quick": {
+    "bookings": "Đặt phòng",
+    "bookingsSub": "Xem lịch sử",
+    "plus": "SmartStay Plus",
+    "plusSub": "Thành viên Bạc"
+  },
+  "sections": {
+    "offers": "Ưu đãi",
+    "finance": "Tài chính",
+    "settings": "Cài đặt",
+    "seeMore": "Xem thêm"
+  },
+  "menu": {
+    "myOffers": "Ưu đãi của tôi",
+    "myOffersSub": "3 ưu đãi khả dụng",
+    "rewards": "Điểm thưởng",
+    "rewardsSub": "1.240 điểm",
+    "paymentMethods": "Phương thức thanh toán",
+    "paymentMethodsSub": "Thêm thẻ/ví",
+    "transactions": "Lịch sử giao dịch",
+    "transactionsSub": "Xem tất cả",
+    "notifications": "Thông báo",
+    "security": "Bảo mật & riêng tư",
+    "help": "Trợ giúp & hỗ trợ",
+    "about": "Giới thiệu",
+    "reviews": "Đánh giá của tôi"
+  },
+  "signOut": "Đăng xuất",
+  "signOutConfirm": "Bạn có chắc muốn đăng xuất?",
+  "edit": {
+    "title": "Sửa hồ sơ",
+    "name": "Họ và tên",
+    "namePlaceholder": "Tên của bạn",
+    "email": "Email",
+    "emailPlaceholder": "ban@email.com",
+    "newPassword": "Mật khẩu mới",
+    "newPasswordPlaceholder": "Để trống nếu giữ mật khẩu cũ",
+    "phoneNote": "Số điện thoại có thể cập nhật ở bản web.",
+    "saved": "Đã cập nhật hồ sơ.",
+    "failed": "Không lưu được hồ sơ. Vui lòng thử lại."
+  },
+  "security": {
+    "title": "Bảo mật & riêng tư",
+    "changePassword": "Đổi mật khẩu",
+    "hint": "Dùng ít nhất 8 ký tự.",
+    "newPassword": "Mật khẩu mới",
+    "confirmPassword": "Xác nhận mật khẩu mới",
+    "update": "Cập nhật mật khẩu",
+    "updating": "Đang cập nhật…",
+    "updated": "Đã cập nhật mật khẩu.",
+    "tooShort": "Mật khẩu phải có ít nhất 8 ký tự.",
+    "mismatch": "Mật khẩu xác nhận không khớp.",
+    "updateFailed": "Không cập nhật được mật khẩu. Vui lòng thử lại.",
+    "deleteTitle": "Xoá tài khoản",
+    "deleteBody": "Thao tác này xoá vĩnh viễn tài khoản và dữ liệu cá nhân của bạn. Không thể hoàn tác.",
+    "deleteConfirm": "Xoá tài khoản của tôi",
+    "deleteFailed": "Không xoá được tài khoản. Vui lòng thử lại.",
+    "error": "Lỗi"
+  },
+  "rewards": {
+    "title": "SmartStay Plus",
+    "history": "Lịch sử điểm",
+    "points": "điểm"
+  },
+  "offers": {
+    "title": "Ưu đãi của tôi",
+    "enterAtCheckout": "Nhập khi thanh toán",
+    "empty": "Hiện chưa có ưu đãi nào"
+  },
+  "transactions": {
+    "title": "Lịch sử giao dịch",
+    "error": "Không tải được lịch sử giao dịch.",
+    "empty": "Chưa có giao dịch nào",
+    "emptyBody": "Các khoản thanh toán đặt phòng sẽ hiện ở đây."
+  },
+  "paymentMethods": {
+    "title": "Phương thức thanh toán",
+    "empty": "Chưa lưu phương thức nào",
+    "emptyBody": "SmartStay không lưu thẻ của bạn. Mỗi lần đặt phòng bạn thanh toán an toàn qua VNPay."
+  },
+  "help": {
+    "title": "Trợ giúp & hỗ trợ",
+    "faq": "Câu hỏi thường gặp",
+    "contact": "Liên hệ chúng tôi"
+  },
+  "about": {
+    "title": "Giới thiệu",
+    "website": "Truy cập website",
+    "terms": "Điều khoản dịch vụ",
+    "privacy": "Chính sách bảo mật",
+    "version": "Phiên bản"
+  },
+  "notifications": {
+    "title": "Thông báo",
+    "error": "Không tải được thông báo.",
+    "empty": "Chưa có thông báo nào",
+    "emptyBody": "Cập nhật về đặt phòng của bạn sẽ hiện ở đây.",
+    "yourHotel": "khách sạn của bạn",
+    "confirmed": {
+      "title": "Đã xác nhận đặt phòng",
+      "body": "Kỳ nghỉ tại {{hotel}} đã được xác nhận cho ngày {{date}}."
+    },
+    "pending": {
+      "title": "Đang chờ xác nhận",
+      "body": "Chúng tôi đang xác nhận đặt phòng của bạn tại {{hotel}}."
+    },
+    "checked_in": {
+      "title": "Đã nhận phòng",
+      "body": "Chào mừng tới {{hotel}}! Chúc bạn có kỳ nghỉ vui vẻ."
+    },
+    "checked_out": {
+      "title": "Kỳ nghỉ thế nào?",
+      "body": "Hãy đánh giá kỳ nghỉ vừa rồi tại {{hotel}}."
+    },
+    "cancelled": {
+      "title": "Đã huỷ đặt phòng",
+      "body": "Đặt phòng của bạn tại {{hotel}} đã bị huỷ."
+    },
+    "no_show": {
+      "title": "Bỏ lỡ đặt phòng",
+      "body": "Bạn đã không nhận phòng tại {{hotel}}."
+    }
+  },
+  "review": {
+    "writeTitle": "Viết đánh giá",
+    "editTitle": "Sửa đánh giá",
+    "overall": "Đánh giá tổng thể",
+    "overallHint": "(trung bình 4 tiêu chí bên dưới)",
+    "cleanliness": "Sạch sẽ",
+    "service": "Dịch vụ",
+    "location": "Vị trí",
+    "value": "Đáng giá",
+    "titleLabel": "Tiêu đề",
+    "titlePlaceholder": "Tóm tắt kỳ nghỉ của bạn",
+    "content": "Nội dung đánh giá",
+    "contentPlaceholder": "Bạn thích điều gì? Điều gì có thể tốt hơn?",
+    "photos": "Ảnh (không bắt buộc)",
+    "photoPlaceholder": "Dán URL ảnh…",
+    "add": "Thêm",
+    "publish": "Đăng đánh giá",
+    "saveChanges": "Lưu thay đổi",
+    "publishing": "Đang đăng…",
+    "saving": "Đang lưu…",
+    "published": "Cảm ơn bạn! Đánh giá của bạn đã được đăng.",
+    "updated": "Đánh giá của bạn đã được cập nhật.",
+    "submitError": "Không gửi được đánh giá. Vui lòng thử lại.",
+    "contentRequired": "Hãy viết vài dòng về kỳ nghỉ của bạn."
+  },
+  "reviews": {
+    "title": "Đánh giá của tôi",
+    "subtitle": "Những đánh giá bạn đã chia sẻ sau các kỳ nghỉ.",
+    "emptyTitle": "Chưa có đánh giá",
+    "emptyDesc": "Sau khi trả phòng, bạn có thể đánh giá kỳ nghỉ từ mục Đặt phòng của tôi.",
+    "error": "Không tải được đánh giá của bạn.",
+    "pendingReview": "Chờ duyệt",
+    "hidden": "Đã ẩn",
+    "editFeedback": "Sửa đánh giá",
+    "responseFromProperty": "Phản hồi từ chỗ nghỉ",
+    "writeReview": "Viết đánh giá"
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "list": {
+    "title": "My bookings",
+    "error": "Couldn't load your bookings.",
+    "emptyTitle": "No bookings yet",
+    "emptySubtitle": "Your upcoming stays will appear here",
+    "findHotel": "Find a hotel",
+    "total": "Total"
+  },
+  "status": {
+    "pending": "Pending",
+    "confirmed": "Confirmed",
+    "checked_in": "Checked in",
+    "checked_out": "Checked out",
+    "cancelled": "Cancelled",
+    "no_show": "No show"
+  },
+  "checkout": {
+    "title": "Complete booking",
+    "steps": {
+      "details": "Guest details",
+      "review": "Review & confirm"
+    },
+    "fullName": "Full name",
+    "fullNamePlaceholder": "Jane Doe",
+    "email": "Email",
+    "emailPlaceholder": "you@example.com",
+    "phone": "Phone",
+    "phonePlaceholder": "09xx xxx xxx",
+    "specialRequests": "Special requests (optional)",
+    "specialRequestsPlaceholder": "Late check-in, high floor, extra bed…",
+    "priceDetails": "Price details",
+    "continue": "Continue",
+    "confirm": "Confirm booking",
+    "creating": "Creating…",
+    "errorTitle": "Booking failed"
+  },
+  "success": {
+    "title": "Booking confirmed!",
+    "bookingCode": "Booking code",
+    "scanAtDesk": "Scan at the front desk",
+    "payNow": "Pay now with VNPay",
+    "viewBooking": "View booking",
+    "myBookings": "My bookings"
+  },
+  "detail": {
+    "title": "Booking details",
+    "error": "Couldn't load this booking.",
+    "bookingCode": "Booking code",
+    "showQr": "Show this QR code at check-in",
+    "modify": "Modify reservation",
+    "modifySent": "Modification request sent",
+    "modifySentBody": "The property will confirm availability shortly.",
+    "priceDetails": "Price details",
+    "cancel": "Cancel booking",
+    "cancelTitle": "Cancel booking",
+    "cancelBody": "Are you sure you want to cancel this booking? This cannot be undone.",
+    "cancelConfirm": "Yes, cancel",
+    "keep": "Keep booking",
+    "cancelFailed": "Could not cancel"
+  }
+}

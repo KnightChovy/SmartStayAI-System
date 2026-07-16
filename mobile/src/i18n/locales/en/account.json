@@ -1,0 +1,169 @@
+{
+  "title": "Account",
+  "guest": "Guest",
+  "editProfile": "Edit profile",
+  "completion": "Profile completion",
+  "completeTitle": "Complete your profile",
+  "completeBody": "Add more details to unlock offers tailored just for you.",
+  "update": "Update",
+  "quick": {
+    "bookings": "Bookings",
+    "bookingsSub": "View history",
+    "plus": "SmartStay Plus",
+    "plusSub": "Silver Member"
+  },
+  "sections": {
+    "offers": "Offers",
+    "finance": "Finance",
+    "settings": "Settings",
+    "seeMore": "See more"
+  },
+  "menu": {
+    "myOffers": "My offers",
+    "myOffersSub": "3 offers available",
+    "rewards": "Reward points",
+    "rewardsSub": "1,240 points",
+    "paymentMethods": "Payment methods",
+    "paymentMethodsSub": "Add card/wallet",
+    "transactions": "Transaction history",
+    "transactionsSub": "View all",
+    "notifications": "Notifications",
+    "security": "Security & privacy",
+    "help": "Help & support",
+    "about": "About",
+    "reviews": "My reviews"
+  },
+  "signOut": "Sign out",
+  "signOutConfirm": "Are you sure you want to sign out?",
+  "edit": {
+    "title": "Edit profile",
+    "name": "Full name",
+    "namePlaceholder": "Your name",
+    "email": "Email",
+    "emailPlaceholder": "you@example.com",
+    "newPassword": "New password",
+    "newPasswordPlaceholder": "Leave blank to keep current",
+    "phoneNote": "Phone number can be updated from the web app.",
+    "saved": "Profile updated.",
+    "failed": "Could not save your profile. Please try again."
+  },
+  "security": {
+    "title": "Security & privacy",
+    "changePassword": "Change password",
+    "hint": "Use at least 8 characters.",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm new password",
+    "update": "Update password",
+    "updating": "Updating…",
+    "updated": "Password updated.",
+    "tooShort": "Password must be at least 8 characters.",
+    "mismatch": "Passwords do not match.",
+    "updateFailed": "Could not update your password. Please try again.",
+    "deleteTitle": "Delete account",
+    "deleteBody": "This permanently removes your account and personal data. This cannot be undone.",
+    "deleteConfirm": "Delete my account",
+    "deleteFailed": "Could not delete your account. Please try again.",
+    "error": "Error"
+  },
+  "rewards": {
+    "title": "SmartStay Plus",
+    "history": "Points history",
+    "points": "points"
+  },
+  "offers": {
+    "title": "My offers",
+    "enterAtCheckout": "Enter at checkout",
+    "empty": "No offers right now"
+  },
+  "transactions": {
+    "title": "Transaction history",
+    "error": "Couldn't load your transactions.",
+    "empty": "No transactions yet",
+    "emptyBody": "Your booking payments will appear here."
+  },
+  "paymentMethods": {
+    "title": "Payment methods",
+    "empty": "No saved payment methods",
+    "emptyBody": "SmartStay doesn't store your cards. You pay securely through VNPay each time you book."
+  },
+  "help": {
+    "title": "Help & support",
+    "faq": "Frequently asked questions",
+    "contact": "Contact us"
+  },
+  "about": {
+    "title": "About",
+    "website": "Visit our website",
+    "terms": "Terms of service",
+    "privacy": "Privacy policy",
+    "version": "Version"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "error": "Couldn't load notifications.",
+    "empty": "No notifications yet",
+    "emptyBody": "Updates about your bookings will appear here.",
+    "yourHotel": "your hotel",
+    "confirmed": {
+      "title": "Booking confirmed",
+      "body": "Your stay at {{hotel}} is confirmed for {{date}}."
+    },
+    "pending": {
+      "title": "Booking pending",
+      "body": "We're confirming your booking at {{hotel}}."
+    },
+    "checked_in": {
+      "title": "Checked in",
+      "body": "Welcome to {{hotel}}! Enjoy your stay."
+    },
+    "checked_out": {
+      "title": "How was your stay?",
+      "body": "Rate your recent stay at {{hotel}}."
+    },
+    "cancelled": {
+      "title": "Booking cancelled",
+      "body": "Your booking at {{hotel}} was cancelled."
+    },
+    "no_show": {
+      "title": "Missed booking",
+      "body": "You didn't check in at {{hotel}}."
+    }
+  },
+  "review": {
+    "writeTitle": "Write a review",
+    "editTitle": "Edit your review",
+    "overall": "Overall rating",
+    "overallHint": "(average of the four below)",
+    "cleanliness": "Cleanliness",
+    "service": "Service",
+    "location": "Location",
+    "value": "Value",
+    "titleLabel": "Title",
+    "titlePlaceholder": "Sum up your stay",
+    "content": "Your review",
+    "contentPlaceholder": "What did you love? What could be better?",
+    "photos": "Photos (optional)",
+    "photoPlaceholder": "Paste an image URL…",
+    "add": "Add",
+    "publish": "Publish review",
+    "saveChanges": "Save changes",
+    "publishing": "Publishing…",
+    "saving": "Saving…",
+    "published": "Thank you! Your review has been published.",
+    "updated": "Your review has been updated.",
+    "submitError": "Could not submit your review. Please try again.",
+    "contentRequired": "Please write a few words about your stay."
+  },
+  "reviews": {
+    "title": "My reviews",
+    "subtitle": "Reviews you shared after your stays.",
+    "emptyTitle": "No reviews yet",
+    "emptyDesc": "After you check out, you can review your stay from My bookings.",
+    "error": "Couldn't load your reviews.",
+    "pendingReview": "Pending review",
+    "hidden": "Hidden",
+    "editFeedback": "Edit feedback",
+    "responseFromProperty": "Response from property",
+    "writeReview": "Write a review"
+  }
+}
