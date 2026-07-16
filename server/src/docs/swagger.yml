@@ -834,6 +834,85 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /internal/jobs/auto-approve-refunds:
+    post:
+      summary: Auto-approve refund requests the hotel ignored (cron)
+      description: >
+        Runs nightly (04:00 Asia/Ho_Chi_Minh) inside the app; this endpoint only forces it to run now.
+        Approves every refund request left `pending` for more than 3 days.
+
+
+        Why it must exist: the refund amount comes from the hotel's OWN published cancellation policy,
+        so reviewing is meant for exceptions, not a veto. Without a deadline a hotel could simply stay
+        silent and the guest would never get their money.
+
+
+        Auto-approved requests are marked by `reviewedAt` set with `reviewedBy: null` — nobody clicked.
+        Protected by x-cron-secret. Idempotent.
+      tags: [Internal]
+      parameters:
+        - in: header
+          name: x-cron-secret
+          required: true
+          schema:
+            type: string
+          description: Must equal the server's CRON_SECRET
+      responses:
+        "200":
+          description: Number of requests auto-approved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  approved:
+                    type: integer
+        "401":
+          description: Missing or wrong cron secret
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /internal/jobs/credit-wallet-refunds:
+    post:
+      summary: Credit approved wallet refunds to guests (cron)
+      description: >
+        Runs nightly (04:10, right after auto-approve-refunds); this endpoint only forces it to run now.
+        Credits every refund that is `approved` with `refundMethod: wallet` and moves it to `processed`.
+
+
+        Why it must exist: a refund approved by a human goes through reviewRefund, which credits the
+        wallet on the spot. But requests auto-approved by the cron never pass through there — and wallet
+        refunds need no Platform Manager, so without this job they would sit on `approved` forever.
+
+
+        Protected by x-cron-secret. Idempotent — only picks up refunds still on `approved`.
+      tags: [Internal]
+      parameters:
+        - in: header
+          name: x-cron-secret
+          required: true
+          schema:
+            type: string
+          description: Must equal the server's CRON_SECRET
+      responses:
+        "200":
+          description: Number of refunds credited to guest wallets
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  credited:
+                    type: integer
+        "401":
+          description: Missing or wrong cron secret
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /auth/send-otp:
     post:
       summary: Send OTP verification code
