@@ -197,11 +197,13 @@ export class ReviewService {
   };
 
   /**
-   * [Partner] Thống kê đánh giá của khách sạn: tổng số, điểm trung bình từng tiêu chí và phân bố theo
-   * số sao (overall). Tính trên các đánh giá đã công khai (published) — đây là điểm hiển thị cho khách.
+   * Thống kê đánh giá của một khách sạn: tổng số, điểm trung bình từng tiêu chí và phân bố theo số
+   * sao (overall). Chỉ tính đánh giá đã công khai (published) — đúng bằng tập khách xem được.
+   *
+   * Tách riêng phần tính để bản cho KHÁCH và bản cho CHỦ KS luôn ra CÙNG một con số; hai hàm gọi
+   * bên dưới chỉ khác nhau ở chỗ được phép xem khách sạn nào.
    */
-  getHotelReviewStats = async (hotelId: string, currentUser: User) => {
-    await hotelService.getManagedHotel(hotelId, currentUser);
+  private computeReviewStats = async (hotelId: string) => {
     const where: Prisma.ReviewWhereInput = { hotelId, status: 'published' };
 
     const [agg, byRating] = await prisma.$transaction([
@@ -236,6 +238,31 @@ export class ReviewService {
       },
       countByStar,
     };
+  };
+
+  /**
+   * [Partner] Thống kê đánh giá khách sạn của mình — xem được CẢ khách sạn chưa mở bán
+   * (chủ KS cần xem điểm trước khi lên sàn), nên quyền kiểm qua getManagedHotel.
+   */
+  getHotelReviewStats = async (hotelId: string, currentUser: User) => {
+    await hotelService.getManagedHotel(hotelId, currentUser);
+    return this.computeReviewStats(hotelId);
+  };
+
+  /**
+   * [Public] Thống kê đánh giá cho trang chi tiết của khách — không cần đăng nhập.
+   * Chỉ trả khách sạn ĐANG MỞ BÁN: khách sạn chưa duyệt/chưa lên sàn thì coi như không tồn tại,
+   * tránh lộ sự tồn tại của hồ sơ chưa công khai qua đường thống kê.
+   */
+  getPublicHotelReviewStats = async (hotelId: string) => {
+    const hotel = await prisma.hotel.findFirst({
+      where: { id: hotelId, isActive: true, isListed: true, deletedAt: null },
+      select: { id: true },
+    });
+    if (!hotel) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy khách sạn');
+    }
+    return this.computeReviewStats(hotelId);
   };
 
   /** Chi tiết một đánh giá công khai. */

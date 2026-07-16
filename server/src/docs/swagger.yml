@@ -3939,6 +3939,29 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
 
+  /hotels/{hotelId}/review-stats:
+    get:
+      summary: Get public review stats of a hotel (guest)
+      description: >
+        Aggregate review stats (total, average per category, star distribution) over the hotel's
+        published reviews — for the guest-facing hotel detail page. No authentication required.
+        Only listed hotels are returned; unlisted/unapproved hotels give 404 so their existence
+        is not leaked. Same numbers as the partner endpoint /hotels/{hotelId}/reviews/stats,
+        which additionally covers hotels that are not listed yet.
+      tags: [Reviews]
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Aggregate review stats
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReviewStats' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
   /hotels/{hotelId}/reviews/stats:
     get:
       summary: Get review stats of my hotel (partner)
