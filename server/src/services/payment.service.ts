@@ -109,13 +109,19 @@ export class PaymentService {
       throw new ApiError(httpStatus.BAD_REQUEST, 'Booking đã quá hạn giữ chỗ, vui lòng đặt lại');
     }
 
+    // Chỉ thu phần CÒN THIẾU: khách có thể đã trả bớt bằng ví, thu nguyên totalAmount là thu hai lần
+    const amountDue = await this.outstandingAmount(booking.id, booking.totalAmount);
+    if (amountDue.lessThanOrEqualTo(0)) {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Booking này đã được thanh toán đủ');
+    }
+
     const txnRef = `${booking.bookingCode}-${Date.now().toString(36).toUpperCase()}`;
     await prisma.payment.create({
       data: {
         bookingId: booking.id,
         paymentMethod: 'vnpay',
         transactionId: txnRef,
-        amount: booking.totalAmount,
+        amount: amountDue,
         currency: 'VND',
         status: 'pending',
       },
@@ -131,7 +137,7 @@ export class PaymentService {
       vnp_OrderInfo: `Thanh toan booking ${booking.bookingCode}`,
       vnp_OrderType: 'other',
       // VNPay tính tiền theo đơn vị nhỏ nhất ⇒ nhân 100
-      vnp_Amount: String(Math.round(booking.totalAmount.toNumber() * 100)),
+      vnp_Amount: String(Math.round(amountDue.toNumber() * 100)),
       vnp_ReturnUrl: config.vnpay.returnUrl,
       vnp_IpAddr: ipAddr,
       vnp_CreateDate: formatVnpDate(new Date()),
@@ -206,6 +212,105 @@ export class PaymentService {
    * pending (đã huỷ/hết hạn) thì vẫn đánh dấu payment completed nhưng KHÔNG tạo voucher —
    * tiền đã nhận, cần hoàn thủ công (trả về confirmed=false để lớp trên cảnh báo).
    */
+  /**
+   * Số tiền booking CÒN PHẢI TRẢ = tổng đơn − các khoản đã trả xong.
+   *
+   * Cần thiết vì khách có thể trả một phần bằng ví rồi trả nốt qua cổng: nếu cổng cứ thu
+   * booking.totalAmount như trước thì khách bị thu hai lần phần đã trừ ví.
+   */
+  private outstandingAmount = async (bookingId: string, totalAmount: Prisma.Decimal): Promise<Prisma.Decimal> => {
+    const paid = await prisma.payment.aggregate({
+      where: { bookingId, status: 'completed' },
+      _sum: { amount: true },
+    });
+    const remaining = totalAmount.sub(paid._sum.amount ?? 0);
+    return remaining.isNegative() ? new Prisma.Decimal(0) : remaining;
+  };
+
+  /**
+   * Khách dùng số dư ví trả cho booking. Ví thiếu thì trả được bao nhiêu hay bấy nhiêu — phần còn
+   * lại khách trả tiếp qua cổng (thanh toán kết hợp, giống Shopee).
+   *
+   * Ví trả ĐỦ phần còn lại ⇒ booking confirmed ngay tại đây, không cần đi qua cổng nào.
+   * Ví trả MỘT PHẦN ⇒ booking vẫn pending, giữ nguyên hạn giữ chỗ để khách kịp trả nốt.
+   */
+  payWithWallet = async (bookingId: string, currentUser: User) => {
+    const booking = await prisma.booking.findUnique({ where: { id: bookingId } });
+    if (!booking) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy booking');
+    }
+    if (booking.customerId !== currentUser.id) {
+      throw new ApiError(httpStatus.FORBIDDEN, 'Forbidden');
+    }
+    if (booking.status !== 'pending') {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Booking không ở trạng thái chờ thanh toán');
+    }
+    if (booking.holdExpiresAt && booking.holdExpiresAt < new Date()) {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Booking đã quá hạn giữ chỗ, vui lòng đặt lại');
+    }
+
+    const remaining = await this.outstandingAmount(booking.id, booking.totalAmount);
+    if (remaining.lessThanOrEqualTo(0)) {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Booking này đã được thanh toán đủ');
+    }
+    const balance = await walletService.getCustomerBalance(currentUser.id);
+    if (balance.lessThanOrEqualTo(0)) {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Ví của bạn không có số dư');
+    }
+
+    // Ví nhiều hơn số còn thiếu thì chỉ trừ đúng số còn thiếu — không bao giờ thu dư
+    const applied = Prisma.Decimal.min(balance, remaining);
+
+    const result = await prisma.$transaction(async (tx) => {
+      // Trừ ví CÓ ĐIỀU KIỆN bên trong (xem walletService.debitCustomer): hai request song song
+      // cùng tiêu một số dư thì chỉ một bên thắng, không thể tiêu vượt.
+      await walletService.debitCustomer(tx, currentUser.id, applied, booking.id);
+
+      const payment = await tx.payment.create({
+        data: {
+          bookingId: booking.id,
+          paymentMethod: 'wallet',
+          // Kèm timestamp vì một booking có thể trả ví nhiều lần (transactionId là unique)
+          transactionId: `WALLET-${booking.bookingCode}-${Date.now()}`,
+          amount: applied,
+          currency: 'VND',
+          status: 'completed',
+          paidAt: new Date(),
+        },
+      });
+
+      const stillOwed = remaining.sub(applied);
+      if (stillOwed.greaterThan(0)) {
+        // Chưa đủ ⇒ giữ nguyên pending + hạn giữ chỗ để khách trả nốt qua cổng
+        return { paid: applied, remaining: stillOwed, confirmed: false as const, voucherCode: null };
+      }
+
+      // Ví trả đủ ⇒ chốt luôn như một lần thanh toán thành công
+      const done = await tx.booking.updateMany({
+        where: { id: booking.id, status: 'pending' },
+        data: { status: 'confirmed', holdExpiresAt: null },
+      });
+      if (done.count === 0) {
+        // Booking vừa bị huỷ/hết hạn giữa chừng — ném lỗi để rollback, ví KHÔNG bị trừ oan
+        throw new ApiError(httpStatus.BAD_REQUEST, 'Booking vừa hết hạn giữ chỗ, vui lòng đặt lại');
+      }
+      const info = await this.finalizeConfirmedBooking(tx, booking.id, payment.id);
+      return { paid: applied, remaining: new Prisma.Decimal(0), confirmed: true as const, ...info };
+    });
+
+    if (result.confirmed) {
+      this.sendConfirmationEmailSafe(result);
+    }
+    return {
+      bookingCode: booking.bookingCode,
+      walletApplied: result.paid.toString(),
+      remainingToPay: result.remaining.toString(),
+      bookingStatus: result.confirmed ? 'confirmed' : 'pending',
+      voucherCode: result.voucherCode ?? null,
+      walletBalance: (await walletService.getCustomerBalance(currentUser.id)).toString(),
+    };
+  };
+
   private confirmPaidBooking = async (
     paymentId: string,
     bookingId: string,
@@ -245,53 +350,67 @@ export class PaymentService {
         return { confirmed: false as const, emailTo: null };
       }
 
-      const booking = await tx.booking.findUniqueOrThrow({
-        where: { id: bookingId },
-        include: {
-          hotel: { select: { name: true, partnerId: true, partner: { select: { commissionRate: true } } } },
-          roomType: { select: { name: true } },
-          customer: { select: { email: true, fullName: true } },
-        },
-      });
-
-      const rate = booking.hotel.partner.commissionRate;
-      const commissionAmount = booking.totalAmount.mul(rate).div(100).toDecimalPlaces(2);
-      await tx.platformCommission.create({
-        data: {
-          bookingId: booking.id,
-          partnerId: booking.hotel.partnerId,
-          paymentId,
-          commissionRate: rate,
-          commissionAmount,
-          status: 'pending',
-        },
-      });
-      const net = booking.totalAmount.sub(commissionAmount);
-      await walletService.recordEarning(tx, booking.hotelId, booking.id, net);
-      const voucherCode = generateVoucherCode();
-      await tx.bookingVoucher.create({
-        data: {
-          bookingId: booking.id,
-          voucherCode,
-          // qrData là payload để frontend render thành mã QR e-voucher (M10)
-          qrData: `SMARTSTAY|${voucherCode}|${booking.bookingCode}`,
-          expiresAt: booking.checkOutDate,
-        },
-      });
-
-      return {
-        confirmed: true as const,
-        emailTo: booking.customer.email,
-        customerName: booking.customer.fullName,
-        bookingCode: booking.bookingCode,
-        hotelName: booking.hotel.name,
-        roomTypeName: booking.roomType.name,
-        checkInDate: booking.checkInDate,
-        checkOutDate: booking.checkOutDate,
-        totalAmount: booking.totalAmount.toNumber(),
-        voucherCode,
-      };
+      const info = await this.finalizeConfirmedBooking(tx, bookingId, paymentId);
+      return { confirmed: true as const, ...info };
     });
+  };
+
+  /**
+   * Chốt một booking VỪA TRẢ ĐỦ TIỀN: ghi hoa hồng, cộng net vào ví khách sạn, phát voucher.
+   * Booking đã được chuyển sang 'confirmed' trước khi gọi hàm này.
+   *
+   * Tách ra vì có HAI đường dẫn tới đây — trả qua cổng và trả bằng ví — mà cả hai đều phải tính
+   * hoa hồng y hệt nhau. Gộp chung một chỗ để chúng không thể lệch.
+   *
+   * Hoa hồng LUÔN tính trên booking.totalAmount, KHÔNG phải trên số tiền của payment: khách trả
+   * bằng ví hay bằng thẻ là chuyện của khách, khách sạn vẫn bán trọn đơn đó nên ăn hoa hồng trọn đơn.
+   */
+  private finalizeConfirmedBooking = async (tx: Prisma.TransactionClient, bookingId: string, paymentId: string) => {
+    const booking = await tx.booking.findUniqueOrThrow({
+      where: { id: bookingId },
+      include: {
+        hotel: { select: { name: true, partnerId: true, partner: { select: { commissionRate: true } } } },
+        roomType: { select: { name: true } },
+        customer: { select: { email: true, fullName: true } },
+      },
+    });
+
+    const rate = booking.hotel.partner.commissionRate;
+    const commissionAmount = booking.totalAmount.mul(rate).div(100).toDecimalPlaces(2);
+    await tx.platformCommission.create({
+      data: {
+        bookingId: booking.id,
+        partnerId: booking.hotel.partnerId,
+        paymentId,
+        commissionRate: rate,
+        commissionAmount,
+        status: 'pending',
+      },
+    });
+    const net = booking.totalAmount.sub(commissionAmount);
+    await walletService.recordEarning(tx, booking.hotelId, booking.id, net);
+    const voucherCode = generateVoucherCode();
+    await tx.bookingVoucher.create({
+      data: {
+        bookingId: booking.id,
+        voucherCode,
+        // qrData là payload để frontend render thành mã QR e-voucher (M10)
+        qrData: `SMARTSTAY|${voucherCode}|${booking.bookingCode}`,
+        expiresAt: booking.checkOutDate,
+      },
+    });
+
+    return {
+      emailTo: booking.customer.email,
+      customerName: booking.customer.fullName,
+      bookingCode: booking.bookingCode,
+      hotelName: booking.hotel.name,
+      roomTypeName: booking.roomType.name,
+      checkInDate: booking.checkInDate,
+      checkOutDate: booking.checkOutDate,
+      totalAmount: booking.totalAmount.toNumber(),
+      voucherCode,
+    };
   };
 
   // Gửi email xác nhận booking — best-effort, lỗi email không được làm hỏng kết quả thanh toán
@@ -358,6 +477,12 @@ export class PaymentService {
       throw new ApiError(httpStatus.BAD_REQUEST, 'Booking đã quá hạn giữ chỗ, vui lòng đặt lại');
     }
 
+    // Chỉ thu phần CÒN THIẾU: khách có thể đã trả bớt bằng ví
+    const amountDue = await this.outstandingAmount(booking.id, booking.totalAmount);
+    if (amountDue.lessThanOrEqualTo(0)) {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Booking này đã được thanh toán đủ');
+    }
+
     const existing = await prisma.payment.findFirst({
       where: { bookingId: booking.id, paymentMethod: 'sepay' },
     });
@@ -367,16 +492,20 @@ export class PaymentService {
           bookingId: booking.id,
           paymentMethod: 'sepay',
           transactionId: `SEPAY-${booking.bookingCode}`,
-          amount: booking.totalAmount,
+          amount: amountDue,
           currency: 'VND',
           status: 'pending',
         },
       });
+    } else if (!existing.amount.equals(amountDue)) {
+      // Khách tạo QR rồi mới trừ ví (hoặc ngược lại) ⇒ số trên QR cũ đã sai. Cập nhật lại cho khớp,
+      // nếu không khách chuyển đúng số trên QR mà webhook lại báo "chuyển thiếu/thừa".
+      await prisma.payment.update({ where: { id: existing.id }, data: { amount: amountDue } });
     }
 
     // Nội dung chuyển khoản = mã booking: ngắn, chỉ chữ+số nên ngân hàng không cắt/bỏ dấu.
     const transferContent = booking.bookingCode;
-    const amount = Math.round(booking.totalAmount.toNumber());
+    const amount = Math.round(amountDue.toNumber());
     const query = new URLSearchParams({
       acc: config.sepay.accountNumber,
       bank: config.sepay.bankCode,

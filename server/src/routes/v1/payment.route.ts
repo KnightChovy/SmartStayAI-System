@@ -19,6 +19,15 @@ router.post(
 router.get('/vnpay/return', validate(paymentValidation.vnpayCallback), paymentController.vnpayReturn);
 router.get('/vnpay/ipn', validate(paymentValidation.vnpayCallback), paymentController.vnpayIpn);
 
+// Khách (chủ booking) dùng số dư ví trả cho booking. Ví đủ ⇒ booking confirmed ngay, không cần
+// đi qua cổng nào. Ví thiếu ⇒ trừ hết ví, phần còn lại gọi tiếp /vnpay hoặc /sepay.
+router.post(
+  '/bookings/:bookingId/wallet',
+  auth(),
+  validate(paymentValidation.payWithWallet),
+  paymentController.payWithWallet
+);
+
 // Khách (chủ booking) lấy QR chuyển khoản SePay cho booking đang chờ thanh toán
 router.post(
   '/bookings/:bookingId/sepay',

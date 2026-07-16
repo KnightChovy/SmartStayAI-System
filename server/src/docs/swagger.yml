@@ -2775,15 +2775,27 @@ paths:
         If the booking was paid, the refund amount is computed from the hotel's cancellation policy
         (default: full refund if cancelled ≥48h before check-in, otherwise the first night is kept as
         a penalty) and a **refund REQUEST is created with status `pending`** — the money is NOT sent
-        yet. The hotel reviews it (PATCH /hotels/{hotelId}/refunds/{refundId}/review), then the
-        Platform Manager transfers the money and marks it processed
-        (PATCH /platform-manager/refunds/{refundId}/process). The
-        Payment status, platform commission and hotel wallet are only touched at that final step, so a
-        rejected request never wrongly debits the hotel.
+        yet. The hotel reviews it (PATCH /hotels/{hotelId}/refunds/{refundId}/review). The Payment
+        status, platform commission and hotel wallet are only touched once the refund is actually
+        settled, so a rejected request never wrongly debits the hotel.
 
 
-        The response includes a `refund` summary (`id`, `amount`, `status: pending`) when a refund is
-        due, or `null` when the policy leaves nothing to refund (late cancellation penalty).
+        WHERE THE MONEY GOES — the guest picks with `refundMethod`:
+
+        * `wallet` (default) — credited to the guest's wallet. The money never leaves the platform,
+          so as soon as the hotel approves it is credited automatically and the refund jumps
+          straight to `processed`. Nobody has to transfer anything. Spend it later via
+          POST /payments/bookings/{bookingId}/wallet.
+
+        * `bank` — paid out to a bank account, which means `bankAccount` is REQUIRED (400 without
+          it: otherwise nobody would know where to send the money). After the hotel approves, the
+          Platform Manager transfers it and marks it processed
+          (PATCH /platform-manager/refunds/{refundId}/process). The account number is stored
+          encrypted and never returned.
+
+
+        The response includes a `refund` summary (`id`, `amount`, `status`, `refundMethod`) when a
+        refund is due, or `null` when the policy leaves nothing to refund (late cancellation penalty).
       tags: [Bookings]
       security:
         - bearerAuth: []
@@ -2803,6 +2815,19 @@ paths:
               properties:
                 reason:
                   type: string
+                  maxLength: 500
+                refundMethod:
+                  type: string
+                  enum: [wallet, bank]
+                  default: wallet
+                bankAccount:
+                  type: object
+                  description: 'Required when refundMethod is bank, and rejected otherwise'
+                  required: [accountNumber, bankName, accountHolder]
+                  properties:
+                    accountNumber: { type: string, maxLength: 30, pattern: '^\d+$' }
+                    bankName: { type: string, maxLength: 100, example: Vietcombank }
+                    accountHolder: { type: string, maxLength: 100, example: NGUYEN VAN AN }
       responses:
         '200':
           description: Booking cancelled (with optional refund summary)
@@ -4227,6 +4252,63 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/PaginatedReviews' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /users/me/wallet:
+    get:
+      summary: Get my wallet balance and history
+      description: >
+        The signed-in guest's wallet: balance plus the newest transactions. Refunds taken as wallet
+        credit land here and can be spent on future bookings via
+        POST /payments/bookings/{bookingId}/wallet.
+
+
+        A guest who has never been refunded has no wallet row — this returns an empty wallet with
+        balance 0, not a 404.
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Wallet with transactions
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CustomerWallet' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /payments/bookings/{bookingId}/wallet:
+    post:
+      summary: Pay a booking from the wallet balance
+      description: >
+        Spends the guest's wallet balance on their own pending booking. The amount is decided by the
+        server — min(balance, amount still owed) — so the client cannot choose it and cannot overspend.
+
+
+        Covers everything → the booking is confirmed immediately and a voucher is issued; no gateway
+        needed. Covers only part → the wallet is emptied into the booking, it stays pending with its
+        hold intact, and remainingToPay tells you what to charge through VNPay/SePay. Those gateway
+        endpoints already bill only the outstanding amount, so the guest is never charged twice.
+
+
+        400 when the wallet is empty or the booking is already paid in full; 403 when the booking
+        belongs to someone else.
+      tags: [Payments]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: bookingId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '201':
+          description: Wallet applied
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/WalletPaymentResult' }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
