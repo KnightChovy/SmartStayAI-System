@@ -117,6 +117,16 @@ export class HotelController {
     res.send(result);
   });
 
+  getHotelCharges = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const result = await hotelService.getHotelCharges(req.params.hotelId as string, req.user as User);
+    res.send(result);
+  });
+
+  setHotelCharges = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const result = await hotelService.setHotelCharges(req.params.hotelId as string, req.user as User, req.body.charges);
+    res.send(result);
+  });
+
   getHotelNearbyPlaces = catchAsync(async (req: Request, res: Response): Promise<void> => {
     const result = await hotelService.getHotelNearbyPlaces(req.params.hotelId as string, req.user as User);
     res.send(result);

@@ -1,12 +1,12 @@
 import { Prisma } from '@prisma/client';
-import type { PricingRule, HotelPolicyType, ChargeFrequency } from '@prisma/client';
+import type { PricingRule, ChargeType, ChargeFrequency } from '@prisma/client';
 import prisma from '../config/prisma';
 import { toUtcDate, eachNightOfStay } from '../utils/dates';
 
-/** Một dòng chính sách thuế/phí của khách sạn, đủ để tính ra tiền. */
-export interface TaxFeePolicy {
-  policyType: HotelPolicyType;
-  amount: Prisma.Decimal | null;
+/** Một khoản thu của khách sạn (thuế hoặc phí), đủ để tính ra tiền. */
+export interface TaxFeeCharge {
+  chargeType: ChargeType;
+  amount: Prisma.Decimal;
   isPercentage: boolean;
   chargeFrequency: ChargeFrequency | null;
 }
@@ -51,15 +51,15 @@ export interface StayQuote {
  * Thuế/phí tính trên tiền phòng cả kỳ ở (xem computeTaxAndFees).
  */
 export class AvailabilityService {
-  /** Chính sách thuế/phí đang hiệu lực của các khách sạn — chỉ lấy loại thực sự cộng vào tiền đơn. */
-  getTaxFeePolicies = async (hotelIds: string[]): Promise<Map<string, TaxFeePolicy[]>> => {
-    const byHotel = new Map<string, TaxFeePolicy[]>();
+  /** Các khoản thu (thuế/phí) của những khách sạn cần báo giá, gom theo hotelId. */
+  getTaxFeeCharges = async (hotelIds: string[]): Promise<Map<string, TaxFeeCharge[]>> => {
+    const byHotel = new Map<string, TaxFeeCharge[]>();
     if (hotelIds.length === 0) {
       return byHotel;
     }
-    const rows = await prisma.hotelPolicy.findMany({
-      where: { hotelId: { in: hotelIds }, policyType: { in: ['tax', 'fee'] } },
-      select: { hotelId: true, policyType: true, amount: true, isPercentage: true, chargeFrequency: true },
+    const rows = await prisma.hotelCharge.findMany({
+      where: { hotelId: { in: hotelIds } },
+      select: { hotelId: true, chargeType: true, amount: true, isPercentage: true, chargeFrequency: true },
     });
     for (const row of rows) {
       const list = byHotel.get(row.hotelId) ?? [];
@@ -70,23 +70,22 @@ export class AvailabilityService {
   };
 
   /**
-   * Tính thuế + phí dịch vụ từ HotelPolicy của khách sạn.
+   * Tính thuế + phí dịch vụ từ các khoản thu (HotelCharge) của khách sạn.
    *
-   * Mỗi dòng policy loại 'tax'/'fee' có:
-   *  - isPercentage = true  ⇒ amount là PHẦN TRĂM tính trên tiền phòng (subtotal)
+   * Mỗi khoản có:
+   *  - isPercentage = true  ⇒ amount là PHẦN TRĂM tính trên tiền phòng (subtotal); chargeFrequency
+   *    KHÔNG dùng tới, vì subtotal đã gồm đủ số đêm rồi — nhân tiếp là tính thuế chồng thuế.
    *  - isPercentage = false ⇒ amount là số tiền tuyệt đối, nhân theo chargeFrequency:
    *      per_stay             × 1
    *      per_night            × số đêm
    *      per_person           × số khách
    *      per_person_per_night × số khách × số đêm
-   * Phần trăm luôn tính trên subtotal (không nhân tiếp theo đêm/khách — subtotal đã gồm đủ số đêm rồi),
-   * nếu không sẽ tính thuế chồng thuế.
    *
-   * Chỉ lấy 'tax' và 'fee' — 'deposit' là tiền cọc thu/trả tại khách sạn, KHÔNG cộng vào giá đơn;
-   * 'cancellation'/'parking'/'internet' là mô tả, không phải khoản thu bắt buộc.
+   * Tiền cọc KHÔNG nằm ở đây: đó là khoản thu/trả tại khách sạn, không cộng vào giá đơn — nó chỉ là
+   * một điều khoản mô tả trong HotelPolicy.
    */
   computeTaxAndFees = (
-    policies: TaxFeePolicy[],
+    charges: TaxFeeCharge[],
     subtotal: Prisma.Decimal,
     numNights: number,
     numGuests: number
@@ -94,13 +93,10 @@ export class AvailabilityService {
     let taxAmount = new Prisma.Decimal(0);
     let feeAmount = new Prisma.Decimal(0);
 
-    for (const policy of policies) {
-      if ((policy.policyType !== 'tax' && policy.policyType !== 'fee') || !policy.amount) {
-        continue;
-      }
+    for (const charge of charges) {
       let value: Prisma.Decimal;
-      if (policy.isPercentage) {
-        value = subtotal.mul(policy.amount).div(100);
+      if (charge.isPercentage) {
+        value = subtotal.mul(charge.amount).div(100);
       } else {
         const multipliers: Record<ChargeFrequency, number> = {
           per_stay: 1,
@@ -108,10 +104,10 @@ export class AvailabilityService {
           per_person: numGuests,
           per_person_per_night: numGuests * numNights,
         };
-        value = policy.amount.mul(multipliers[policy.chargeFrequency ?? 'per_stay']);
+        value = charge.amount.mul(multipliers[charge.chargeFrequency ?? 'per_stay']);
       }
       value = value.toDecimalPlaces(2);
-      if (policy.policyType === 'tax') {
+      if (charge.chargeType === 'tax') {
         taxAmount = taxAmount.add(value);
       } else {
         feeAmount = feeAmount.add(value);

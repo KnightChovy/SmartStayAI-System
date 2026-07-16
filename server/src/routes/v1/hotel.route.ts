@@ -99,10 +99,18 @@ router
   .get(auth(), validate(hotelValidation.hotelIdParam), hotelController.getHotelContacts)
   .put(auth(), validate(hotelValidation.setHotelContacts), hotelController.setHotelContacts);
 
+// Điều khoản = văn bản cho khách đọc, KHÔNG ảnh hưởng tiền
 router
   .route('/:hotelId/policies')
   .get(auth(), validate(hotelValidation.hotelIdParam), hotelController.getHotelPolicies)
   .put(auth(), validate(hotelValidation.setHotelPolicies), hotelController.setHotelPolicies);
+
+// Khoản thu (thuế/phí) = con số cộng vào tiền đơn. Tách khỏi /policies có chủ đích: sửa câu chữ
+// và sửa tiền là hai việc khác nhau, không nên nằm chung một form.
+router
+  .route('/:hotelId/charges')
+  .get(auth(), validate(hotelValidation.hotelIdParam), hotelController.getHotelCharges)
+  .put(auth(), validate(hotelValidation.setHotelCharges), hotelController.setHotelCharges);
 
 router
   .route('/:hotelId/nearby-places')

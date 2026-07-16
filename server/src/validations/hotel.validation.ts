@@ -143,23 +143,38 @@ export const setHotelContacts = {
   }),
 };
 
-// Thay thế TOÀN BỘ chính sách / phụ phí của khách sạn
+// Thay thế TOÀN BỘ điều khoản (văn bản cho khách đọc) của khách sạn
 export const setHotelPolicies = {
   params: hotelParams,
   body: Joi.object().keys({
     policies: Joi.array()
       .items(
         Joi.object().keys({
-          policyType: Joi.string().valid('cancellation', 'tax', 'fee', 'parking', 'internet', 'deposit').required(),
-          code: Joi.string().max(100).allow('', null),
+          title: Joi.string().max(200).required(),
           description: Joi.string().max(2000).allow('', null),
-          amount: Joi.number().min(0).allow(null),
-          isPercentage: Joi.boolean(),
+          important: Joi.boolean(),
+        })
+      )
+      .required(),
+  }),
+};
+
+// Thay thế TOÀN BỘ khoản thu (thuế/phí) của khách sạn — ĐỔI SỐ Ở ĐÂY LÀ ĐỔI TIỀN KHÁCH TRẢ.
+// chargeFrequency bị cấm khi tính theo %: phần trăm luôn tính trên tiền phòng cả kỳ, gửi kèm tần
+// suất chỉ khiến người dùng tưởng "8% mỗi đêm" trong khi engine không hề nhân theo đêm.
+export const setHotelCharges = {
+  params: hotelParams,
+  body: Joi.object().keys({
+    charges: Joi.array()
+      .items(
+        Joi.object().keys({
+          chargeType: Joi.string().valid('tax', 'fee').required(),
+          name: Joi.string().max(200).required(),
+          amount: Joi.number().min(0).required(),
+          isPercentage: Joi.boolean().default(false),
           chargeFrequency: Joi.string()
             .valid('per_stay', 'per_night', 'per_person', 'per_person_per_night')
-            .allow(null),
-          minAge: Joi.number().integer().min(0).max(120).allow(null),
-          maxAge: Joi.number().integer().min(0).max(120).allow(null),
+            .when('isPercentage', { is: true, then: Joi.forbidden(), otherwise: Joi.required() }),
         })
       )
       .required(),

@@ -619,7 +619,12 @@ components:
           items: { $ref: '#/components/schemas/HotelContact' }
         policies:
           type: array
+          description: 'House rules to read, important ones first. No effect on price'
           items: { $ref: '#/components/schemas/HotelPolicy' }
+        charges:
+          type: array
+          description: 'Taxes and fees added to the total — use these to explain the price breakdown'
+          items: { $ref: '#/components/schemas/HotelCharge' }
         nearbyPlaces:
           type: array
           items: { $ref: '#/components/schemas/HotelNearbyPlace' }
@@ -641,17 +646,35 @@ components:
 
     HotelPolicy:
       type: object
+      description: >
+        A house rule the hotel wants guests to read. Plain text — it has NO effect on any amount.
+        Money lives elsewhere: taxes and fees are HotelCharge, and the refund terms are
+        hotel.settings.cancellation (exposed as Hotel.cancellationRule).
+        Returned with important ones first.
       properties:
         id: { type: string, format: uuid }
         hotelId: { type: string, format: uuid }
-        policyType: { type: string, enum: [cancellation, tax, fee, parking, internet, deposit] }
-        code: { type: string, nullable: true }
+        title: { type: string, example: 'Chính sách huỷ phòng' }
         description: { type: string, nullable: true }
-        amount: { type: string, nullable: true, description: Decimal as string }
-        isPercentage: { type: boolean }
-        chargeFrequency: { type: string, enum: [per_stay, per_night, per_person, per_person_per_night], nullable: true }
-        minAge: { type: integer, nullable: true }
-        maxAge: { type: integer, nullable: true }
+        important: { type: boolean, description: 'Highlight this one — easy to miss and often disputed' }
+
+    HotelCharge:
+      type: object
+      description: >
+        A tax or fee ADDED to the booking total. Changing these changes what guests pay on NEW
+        bookings; existing bookings keep the amounts frozen at booking time.
+      properties:
+        id: { type: string, format: uuid }
+        hotelId: { type: string, format: uuid }
+        chargeType: { type: string, enum: [tax, fee] }
+        name: { type: string, example: 'VAT' }
+        amount: { type: string, description: 'Decimal as string. A percentage value when isPercentage is true, otherwise an absolute amount' }
+        isPercentage: { type: boolean, description: 'True → amount is a % of the room charge and chargeFrequency is unused (never null-checked against nights)' }
+        chargeFrequency:
+          type: string
+          enum: [per_stay, per_night, per_person, per_person_per_night]
+          nullable: true
+          description: 'Multiplier for absolute amounts. Always null when isPercentage is true'
 
     HotelNearbyPlace:
       type: object
