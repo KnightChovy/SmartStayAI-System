@@ -5,9 +5,8 @@ import { useRouter } from 'expo-router';
 import { Text } from '@/components/ui/text';
 import { Heading } from '@/components/ui/heading';
 import { useAuthStore } from '@/stores/authStore';
+import { GUEST_COLORS } from '@/constants/guestTheme';
 
-const NAVY = '#0B1D45';
-const GOLD = '#F5A623';
 
 /**
  * [MOCK] Loyalty program (tier + points). Backend chưa có endpoint loyalty
@@ -33,53 +32,53 @@ export default function RewardsScreen() {
   const progressPct = Math.min(100, Math.round((TOTAL_POINTS / NEXT_THRESHOLD) * 100));
 
   return (
-    <SafeAreaView className="flex-1 bg-navy" edges={['top']}>
-      <View className="flex-row items-center gap-3 px-4 pt-2 pb-3 bg-white border-b border-gray-100">
+    <SafeAreaView className="flex-1 bg-on-surface" edges={['top']}>
+      <View className="flex-row items-center gap-3 px-4 pt-2 pb-3 bg-surface border-b border-hairline/30">
         <Pressable onPress={() => router.back()} hitSlop={8} className="w-9 h-9 items-center justify-center">
-          <Ionicons name="arrow-back" size={22} color={NAVY} />
+          <Ionicons name="arrow-back" size={22} color={GUEST_COLORS.onSurface} />
         </Pressable>
-        <Heading size="lg" className="text-navy">SmartStay Plus</Heading>
+        <Heading size="lg" className="font-bevi-bold text-on-surface">SmartStay Plus</Heading>
       </View>
 
-      <ScrollView className="flex-1 bg-gray-100" contentContainerStyle={{ padding: 16 }} showsVerticalScrollIndicator={false}>
-        <View className="rounded-3xl p-6 bg-navy">
+      <ScrollView className="flex-1 bg-canvas" contentContainerStyle={{ padding: 16 }} showsVerticalScrollIndicator={false}>
+        <View className="rounded-panel p-6 bg-on-surface">
           <View className="flex-row items-center justify-between">
             <View>
-              <Text bold className="text-white/80 text-xs uppercase tracking-wider">
+              <Text bold className="font-bevi-bold text-white/80 text-xs uppercase tracking-wider">
                 {CURRENT_TIER} member
               </Text>
-              <Text bold className="text-white text-4xl mt-1.5">{TOTAL_POINTS.toLocaleString()}</Text>
-              <Text size="sm" className="text-white/70">points available</Text>
+              <Text bold className="font-bevi-bold text-white text-4xl mt-1.5">{TOTAL_POINTS.toLocaleString()}</Text>
+              <Text size="sm" className="font-bevi text-white/70">points available</Text>
             </View>
-            <Ionicons name="gift-outline" size={44} color={GOLD} />
+            <Ionicons name="gift-outline" size={44} color={GUEST_COLORS.bronze} />
           </View>
 
           <View className="mt-6">
             <View className="flex-row items-center justify-between mb-1.5">
-              <Text size="xs" className="text-white/70 capitalize">{CURRENT_TIER}</Text>
-              <Text size="xs" bold className="text-white">
+              <Text size="xs" className="font-bevi text-white/70 capitalize">{CURRENT_TIER}</Text>
+              <Text size="xs" bold className="font-bevi-bold text-white">
                 {NEXT_THRESHOLD - TOTAL_POINTS} pts to {NEXT_TIER}
               </Text>
             </View>
-            <View className="h-2 bg-white/20 rounded-full overflow-hidden">
-              <View className="h-full rounded-full" style={{ width: `${progressPct}%`, backgroundColor: GOLD }} />
+            <View className="h-2 bg-surface/20 rounded-full overflow-hidden">
+              <View className="h-full rounded-full" style={{ width: `${progressPct}%`, backgroundColor: GUEST_COLORS.bronze }} />
             </View>
           </View>
 
           {user?.fullName ? (
-            <Text size="xs" className="text-white/60 mt-4">Member: {user.fullName}</Text>
+            <Text size="xs" className="font-bevi text-white/60 mt-4">Member: {user.fullName}</Text>
           ) : null}
         </View>
 
-        <Heading size="md" className="text-navy mt-6 mb-2 px-1">Points history</Heading>
-        <View className="bg-white rounded-2xl overflow-hidden">
+        <Heading size="md" className="font-bevi-bold text-on-surface mt-6 mb-2 px-1">Points history</Heading>
+        <View className="bg-surface rounded-card overflow-hidden">
           {POINTS_HISTORY.map((tx, index) => {
             const positive = tx.points >= 0;
             return (
               <View
                 key={tx.id}
                 className={`flex-row items-center justify-between px-4 py-3.5 ${
-                  index < POINTS_HISTORY.length - 1 ? 'border-b border-gray-100' : ''
+                  index < POINTS_HISTORY.length - 1 ? 'border-b border-hairline/30' : ''
                 }`}
               >
                 <View className="flex-row items-center gap-3 flex-1 pr-3">
@@ -94,11 +93,11 @@ export default function RewardsScreen() {
                     />
                   </View>
                   <View className="flex-1">
-                    <Text bold size="sm" className="text-navy">{tx.label}</Text>
-                    <Text size="xs" className="text-gray-400 mt-0.5">{tx.date}</Text>
+                    <Text bold size="sm" className="font-bevi-bold text-on-surface">{tx.label}</Text>
+                    <Text size="xs" className="font-bevi text-muted mt-0.5">{tx.date}</Text>
                   </View>
                 </View>
-                <Text bold size="sm" style={{ color: positive ? '#16A34A' : '#DC2626' }}>
+                <Text bold size="sm" style={{ color: positive ? '#16A34A' : '#DC2626' }} className="font-bevi-bold">
                   {positive ? '+' : ''}{tx.points.toLocaleString()}
                 </Text>
               </View>

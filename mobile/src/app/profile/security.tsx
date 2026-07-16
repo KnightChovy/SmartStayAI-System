@@ -6,8 +6,8 @@ import { useRouter } from 'expo-router';
 import { Text } from '@/components/ui/text';
 import { Heading } from '@/components/ui/heading';
 import { useUpdateProfile, useDeleteAccount } from '@/hooks/users';
+import { GUEST_COLORS } from '@/constants/guestTheme';
 
-const NAVY = '#0B1D45';
 
 /** Lấy message lỗi từ axios error mà không dùng `any`. */
 function errorMessage(err: unknown, fallback: string): string {
@@ -72,64 +72,64 @@ export default function SecurityScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-navy" edges={['top']}>
-      <View className="flex-row items-center gap-3 px-4 pt-2 pb-3 bg-white border-b border-gray-100">
+    <SafeAreaView className="flex-1 bg-on-surface" edges={['top']}>
+      <View className="flex-row items-center gap-3 px-4 pt-2 pb-3 bg-surface border-b border-hairline/30">
         <Pressable onPress={() => router.back()} hitSlop={8} className="w-9 h-9 items-center justify-center">
-          <Ionicons name="arrow-back" size={22} color={NAVY} />
+          <Ionicons name="arrow-back" size={22} color={GUEST_COLORS.onSurface} />
         </Pressable>
-        <Heading size="lg" className="text-navy">Security & Privacy</Heading>
+        <Heading size="lg" className="font-bevi-bold text-on-surface">Security & Privacy</Heading>
       </View>
 
-      <ScrollView className="flex-1 bg-gray-100" contentContainerStyle={{ padding: 16, gap: 14 }} showsVerticalScrollIndicator={false}>
-        <View className="bg-white rounded-2xl p-4">
-          <Heading size="md" className="text-navy mb-1">Change password</Heading>
-          <Text size="sm" className="text-gray-400 mb-3">Use at least 8 characters.</Text>
+      <ScrollView className="flex-1 bg-canvas" contentContainerStyle={{ padding: 16, gap: 14 }} showsVerticalScrollIndicator={false}>
+        <View className="bg-surface rounded-card p-4">
+          <Heading size="md" className="font-bevi-bold text-on-surface mb-1">Change password</Heading>
+          <Text size="sm" className="font-bevi text-muted mb-3">Use at least 8 characters.</Text>
 
-          <Text size="xs" className="text-gray-500 mb-1">New password</Text>
+          <Text size="xs" className="font-bevi text-on-surface-variant mb-1">New password</Text>
           <TextInput
             secureTextEntry
             value={newPassword}
             onChangeText={setNewPassword}
             placeholder="••••••••"
-            placeholderTextColor="#9CA3AF"
-            className="mb-3 rounded-xl border border-gray-200 px-3.5 py-3 text-navy"
+            placeholderTextColor={GUEST_COLORS.muted}
+            className="mb-3 rounded-field border border-hairline/50 px-3.5 py-3 text-on-surface"
           />
-          <Text size="xs" className="text-gray-500 mb-1">Confirm new password</Text>
+          <Text size="xs" className="font-bevi text-on-surface-variant mb-1">Confirm new password</Text>
           <TextInput
             secureTextEntry
             value={confirmPassword}
             onChangeText={setConfirmPassword}
             placeholder="••••••••"
-            placeholderTextColor="#9CA3AF"
-            className="mb-3 rounded-xl border border-gray-200 px-3.5 py-3 text-navy"
+            placeholderTextColor={GUEST_COLORS.muted}
+            className="mb-3 rounded-field border border-hairline/50 px-3.5 py-3 text-on-surface"
           />
 
-          {formError ? <Text size="sm" className="text-red-600 mb-2">{formError}</Text> : null}
-          {saved ? <Text size="sm" className="text-green-600 mb-2">Password updated.</Text> : null}
+          {formError ? <Text size="sm" className="font-bevi text-red-600 mb-2">{formError}</Text> : null}
+          {saved ? <Text size="sm" className="font-bevi text-green-600 mb-2">Password updated.</Text> : null}
 
           <Pressable
             disabled={updateProfile.isPending}
             onPress={handleChangePassword}
-            className="bg-navy rounded-2xl py-3 items-center"
+            className="bg-on-surface rounded-card py-3 items-center"
           >
-            <Text bold className="text-white">
+            <Text bold className="font-bevi-bold text-white">
               {updateProfile.isPending ? 'Updating…' : 'Update password'}
             </Text>
           </Pressable>
         </View>
 
-        <View className="bg-white rounded-2xl p-4 border border-red-100">
-          <Heading size="md" className="text-red-600 mb-1">Delete account</Heading>
-          <Text size="sm" className="text-gray-400 mb-3">
+        <View className="bg-surface rounded-card p-4 border border-red-100">
+          <Heading size="md" className="font-bevi-bold text-red-600 mb-1">Delete account</Heading>
+          <Text size="sm" className="font-bevi text-muted mb-3">
             Permanently remove your account and personal data. This cannot be undone.
           </Text>
           <Pressable
             disabled={deleteAccount.isPending}
             onPress={handleDeleteAccount}
-            className="border border-red-200 rounded-2xl py-3 items-center flex-row justify-center gap-2"
+            className="border border-red-200 rounded-card py-3 items-center flex-row justify-center gap-2"
           >
             <Ionicons name="trash-outline" size={16} color="#DC2626" />
-            <Text bold className="text-red-600">
+            <Text bold className="font-bevi-bold text-red-600">
               {deleteAccount.isPending ? 'Deleting…' : 'Delete my account'}
             </Text>
           </Pressable>

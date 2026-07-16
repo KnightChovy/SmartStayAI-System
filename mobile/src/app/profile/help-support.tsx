@@ -4,8 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Text } from '@/components/ui/text';
 import { Heading } from '@/components/ui/heading';
+import { GUEST_COLORS } from '@/constants/guestTheme';
 
-const NAVY = '#0B1D45';
 
 const FAQS = [
   {
@@ -35,38 +35,38 @@ export default function HelpSupportScreen() {
   const router = useRouter();
 
   return (
-    <SafeAreaView className="flex-1 bg-navy" edges={['top']}>
-      <View className="flex-row items-center gap-3 px-4 pt-2 pb-3 bg-white border-b border-gray-100">
+    <SafeAreaView className="flex-1 bg-on-surface" edges={['top']}>
+      <View className="flex-row items-center gap-3 px-4 pt-2 pb-3 bg-surface border-b border-hairline/30">
         <Pressable onPress={() => router.back()} hitSlop={8} className="w-9 h-9 items-center justify-center">
-          <Ionicons name="arrow-back" size={22} color={NAVY} />
+          <Ionicons name="arrow-back" size={22} color={GUEST_COLORS.onSurface} />
         </Pressable>
-        <Heading size="lg" className="text-navy">Help & Support</Heading>
+        <Heading size="lg" className="font-bevi-bold text-on-surface">Help & Support</Heading>
       </View>
 
-      <ScrollView className="flex-1 bg-gray-100" contentContainerStyle={{ padding: 16, gap: 12 }} showsVerticalScrollIndicator={false}>
-        <Heading size="md" className="text-navy px-1">Frequently asked questions</Heading>
-        <View className="bg-white rounded-2xl overflow-hidden">
+      <ScrollView className="flex-1 bg-canvas" contentContainerStyle={{ padding: 16, gap: 12 }} showsVerticalScrollIndicator={false}>
+        <Heading size="md" className="font-bevi-bold text-on-surface px-1">Frequently asked questions</Heading>
+        <View className="bg-surface rounded-card overflow-hidden">
           {FAQS.map((faq, index) => (
             <View
               key={faq.q}
-              className={`p-4 ${index < FAQS.length - 1 ? 'border-b border-gray-100' : ''}`}
+              className={`p-4 ${index < FAQS.length - 1 ? 'border-b border-hairline/30' : ''}`}
             >
-              <Text bold className="text-navy text-sm">{faq.q}</Text>
-              <Text size="sm" className="text-gray-500 mt-1 leading-5">{faq.a}</Text>
+              <Text bold className="font-bevi-bold text-on-surface text-sm">{faq.q}</Text>
+              <Text size="sm" className="font-bevi text-on-surface-variant mt-1 leading-5">{faq.a}</Text>
             </View>
           ))}
         </View>
 
-        <Heading size="md" className="text-navy px-1 mt-2">Contact us</Heading>
-        <View className="bg-white rounded-2xl overflow-hidden">
+        <Heading size="md" className="font-bevi-bold text-on-surface px-1 mt-2">Contact us</Heading>
+        <View className="bg-surface rounded-card overflow-hidden">
           {CONTACTS.map((c, index) => (
             <Pressable
               key={c.label}
               onPress={c.action}
-              className={`flex-row items-center gap-3 p-4 ${index < CONTACTS.length - 1 ? 'border-b border-gray-100' : ''}`}
+              className={`flex-row items-center gap-3 p-4 ${index < CONTACTS.length - 1 ? 'border-b border-hairline/30' : ''}`}
             >
-              <Ionicons name={c.icon} size={18} color={NAVY} />
-              <Text bold className="text-navy text-sm">{c.label}</Text>
+              <Ionicons name={c.icon} size={18} color={GUEST_COLORS.onSurface} />
+              <Text bold className="font-bevi-bold text-on-surface text-sm">{c.label}</Text>
             </Pressable>
           ))}
         </View>
