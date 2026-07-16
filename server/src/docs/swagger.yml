@@ -2624,6 +2624,11 @@ paths:
         Only a `pending` request can be reviewed. Approving does NOT move money — it just authorises
         the Platform Manager to transfer it (see PATCH /platform-manager/refunds/{refundId}/process).
         Rejecting requires a reason. Uses a conditional update so two reviewers racing cannot both win.
+
+
+        ⏰ **3-day deadline**: a nightly job auto-approves any request still `pending` after 3 days, so a
+        hotel cannot block a refund by staying silent (the amount comes from the hotel's own cancellation
+        policy — this step is for exceptions, not a veto). Reviewing an auto-approved request returns 400.
       tags: [Refunds]
       security:
         - bearerAuth: []

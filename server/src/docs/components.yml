@@ -729,9 +729,11 @@ components:
         numNights: { type: integer }
         numGuests: { type: integer }
         basePricePerNight: { type: string, description: Decimal as string }
-        subtotal: { type: string }
+        subtotal: { type: string, description: 'Room charge only (nightly prices with pricing rules applied), before tax and fees' }
         discountAmount: { type: string }
-        totalAmount: { type: string }
+        taxAmount: { type: string, description: 'Tax frozen from the hotel tax policies at booking time' }
+        feeAmount: { type: string, description: 'Service fees frozen from the hotel fee policies at booking time' }
+        totalAmount: { type: string, description: 'subtotal - discountAmount + taxAmount + feeAmount' }
         status: { type: string, enum: [pending, confirmed, checked_in, checked_out, cancelled, no_show] }
         source: { type: string, enum: [website, mobile_app, walk_in, ota] }
         specialRequests: { type: string, nullable: true }
@@ -790,8 +792,16 @@ components:
       type: object
       description: >
         A refund request. Lifecycle: `pending` (guest cancelled a paid booking, waiting for the hotel
-        to review) → `approved` (hotel agreed) → `processed` (admin actually transferred the money),
-        or `rejected`. Money only leaves the hotel wallet/commission at the `processed` step.
+        to review) → `approved` (hotel agreed) → `processed` (Platform Manager actually transferred the
+        money), or `rejected`. Money only leaves the hotel wallet/commission at the `processed` step.
+
+
+        The hotel has **3 days** to review. After that a nightly job auto-approves the request, because
+        the refund amount comes from the hotel's OWN cancellation policy — reviewing is for exceptions,
+        not a veto. An auto-approved request has `reviewedAt` set but `reviewedBy: null` (nobody clicked),
+        so the UI can label it "tự động duyệt (quá hạn phản hồi)".
+
+
         Orphan-money refunds (payment arrived after the hold expired) are created straight as
         `approved` — there is nothing for the hotel to review, it is a system fault.
       properties:
@@ -823,7 +833,9 @@ components:
         reviewer:
           type: object
           nullable: true
-          description: Hotel-side user who approved/rejected
+          description: >
+            Hotel-side user who approved/rejected. NULL together with a non-null `reviewedAt` means the
+            system auto-approved it after the 3-day review deadline passed.
           properties:
             id: { type: string, format: uuid }
             fullName: { type: string }
@@ -869,7 +881,11 @@ components:
         checkOutDate: { type: string, format: date }
         numNights: { type: integer }
         numGuests: { type: integer }
-        totalAmount: { type: string }
+        subtotal: { type: string }
+        discountAmount: { type: string }
+        taxAmount: { type: string }
+        feeAmount: { type: string }
+        totalAmount: { type: string, description: 'subtotal - discountAmount + taxAmount + feeAmount' }
         status: { type: string, enum: [pending, confirmed, checked_in, checked_out, cancelled, no_show] }
         checkedInAt: { type: string, format: date-time, nullable: true }
         checkedOutAt: { type: string, format: date-time, nullable: true }
