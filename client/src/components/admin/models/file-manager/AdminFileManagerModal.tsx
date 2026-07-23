@@ -359,9 +359,9 @@ export function AdminFileManagerModal({ onClose }: AdminFileManagerModalProps) {
                       <thead className="bg-slate-50/90">
                         <tr className="border-b border-slate-200 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
                           <th className="py-3.5 pl-4 pr-4">Name</th>
-                          <th className="px-4 py-3">Size</th>
-                          <th className="px-4 py-3">Uploaded</th>
-                          <th className="py-3 pl-4 pr-4 text-right"> </th>
+                          <th className="border-l border-slate-200/80 px-4 py-3">Size</th>
+                          <th className="border-l border-slate-200/80 px-4 py-3">Uploaded</th>
+                          <th className="border-l border-slate-200/80 py-3 pl-4 pr-4 text-right"> </th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
@@ -392,13 +392,13 @@ export function AdminFileManagerModal({ onClose }: AdminFileManagerModalProps) {
                                   </span>
                                 </a>
                               </td>
-                              <td className="px-4 py-4 text-xs font-semibold text-slate-500">
+                              <td className="border-l border-slate-200/80 px-4 py-4 text-xs font-semibold text-slate-500">
                                 {formatBytes(file.size)}
                               </td>
-                              <td className="px-4 py-4 text-xs font-semibold text-slate-500">
+                              <td className="border-l border-slate-200/80 px-4 py-4 text-xs font-semibold text-slate-500">
                                 {formatDateShort(file.uploadedAt)}
                               </td>
-                              <td className="py-4 pl-4 pr-4 text-right">
+                              <td className="border-l border-slate-200/80 py-4 pl-4 pr-4 text-right">
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
                                     <button
