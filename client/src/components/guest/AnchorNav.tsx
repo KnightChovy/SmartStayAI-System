@@ -95,7 +95,7 @@ export default function AnchorNav({ sections }: AnchorNavProps) {
               className={cn(
                 'whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition-colors',
                 activeId === s.id
-                  ? 'bg-primary text-on-primary'
+                  ? 'bg-premium-gold text-on-surface'
                   : 'text-on-surface-variant hover:bg-surface-container'
               )}
             >

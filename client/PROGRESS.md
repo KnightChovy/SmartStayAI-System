@@ -6,6 +6,17 @@ This file tracks the accomplished tasks, resolved user requests, and visual/func
 
 ## Completed Tasks Checklist
 
+### July 23, 2026 (continued 8)
+
+- [x] **Guest · Hotel detail — làm nổi khối "thuyết phục đặt phòng" (stay picker, điểm đánh giá, anchor nav)**:
+  - Nối tiếp việc đổi CTA sang `premium-gold`: các khối **bằng chứng xã hội** và **bước đầu luồng đặt** vẫn còn `bg-primary` (#5f5e5b xám taupe) nên nhìn như thông tin phụ, không mời khách hành động.
+  - **Stay picker** (`#stay-picker`): viền + nền vàng nhạt (`border-premium-gold/45 bg-premium-gold/5`). Đây là bước **đầu tiên** của luồng — chưa chọn ngày thì không có giá lẫn số phòng trống — nên phải hút mắt hơn các khối thông tin quanh nó.
+  - **Chip điểm đánh giá ở header** + **ô điểm tổng trong `HotelReviews`**: tô vàng **đặc**, chữ để **màu tối**. Cố ý không dùng `text-premium-gold` trên nền nhạt như các badge sẵn có: vàng trên nền sáng chỉ đạt contrast **2.0:1** ⇒ đúng con số cần khách đọc nhất lại là chữ mờ nhất; chữ tối trên vàng đạt **8.5:1**.
+  - **Thanh điểm thành phần** (Cleanliness/Service/Location/Value) và 2 icon `Sparkles`/`MessageSquareQuote` đổi sang vàng ⇒ cả khối đánh giá đọc như **một cụm chất lượng** thống nhất với sao (`StarRating` vốn đã vàng), thay vì xám lẫn vàng như trước. Nhãn điểm ("Exceptional") tăng lên `text-lg`.
+  - **`AnchorNav`**: mục đang xem đổi từ pill xám sang pill vàng — trạng thái "đang chọn" giờ cùng ngôn ngữ màu với CTA.
+  - **Giữ nguyên** nền thẻ, viền chung và chữ phụ: vàng chỉ dùng cho **hành động** (nền đặc) và **chỉ số chất lượng**; tô thêm nữa thì lại không còn gì nổi.
+  - **Verify**: `tsc` **0 lỗi**, `eslint` sạch trên file đã sửa, `npm run build` **pass**, CSS build ra có đủ `bg-premium-gold`, `bg-premium-gold/5`, `border-premium-gold/45`. ⚠️ Chưa drive được browser ⇒ bạn xem lại tổng thể sắc vàng trên trang chi tiết.
+
 ### July 23, 2026 (continued 7)
 
 - [x] **Guest · CTA đặt phòng đổi sang màu nhấn `premium-gold` — nút chính hết chìm nghỉm**:

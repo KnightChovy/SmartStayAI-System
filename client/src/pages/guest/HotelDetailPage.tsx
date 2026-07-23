@@ -280,7 +280,9 @@ export default function HotelDetailPage() {
                 onClick={() =>
                   document.getElementById('reviews')?.scrollIntoView({ behavior: 'smooth' })
                 }
-                className="flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 font-semibold text-primary transition-colors hover:bg-primary/20"
+                // Chip vàng ĐẶC + chữ tối: `text-premium-gold` trên nền nhạt chỉ đạt contrast
+                // 2.0:1 nên số điểm sẽ mờ — đúng chỗ cần khách đọc được ngay.
+                className="flex items-center gap-1.5 rounded-full bg-premium-gold px-3 py-1 font-bold text-on-surface transition-colors hover:bg-[color-mix(in_oklch,var(--color-premium-gold),black_12%)]"
               >
                 <Star className="size-3.5 fill-current" aria-hidden="true" />
                 <span>{avgRating.toFixed(1)}</span>
@@ -366,7 +368,9 @@ export default function HotelDetailPage() {
         {/* Stay picker */}
         <div
           id="stay-picker"
-          className="mt-8 flex scroll-mt-[var(--app-anchor-offset,7rem)] flex-col gap-4 rounded-2xl border border-outline-variant/30 bg-surface p-5 md:flex-row md:items-end"
+          // Viền + nền vàng nhạt: đây là bước ĐẦU TIÊN của luồng đặt phòng (không chọn ngày thì
+          // không có giá lẫn phòng trống), nên phải hút mắt hơn các khối thông tin xung quanh.
+          className="mt-8 flex scroll-mt-[var(--app-anchor-offset,7rem)] flex-col gap-4 rounded-2xl border border-premium-gold/45 bg-premium-gold/5 p-5 md:flex-row md:items-end"
         >
           <DateRangePicker
             checkIn={checkIn}
