@@ -27,6 +27,7 @@ import { guestDetailsSchema, type GuestDetailsValues } from '@/validations/check
 import CheckoutStepper from '@/components/booking/CheckoutStepper';
 import PaymentMethodSelect, { type PaymentMethod } from '@/components/booking/PaymentMethodSelect';
 import SepayQrModal from '@/components/booking/SepayQrModal';
+import TermsModal from '@/components/booking/TermsModal';
 import HotelPolicies from '@/components/guest/HotelPolicies';
 import PriceSummary from '@/components/shared/PriceSummary';
 import StarRating from '@/components/shared/StarRating';
@@ -35,6 +36,7 @@ import BackLink from '@/components/shared/BackLink';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { estimateTaxAndFees } from '@/utils/estimateTaxAndFees';
 import { formatAddress } from '@/utils/formatAddress';
 import { formatDateShort, nightsBetween } from '@/utils/formatDate';
@@ -105,6 +107,10 @@ export default function BookingCheckoutPage() {
   // Số tiền thật của booking đã tạo + cờ báo lệch so với ước tính (xem `handleConfirm`).
   const [actualTotals, setActualTotals] = useState<BookingTotals | null>(null);
   const [priceChanged, setPriceChanged] = useState(false);
+  // SS-402: đồng ý điều khoản (bắt buộc trước khi thanh toán). State ở cấp component nên GIỮ NGUYÊN
+  // khi khách quay lại bước trước rồi tới lại (các bước chỉ là render có điều kiện, không unmount).
+  const [agreedTerms, setAgreedTerms] = useState(false);
+  const [termsOpen, setTermsOpen] = useState(false);
 
   // Nguồn thật của hồ sơ là `GET /users/me`, KHÔNG phải `authStore`: store chỉ giữ ảnh chụp
   // user tại thời điểm đăng nhập và không bao giờ refresh, nên số điện thoại khách lưu ở trang
@@ -392,7 +398,8 @@ export default function BookingCheckoutPage() {
                 <Button
                   type="submit"
                   size="lg"
-                  className="min-h-12 bg-on-surface text-white hover:bg-primary"
+                  variant="cta"
+                  className="min-h-12"
                   disabled={!form.formState.isValid}
                 >
                   {t('guest.continue')} <ArrowRight className="size-4" />
@@ -428,7 +435,8 @@ export default function BookingCheckoutPage() {
                   </Button>
                   <Button
                     size="lg"
-                    className="min-h-12 bg-on-surface text-white hover:bg-primary"
+                    variant="cta"
+                    className="min-h-12"
                     onClick={() => setStep(2)}
                   >
                     {t('payment.review')} <ArrowRight className="size-4" />
@@ -493,14 +501,49 @@ export default function BookingCheckoutPage() {
                     {t('confirm.priceUpdated', { total: format(actualTotals.totalAmount) })}
                   </p>
                 )}
+
+                {/* SS-402: đồng ý điều khoản (bắt buộc) + nhắc lại chính sách hủy */}
+                <div className="rounded-xl border border-outline-variant/30 bg-surface-container-low/40 p-4">
+                  <label className="flex cursor-pointer items-start gap-3">
+                    <Checkbox
+                      checked={agreedTerms}
+                      onCheckedChange={v => setAgreedTerms(v === true)}
+                      aria-required="true"
+                      className="mt-0.5"
+                    />
+                    <span className="text-sm text-on-surface">
+                      {t('terms.agreePrefix')}
+                      <button
+                        type="button"
+                        onClick={e => {
+                          e.preventDefault();
+                          setTermsOpen(true);
+                        }}
+                        className="font-semibold text-primary underline underline-offset-2 hover:text-primary/80"
+                      >
+                        {t('terms.termsLink')}
+                      </button>
+                    </span>
+                  </label>
+                  <p className="mt-2 flex items-start gap-1.5 pl-7 text-xs text-on-surface-variant">
+                    <ShieldCheck className="mt-0.5 size-3.5 shrink-0 text-primary" aria-hidden="true" />
+                    {hotel?.cancellationPolicy?.trim() || t('trust.cancellationFallback')}
+                  </p>
+                </div>
+
                 <div className="flex gap-3">
                   <Button variant="outline" size="lg" onClick={() => setStep(1)}>
                     {t('common:back')}
                   </Button>
                   <Button
                     size="lg"
-                    className="bg-primary text-on-primary hover:bg-primary/90"
-                    disabled={createBooking.isPending || createPayment.isPending || createSepay.isPending}
+                    variant="cta"
+                    disabled={
+                      !agreedTerms ||
+                      createBooking.isPending ||
+                      createPayment.isPending ||
+                      createSepay.isPending
+                    }
                     onClick={handleConfirm}
                   >
                     {createBooking.isPending
@@ -630,6 +673,13 @@ export default function BookingCheckoutPage() {
           </aside>
         </div>
       </div>
+
+      {/* SS-402: nội dung điều khoản + chính sách hủy */}
+      <TermsModal
+        open={termsOpen}
+        onClose={() => setTermsOpen(false)}
+        cancellationPolicy={hotel?.cancellationPolicy}
+      />
 
       {/* SePay: QR + chờ webhook đối soát (không redirect như VNPay) */}
       <SepayQrModal

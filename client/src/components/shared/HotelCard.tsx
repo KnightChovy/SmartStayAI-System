@@ -65,7 +65,9 @@ export default function HotelCard({ hotel, searchQuery = '' }: HotelCardProps) {
               <span className="text-sm font-normal text-on-surface-variant"> {t('room.perNight')}</span>
             </p>
           </div>
-          <span className="rounded-full bg-primary/10 px-4 py-2 text-sm font-semibold text-primary transition-colors group-hover:bg-primary group-hover:text-on-primary">
+          {/* Chữ để màu tối, không phải `text-premium-gold`: vàng trên nền trắng chỉ đạt
+              contrast 2.0:1 nên chữ sẽ mờ khó đọc. */}
+          <span className="rounded-full bg-premium-gold/20 px-4 py-2 text-sm font-semibold text-on-surface transition-colors group-hover:bg-premium-gold">
             {t('viewDetails')}
           </span>
         </div>

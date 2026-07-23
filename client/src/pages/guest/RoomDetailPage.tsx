@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { Bed, BedDouble, Check, Clock, Eye, MapPin, Maximize, Users } from 'lucide-react';
@@ -9,8 +9,11 @@ import { useAuthStore } from '@/stores/authStore';
 import { ROUTES } from '@/constants/routes';
 import StarRating from '@/components/shared/StarRating';
 import BackLink from '@/components/shared/BackLink';
+import Breadcrumb, { type Crumb } from '@/components/shared/Breadcrumb';
 import EmptyState from '@/components/shared/EmptyState';
-import GalleryLightbox from '@/components/guest/GalleryLightbox';
+import RoomGallery from '@/components/guest/RoomGallery';
+import CancellationLine from '@/components/shared/CancellationLine';
+import { getFreeCancellationHours } from '@/utils/cancellationPolicy';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { formatAddress } from '@/utils/formatAddress';
@@ -30,6 +33,7 @@ const FALLBACK =
  */
 export default function RoomDetailPage() {
   const { t } = useTranslation('hotel');
+  const { t: tc } = useTranslation('common');
   const { hotelId, roomTypeId } = useParams<{ hotelId: string; roomTypeId: string }>();
   const [params] = useSearchParams();
   const navigate = useNavigate();
@@ -52,9 +56,6 @@ export default function RoomDetailPage() {
   // `useHotel` dựng placeholder với các relation RỖNG → đọc lúc chưa có data thật sẽ tính ra
   // "không thuế" cho KS có VAT. Chưa về ⇒ `undefined` = chưa biết ⇒ im lặng, không đoán.
   const charges = isPlaceholderData ? undefined : hotelDetail?.charges;
-
-  const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [activeImage, setActiveImage] = useState(0);
 
   const gallery = useMemo(() => {
     const imgs = roomType?.images?.map(i => i.url) ?? [];
@@ -129,6 +130,21 @@ export default function RoomDetailPage() {
     );
   }
 
+  // Breadcrumb: Trang chủ / Thành phố / Khách sạn / Loại phòng (SS-702).
+  // Link về khách sạn giữ nguyên query (ngày/khách) để không mất bối cảnh.
+  const searchQ = params.toString();
+  const crumbs: Crumb[] = [
+    { label: tc('nav.home'), to: ROUTES.home },
+    ...(roomType.hotel.city
+      ? [{ label: roomType.hotel.city, to: `${ROUTES.search}?city=${encodeURIComponent(roomType.hotel.city)}` }]
+      : []),
+    {
+      label: roomType.hotel.name,
+      to: `${ROUTES.hotelDetail(roomType.hotelId)}${searchQ ? `?${searchQ}` : ''}`,
+    },
+    { label: roomType.name },
+  ];
+
   const amenities = roomType.amenities?.map(a => a.amenity) ?? [];
   const features = [
     roomType.hasBalcony ? t('room.balcony') : null,
@@ -139,41 +155,10 @@ export default function RoomDetailPage() {
   return (
     <div className="mx-auto max-w-5xl px-margin-mobile py-6 md:px-8 md:py-10">
       <BackLink fallbackTo={ROUTES.hotelDetail(roomType.hotelId)} />
+      <Breadcrumb items={crumbs} className="mb-4" />
 
-      {/* ----- Gallery ----- */}
-      <div className="mt-4 grid gap-2 md:grid-cols-4 md:grid-rows-2">
-        <button
-          type="button"
-          onClick={() => {
-            setActiveImage(0);
-            setLightboxOpen(true);
-          }}
-          className="relative col-span-2 row-span-2 h-64 overflow-hidden rounded-2xl md:h-full"
-        >
-          <img
-            src={gallery[0]}
-            alt={roomType.name}
-            className="h-full w-full object-cover transition-transform hover:scale-105"
-          />
-        </button>
-        {gallery.slice(1, 5).map((url, i) => (
-          <button
-            key={url}
-            type="button"
-            onClick={() => {
-              setActiveImage(i + 1);
-              setLightboxOpen(true);
-            }}
-            className="hidden h-32 overflow-hidden rounded-2xl md:block"
-          >
-            <img
-              src={url}
-              alt={`${roomType.name} ${i + 2}`}
-              className="h-full w-full object-cover transition-transform hover:scale-105"
-            />
-          </button>
-        ))}
-      </div>
+      {/* ----- Gallery thích ứng theo số ảnh (SS-301) ----- */}
+      <RoomGallery images={gallery} altBase={roomType.name} className="mt-4" />
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_320px]">
         {/* ----- Nội dung ----- */}
@@ -344,24 +329,22 @@ export default function RoomDetailPage() {
 
             <Button
               size="lg"
-              className="mt-4 min-h-11 w-full bg-primary text-on-primary hover:bg-primary/90"
+              variant="cta"
+              className="mt-4 min-h-11 w-full"
               onClick={handleBook}
               disabled={hasStayQuote && (roomType.availableRooms ?? 0) === 0}
             >
               {t('room.bookNow')}
             </Button>
+
+            {/* Chính sách hủy (SS-302) */}
+            <CancellationLine
+              freeUntilHours={getFreeCancellationHours(hotelDetail?.settings)}
+              className="mt-3 justify-center"
+            />
           </div>
         </aside>
       </div>
-
-      <GalleryLightbox
-        open={lightboxOpen}
-        images={gallery}
-        index={activeImage}
-        onIndexChange={setActiveImage}
-        hotelName={roomType.hotel.name}
-        onClose={() => setLightboxOpen(false)}
-      />
     </div>
   );
 }

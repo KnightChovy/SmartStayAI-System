@@ -11,6 +11,14 @@
   "starHotel_other": "Khách sạn {{count}} sao",
   "starAria": "Hạng khách sạn: {{count}} trên 5 sao",
   "galleryAlt": "{{name}} — ảnh {{index}} trên {{total}}",
+  "noRatingYet": "Chưa có đánh giá",
+  "anchorNav": {
+    "overview": "Tổng quan",
+    "amenities": "Tiện ích",
+    "location": "Vị trí",
+    "rooms": "Phòng",
+    "reviews": "Đánh giá"
+  },
   "trust": {
     "verified": "Khách sạn đã xác minh",
     "securePayment": "Thanh toán an toàn",
@@ -43,14 +51,20 @@
     "deposit": "Tiền cọc",
     "depositValue": "{{amount}} thu khi nhận phòng, hoàn lại lúc trả phòng",
     "languages": "Ngôn ngữ phục vụ",
-    "tax": "Thuế",
-    "fee": "Phụ phí",
-    "parking": "Đỗ xe",
-    "internet": "Internet"
+    "important": "Quan trọng"
   },
   "nearby": {
     "title": "Địa điểm lân cận",
-    "minutes": "{{count}} phút"
+    "minutes": "{{count}} phút",
+    "categories": {
+      "attraction": "Điểm tham quan",
+      "landmark": "Địa danh nổi bật",
+      "beach": "Bãi biển",
+      "nature": "Thiên nhiên",
+      "restaurant": "Nhà hàng & quán ăn",
+      "publicTransport": "Giao thông công cộng",
+      "airport": "Sân bay"
+    }
   },
   "reviews": {
     "title": "Đánh giá của khách",
@@ -86,6 +100,8 @@
     "bookNow": "Đặt ngay",
     "inclTaxesFees": "Đã gồm {{amount}} thuế & phí",
     "noExtraTaxes": "Không thu thêm thuế & phí",
+    "freeCancellation": "Huỷ miễn phí trước {{hours}} giờ",
+    "nonRefundable": "Không hoàn tiền",
     "adults_one": "{{count}} người lớn",
     "adults_other": "{{count}} người lớn",
     "children_one": "{{count}} trẻ em",

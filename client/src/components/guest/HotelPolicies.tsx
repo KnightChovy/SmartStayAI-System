@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import {
+  AlertTriangle,
   Baby,
   Cigarette,
   CalendarRange,
@@ -15,7 +16,6 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { formatCurrency } from '@/utils/formatCurrency';
-import type { PolicyType } from '@/types/hotel-property.types';
 import type { HotelDetail, PetsPolicy } from '@/types/hotel.types';
 
 /** Map enum thú cưng của BE sang key i18n (literal để `t()` type-safe). */
@@ -25,15 +25,8 @@ const PETS_KEY = {
   on_request: 'policies.petsOnRequest',
 } as const satisfies Record<PetsPolicy, string>;
 
-/** Nhãn cho từng loại chính sách trong bảng `hotel_policies` (trước đây hiện enum thô). */
-const POLICY_TYPE_KEY = {
-  cancellation: 'policies.cancellation',
-  tax: 'policies.tax',
-  fee: 'policies.fee',
-  parking: 'policies.parking',
-  internet: 'policies.internet',
-  deposit: 'policies.deposit',
-} as const satisfies Record<PolicyType, string>;
+/** Chuẩn hoá để so trùng nội dung giữa cột scalar và bảng `hotel_policies`. */
+const norm = (v: string) => v.trim().toLowerCase();
 
 interface HotelPoliciesProps {
   hotel: HotelDetail;
@@ -46,11 +39,13 @@ export default function HotelPolicies({ hotel, compact = false }: HotelPoliciesP
   const { t } = useTranslation('hotel');
   const rows: { icon: typeof Clock; label: string; value: string }[] = [];
 
-  // Cùng một chính sách có thể tồn tại ở CẢ cột scalar của Hotel lẫn bảng `hotel_policies`
-  // (vd huỷ phòng / tiền cọc). Bảng chi tiết hơn (có mô tả + mức phí) nên nó thắng — nếu không
-  // khách sẽ thấy đúng một chính sách hiện hai lần.
+  // Cùng một nội dung có thể tồn tại ở CẢ cột scalar của Hotel lẫn bảng `hotel_policies`
+  // (vd chính sách huỷ). Từ migration `split_policy_and_charge`, bảng chỉ còn văn bản nên
+  // không còn `policyType` để đối chiếu — chỉ có thể khử trùng bằng chính nội dung.
   const extra = hotel.policies ?? [];
-  const detailedTypes = new Set(extra.map(p => p.policyType));
+  const detailedTexts = new Set(
+    extra.flatMap(p => [norm(p.title), p.description ? norm(p.description) : ''])
+  );
 
   if (hotel.checkInTime || hotel.checkOutTime) {
     rows.push({
@@ -64,7 +59,7 @@ export default function HotelPolicies({ hotel, compact = false }: HotelPoliciesP
         .join(' · '),
     });
   }
-  if (hotel.cancellationPolicy && !detailedTypes.has('cancellation')) {
+  if (hotel.cancellationPolicy && !detailedTexts.has(norm(hotel.cancellationPolicy))) {
     rows.push({
       icon: ShieldCheck,
       label: t('policies.cancellation'),
@@ -99,11 +94,7 @@ export default function HotelPolicies({ hotel, compact = false }: HotelPoliciesP
       value: t('policies.maxStayValue', { count: hotel.maxLengthOfStay }),
     });
   }
-  if (
-    hotel.securityDepositAmount != null &&
-    Number(hotel.securityDepositAmount) > 0 &&
-    !detailedTypes.has('deposit')
-  ) {
+  if (hotel.securityDepositAmount != null && Number(hotel.securityDepositAmount) > 0) {
     rows.push({
       icon: Wallet,
       label: t('policies.deposit'),
@@ -163,28 +154,32 @@ export default function HotelPolicies({ hotel, compact = false }: HotelPoliciesP
             </div>
           </div>
         ))}
-        {extra.map(p => {
-          // `amount` của chính sách (phí/cọc) trước đây bị bỏ qua — khách chỉ thấy mô tả mà
-          // không thấy phải trả bao nhiêu. Ghép mô tả + số tiền (đ hoặc %) thành một dòng.
-          const amount =
-            p.amount != null && Number(p.amount) > 0
-              ? p.isPercentage
-                ? `${Number(p.amount)}%`
-                : formatCurrency(p.amount)
-              : null;
-          const detail = [p.description, amount].filter(Boolean).join(' · ');
-          return (
-            <div key={p.id} className="flex gap-3 p-4 sm:gap-4">
+        {/* Điều khoản văn bản từ bảng `hotel_policies` — BE đã sort `important` lên đầu. */}
+        {extra.map(p => (
+          <div key={p.id} className="flex gap-3 p-4 sm:gap-4">
+            {p.important ? (
+              <AlertTriangle
+                className="mt-0.5 size-4 shrink-0 text-tertiary"
+                aria-hidden="true"
+              />
+            ) : (
               <Info className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
-              <div className="min-w-0">
-                <dt className="text-sm font-semibold text-on-surface">
-                  {t(POLICY_TYPE_KEY[p.policyType])}
-                </dt>
-                <dd className="mt-0.5 text-sm text-on-surface-variant">{detail || '—'}</dd>
-              </div>
+            )}
+            <div className="min-w-0">
+              <dt className="flex flex-wrap items-center gap-2 text-sm font-semibold text-on-surface">
+                {p.title}
+                {p.important && (
+                  <span className="rounded-full bg-tertiary-container px-2 py-0.5 text-[11px] font-semibold text-on-tertiary-container">
+                    {t('policies.important')}
+                  </span>
+                )}
+              </dt>
+              {p.description && (
+                <dd className="mt-0.5 text-sm text-on-surface-variant">{p.description}</dd>
+              )}
             </div>
-          );
-        })}
+          </div>
+        ))}
       </dl>
     </section>
   );

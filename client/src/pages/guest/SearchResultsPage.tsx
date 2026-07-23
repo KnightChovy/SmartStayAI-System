@@ -110,10 +110,7 @@ export default function SearchResultsPage() {
                     />
                   </div>
                 </label>
-                <Button
-                  type="submit"
-                  className="min-h-11 w-full bg-on-surface text-white hover:bg-primary"
-                >
+                <Button type="submit" variant="cta" className="min-h-11 w-full">
                   <Search className="size-4" />
                   {t('common:search')}
                 </Button>

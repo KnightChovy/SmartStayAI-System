@@ -14,7 +14,7 @@ export default function WeekendDeals() {
   const { t } = useTranslation('home');
   const { format } = useMoney();
   const [favorites, setFavorites] = useState<string[]>([]);
-  const { data, isLoading } = useSearchHotels({ limit: 6 });
+  const { data, isLoading } = useSearchHotels({ limit: 8 });
 
   // Khách sạn thật đang mở bán — thay cho danh sách deal hardcode (BE chưa có API khuyến mãi public).
   const hotels = data?.results ?? [];
@@ -47,14 +47,14 @@ export default function WeekendDeals() {
           {t('weekend.viewAll')}
         </Button>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {isLoading
-          ? Array.from({ length: 3 }).map((_, i) => (
+          ? Array.from({ length: 4 }).map((_, i) => (
               <div
                 key={i}
                 className="bg-surface-container-lowest rounded-3xl overflow-hidden"
               >
-                <div className="h-64 bg-surface-container animate-pulse" />
+                <div className="h-48 bg-surface-container animate-pulse" />
                 <div className="p-6 space-y-3">
                   <div className="h-3 w-20 bg-surface-container animate-pulse rounded" />
                   <div className="h-5 w-40 bg-surface-container animate-pulse rounded" />
@@ -69,9 +69,9 @@ export default function WeekendDeals() {
                 <div
                   key={hotel.id}
                   onClick={() => navigate(ROUTES.hotelDetail(hotel.id))}
-                  className="bg-surface-container-lowest rounded-3xl overflow-hidden premium-shadow group cursor-pointer border border-outline-variant/10 hover:scale-[1.01] transition-transform duration-300"
+                  className="flex h-full flex-col bg-surface-container-lowest rounded-3xl overflow-hidden premium-shadow group cursor-pointer border border-outline-variant/10 hover:scale-[1.01] transition-transform duration-300"
                 >
-                  <div className="relative h-64 overflow-hidden">
+                  <div className="relative h-48 overflow-hidden shrink-0">
                     <img
                       alt={hotel.name}
                       loading="lazy"
@@ -103,7 +103,7 @@ export default function WeekendDeals() {
                       </div>
                     ) : null}
                   </div>
-                  <div className="p-6">
+                  <div className="flex flex-1 flex-col p-5">
                     <div className="flex justify-between items-start mb-2">
                       <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest font-be-vietnam line-clamp-1">
                         {[hotel.city, hotel.country].filter(Boolean).join(', ')}
@@ -112,7 +112,7 @@ export default function WeekendDeals() {
                     <h4 className="font-be-vietnam font-semibold text-lg text-on-surface mb-4 line-clamp-1">
                       {hotel.name}
                     </h4>
-                    <div className="flex items-baseline gap-1">
+                    <div className="mt-auto flex items-baseline gap-1">
                       <span className="text-sm text-on-surface-variant font-be-vietnam">
                         {t('weekend.from')}
                       </span>

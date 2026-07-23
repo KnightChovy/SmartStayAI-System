@@ -6,7 +6,22 @@
     "destinationPlaceholder": "Bạn muốn đi đâu?",
     "checkIn": "Nhận phòng",
     "checkOut": "Trả phòng",
-    "guests": "Số khách"
+    "guests": "Số khách",
+    "searchButton": "Tìm phòng",
+    "dealsCta": "Xem ưu đãi hôm nay",
+    "destinationSearching": "Đang tìm điểm đến…",
+    "destinationEmpty": "Không có gợi ý phù hợp",
+    "adults": "Người lớn",
+    "children": "Trẻ em",
+    "childrenHint": "0–17 tuổi",
+    "rooms": "Phòng",
+    "adultsCount_one": "{{count}} người lớn",
+    "adultsCount_other": "{{count}} người lớn",
+    "childrenCount_one": "{{count}} trẻ em",
+    "childrenCount_other": "{{count}} trẻ em",
+    "roomsCount_one": "{{count}} phòng",
+    "roomsCount_other": "{{count}} phòng",
+    "addDate": "Thêm ngày"
   },
   "whyChoose": {
     "title": "Vì sao chọn SmartStay?",
@@ -60,5 +75,9 @@
     "title": "Điểm đến phổ biến tại Việt Nam",
     "stays_one": "{{count}} chỗ nghỉ",
     "stays_other": "{{count}} chỗ nghỉ"
+  },
+  "testimonials": {
+    "title": "Khách hàng nói gì về SmartStay",
+    "subtitle": "Trải nghiệm thật từ những du khách đã đặt phòng trên sàn."
   }
 }

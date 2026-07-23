@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import {
@@ -51,12 +51,31 @@ export default function Navbar() {
   const { mutateAsync: logout, isPending: isLoggingOut } = useLogout();
   const [menuOpen, setMenuOpen] = useState(false);
   const closeMenu = () => setMenuOpen(false);
+  const navRef = useRef<HTMLElement>(null);
 
   const initials = (user?.fullName || user?.email || 'US')
     .slice(0, 1)
     .toUpperCase();
   const dashboardPath = user ? getLandingPathForRole(user.role) : '/';
   const hasDashboard = dashboardPath !== '/';
+
+  /**
+   * Công bố chiều cao thật của navbar ra `--app-navbar-h` để các thanh sticky bên dưới
+   * (vd `AnchorNav`) neo đúng mép dưới của nó. Không hardcode được: chiều cao là `py-4` cộng
+   * phần tử cao nhất trong hàng (nút CTA / avatar) nên vượt 64px của `top-16`, và còn đổi theo
+   * breakpoint — lệch bao nhiêu là thanh bên dưới chui xuống dưới navbar (z-index thấp hơn)
+   * và bị cắt mất bấy nhiêu.
+   */
+  useEffect(() => {
+    const el = navRef.current;
+    if (!el) return;
+    const publish = () =>
+      document.documentElement.style.setProperty('--app-navbar-h', `${el.offsetHeight}px`);
+    publish();
+    const observer = new ResizeObserver(publish);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   // Mở menu thì khoá cuộn nền (drawer chiếm toàn màn hình trên mobile).
   useEffect(() => {
@@ -69,7 +88,10 @@ export default function Navbar() {
   }, [menuOpen]);
 
   return (
-    <nav className="bg-surface/80 backdrop-blur-xl sticky top-0 z-50 w-full border-b border-outline-variant/30">
+    <nav
+      ref={navRef}
+      className="bg-surface/80 backdrop-blur-xl sticky top-0 z-50 w-full border-b border-outline-variant/30"
+    >
       <div className="max-w-7xl mx-auto px-margin-mobile md:px-8 py-4 flex justify-between items-center">
         <Link
           to="/"
