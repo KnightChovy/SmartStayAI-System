@@ -6,7 +6,21 @@
     "destinationPlaceholder": "Where are you going?",
     "checkIn": "Check-in",
     "checkOut": "Check-out",
-    "guests": "Guests"
+    "guests": "Guests",
+    "searchButton": "Search",
+    "dealsCta": "See today's deals",
+    "destinationSearching": "Searching destinations…",
+    "destinationEmpty": "No matching suggestions",
+    "adults": "Adults",
+    "children": "Children",
+    "childrenHint": "Ages 0–17",
+    "rooms": "Rooms",
+    "adultsCount_one": "{{count}} adult",
+    "adultsCount_other": "{{count}} adults",
+    "childrenCount_one": "{{count}} child",
+    "childrenCount_other": "{{count}} children",
+    "roomsCount_one": "{{count}} room",
+    "roomsCount_other": "{{count}} rooms"
   },
   "whyChoose": {
     "title": "Why choose SmartStay?",
@@ -60,5 +74,9 @@
     "title": "Popular destinations in Vietnam",
     "stays_one": "{{count}} place to stay",
     "stays_other": "{{count}} places to stay"
+  },
+  "testimonials": {
+    "title": "What guests say about SmartStay",
+    "subtitle": "Real experiences from travelers who booked on the platform."
   }
 }
