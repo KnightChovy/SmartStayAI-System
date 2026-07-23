@@ -129,6 +129,7 @@ export function AdminTable({
                   key={header}
                   className={cn(
                     'whitespace-nowrap px-4 py-4 first:pl-5 last:pr-5',
+                    index > 0 && 'border-l border-slate-200/80',
                     index === headers.length - 1 &&
                       renderLastColumn &&
                       'text-right'
@@ -161,7 +162,10 @@ export function AdminTable({
                       return (
                         <td
                           key={`${row[0]}-${rowIdx}-${idx}`}
-                          className="px-4 py-3.5 text-right first:pl-5 last:pr-5"
+                          className={cn(
+                            'px-4 py-3.5 text-right first:pl-5 last:pr-5',
+                            idx > 0 && 'border-l border-slate-200/80'
+                          )}
                         >
                           {renderLastColumn(row)}
                         </td>
@@ -170,8 +174,11 @@ export function AdminTable({
 
                     return (
                       <td
-                        key={`${row[0]}-${rowIdx}-${idx}`}
-                        className="whitespace-nowrap px-4 py-3.5 text-sm first:pl-5 last:pr-5"
+                          key={`${row[0]}-${rowIdx}-${idx}`}
+                          className={cn(
+                            'whitespace-nowrap px-4 py-3.5 text-sm first:pl-5 last:pr-5',
+                            idx > 0 && 'border-l border-slate-200/80'
+                          )}
                       >
                         {renderCell(
                           headers[idx] ?? '',
