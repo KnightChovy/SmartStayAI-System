@@ -1,5 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/cn';
+
+/** Khoảng thở giữa mép dưới thanh neo và tiêu đề section khi cuộn tới. */
+const SCROLL_GAP = 8;
 
 export interface AnchorSection {
   id: string;
@@ -17,6 +20,36 @@ interface AnchorNavProps {
  */
 export default function AnchorNav({ sections }: AnchorNavProps) {
   const [activeId, setActiveId] = useState<string>(sections[0]?.id ?? '');
+  const navRef = useRef<HTMLElement>(null);
+
+  /**
+   * Công bố `--app-anchor-offset` = mép dưới của thanh neo khi đã dính (navbar + chính nó).
+   * Các section dùng nó làm `scroll-margin-top` nên cuộn tới đâu tiêu đề cũng nằm ngay dưới
+   * hai thanh sticky, thay vì bị che như khi hardcode `scroll-mt-28`.
+   */
+  useEffect(() => {
+    const el = navRef.current;
+    if (!el) return;
+    const publish = () => {
+      // `top` đã resolve ra px (từ --app-navbar-h) kể cả khi thanh chưa dính.
+      const stickyTop = parseFloat(getComputedStyle(el).top) || 0;
+      document.documentElement.style.setProperty(
+        '--app-anchor-offset',
+        `${stickyTop + el.offsetHeight + SCROLL_GAP}px`
+      );
+    };
+    publish();
+    const observer = new ResizeObserver(publish);
+    observer.observe(el);
+    // Navbar cao lên/thấp xuống theo breakpoint mà thanh neo không đổi kích thước ⇒ RO không bắn.
+    window.addEventListener('resize', publish);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', publish);
+      // Trang khác không có thanh neo ⇒ đừng để lại offset cũ.
+      document.documentElement.style.removeProperty('--app-anchor-offset');
+    };
+  }, []);
 
   useEffect(() => {
     const els = sections
@@ -45,8 +78,12 @@ export default function AnchorNav({ sections }: AnchorNavProps) {
 
   return (
     <nav
+      ref={navRef}
       aria-label="Section navigation"
-      className="sticky top-16 z-30 -mx-margin-mobile mb-2 border-b border-outline-variant/30 bg-surface/90 px-margin-mobile backdrop-blur md:mx-0 md:px-0"
+      // Neo theo chiều cao THẬT của navbar: `top-16` (64px) thấp hơn navbar nên mép trên của
+      // thanh này chui xuống dưới navbar (z-50 > z-30) và bị cắt mất khi cuộn.
+      style={{ top: 'var(--app-navbar-h, 4rem)' }}
+      className="sticky z-30 -mx-margin-mobile mb-2 border-b border-outline-variant/30 bg-surface/90 px-margin-mobile backdrop-blur md:mx-0 md:px-0"
     >
       <ul className="flex gap-1 overflow-x-auto py-2">
         {sections.map(s => (

@@ -20,7 +20,8 @@
     "childrenCount_one": "{{count}} child",
     "childrenCount_other": "{{count}} children",
     "roomsCount_one": "{{count}} room",
-    "roomsCount_other": "{{count}} rooms"
+    "roomsCount_other": "{{count}} rooms",
+    "addDate": "Add date"
   },
   "whyChoose": {
     "title": "Why choose SmartStay?",

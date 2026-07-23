@@ -30,7 +30,8 @@ export default function StickyBookingBar({ minPrice, onSelectRoom }: StickyBooki
         </div>
         <Button
           size="lg"
-          className="min-h-12 shrink-0 bg-primary text-on-primary hover:bg-primary/90"
+          variant="cta"
+          className="min-h-12 shrink-0"
           onClick={onSelectRoom}
         >
           {t('room.bookNow')}

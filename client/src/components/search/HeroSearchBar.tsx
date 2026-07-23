@@ -1,21 +1,29 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { Search, Users } from 'lucide-react';
+import { MapPin, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import DateRangePicker from '@/components/shared/DateRangePicker';
+import { cn } from '@/lib/cn';
+import { toDateInputValue } from '@/utils/formatDate';
+import { applyCheckIn, minCheckOut } from '@/utils/stayDates';
 import DestinationAutocomplete from './DestinationAutocomplete';
+import DateSegment from './DateSegment';
 import GuestsPopover, { type GuestSelection } from './GuestsPopover';
+import { SearchSegment } from './SearchSegment';
+import { SEGMENT_DIVIDER_CLASS } from './segment-styles';
 
 /**
- * Thanh tìm kiếm hero (SS-001) — tách khỏi Hero.tsx. Gồm 3 phần: autocomplete điểm đến,
- * chọn khoảng ngày (tái dùng DateRangePicker shared), bộ chọn khách (Người lớn/Trẻ em/Phòng).
- * Submit điều hướng `/search` mang đủ params: city, checkIn, checkOut, adults, children, rooms
- * + `guests` (= adults + children) để endpoint search hiện tại vẫn dùng được ngay.
+ * Thanh tìm kiếm hero (SS-001). Bốn ô dùng CHUNG khung `SearchSegment` (nhãn viết hoa nhỏ +
+ * giá trị), phân cách bằng gạch mảnh, cả thanh chỉ có MỘT lớp viền — không còn ô có viền lồng
+ * trong thanh có viền như bản mượn `DateRangePicker` của form.
+ *
+ * Submit điều hướng `/search` mang đủ params: city, checkIn, checkOut, adults, children,
+ * rooms + `guests` (= adults + children) để endpoint search hiện tại vẫn dùng được ngay.
  */
 export default function HeroSearchBar() {
   const navigate = useNavigate();
   const { t } = useTranslation('home');
+  const destinationId = useId();
 
   const [city, setCity] = useState('');
   const [checkIn, setCheckIn] = useState('');
@@ -25,6 +33,8 @@ export default function HeroSearchBar() {
     children: 0,
     rooms: 1,
   });
+
+  const today = toDateInputValue(new Date());
 
   const submit = () => {
     const params = new URLSearchParams();
@@ -48,52 +58,63 @@ export default function HeroSearchBar() {
         e.preventDefault();
         submit();
       }}
-      className="flex flex-col gap-3 rounded-3xl border border-outline-variant/20 bg-white p-3 shadow-2xl md:flex-row md:items-end md:gap-2 md:rounded-[2rem] md:p-3"
+      className="flex flex-col rounded-[28px] border border-outline-variant/20 bg-white p-2 shadow-[0_20px_50px_-20px_rgba(15,23,42,0.45)] md:flex-row md:items-stretch md:rounded-full md:p-1.5 md:pl-2"
     >
-      {/* Điểm đến */}
-      <div className="flex flex-1 flex-col px-4 py-2 md:flex-[1.4]">
-        <label className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
-          {t('hero.destination')}
-        </label>
+      <SearchSegment
+        label={t('hero.destination')}
+        icon={MapPin}
+        htmlFor={destinationId}
+        className="md:flex-[1.5]"
+      >
         <DestinationAutocomplete
+          id={destinationId}
           value={city}
           onChange={setCity}
           placeholder={t('hero.destinationPlaceholder')}
+          // Cùng cỡ chữ với giá trị của các ô còn lại (`segmentValueClass`).
+          inputClassName="mt-0 text-[15px] font-semibold placeholder:text-outline/60"
         />
+      </SearchSegment>
+
+      <DateSegment
+        label={t('hero.checkIn')}
+        value={checkIn}
+        onChange={value => {
+          // Ngày trả luôn phải sau ngày nhận — chốt ngay thay vì để khách bấm Tìm rồi báo lỗi.
+          const range = applyCheckIn(value, checkOut);
+          setCheckIn(range.checkIn);
+          setCheckOut(range.checkOut);
+        }}
+        min={today}
+        placeholder={t('hero.addDate')}
+        className={cn('md:flex-1', SEGMENT_DIVIDER_CLASS)}
+      />
+
+      <DateSegment
+        label={t('hero.checkOut')}
+        value={checkOut}
+        onChange={setCheckOut}
+        min={minCheckOut(checkIn, today)}
+        placeholder={t('hero.addDate')}
+        className={cn('md:flex-1', SEGMENT_DIVIDER_CLASS)}
+      />
+
+      <GuestsPopover
+        value={guests}
+        onChange={setGuests}
+        className={cn('md:flex-[1.2]', SEGMENT_DIVIDER_CLASS)}
+      />
+
+      <div className="mt-2 flex md:mt-0 md:items-center md:pl-2">
+        <Button
+          type="submit"
+          variant="cta"
+          className="h-12 w-full gap-2 rounded-2xl text-[15px] md:w-auto md:rounded-full md:px-7"
+        >
+          <Search className="size-4.5" aria-hidden="true" />
+          {t('hero.searchButton')}
+        </Button>
       </div>
-
-      <div className="hidden w-px self-stretch bg-outline-variant/30 md:block" />
-
-      {/* Ngày nhận/trả */}
-      <div className="flex-1 px-4 py-1 md:flex-[1.8]">
-        <DateRangePicker
-          checkIn={checkIn}
-          checkOut={checkOut}
-          onChange={range => {
-            setCheckIn(range.checkIn);
-            setCheckOut(range.checkOut);
-          }}
-        />
-      </div>
-
-      <div className="hidden w-px self-stretch bg-outline-variant/30 md:block" />
-
-      {/* Khách */}
-      <div className="flex flex-1 flex-col px-4 py-2">
-        <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
-          <Users className="size-3" /> {t('hero.guests')}
-        </span>
-        <GuestsPopover value={guests} onChange={setGuests} className="mt-1.5" />
-      </div>
-
-      <Button
-        type="submit"
-        aria-label={t('hero.searchButton')}
-        className="h-14 w-full gap-2 rounded-2xl border-none bg-on-surface text-white shadow-lg transition-all hover:bg-primary md:w-auto md:px-7"
-      >
-        <Search className="size-5" />
-        <span className="md:hidden lg:inline">{t('hero.searchButton')}</span>
-      </Button>
     </form>
   );
 }

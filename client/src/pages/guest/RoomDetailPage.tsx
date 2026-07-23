@@ -329,7 +329,8 @@ export default function RoomDetailPage() {
 
             <Button
               size="lg"
-              className="mt-4 min-h-11 w-full bg-primary text-on-primary hover:bg-primary/90"
+              variant="cta"
+              className="mt-4 min-h-11 w-full"
               onClick={handleBook}
               disabled={hasStayQuote && (roomType.availableRooms ?? 0) === 0}
             >

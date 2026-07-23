@@ -268,7 +268,7 @@ export default function HotelDetailPage() {
         <AnchorNav sections={sections} />
 
         {/* Header */}
-        <div id="overview" className="mt-6 scroll-mt-28">
+        <div id="overview" className="mt-6 scroll-mt-[var(--app-anchor-offset,7rem)]">
           <h1 className="font-be-vietnam text-3xl font-bold text-on-surface">
             {hotel?.name ?? 'Hotel'}
           </h1>
@@ -339,7 +339,7 @@ export default function HotelDetailPage() {
 
         {/* Hỗ trợ ra quyết định: tiện nghi → chính sách → vị trí, trước khi khách chọn phòng */}
         {hotel?.amenities && (
-          <div id="amenities" className="scroll-mt-28">
+          <div id="amenities" className="scroll-mt-[var(--app-anchor-offset,7rem)]">
             <HotelAmenities amenities={hotel.amenities.map(a => a.amenity)} />
           </div>
         )}
@@ -347,7 +347,7 @@ export default function HotelDetailPage() {
 
         {/* Map — toạ độ từ DB, hoặc geocode từ địa chỉ khi DB chưa có lat/lng */}
         {hasLocation ? (
-          <section id="location" className="mt-6 scroll-mt-28">
+          <section id="location" className="mt-6 scroll-mt-[var(--app-anchor-offset,7rem)]">
             <h2 className="mb-3 font-be-vietnam text-2xl font-bold text-on-surface">
               {t('location')}
             </h2>
@@ -366,7 +366,7 @@ export default function HotelDetailPage() {
         {/* Stay picker */}
         <div
           id="stay-picker"
-          className="mt-8 flex flex-col gap-4 rounded-2xl border border-outline-variant/30 bg-surface p-5 md:flex-row md:items-end"
+          className="mt-8 flex scroll-mt-[var(--app-anchor-offset,7rem)] flex-col gap-4 rounded-2xl border border-outline-variant/30 bg-surface p-5 md:flex-row md:items-end"
         >
           <DateRangePicker
             checkIn={checkIn}
@@ -383,7 +383,7 @@ export default function HotelDetailPage() {
         ) : null}
 
         {/* Room types */}
-        <div id="rooms" className="mt-10 flex scroll-mt-28 flex-wrap items-center justify-between gap-3">
+        <div id="rooms" className="mt-10 flex scroll-mt-[var(--app-anchor-offset,7rem)] flex-wrap items-center justify-between gap-3">
           <h2 className="font-be-vietnam text-2xl font-bold text-on-surface">
             {t('availableRooms')}
           </h2>
@@ -432,7 +432,7 @@ export default function HotelDetailPage() {
           <div className="mt-6">
             <Button
               size="lg"
-              className="bg-on-surface text-white hover:bg-primary"
+              variant="cta"
               onClick={() => document.getElementById('stay-picker')?.scrollIntoView({ behavior: 'smooth' })}
             >
               {t('pickDates')}
@@ -441,7 +441,7 @@ export default function HotelDetailPage() {
         )}
 
         {/* Bằng chứng xã hội — chốt lại sau khi khách đã xem phòng */}
-        <div id="reviews" className="scroll-mt-28">
+        <div id="reviews" className="scroll-mt-[var(--app-anchor-offset,7rem)]">
           <HotelReviews hotelId={hotelId} />
         </div>
       </div>

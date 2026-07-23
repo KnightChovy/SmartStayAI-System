@@ -6,6 +6,8 @@ import type { VietmapSuggestion } from '@/types/vietnam-geo.types';
 import { cn } from '@/lib/cn';
 
 interface DestinationAutocompleteProps {
+  /** Id của ô nhập — để `<label>` bên ngoài liên kết đúng (a11y). */
+  id?: string;
   /** Giá trị text điểm đến (city) — controlled. */
   value: string;
   onChange: (value: string) => void;
@@ -15,13 +17,8 @@ interface DestinationAutocompleteProps {
   inputClassName?: string;
 }
 
-/**
- * Ô nhập điểm đến có gợi ý (SS-001). Nguồn gợi ý: VietMap autocomplete qua
- * `vietnam-geo.service` — dùng làm fallback cho tới khi BE có `/destinations/suggest`.
- * Debounce 250ms; điều hướng bàn phím ↑/↓/Enter/Esc. Vẫn cho gõ tự do (submit form
- * dùng nguyên text đang nhập) nên không phụ thuộc bắt buộc vào danh sách gợi ý.
- */
 export default function DestinationAutocomplete({
+  id,
   value,
   onChange,
   onSelect,
@@ -63,7 +60,10 @@ export default function DestinationAutocomplete({
   // Đóng dropdown khi bấm ra ngoài.
   useEffect(() => {
     const onClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
+      ) {
         setOpen(false);
       }
     };
@@ -80,7 +80,8 @@ export default function DestinationAutocomplete({
     onSelect?.(picked);
   };
 
-  const showList = open && (loading || suggestions.length > 0 || value.trim().length >= 2);
+  const showList =
+    open && (loading || suggestions.length > 0 || value.trim().length >= 2);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (!showList) return;
@@ -103,6 +104,7 @@ export default function DestinationAutocomplete({
   return (
     <div ref={containerRef} className="relative w-full">
       <input
+        id={id}
         type="text"
         role="combobox"
         aria-expanded={showList}
@@ -134,7 +136,8 @@ export default function DestinationAutocomplete({
         >
           {loading && suggestions.length === 0 ? (
             <li className="flex items-center gap-2 px-3 py-3 text-sm text-on-surface-variant">
-              <Loader2 className="size-4 animate-spin" /> {t('hero.destinationSearching')}
+              <Loader2 className="size-4 animate-spin" />{' '}
+              {t('hero.destinationSearching')}
             </li>
           ) : suggestions.length === 0 ? (
             <li className="px-3 py-3 text-sm text-on-surface-variant">
@@ -152,7 +155,9 @@ export default function DestinationAutocomplete({
                   onClick={() => pick(s)}
                   className={cn(
                     'flex w-full items-start gap-2.5 rounded-xl px-3 py-2.5 text-left transition-colors',
-                    i === activeIndex ? 'bg-primary/10' : 'hover:bg-surface-container'
+                    i === activeIndex
+                      ? 'bg-primary/10'
+                      : 'hover:bg-surface-container'
                   )}
                 >
                   <MapPin className="mt-0.5 size-4 shrink-0 text-primary" />

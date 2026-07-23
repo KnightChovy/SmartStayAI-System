@@ -213,17 +213,15 @@ export default function RoomTypeCard({
 
           <div className="flex items-center gap-2">
             {detailHref && (
-              <Link
-                to={detailHref}
-                className="inline-flex min-h-11 items-center rounded-xl px-3 text-sm font-semibold text-primary hover:bg-primary/5 hover:underline"
-              >
-                {t('room.viewDetails')}
-              </Link>
+              <Button asChild size="lg" variant="cta-outline" className="min-h-11">
+                <Link to={detailHref}>{t('room.viewDetails')}</Link>
+              </Button>
             )}
             {selectable && (
               <Button
                 size="lg"
-                className="min-h-11 bg-primary text-on-primary hover:bg-primary/90"
+                variant="cta"
+                className="min-h-11"
                 onClick={() => onSelect?.(roomType)}
               >
                 {t('room.bookNow')}

@@ -50,15 +50,18 @@ export default function LoyaltyBanner() {
           </div>
         </div>
         <div className="relative z-10 flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
+          {/* Nút chính trước đây là `bg-primary` (#5f5e5b) đặt trên nền `inverse-surface`
+              (#313030) — hai màu xám sát nhau, contrast ~1.4:1 nên nút gần như tàng hình. */}
           <Button
             onClick={() => navigate('/account/loyalty')}
-            className="px-10 py-5 bg-primary text-white font-semibold rounded-2xl hover:bg-on-primary-container transition-all shadow-lg text-center cursor-pointer font-be-vietnam text-sm border-none h-auto"
+            variant="cta"
+            className="h-auto rounded-2xl px-10 py-5 font-be-vietnam text-sm shadow-lg"
           >
             {t('loyalty.joinRewards')}
           </Button>
           <Button
             onClick={() => navigate('/deals')}
-            className="px-10 py-5 bg-white/10 backdrop-blur-md border border-outline text-white font-semibold rounded-2xl hover:bg-white/20 transition-all text-center cursor-pointer font-be-vietnam text-sm h-auto"
+            className="px-10 py-5 bg-white/10 backdrop-blur-md border border-white/40 text-white font-semibold rounded-2xl hover:bg-white/20 transition-all text-center cursor-pointer font-be-vietnam text-sm h-auto"
           >
             {t('loyalty.learnMore')}
           </Button>

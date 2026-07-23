@@ -6,6 +6,46 @@ This file tracks the accomplished tasks, resolved user requests, and visual/func
 
 ## Completed Tasks Checklist
 
+### July 23, 2026 (continued 7)
+
+- [x] **Guest · CTA đặt phòng đổi sang màu nhấn `premium-gold` — nút chính hết chìm nghỉm**:
+  - **Nguyên nhân**: mọi CTA guest đang là `bg-primary` = **#5f5e5b (xám taupe)** hoặc `bg-on-surface` (gần đen). Bảng màu dự án gần như **toàn trung tính** nên nút không có gì nổi hơn phần còn lại. Nặng nhất là `LoyaltyBanner`: nút `bg-primary` (#5f5e5b) đặt trên nền `inverse-surface` (#313030) ⇒ contrast **~1.4:1**, nhìn như một mảng xám chứ không ra nút.
+  - **Thêm 2 variant vào `ui/button.tsx`** (một định nghĩa dùng chung, không rải class ở 10 chỗ): `cta` (nền `premium-gold` — token thương hiệu **đã có sẵn**, trước chỉ dùng cho sao/badge, chưa từng dùng làm nền nút) và `cta-outline` (viền vàng, không tô nền) cho hành động phụ đứng cạnh.
+  - **Chữ trên nền vàng để MÀU TỐI, không phải trắng**: #d4af37 với chữ trắng chỉ đạt contrast **2.0:1** (trượt AA), với `on-surface` (#1c1b1b) đạt **8.5:1**. Cùng lý do, nhãn "View details" ở `HotelCard` dùng `text-on-surface` trên nền `premium-gold/20` chứ không dùng `text-premium-gold` như các badge sẵn có.
+  - **Áp cho hành động ĐẨY KHÁCH ĐI TIẾP**: Tìm phòng (hero + trang kết quả), Chọn ngày (hotel detail), Đặt ngay (`RoomTypeCard`, `StickyBookingBar`, `RoomDetailPage`, `RoomCompareTable`), Continue → Review → **Xác nhận & Thanh toán** (checkout), Join Rewards (`LoyaltyBanner`). "Xem chi tiết phòng" dùng `cta-outline` để không tranh chấp với "Đặt ngay" trên cùng một thẻ.
+  - **CỐ Ý KHÔNG đổi** các nút điều hướng/hậu giao dịch (Quay lại khách sạn, Xem đơn đặt, Thử lại, back ở checkout): tô vàng tất cả thì không còn cái nào nổi — thứ bậc mới là thứ làm nút bắt mắt, không phải màu.
+  - **Verify**: `tsc` **0 lỗi**; `eslint` trên **toàn bộ file đã sửa** sạch, chỉ còn **1 lỗi có sẵn** ở `ui/button.tsx` (`react-refresh/only-export-components` do `export { Button, buttonVariants }` — đã kiểm bằng cách lint chính bản HEAD, lỗi y hệt); `npm run build` **pass**; CSS build ra có `.bg-premium-gold` và hover `color-mix(in oklch,var(--color-premium-gold),black 12%)`. ⚠️ Chưa drive được browser ⇒ bạn xem lại tổng thể sắc vàng trên từng trang.
+
+### July 23, 2026 (continued 6)
+
+- [x] **Guest · Dropdown gợi ý điểm đến bị cắt cụt ở mép dưới Hero**:
+  - **Không phải bị đè z-index mà bị CLIP**: `<section>` của `Hero` có `overflow-hidden`, mà danh sách gợi ý là `absolute top-full` đổ **xuống quá mép dưới section** ⇒ bị cắt ngang giữa dòng (thấy rõ ở dòng "Hà Tĩnh" chỉ hiện nửa). Sửa z-index sẽ không ăn thua vì phần bị cắt không được vẽ ra.
+  - **Đổi sang `overflow-x-clip`**: vẫn chặn tràn ngang (mục đích thật của `overflow-hidden` ở đây là ảnh nền `absolute inset-0`), nhưng trục Y trở lại `visible` nên dropdown đổ ra ngoài được. Cố ý dùng `clip` chứ không phải `hidden`: theo CSS, `overflow: visible` đi kèm `hidden` ở trục kia sẽ **bị ép thành `auto`** (sinh thanh cuộn thừa), riêng `clip` là ngoại lệ không ép.
+  - Dropdown vẫn nổi trên khối TrustBar phía dưới: nó là phần tử **có position + z-index** nên vẽ ở lớp sau, còn nền TrustBar là block **không position** nên vẽ ở lớp trước — không cần thêm z-index nào.
+  - **Verify**: `tsc` **0 lỗi**, `eslint` sạch, `npm run build` **pass**, CSS build ra có `overflow-x-clip{overflow-x:clip}`.
+
+### July 23, 2026 (continued 5)
+
+- [x] **Guest · HeroSearchBar làm lại — 4 ô cùng một khung, bỏ "hộp lồng hộp"**:
+  - **Nguyên nhân xấu**: thanh hero **mượn `DateRangePicker`** — component vốn viết cho **form** (trang tìm kiếm / chi tiết KS), nên nó tự vẽ nhãn riêng **và** một `ui/date-picker` là **nút có viền + icon lịch bên trong**. Kết quả: ô có viền lồng trong thanh có viền, chữ "Check-in" hiện **hai lần** (nhãn + placeholder trong nút), icon lịch vẽ **hai lần**, và 3 ô có 3 kiểu nhãn khác nhau (điểm đến `10px` viết hoa giãn chữ, ngày `text-xs` thường, khách lại viết hoa).
+  - **Khung dùng chung `segment-styles.ts` + `SearchSegment.tsx`**: mọi ô cùng `SEGMENT_CLASS` (nhãn viết hoa nhỏ có icon + giá trị `15px` semibold), cùng hover/focus, cùng `segmentValueClass(hasValue)` để giá trị đã chọn và placeholder khác tông rõ ràng. Style tách riêng khỏi file component vì rule `react-refresh/only-export-components` (file component chỉ được export component).
+  - **`DateSegment.tsx` (mới)**: mở thẳng `Calendar` từ chính ô segment, **không** qua `ui/date-picker` ⇒ cả thanh chỉ còn **một lớp khung**. `GuestsPopover` cũng đổi trigger thành một segment y hệt (trước chỉ là dòng chữ trần, lệch hẳn với 2 ô kia); chevron xoay khi mở bằng `group-aria-expanded:rotate-180`.
+  - **Thanh**: một lớp viền + shadow, desktop `rounded-full` chia 4 ô bằng gạch dọc mảnh, mobile xếp dọc và gạch chuyển thành ngang (`SEGMENT_DIVIDER_CLASS`), nút Tìm bo tròn nằm trong thanh.
+  - **`utils/stayDates.ts` (mới)** — dồn luật "ngày trả LUÔN sau ngày nhận" (`applyCheckIn`, `minCheckOut`, `nextDay`, `parseDateValue`) về một chỗ. Bắt buộc phải tách: hero giờ tự quản ngày nên nếu copy luật sang sẽ có **hai bản dễ trôi lệch**, mà cặp ngày sai là BE **400** hoặc tính sai số đêm. `DateRangePicker` và `ui/date-picker` đã chuyển sang dùng chung (xoá bản `parseDay` trùng).
+  - **a11y**: `DestinationAutocomplete` nhận thêm prop `id` để `<label>` của ô liên kết đúng ô nhập (quy ước 5.8); nút Tìm giữ chữ ở mọi breakpoint (trước `md` chỉ còn icon).
+  - **i18n**: thêm `hero.addDate` (vi "Thêm ngày" / en "Add date") làm placeholder ô ngày — trước dùng lại chính chữ "Check-in" làm placeholder nên nhìn như bị lặp. vi/en **cân bằng 57/57**.
+  - **Verify**: `tsc` **0 lỗi**, `eslint` sạch, `npm run build` **pass**; kiểm CSS build ra có đúng `.aria-expanded\:bg-surface-container\/60[aria-expanded=true]` và `.group-aria-expanded\:rotate-180` (2 variant này nếu Tailwind không sinh ra thì trạng thái "đang mở" sẽ im lặng mất). ⚠️ Chưa drive được browser ⇒ bạn xem lại giúp phần thị giác + thao tác trên mobile.
+
+### July 23, 2026 (continued 4)
+
+- [x] **Guest · AnchorNav bị navbar che khi cuộn — sửa ở gốc bằng chiều cao đo được, bỏ 2 con số hardcode**:
+  - **Nguyên nhân**: `AnchorNav` để `sticky top-16` (**64px**) trong khi guest `Navbar` cao hơn thế (`py-4` = 32px cộng phần tử cao nhất trong hàng — nút CTA/avatar ~36px+ — cộng border). Navbar `z-50` > AnchorNav `z-30` ⇒ phần chênh của thanh neo **chui xuống dưới navbar và bị cắt mất** mỗi khi cuộn. Con số 64px không bao giờ đúng và còn đổi theo breakpoint.
+  - **`Navbar.tsx`** công bố chiều cao THẬT ra `--app-navbar-h` bằng `ResizeObserver` (tự đúng lại khi đổi breakpoint / đăng nhập-đăng xuất làm hàng nút đổi chiều cao); `AnchorNav` neo bằng `style={{ top: 'var(--app-navbar-h, 4rem)' }}` thay cho class `top-16`.
+  - **Lỗi thứ hai cùng gốc — cuộn tới section thì tiêu đề nằm dưới 2 thanh sticky**: các section đang hardcode `scroll-mt-28` (112px) trong khi tổng chiều cao 2 thanh lớn hơn. `AnchorNav` giờ công bố `--app-anchor-offset` = `getComputedStyle(nav).top + offsetHeight + 8` (mép dưới của chính nó khi đã dính); 5 section + **`#stay-picker`** đổi sang `scroll-mt-[var(--app-anchor-offset,7rem)]`. `#stay-picker` trước đây **không hề có `scroll-mt`** dù có 3 chỗ `scrollIntoView` tới nó ⇒ bấm "Chọn ngày" là ô chọn ngày nằm khuất sau thanh neo.
+  - Giữ `scrollIntoView` thay vì tự tính `window.scrollTo`: trình duyệt đã tôn trọng `scroll-margin-top`, nên cùng một offset dùng được cho **cả** click ở thanh neo lẫn điều hướng bằng hash.
+  - Dọn `--app-anchor-offset` lúc unmount để trang không có thanh neo không thừa hưởng offset cũ; fallback `7rem` giữ nguyên hành vi cũ trong khoảnh khắc trước khi effect chạy.
+  - **Verify**: `tsc` **0 lỗi**, `eslint` sạch, `npm run build` **pass**, và kiểm CSS build ra có đúng `scroll-margin-top:var(--app-anchor-offset,7rem)` (bản arbitrary-value không bị Tailwind bỏ qua). ⚠️ Chưa drive được browser ⇒ bạn cuộn thử lại giúp để xác nhận thanh neo không còn bị cắt.
+
 ### July 23, 2026 (continued 3)
 
 - [x] **Guest · Địa điểm lân cận — chia theo nhóm category thay vì một danh sách phẳng**:

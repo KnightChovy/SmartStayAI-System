@@ -1,18 +1,12 @@
-/**
- * Types cho các bộ thông tin "replace-all" của khách sạn (Hotel Management):
- *   - Contacts        `GET/PUT /hotels/:id/contacts`
- *   - Policies        `GET/PUT /hotels/:id/policies`      (điều khoản VĂN BẢN cho khách đọc)
- *   - Charges         `GET/PUT /hotels/:id/charges`       (thuế/phí CỘNG VÀO tiền đơn)
- *   - Nearby places   `GET/PUT /hotels/:id/nearby-places`
- *   - Bed config      `GET/PUT /hotels/:id/room-types/:roomTypeId/beds`
- * Mỗi PUT thay thế TOÀN BỘ tập; gửi mảng rỗng = xoá hết.
- * Field Decimal (amount, distance) được backend serialize thành **string** khi trả về.
- */
 import type { BedType } from '@/types/hotel-management.types';
 
 // ─── Contacts ────────────────────────────────────────────────────────────────
 
-export type ContactType = 'physical_location' | 'general' | 'availability' | 'invoices';
+export type ContactType =
+  | 'physical_location'
+  | 'general'
+  | 'availability'
+  | 'invoices';
 export type PhoneType = 'voice' | 'fax' | 'mobile';
 
 export interface HotelContact {
@@ -125,7 +119,12 @@ export type NearbyCategory =
   | 'landmark'
   | 'nature';
 export type DistanceUnit = 'km' | 'miles';
-export type TransportType = 'walk' | 'car' | 'public_transport' | 'taxi' | 'shuttle';
+export type TransportType =
+  | 'walk'
+  | 'car'
+  | 'public_transport'
+  | 'taxi'
+  | 'shuttle';
 
 export interface HotelNearbyPlace {
   id: string;

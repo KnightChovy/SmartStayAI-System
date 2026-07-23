@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/popover';
 import { cn } from '@/lib/cn';
 import { formatDate, toDateInputValue } from '@/utils/formatDate';
+import { parseDateValue } from '@/utils/stayDates';
 
 export interface DatePickerProps {
   /** Giá trị dạng `YYYY-MM-DD` (khớp value cũ của <input type="date">). */
@@ -30,12 +31,6 @@ export interface DatePickerProps {
   clearLabel?: string;
 }
 
-function parseDay(value?: string | null): Date | undefined {
-  if (!value) return undefined;
-  const d = new Date(`${value}T00:00:00`);
-  return Number.isNaN(d.getTime()) ? undefined : d;
-}
-
 export function DatePicker({
   value,
   onChange,
@@ -50,9 +45,9 @@ export function DatePicker({
   clearLabel = 'Xoá ngày',
 }: DatePickerProps) {
   const [open, setOpen] = React.useState(false);
-  const selected = parseDay(value);
-  const minDate = parseDay(min);
-  const maxDate = parseDay(max);
+  const selected = parseDateValue(value);
+  const minDate = parseDateValue(min);
+  const maxDate = parseDateValue(max);
 
   const startMonth = minDate ?? new Date(1920, 0, 1);
   const endMonth = maxDate ?? new Date(2100, 11, 31);

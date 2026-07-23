@@ -1,11 +1,13 @@
 import { useTranslation } from 'react-i18next';
-import { ChevronDown, Minus, Plus } from 'lucide-react';
+import { ChevronDown, Minus, Plus, Users } from 'lucide-react';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { cn } from '@/lib/cn';
+import { SegmentLabel } from './SearchSegment';
+import { SEGMENT_CLASS, segmentValueClass } from './segment-styles';
 
 export interface GuestSelection {
   adults: number;
@@ -61,9 +63,9 @@ function CounterRow({ label, hint, value, min, onChange }: RowProps) {
 }
 
 /**
- * Bộ chọn khách kiểu popover (SS-001): tách Người lớn / Trẻ em / Số phòng, mỗi dòng
- * có nút +/− riêng. Nút trigger hiển thị tóm tắt "2 người lớn · 1 phòng" (số nhiều đúng
- * ngữ pháp qua i18n plural).
+ * Ô chọn khách của thanh tìm kiếm (SS-001): tách Người lớn / Trẻ em / Số phòng, mỗi dòng
+ * có nút +/− riêng. Trigger là một segment giống hệt các ô còn lại (nhãn + tóm tắt
+ * "2 người lớn · 1 phòng", số nhiều đúng ngữ pháp qua i18n plural).
  */
 export default function GuestsPopover({ value, onChange, className }: GuestsPopoverProps) {
   const { t } = useTranslation('home');
@@ -77,17 +79,15 @@ export default function GuestsPopover({ value, onChange, className }: GuestsPopo
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <button
-          type="button"
-          className={cn(
-            'flex w-full items-center justify-between gap-2 text-left',
-            className
-          )}
-        >
-          <span className="truncate text-sm font-medium text-on-surface">
-            {summaryParts.join(' · ')}
+        <button type="button" className={cn(SEGMENT_CLASS, className)}>
+          <SegmentLabel icon={Users}>{t('hero.guests')}</SegmentLabel>
+          <span className="flex items-center gap-2">
+            <span className={segmentValueClass(true)}>{summaryParts.join(' · ')}</span>
+            <ChevronDown
+              className="size-4 shrink-0 text-on-surface-variant transition-transform group-aria-expanded:rotate-180"
+              aria-hidden="true"
+            />
           </span>
-          <ChevronDown className="size-4 shrink-0 text-on-surface-variant" />
         </button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-72 divide-y divide-outline-variant/20 p-4">

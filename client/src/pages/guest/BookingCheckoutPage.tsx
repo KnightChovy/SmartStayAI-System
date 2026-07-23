@@ -398,7 +398,8 @@ export default function BookingCheckoutPage() {
                 <Button
                   type="submit"
                   size="lg"
-                  className="min-h-12 bg-on-surface text-white hover:bg-primary"
+                  variant="cta"
+                  className="min-h-12"
                   disabled={!form.formState.isValid}
                 >
                   {t('guest.continue')} <ArrowRight className="size-4" />
@@ -434,7 +435,8 @@ export default function BookingCheckoutPage() {
                   </Button>
                   <Button
                     size="lg"
-                    className="min-h-12 bg-on-surface text-white hover:bg-primary"
+                    variant="cta"
+                    className="min-h-12"
                     onClick={() => setStep(2)}
                   >
                     {t('payment.review')} <ArrowRight className="size-4" />
@@ -535,7 +537,7 @@ export default function BookingCheckoutPage() {
                   </Button>
                   <Button
                     size="lg"
-                    className="bg-primary text-on-primary hover:bg-primary/90"
+                    variant="cta"
                     disabled={
                       !agreedTerms ||
                       createBooking.isPending ||

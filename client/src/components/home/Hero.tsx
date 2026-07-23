@@ -8,7 +8,11 @@ export default function Hero() {
   const { t } = useTranslation('home');
 
   return (
-    <section className="relative pt-20 pb-24 px-margin-mobile overflow-hidden bg-surface w-full">
+    // `overflow-x-clip` chứ KHÔNG phải `overflow-hidden`: dropdown gợi ý điểm đến của thanh
+    // tìm kiếm đổ xuống quá mép dưới section, `overflow-hidden` cắt cụt nó. Chặn theo trục X
+    // vẫn giữ được (ảnh nền không tràn ngang), mà trục Y để `visible` — `clip` là giá trị duy
+    // nhất không ép trục còn lại thành `auto` (sinh thanh cuộn) như `hidden` làm.
+    <section className="relative pt-20 pb-24 px-margin-mobile overflow-x-clip bg-surface w-full">
       {/* Background image layer */}
       <div
         aria-hidden="true"

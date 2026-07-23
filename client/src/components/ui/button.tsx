@@ -19,6 +19,15 @@ const buttonVariants = cva(
         destructive:
           "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
         link: "text-primary underline-offset-4 hover:underline",
+        // Hành động chính hướng khách đặt phòng (Tìm phòng / Đặt ngay / Xem chi tiết).
+        // Dùng `premium-gold` — màu nhấn thương hiệu duy nhất có độ bão hoà trong bảng màu vốn
+        // toàn trung tính; `primary` (#5f5e5b) là xám taupe nên nút chìm nghỉm, nhất là trên nền tối.
+        // Chữ để MÀU TỐI, không phải trắng: trắng trên vàng chỉ đạt contrast 2.0:1 (trượt AA),
+        // chữ tối đạt 8.5:1.
+        cta: "bg-premium-gold text-on-surface font-semibold shadow-sm hover:bg-[color-mix(in_oklch,var(--color-premium-gold),black_12%)] focus-visible:ring-premium-gold/40",
+        // Hành động phụ đứng cạnh `cta` — viền vàng, không tô nền, để không tranh chấp thứ bậc.
+        "cta-outline":
+          "border-premium-gold/60 bg-transparent text-on-surface font-semibold hover:bg-premium-gold/12 focus-visible:ring-premium-gold/40",
       },
       size: {
         default:
