@@ -38,16 +38,18 @@ export default function DestinationAutocomplete({
   const listboxId = useId();
 
   // Debounce 250ms — mỗi lần đổi text hẹn gọi lại autocomplete, huỷ lượt trước.
+  // Mọi setState nằm TRONG callback async của timer (không đồng bộ trong thân effect) để
+  // không kích hoạt cascading render (react-hooks/set-state-in-effect).
   useEffect(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
     const text = value.trim();
-    if (text.length < 2) {
-      setSuggestions([]);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
     timerRef.current = setTimeout(async () => {
+      if (text.length < 2) {
+        setSuggestions([]);
+        setLoading(false);
+        return;
+      }
+      setLoading(true);
       const result = await autocompleteAddress(text);
       setSuggestions(result.slice(0, 8));
       setActiveIndex(-1);

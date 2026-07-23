@@ -1,4 +1,4 @@
-import { Loader2, Plus, ScrollText } from 'lucide-react';
+import { AlertTriangle, Loader2, Plus, ScrollText } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/hotel-partner/shared/Modal';
@@ -7,70 +7,32 @@ import { ErrorState } from '@/components/hotel-partner/shared/states';
 import { ListSkeleton } from '@/components/shared/skeletons';
 import { useHotelPolicies, useSetHotelPolicies } from '@/hooks/hotel-property';
 import { errorMessage } from '@/utils/errorMessage';
-import { formatCurrency } from '@/utils/formatCurrency';
-import type { ChargeFrequency, PolicyType } from '@/types/hotel-property.types';
 import { EditableRow, RowSummary } from './EditableRow';
-import { SelectField, TextField } from './fields';
+import { CheckboxField, TextField } from './fields';
 import { useRowEditor, type RowWithId } from './use-row-editor';
-import {
-  CHARGE_FREQUENCY_OPTIONS,
-  POLICY_TYPE_OPTIONS,
-  POLICY_TYPE_TONE,
-  optionLabel,
-} from './labels';
+
+/** Giới hạn của BE (Joi `setHotelPolicies`) — vượt là 400. */
+const TITLE_MAX = 200;
+const DESCRIPTION_MAX = 2000;
 
 interface PolicyRow extends RowWithId {
-  policyType: PolicyType;
-  code: string;
+  title: string;
   description: string;
-  amount: string;
-  isPercentage: boolean;
-  chargeFrequency: ChargeFrequency | '';
-  minAge: string;
-  maxAge: string;
+  important: boolean;
 }
 
 const emptyRow = (id: string): PolicyRow => ({
   id,
-  policyType: 'fee',
-  code: '',
+  title: '',
   description: '',
-  amount: '',
-  isPercentage: false,
-  chargeFrequency: '',
-  minAge: '',
-  maxAge: '',
+  important: false,
 });
 
-/** '' -> null, số hợp lệ -> number. */
-function toNum(v: string): number | null {
-  const t = v.trim();
-  if (t === '') return null;
-  const n = Number(t);
-  return Number.isNaN(n) ? null : n;
-}
-
-/** Khoảng tuổi ở dạng đọc được: "Age 0–12" / "Age 18+" / "Age up to 12". */
-function ageSummary(minAge: string, maxAge: string): string | null {
-  const min = minAge.trim();
-  const max = maxAge.trim();
-  if (min && max) return `Age ${min}–${max}`;
-  if (min) return `Age ${min}+`;
-  if (max) return `Age up to ${max}`;
-  return null;
-}
-
-/** Thông tin phụ của một policy, chỉ gồm field đã nhập. */
+/** Trích mô tả cho dòng thu gọn — cắt ngắn để không đẩy dòng tóm tắt xuống nhiều hàng. */
 function summaryBits(row: PolicyRow): string[] {
-  const bits: string[] = [];
-  const amount = row.amount.trim();
-  if (amount) bits.push(row.isPercentage ? `${amount}%` : formatCurrency(amount));
-  if (row.chargeFrequency)
-    bits.push(optionLabel(CHARGE_FREQUENCY_OPTIONS, row.chargeFrequency));
-  const age = ageSummary(row.minAge, row.maxAge);
-  if (age) bits.push(age);
-  if (row.code.trim()) bits.push(`Code ${row.code.trim()}`);
-  return bits;
+  const description = row.description.trim();
+  if (!description) return [];
+  return [description.length > 60 ? `${description.slice(0, 60)}…` : description];
 }
 
 interface Props {
@@ -80,21 +42,22 @@ interface Props {
   hotelName: string;
 }
 
-/** Editor replace-all cho policies/fees của khách sạn (`GET/PUT /hotels/:id/policies`). */
+/**
+ * Editor replace-all cho **điều khoản văn bản** của khách sạn (`GET/PUT /hotels/:id/policies`).
+ *
+ * Từ migration `split_policy_and_charge`, bảng này chỉ còn `title` / `description` /
+ * `important` — không mang số tiền nào. Thuế/phí nằm ở `HotelChargesModal`
+ * (`PUT /hotels/:id/charges`); đổi số bên đó mới đổi tiền khách trả.
+ */
 export function HotelPoliciesModal({ open, onClose, hotelId, hotelName }: Props) {
   const { data, isLoading, isError } = useHotelPolicies(hotelId);
   const setPolicies = useSetHotelPolicies(hotelId);
 
   const seed: PolicyRow[] = (data ?? []).map(p => ({
     id: p.id,
-    policyType: p.policyType,
-    code: p.code ?? '',
+    title: p.title,
     description: p.description ?? '',
-    amount: p.amount ?? '',
-    isPercentage: p.isPercentage,
-    chargeFrequency: p.chargeFrequency ?? '',
-    minAge: p.minAge != null ? String(p.minAge) : '',
-    maxAge: p.maxAge != null ? String(p.maxAge) : '',
+    important: p.important,
   }));
 
   const { rows, add, update, remove, isNew, isEditing, startEdit, stopEdit } = useRowEditor(
@@ -103,17 +66,15 @@ export function HotelPoliciesModal({ open, onClose, hotelId, hotelName }: Props)
   );
 
   const handleSave = async () => {
+    // Bỏ qua dòng chưa nhập tiêu đề (BE bắt buộc `title`) — dòng như vậy được đánh dấu rõ
+    // trong phần tóm tắt để partner biết nó sẽ không được lưu.
+    const valid = rows.filter(r => r.title.trim() !== '');
     try {
       await setPolicies.mutateAsync({
-        policies: rows.map(r => ({
-          policyType: r.policyType,
-          code: r.code.trim() || null,
+        policies: valid.map(r => ({
+          title: r.title.trim().slice(0, TITLE_MAX),
           description: r.description.trim() || null,
-          amount: toNum(r.amount),
-          isPercentage: r.isPercentage,
-          chargeFrequency: r.chargeFrequency || null,
-          minAge: toNum(r.minAge),
-          maxAge: toNum(r.maxAge),
+          important: r.important,
         })),
       });
       toast.success('Policies updated');
@@ -127,7 +88,7 @@ export function HotelPoliciesModal({ open, onClose, hotelId, hotelName }: Props)
     <Modal
       open={open}
       onClose={onClose}
-      title="Hotel policies & fees"
+      title="Hotel policies"
       description={`${hotelName} · ${rows.length} item(s)`}
       icon={ScrollText}
       size="lg"
@@ -153,6 +114,10 @@ export function HotelPoliciesModal({ open, onClose, hotelId, hotelName }: Props)
         <ErrorState label="Failed to load policies." />
       ) : (
         <div className="space-y-3">
+          <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">
+            Written terms guests read before booking. Taxes and service fees are configured
+            separately under <span className="font-semibold">Taxes &amp; fees</span>.
+          </p>
           {rows.length === 0 && (
             <p className="py-6 text-center text-sm text-slate-400">
               No policies yet. Add one below.
@@ -170,72 +135,41 @@ export function HotelPoliciesModal({ open, onClose, hotelId, hotelName }: Props)
               summary={
                 <RowSummary
                   badge={
-                    <Pill tone={POLICY_TYPE_TONE[row.policyType]}>
-                      {optionLabel(POLICY_TYPE_OPTIONS, row.policyType)}
-                    </Pill>
+                    row.important ? (
+                      <Pill tone="amber">
+                        <AlertTriangle className="h-3 w-3" /> Important
+                      </Pill>
+                    ) : (
+                      <Pill tone="slate">Policy</Pill>
+                    )
                   }
                   meta={summaryBits(row)}
-                  primary={row.description}
-                  emptyPrimary="No description"
+                  primary={row.title}
+                  emptyPrimary="Untitled — won’t be saved"
                 />
               }
             >
-              <SelectField
-                label="Type"
-                value={row.policyType}
-                onChange={v => update(row.id, { policyType: (v || 'fee') as PolicyType })}
-                options={POLICY_TYPE_OPTIONS}
-              />
               <TextField
-                label="Code"
-                value={row.code}
-                onChange={v => update(row.id, { code: v })}
-                placeholder="Optional code"
-              />
-              <TextField
-                label="Amount"
-                type="number"
-                value={row.amount}
-                onChange={v => update(row.id, { amount: v })}
-                placeholder="e.g. 8"
-              />
-              <SelectField
-                label="Charge frequency"
-                value={row.chargeFrequency}
-                onChange={v => update(row.id, { chargeFrequency: v as ChargeFrequency | '' })}
-                options={CHARGE_FREQUENCY_OPTIONS}
-                emptyLabel="—"
-              />
-              <TextField
-                label="Min age"
-                type="number"
-                value={row.minAge}
-                onChange={v => update(row.id, { minAge: v })}
-                placeholder="0–120"
-              />
-              <TextField
-                label="Max age"
-                type="number"
-                value={row.maxAge}
-                onChange={v => update(row.id, { maxAge: v })}
-                placeholder="0–120"
+                label="Title"
+                value={row.title}
+                onChange={v => update(row.id, { title: v.slice(0, TITLE_MAX) })}
+                placeholder="e.g. Cancellation policy"
+                className="sm:col-span-2"
               />
               <TextField
                 label="Description"
                 value={row.description}
-                onChange={v => update(row.id, { description: v })}
-                placeholder="Describe the policy / fee"
+                onChange={v => update(row.id, { description: v.slice(0, DESCRIPTION_MAX) })}
+                placeholder="What the guest needs to know"
                 className="sm:col-span-2"
               />
-              <label className="flex items-center gap-2 text-sm text-slate-600 sm:col-span-2">
-                <input
-                  type="checkbox"
-                  checked={row.isPercentage}
-                  onChange={e => update(row.id, { isPercentage: e.target.checked })}
-                  className="h-4 w-4 rounded border-slate-300 text-role-partner-primary"
-                />
-                Amount is a percentage (%)
-              </label>
+              <CheckboxField
+                label="Mark as important"
+                hint="Shown first and highlighted on the guest page."
+                checked={row.important}
+                onChange={v => update(row.id, { important: v })}
+                className="sm:col-span-2"
+              />
             </EditableRow>
           ))}
           <Button variant="outline" onClick={add} className="w-full">

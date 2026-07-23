@@ -5,6 +5,7 @@ import type { RoomType } from '@/types/hotel.types';
 import { useMoney } from '@/hooks/currency';
 import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/button';
+import CancellationLine from './CancellationLine';
 
 const FALLBACK_IMAGE =
   'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?q=80&w=1200&auto=format&fit=crop';
@@ -18,6 +19,8 @@ interface RoomTypeCardProps {
   bestValue?: boolean;
   /** Link "xem chi tiết phòng" — không truyền thì thẻ không hiện link. */
   detailHref?: string;
+  /** Số giờ hủy miễn phí (từ `hotel.settings.cancellation`) — hiện dòng chính sách hủy (SS-302). */
+  freeUntilHours?: number | null;
 }
 
 /** Thẻ loại phòng trong trang chi tiết khách sạn. */
@@ -27,6 +30,7 @@ export default function RoomTypeCard({
   selectable = false,
   bestValue = false,
   detailHref,
+  freeUntilHours,
 }: RoomTypeCardProps) {
   const { t } = useTranslation('hotel');
   const { format } = useMoney();
@@ -135,6 +139,9 @@ export default function RoomTypeCard({
               : t('room.roomsAvailable', { count: availableRooms })}
           </span>
         )}
+
+        {/* Chính sách hủy (SS-302) — chỉ hiện khi khách sạn đã khai */}
+        <CancellationLine freeUntilHours={freeUntilHours} className="mt-3" />
 
         {roomType.description && (
           <p className="mt-2 line-clamp-2 text-sm text-on-surface-variant/80">{roomType.description}</p>

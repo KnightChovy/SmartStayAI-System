@@ -1,9 +1,10 @@
 /**
  * Types cho các bộ thông tin "replace-all" của khách sạn (Hotel Management):
  *   - Contacts        `GET/PUT /hotels/:id/contacts`
- *   - Policies / fees  `GET/PUT /hotels/:id/policies`
- *   - Nearby places    `GET/PUT /hotels/:id/nearby-places`
- *   - Bed config       `GET/PUT /hotels/:id/room-types/:roomTypeId/beds`
+ *   - Policies        `GET/PUT /hotels/:id/policies`      (điều khoản VĂN BẢN cho khách đọc)
+ *   - Charges         `GET/PUT /hotels/:id/charges`       (thuế/phí CỘNG VÀO tiền đơn)
+ *   - Nearby places   `GET/PUT /hotels/:id/nearby-places`
+ *   - Bed config      `GET/PUT /hotels/:id/room-types/:roomTypeId/beds`
  * Mỗi PUT thay thế TOÀN BỘ tập; gửi mảng rỗng = xoá hết.
  * Field Decimal (amount, distance) được backend serialize thành **string** khi trả về.
  */
@@ -39,26 +40,47 @@ export interface SetHotelContactsDto {
   contacts: HotelContactInput[];
 }
 
-// ─── Policies / fees ─────────────────────────────────────────────────────────
+// ─── Policies (điều khoản văn bản) ───────────────────────────────────────────
 
-export type PolicyType = 'cancellation' | 'tax' | 'fee' | 'parking' | 'internet' | 'deposit';
+/**
+ * Một điều khoản của khách sạn — **thuần văn bản cho khách đọc**, không mang số tiền nào.
+ *
+ * ⚠️ BE đã tách `hotel_policies` làm hai (commit `db05ed4`, migration
+ * `split_policy_and_charge`): các cột `policyType`/`code`/`amount`/`isPercentage`/
+ * `chargeFrequency`/`minAge`/`maxAge` **đã bị DROP**. Thuế/phí chuyển hết sang
+ * `hotel_charges` (xem `HotelCharge` bên dưới).
+ */
+export interface HotelPolicy {
+  id: string;
+  hotelId: string;
+  /** Tiêu đề điều khoản, vd "Chính sách huỷ phòng" (BE: required, ≤ 200 ký tự). */
+  title: string;
+  /** Nội dung điều khoản (BE: ≤ 2000 ký tự). */
+  description: string | null;
+  /** Điều khoản quan trọng — khách hay bỏ sót, FE nên làm nổi bật. */
+  important: boolean;
+}
+
+export interface HotelPolicyInput {
+  title: string;
+  description?: string | null;
+  important?: boolean;
+}
+
+export interface SetHotelPoliciesDto {
+  policies: HotelPolicyInput[];
+}
+
+// ─── Charges (khoản thu tính tiền) ───────────────────────────────────────────
+
+/** Loại khoản thu CỘNG VÀO tiền đơn (bảng `hotel_charges` của BE). */
+export type ChargeType = 'tax' | 'fee';
+
 export type ChargeFrequency =
   | 'per_stay'
   | 'per_night'
   | 'per_person'
   | 'per_person_per_night';
-
-// ─── Charges (khoản thu tính tiền) ───────────────────────────────────────────
-
-/**
- * Loại khoản thu CỘNG VÀO tiền đơn (bảng `hotel_charges` của BE).
- *
- * ⚠️ BE đã tách `hotel_policies` làm hai (commit `db05ed4`, migration
- * `split_policy_and_charge`): `HotelPolicy` giờ là điều khoản THUẦN VĂN BẢN cho khách đọc,
- * còn thuế/phí engine tính tiền nằm ở `HotelCharge`. Muốn tính thuế thì đọc `hotel.charges`,
- * KHÔNG đọc `hotel.policies` nữa.
- */
-export type ChargeType = 'tax' | 'fee';
 
 /** Một khoản thu của khách sạn (`GET /hotels/:id` → `charges[]`). Decimal → string. */
 export interface HotelCharge {
@@ -73,33 +95,23 @@ export interface HotelCharge {
   chargeFrequency: ChargeFrequency | null;
 }
 
-export interface HotelPolicy {
-  id: string;
-  hotelId: string;
-  policyType: PolicyType;
-  code: string | null;
-  description: string | null;
-  /** Decimal -> string. */
-  amount: string | null;
-  isPercentage: boolean;
-  chargeFrequency: ChargeFrequency | null;
-  minAge: number | null;
-  maxAge: number | null;
-}
-
-export interface HotelPolicyInput {
-  policyType: PolicyType;
-  code?: string | null;
-  description?: string | null;
-  amount?: number | null;
+/**
+ * Một khoản thu khi lưu (replace-all).
+ *
+ * ⚠️ BE **cấm** gửi `chargeFrequency` khi `isPercentage = true` (Joi `forbidden`) và
+ * **bắt buộc** khi `isPercentage = false` — phần trăm luôn tính trên tiền phòng cả kỳ nên
+ * kèm tần suất chỉ khiến người dùng tưởng "8% mỗi đêm" trong khi engine không nhân theo đêm.
+ */
+export interface HotelChargeInput {
+  chargeType: ChargeType;
+  name: string;
+  amount: number;
   isPercentage?: boolean;
-  chargeFrequency?: ChargeFrequency | null;
-  minAge?: number | null;
-  maxAge?: number | null;
+  chargeFrequency?: ChargeFrequency;
 }
 
-export interface SetHotelPoliciesDto {
-  policies: HotelPolicyInput[];
+export interface SetHotelChargesDto {
+  charges: HotelChargeInput[];
 }
 
 // ─── Nearby places ───────────────────────────────────────────────────────────

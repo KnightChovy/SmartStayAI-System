@@ -50,6 +50,20 @@
     "priceUpdated": "The property's final total is {{total}}, which differs from our estimate. Tap \"Retry payment\" to continue with this amount.",
     "tempPhoneNote": "Contact number for this booking: {{phone}}"
   },
+  "terms": {
+    "agreePrefix": "I agree to the ",
+    "termsLink": "Terms & Cancellation Policy",
+    "required": "Please agree to the terms to continue.",
+    "modalTitle": "Terms & Cancellation Policy",
+    "close": "Close",
+    "cancellationHeading": "Cancellation policy",
+    "clauses": [
+      "Your booking is confirmed only after successful payment through our gateway.",
+      "Prices include taxes and fees as set by the property, where applicable.",
+      "Check-in/out follows the property's hours and required identification.",
+      "Refund/cancellation terms follow the property's policy shown below."
+    ]
+  },
   "summary": {
     "roomLine_one": "Room × {{count}} night",
     "roomLine_other": "Room × {{count}} nights",

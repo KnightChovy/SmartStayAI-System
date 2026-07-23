@@ -5,6 +5,16 @@
     "backHome": "Back to home",
     "explore": "Explore stays"
   },
+  "destinations": {
+    "eyebrow": "Curated destination collections",
+    "title": "Explore across Vietnam",
+    "subtitle": "Intelligent discovery matches you with destinations that fit your trip."
+  },
+  "deals": {
+    "eyebrow": "Limited-time offers",
+    "title": "Exclusive member rates",
+    "subtitle": "Unlock curated rates for our members and early discoverers."
+  },
   "about": {
     "eyebrow": "Our story",
     "title": "About SmartStay AI",

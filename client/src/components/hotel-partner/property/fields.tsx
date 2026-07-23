@@ -58,6 +58,39 @@ export function SelectField<T extends string>({
   );
 }
 
+interface CheckboxFieldProps {
+  label: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  /** Giải thích hệ quả của lựa chọn, hiện dưới nhãn. */
+  hint?: string;
+  className?: string;
+}
+
+/** Ô tick trong editor replace-all (vd "điều khoản quan trọng", "tính theo %"). */
+export function CheckboxField({
+  label,
+  checked,
+  onChange,
+  hint,
+  className,
+}: CheckboxFieldProps) {
+  return (
+    <label className={cn('flex items-start gap-2 text-sm text-slate-600', className)}>
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={e => onChange(e.target.checked)}
+        className="mt-0.5 h-4 w-4 rounded border-slate-300 text-role-partner-primary"
+      />
+      <span>
+        {label}
+        {hint && <span className="mt-0.5 block text-xs text-slate-400">{hint}</span>}
+      </span>
+    </label>
+  );
+}
+
 interface TextFieldProps {
   label: string;
   value: string;

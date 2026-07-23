@@ -17,6 +17,7 @@ import {
   Plus,
   Contact,
   ScrollText,
+  Receipt,
   MapPinned,
   Settings2,
 } from 'lucide-react';
@@ -26,6 +27,7 @@ import { HotelImagesModal } from '@/components/hotel-partner/hotel-management/Ho
 import { HotelAmenitiesModal } from '@/components/hotel-partner/hotel-management/HotelAmenitiesModal';
 import { HotelContactsModal } from '@/components/hotel-partner/property/HotelContactsModal';
 import { HotelPoliciesModal } from '@/components/hotel-partner/property/HotelPoliciesModal';
+import { HotelChargesModal } from '@/components/hotel-partner/property/HotelChargesModal';
 import { HotelNearbyPlacesModal } from '@/components/hotel-partner/property/HotelNearbyPlacesModal';
 import { Button } from '@/components/ui/button';
 import {
@@ -50,6 +52,7 @@ export default function HotelDetailPage() {
   const [amenitiesOpen, setAmenitiesOpen] = useState(false);
   const [contactsOpen, setContactsOpen] = useState(false);
   const [policiesOpen, setPoliciesOpen] = useState(false);
+  const [chargesOpen, setChargesOpen] = useState(false);
   const [nearbyOpen, setNearbyOpen] = useState(false);
 
   if (isLoading) {
@@ -254,10 +257,10 @@ export default function HotelDetailPage() {
         </Section>
       </div>
 
-      {/* Property information (contacts / policies / nearby) */}
+      {/* Property information (contacts / policies / charges / nearby) */}
       <div className="mt-6">
         <Section title="Property information">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <PropertyCard
               icon={Contact}
               label="Contacts"
@@ -266,9 +269,15 @@ export default function HotelDetailPage() {
             />
             <PropertyCard
               icon={ScrollText}
-              label="Policies & fees"
-              description="Cancellation, tax, deposit…"
+              label="Policies"
+              description="Written terms guests read"
               onClick={() => setPoliciesOpen(true)}
+            />
+            <PropertyCard
+              icon={Receipt}
+              label="Taxes & fees"
+              description="Added on top of the room price"
+              onClick={() => setChargesOpen(true)}
             />
             <PropertyCard
               icon={MapPinned}
@@ -344,6 +353,12 @@ export default function HotelDetailPage() {
       <HotelPoliciesModal
         open={policiesOpen}
         onClose={() => setPoliciesOpen(false)}
+        hotelId={hotel.id}
+        hotelName={hotel.name}
+      />
+      <HotelChargesModal
+        open={chargesOpen}
+        onClose={() => setChargesOpen(false)}
         hotelId={hotel.id}
         hotelName={hotel.name}
       />

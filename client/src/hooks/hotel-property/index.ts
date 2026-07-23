@@ -2,6 +2,8 @@ export { useHotelContacts } from './use-hotel-contacts';
 export { useSetHotelContacts } from './use-set-hotel-contacts';
 export { useHotelPolicies } from './use-hotel-policies';
 export { useSetHotelPolicies } from './use-set-hotel-policies';
+export { useHotelCharges } from './use-hotel-charges';
+export { useSetHotelCharges } from './use-set-hotel-charges';
 export { useHotelNearbyPlaces } from './use-hotel-nearby-places';
 export { useSetHotelNearbyPlaces } from './use-set-hotel-nearby-places';
 export { useRoomBeds } from './use-room-beds';

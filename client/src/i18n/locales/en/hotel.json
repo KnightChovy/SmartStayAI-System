@@ -11,6 +11,14 @@
   "starHotel_other": "{{count}}-star hotel",
   "starAria": "Property class: {{count}} out of 5 stars",
   "galleryAlt": "{{name}} — photo {{index}} of {{total}}",
+  "noRatingYet": "No reviews yet",
+  "anchorNav": {
+    "overview": "Overview",
+    "amenities": "Amenities",
+    "location": "Location",
+    "rooms": "Rooms",
+    "reviews": "Reviews"
+  },
   "trust": {
     "verified": "Verified property",
     "securePayment": "Secure payment",
@@ -43,14 +51,20 @@
     "deposit": "Security deposit",
     "depositValue": "{{amount}} taken at check-in, refunded at check-out",
     "languages": "Languages spoken",
-    "tax": "Tax",
-    "fee": "Fee",
-    "parking": "Parking",
-    "internet": "Internet"
+    "important": "Important"
   },
   "nearby": {
     "title": "What's nearby",
-    "minutes": "{{count}} min"
+    "minutes": "{{count}} min",
+    "categories": {
+      "attraction": "Attractions",
+      "landmark": "Landmarks",
+      "beach": "Beaches",
+      "nature": "Nature",
+      "restaurant": "Restaurants & cafes",
+      "publicTransport": "Public transport",
+      "airport": "Airports"
+    }
   },
   "reviews": {
     "title": "Guest reviews",
@@ -86,6 +100,8 @@
     "bookNow": "Book now",
     "inclTaxesFees": "Includes {{amount}} taxes & fees",
     "noExtraTaxes": "No extra taxes or fees",
+    "freeCancellation": "Free cancellation until {{hours}}h before",
+    "nonRefundable": "Non-refundable",
     "adults_one": "{{count}} adult",
     "adults_other": "{{count}} adults",
     "children_one": "{{count}} child",

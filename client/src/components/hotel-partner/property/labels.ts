@@ -1,10 +1,10 @@
 import type {
   ChargeFrequency,
+  ChargeType,
   ContactType,
   DistanceUnit,
   NearbyCategory,
   PhoneType,
-  PolicyType,
   TransportType,
 } from '@/types/hotel-property.types';
 import type { BedType } from '@/types/hotel-management.types';
@@ -40,22 +40,14 @@ export const PHONE_TYPE_OPTIONS: Opt<PhoneType>[] = [
   { value: 'fax', label: 'Fax' },
 ];
 
-export const POLICY_TYPE_OPTIONS: Opt<PolicyType>[] = [
-  { value: 'cancellation', label: 'Cancellation' },
+export const CHARGE_TYPE_OPTIONS: Opt<ChargeType>[] = [
   { value: 'tax', label: 'Tax' },
   { value: 'fee', label: 'Fee' },
-  { value: 'parking', label: 'Parking' },
-  { value: 'internet', label: 'Internet' },
-  { value: 'deposit', label: 'Deposit' },
 ];
 
-export const POLICY_TYPE_TONE: Record<PolicyType, PillTone> = {
-  cancellation: 'amber',
+export const CHARGE_TYPE_TONE: Record<ChargeType, PillTone> = {
   tax: 'violet',
   fee: 'slate',
-  parking: 'blue',
-  internet: 'blue',
-  deposit: 'emerald',
 };
 
 export const CHARGE_FREQUENCY_OPTIONS: Opt<ChargeFrequency>[] = [
