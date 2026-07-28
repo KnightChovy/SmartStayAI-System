@@ -63,6 +63,13 @@ export const getMyReviews = {
   }),
 };
 
+// [Public] Đánh giá tiêu biểu trang chủ
+export const getFeaturedReviews = {
+  query: Joi.object().keys({
+    limit: Joi.number().integer().min(1).max(20),
+  }),
+};
+
 // [Partner] Đánh giá của chính khách sạn mình (mọi trạng thái, lọc theo status)
 export const getHotelReviewsForPartner = {
   params: Joi.object().keys({

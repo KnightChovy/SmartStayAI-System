@@ -15,6 +15,8 @@ router.get('/', validate(reviewValidation.getHotelReviews), reviewController.get
 // Đánh giá của chính khách đang đăng nhập (mọi trạng thái) — PHẢI đứng trước '/:reviewId'
 // (nếu không '/me' sẽ khớp ':reviewId' và trượt validate uuid → 400).
 router.get('/me', auth(), validate(reviewValidation.getMyReviews), reviewController.getMyReviews);
+// '/featured' (literal) PHẢI đứng trước '/:reviewId' kẻo bị nuốt thành reviewId — public, không auth
+router.get('/featured', validate(reviewValidation.getFeaturedReviews), reviewController.getFeaturedReviews);
 
 // Chi tiết một đánh giá — public
 router.get('/:reviewId', validate(reviewValidation.getReview), reviewController.getReview);

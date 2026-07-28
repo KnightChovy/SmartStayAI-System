@@ -14,6 +14,8 @@ import adminRoute from './admin.route';
 import platformManagerRoute from './platform-manager.route';
 import notificationRoute from './notification.route';
 import dealRoute from './deal.route';
+import platformRoute from './platform.route';
+import destinationRoute from './destination.route';
 import docsRoute from './docs.route';
 
 const router = express.Router();
@@ -83,6 +85,16 @@ const defaultRoutes = [
     // Deal công khai cho trang /deals — không auth
     path: '/deals',
     route: dealRoute,
+  },
+  {
+    // Số liệu tổng của sàn cho trang chủ — public
+    path: '/platform',
+    route: platformRoute,
+  },
+  {
+    // Điểm đến (thành phố) + gợi ý autocomplete — public
+    path: '/destinations',
+    route: destinationRoute,
   },
   {
     // Swagger UI — bật ở MỌI môi trường (kể cả production) để FE/hội đồng xem tài liệu API khi deploy

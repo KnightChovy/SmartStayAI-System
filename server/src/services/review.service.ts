@@ -12,6 +12,16 @@ import type {
   ReviewQueryOptions,
 } from '../dto/review.dto';
 
+/**
+ * Viết tắt họ tên để ẩn danh tính khi hiển thị công khai: "Nguyễn Văn An" → "Nguyễn V.".
+ * Giữ họ (từ đầu) + chữ cái đầu của từ kế tiếp; tên một từ giữ nguyên.
+ */
+const abbreviateName = (fullName: string): string => {
+  const parts = fullName.trim().split(/\s+/);
+  if (parts.length < 2) return parts[0] ?? '';
+  return `${parts[0]} ${parts[1][0]}.`;
+};
+
 // Quan hệ kèm theo khi trả review về client (kèm người viết + ảnh)
 const reviewInclude = {
   customer: { select: { id: true, fullName: true } },
@@ -68,6 +78,33 @@ export class ReviewService {
       },
       include: reviewInclude,
     });
+  };
+
+  /**
+   * [Public] Đánh giá tiêu biểu cho carousel trang chủ — điểm cao (>= 4), đã công khai, có nội dung.
+   * ẨN thông tin nhạy cảm: chỉ trả tên VIẾT TẮT (vd "Nguyễn V."), không email/phone.
+   * Thay cho việc FE phải fan-out gọi /reviews cho hàng chục khách sạn rồi tự gom.
+   */
+  getFeaturedReviews = async (limit = 8) => {
+    const reviews = await prisma.review.findMany({
+      where: { status: 'published', overallRating: { gte: 4 }, content: { not: '' } },
+      orderBy: [{ overallRating: 'desc' }, { createdAt: 'desc' }],
+      take: limit,
+      include: {
+        customer: { select: { fullName: true, avatarUrl: true } },
+        hotel: { select: { name: true, city: true } },
+      },
+    });
+    return reviews.map((r) => ({
+      id: r.id,
+      content: r.content,
+      overallRating: r.overallRating,
+      customerName: abbreviateName(r.customer.fullName),
+      avatarUrl: r.customer.avatarUrl ?? null,
+      hotelName: r.hotel.name,
+      hotelCity: r.hotel.city,
+      createdAt: r.createdAt,
+    }));
   };
 
   /** Danh sách đánh giá CÔNG KHAI của một khách sạn (chỉ status 'published'), mới nhất trước. */
