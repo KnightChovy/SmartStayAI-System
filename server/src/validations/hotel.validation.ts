@@ -7,7 +7,9 @@ export const searchHotels = {
       checkIn: Joi.date().iso(),
       checkOut: Joi.date().iso().greater(Joi.ref('checkIn')),
       guests: Joi.number().integer().min(1),
-      sortBy: Joi.string(),
+      // WHITELIST bắt buộc: 'price'/'rating' KHÔNG phải cột DB (tính sau query) — trước đây nhét
+      // thẳng vào Prisma orderBy nên gửi 'price:asc' làm SẬP trang (500). Giá trị lạ giờ trả 400.
+      sortBy: Joi.string().valid('recommended', 'price:asc', 'price:desc', 'rating:desc'),
       limit: Joi.number().integer().min(1).max(100),
       page: Joi.number().integer().min(1),
     })
@@ -248,6 +250,8 @@ export const getRoomType = {
     .keys({
       checkIn: Joi.date().iso(),
       checkOut: Joi.date().iso().greater(Joi.ref('checkIn')),
+      // Số khách để nhân phí per_person cho khớp báo giá — không gửi thì coi như 1
+      guests: Joi.number().integer().min(1),
     })
     .and('checkIn', 'checkOut'),
 };

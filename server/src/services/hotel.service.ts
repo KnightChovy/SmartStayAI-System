@@ -407,6 +407,38 @@ export class HotelService {
   };
 
   /**
+   * Sắp xếp kết quả tìm kiếm theo giá trị TÍNH SAU QUERY (giá thật/đêm, điểm đánh giá).
+   * Khách sạn thiếu giá trị (minPrice/avgRating = null) LUÔN xuống cuối, bất kể chiều sắp xếp —
+   * KS chưa có giá/đánh giá không được xếp trên KS đã có (yêu cầu SS-103).
+   */
+  private sortSearchResults = <T extends { minPrice: Prisma.Decimal | null; avgRating: number | null }>(
+    hotels: T[],
+    sortBy?: string
+  ): T[] => {
+    // 'recommended' (mặc định): giữ nguyên thứ tự nền createdAt desc từ DB
+    if (!sortBy || sortBy === 'recommended') {
+      return hotels;
+    }
+    // So sánh có null-xuống-cuối: null đứng sau mọi giá trị, chiều sắp chỉ áp cho phần không null
+    const compareNullsLast = (a: number | null, b: number | null, cmp: (x: number, y: number) => number): number => {
+      if (a === null && b === null) return 0;
+      if (a === null) return 1;
+      if (b === null) return -1;
+      return cmp(a, b);
+    };
+    const asNumber = (p: Prisma.Decimal | null): number | null => (p === null ? null : p.toNumber());
+    const sorted = [...hotels];
+    if (sortBy === 'price:asc') {
+      sorted.sort((a, b) => compareNullsLast(asNumber(a.minPrice), asNumber(b.minPrice), (x, y) => x - y));
+    } else if (sortBy === 'price:desc') {
+      sorted.sort((a, b) => compareNullsLast(asNumber(a.minPrice), asNumber(b.minPrice), (x, y) => y - x));
+    } else if (sortBy === 'rating:desc') {
+      sorted.sort((a, b) => compareNullsLast(a.avgRating, b.avgRating, (x, y) => y - x));
+    }
+    return sorted;
+  };
+
+  /**
    * Tìm khách sạn theo thành phố. Nếu có khoảng ngày (checkIn/checkOut) thì chỉ trả về
    * khách sạn còn ít nhất một loại phòng trống đủ sức chứa trong suốt kỳ ở.
    */
@@ -454,27 +486,21 @@ export class HotelService {
       }
     }
 
-    let orderBy: Prisma.HotelOrderByWithRelationInput = { createdAt: 'desc' };
-    if (options.sortBy) {
-      const [field, direction] = options.sortBy.split(':');
-      orderBy = { [field]: direction === 'desc' ? 'desc' : 'asc' };
-    }
+    // Lấy TẤT CẢ khách sạn khớp, KHÔNG phân trang ở DB. Lý do: sắp xếp theo 'price'/'rating' dựa
+    // trên giá trị TÍNH SAU QUERY (giá thật/đêm, điểm đánh giá) — không phải cột DB nên không thể
+    // nhờ Prisma orderBy + skip/take (sẽ sai xuyên trang). orderBy createdAt chỉ làm thứ tự nền cho
+    // 'recommended'. Dữ liệu mỗi lượt tìm nhỏ vì đã lọc theo thành phố/ngày.
+    const allHotels = await prisma.hotel.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        images: { where: { isPrimary: true }, take: 1 },
+        roomTypes: { where: roomTypeWhere, select: { basePrice: true } },
+      },
+    });
+    const totalResults = allHotels.length;
 
-    const [hotels, totalResults] = await prisma.$transaction([
-      prisma.hotel.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy,
-        include: {
-          images: { where: { isPrimary: true }, take: 1 },
-          roomTypes: { where: roomTypeWhere, select: { basePrice: true } },
-        },
-      }),
-      prisma.hotel.count({ where }),
-    ]);
-
-    const ratings = await this.getRatingSummaries(hotels.map((hotel) => hotel.id));
+    const ratings = await this.getRatingSummaries(allHotels.map((hotel) => hotel.id));
 
     // Giá "từ" mỗi đêm của khách sạn:
     // - CÓ ngày ⇒ giá thật đã áp pricing rule/priceOverride, tính từ quote ở trên. Trước đây chỗ này
@@ -483,13 +509,16 @@ export class HotelService {
     //   trung thực nhất có thể nói ("từ ... /đêm").
     // Chưa gồm thuế/phí (theo thông lệ hiển thị giá phòng mỗi đêm); số phải trả đầy đủ nằm ở bước
     // chọn phòng và ở booking.
-    const results = hotels.map(({ roomTypes, ...hotel }) => ({
+    const enriched = allHotels.map(({ roomTypes, ...hotel }) => ({
       ...hotel,
       minPrice:
         realMinPricePerNight.get(hotel.id) ??
         (roomTypes.length > 0 ? Prisma.Decimal.min(...roomTypes.map((rt) => rt.basePrice)) : null),
       ...(ratings.get(hotel.id) ?? { avgRating: null, reviewCount: 0 }),
     }));
+
+    // Sắp xếp theo giá trị đã tính, rồi phân trang bằng slice
+    const results = this.sortSearchResults(enriched, options.sortBy).slice(skip, skip + limit);
 
     return { results, page, limit, totalPages: Math.ceil(totalResults / limit), totalResults };
   };
@@ -659,11 +688,21 @@ export class HotelService {
     const quotes = await availabilityService.getStayQuotes([roomType], filter.checkIn, filter.checkOut);
     const numNights = eachNightOfStay(filter.checkIn, filter.checkOut).length;
     const quote = quotes.get(roomType.id);
+    const subtotal = quote?.totalPrice ?? new Prisma.Decimal(0);
+    // Trả TÁCH KHOẢN giống hệt endpoint danh sách (getRoomTypes) và giống lúc đặt: cùng gọi
+    // computeTaxAndFees nên số ở trang chi tiết đúng bằng số POST /bookings sẽ tính — FE khỏi phải
+    // tự ước tính thuế/phí, chỉ còn một nguồn sự thật là BE.
+    const taxFeeCharges = (await availabilityService.getTaxFeeCharges([hotelId])).get(hotelId) ?? [];
+    const numGuests = filter.guests ?? 1;
+    const { taxAmount, feeAmount } = availabilityService.computeTaxAndFees(taxFeeCharges, subtotal, numNights, numGuests);
     return {
       ...roomType,
       numNights,
       availableRooms: quote?.availableRooms ?? 0,
-      totalPrice: quote?.totalPrice ?? null,
+      subtotal,
+      taxAmount,
+      feeAmount,
+      totalPrice: subtotal.add(taxAmount).add(feeAmount),
     };
   };
 }
