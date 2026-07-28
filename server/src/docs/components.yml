@@ -700,6 +700,16 @@ components:
         starRating: { type: integer, nullable: true, description: 'Hotel star classification (1-5), not a guest score' }
         avgRating: { type: number, nullable: true, description: 'Average guest score over published reviews, rounded to 1 decimal. null when the hotel has no review yet (not 0)' }
         reviewCount: { type: integer, description: 'Number of published reviews' }
+        topAmenities:
+          type: array
+          description: 'First 3 hotel amenities, for the card'
+          items:
+            type: object
+            properties:
+              id: { type: string, format: uuid }
+              name: { type: string }
+              icon: { type: string, nullable: true }
+        availableRooms: { type: integer, nullable: true, description: 'Total rooms left across the hotel for the stay. Only when checkIn/checkOut are given; null otherwise. FE shows an urgency badge when small' }
         isActive: { type: boolean }
         isListed: { type: boolean }
         minPrice: { type: string, nullable: true, description: 'Lowest nightly price among matching room types (Decimal as string), excluding tax and fees. With checkIn/checkOut it is the real price for those dates (pricing rules and priceOverride applied, averaged per night, only rooms still available); without dates, rules cannot be resolved so it falls back to the lowest basePrice' }
@@ -1407,6 +1417,16 @@ components:
         - type: object
           properties:
             results: { type: array, items: { $ref: '#/components/schemas/HotelSummary' } }
+            priceBounds:
+              type: object
+              nullable: true
+              description: >
+                Min/max nightly price across the results BEFORE the price filter is applied (but after
+                the other filters). Use it to set the price slider bounds — it does not shrink as the
+                user drags price. null when no result has a price.
+              properties:
+                min: { type: string, description: 'Decimal as string' }
+                max: { type: string, description: 'Decimal as string' }
 
     PaginatedAdminHotels:
       allOf:
