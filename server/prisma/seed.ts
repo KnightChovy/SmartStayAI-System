@@ -1077,6 +1077,35 @@ const main = async (): Promise<void> => {
   });
   console.log('  ✓ ví khách: customer@ 2.000.000đ (trả trọn đơn), customer2@ 300.000đ (trả kết hợp)');
 
+  // ----- Promotion đang hiệu lực để trang /deals có deal thật (đủ 3 loại giảm giá) -----
+  // createdBy = manager (bắt buộc). applicableRoomTypeIds rỗng = áp giá gốc thấp nhất của cả KS.
+  await prisma.promotion.createMany({
+    data: [
+      {
+        hotelId: nhatrang.id, createdBy: manager.id, name: 'Ưu đãi hè Nha Trang', code: 'SUMMER25',
+        description: 'Giảm 25% mọi loại phòng trong mùa hè.', discountType: 'percentage', discountValue: 25,
+        startDate: daysFromNow(-2), endDate: daysFromNow(20), applicableRoomTypeIds: [], isActive: true,
+      },
+      {
+        hotelId: saigon.id, createdBy: manager.id, name: 'Giảm 200K cho khách công tác', code: 'WORK200',
+        description: 'Giảm thẳng 200.000đ mỗi đêm.', discountType: 'fixed_amount', discountValue: 200_000,
+        startDate: daysFromNow(-1), endDate: daysFromNow(30), applicableRoomTypeIds: [], isActive: true,
+      },
+      {
+        hotelId: danang.id, createdBy: manager.id, name: 'Flash sale cuối tuần', code: 'FLASH30',
+        description: 'Giảm 30% — chỉ còn ít giờ!', discountType: 'percentage', discountValue: 30,
+        // Sắp hết hạn (< 48h) ⇒ dealType = flash_sale để FE hiện countdown
+        startDate: daysFromNow(-1), endDate: new Date(Date.now() + 12 * 60 * 60 * 1000), applicableRoomTypeIds: [], isActive: true,
+      },
+      {
+        hotelId: hanoi.id, createdBy: manager.id, name: 'Ở 3 đêm tặng 1', code: 'STAY3GET1',
+        description: 'Ở 3 đêm được miễn phí 1 đêm.', discountType: 'free_night', discountValue: 1, minNights: 3,
+        startDate: daysFromNow(-3), endDate: daysFromNow(45), applicableRoomTypeIds: [], isActive: true,
+      },
+    ],
+  });
+  console.log('  ✓ 4 promotion cho /deals: 25% Nha Trang, -200K Saigon, flash 30% Đà Nẵng, ở-3-tặng-1 Hà Nội');
+
   console.log('\nSeed xong.\n');
   console.log('Tài khoản mẫu — quy ước <role>@gmail.com / <role>123:');
   console.log('  admin@gmail.com / admin123        manager@gmail.com / manager123');

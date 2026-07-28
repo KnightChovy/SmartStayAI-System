@@ -19,3 +19,4 @@ export * as adminValidation from './admin.validation';
 export * as platformManagerValidation from './platform-manager.validation';
 export * as refundValidation from './refund.validation';
 export * as notificationValidation from './notification.validation';
+export * as promotionValidation from './promotion.validation';

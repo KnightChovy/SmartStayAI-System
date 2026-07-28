@@ -13,6 +13,7 @@ import internalRoute from './internal.route';
 import adminRoute from './admin.route';
 import platformManagerRoute from './platform-manager.route';
 import notificationRoute from './notification.route';
+import dealRoute from './deal.route';
 import docsRoute from './docs.route';
 
 const router = express.Router();
@@ -77,6 +78,11 @@ const defaultRoutes = [
     // Thông báo của người dùng đang đăng nhập (in-app notifications)
     path: '/notifications',
     route: notificationRoute,
+  },
+  {
+    // Deal công khai cho trang /deals — không auth
+    path: '/deals',
+    route: dealRoute,
   },
   {
     // Swagger UI — bật ở MỌI môi trường (kể cả production) để FE/hội đồng xem tài liệu API khi deploy

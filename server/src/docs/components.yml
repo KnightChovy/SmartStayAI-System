@@ -752,6 +752,25 @@ components:
         voucherCode: { type: string }
         usedAt: { type: string, format: date-time, nullable: true }
 
+    Deal:
+      type: object
+      description: >
+        A live promotion on a listed hotel, shaped for the guest /deals page. Only promotions that
+        are active, inside their date window, and not out of uses are returned.
+      properties:
+        promotionId: { type: string, format: uuid }
+        hotelId: { type: string, format: uuid }
+        hotelName: { type: string }
+        city: { type: string }
+        image: { type: string, nullable: true, description: 'Hotel primary image URL, null if none' }
+        code: { type: string, example: SUMMER25 }
+        name: { type: string }
+        originalPrice: { type: string, description: 'Decimal as string — lowest applicable room base price' }
+        discountedPrice: { type: string, description: 'Decimal as string, never below 0' }
+        discountPercent: { type: integer, description: 'Actual percent off (rounded). For free_night it is the effective discount over the minimum stay' }
+        dealType: { type: string, enum: [flash_sale, standard], description: 'flash_sale when expiring within 48h (derived from endDate, no schema column)' }
+        expiresAt: { type: string, format: date-time }
+
     CustomerWallet:
       type: object
       description: >
