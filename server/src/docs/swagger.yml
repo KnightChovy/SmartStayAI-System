@@ -2006,6 +2006,26 @@ paths:
             minimum: 1
           description: Only hotels having a room type with maxOccupancy >= guests
         - in: query
+          name: priceMin
+          schema: { type: number, minimum: 0 }
+          description: 'Min nightly price (real price when dates given, else basePrice). Filtered in the app after price is computed'
+        - in: query
+          name: priceMax
+          schema: { type: number, minimum: 0 }
+          description: 'Max nightly price; must be greater than priceMin'
+        - in: query
+          name: stars
+          schema: { type: string, example: '3,4,5' }
+          description: 'CSV of star ratings 1-5 (OR within the group)'
+        - in: query
+          name: amenities
+          schema: { type: string }
+          description: 'CSV of amenity UUIDs. The hotel must have ALL of them (AND)'
+        - in: query
+          name: reviewScore
+          schema: { type: number, minimum: 0, maximum: 10 }
+          description: 'Minimum guest score on a 10-scale (7/8/9). avgRating is on a 5-scale, so the filter is avgRating*2 >= reviewScore. Hotels with no rating are excluded'
+        - in: query
           name: sortBy
           schema:
             type: string

@@ -7,7 +7,13 @@ import { hotelService } from '../services';
 
 export class HotelController {
   searchHotels = catchAsync(async (req: Request, res: Response): Promise<void> => {
-    const filter = pick(req.query, ['city', 'checkIn', 'checkOut', 'guests']);
+    const raw = pick(req.query, ['city', 'checkIn', 'checkOut', 'guests', 'priceMin', 'priceMax', 'stars', 'amenities', 'reviewScore']);
+    // stars / amenities gửi lên dạng CSV ("3,4,5") — tách thành mảng ở đây, service nhận mảng
+    const filter = {
+      ...raw,
+      ...(raw.stars !== undefined && { stars: String(raw.stars).split(',').map(Number) }),
+      ...(raw.amenities !== undefined && { amenities: String(raw.amenities).split(',') }),
+    };
     const options = pick(req.query, ['sortBy', 'limit', 'page']);
     const result = await hotelService.searchHotels(filter, options);
     res.send(result);

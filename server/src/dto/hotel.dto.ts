@@ -6,6 +6,13 @@ export interface HotelSearchFilter {
   checkIn?: Date;
   checkOut?: Date;
   guests?: number;
+  // ----- Bộ lọc nâng cao (P0-1). AND giữa các nhóm, OR trong một nhóm. -----
+  priceMin?: number;
+  priceMax?: number;
+  stars?: number[]; // OR: KS có starRating thuộc danh sách này
+  amenities?: string[]; // AND: KS phải có ĐỦ TẤT CẢ amenityId này
+  // Điểm đánh giá tối thiểu theo THANG 10 (7/8/9). avgRating (thang 5) quy đổi: avgRating * 2 >= reviewScore.
+  reviewScore?: number;
 }
 
 /**

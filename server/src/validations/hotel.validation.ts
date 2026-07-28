@@ -12,6 +12,18 @@ export const searchHotels = {
       sortBy: Joi.string().valid('recommended', 'price:asc', 'price:desc', 'rating:desc'),
       limit: Joi.number().integer().min(1).max(100),
       page: Joi.number().integer().min(1),
+      // ----- Bộ lọc nâng cao (P0-1) -----
+      priceMin: Joi.number().min(0),
+      // Chỉ đòi priceMax > priceMin KHI có priceMin; gửi mình priceMax vẫn hợp lệ (lọc "dưới X")
+      priceMax: Joi.number()
+        .min(0)
+        .when('priceMin', { is: Joi.exist(), then: Joi.number().greater(Joi.ref('priceMin')) }),
+      // CSV các sao 1..5, vd "3,4,5"
+      stars: Joi.string().pattern(/^[1-5](,[1-5])*$/).message('stars phải là danh sách sao 1-5 phân tách bởi dấu phẩy'),
+      // CSV các uuid amenity
+      amenities: Joi.string().pattern(/^[0-9a-fA-F-]{36}(,[0-9a-fA-F-]{36})*$/).message('amenities phải là danh sách uuid phân tách bởi dấu phẩy'),
+      // Điểm tối thiểu theo thang 10
+      reviewScore: Joi.number().min(0).max(10),
     })
     // checkIn/checkOut phải đi cùng nhau — chỉ một trong hai thì không tính được tồn kho
     .and('checkIn', 'checkOut'),
