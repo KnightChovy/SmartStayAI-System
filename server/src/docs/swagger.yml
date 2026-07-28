@@ -4341,6 +4341,32 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
 
+  /deals:
+    get:
+      summary: List active deals (guest)
+      description: >
+        Public. Returns live promotions for the /deals page — active, inside their start/end window,
+        with uses left, on a hotel that is on sale. Each deal carries the original price (lowest
+        applicable room base price), the discounted price, and the actual percent off. Sorted by
+        biggest discount first. Promotions whose applicable room types are all gone are skipped.
+      tags: [Deals]
+      parameters:
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+        - in: query
+          name: city
+          schema: { type: string }
+          description: Optional — only deals in this city
+      responses:
+        '200':
+          description: Active deals, biggest discount first
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Deal' }
+
   /users/me/wallet:
     get:
       summary: Get my wallet balance and history
