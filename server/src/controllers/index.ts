@@ -20,3 +20,5 @@ export { platformManagerController } from './platform-manager.controller';
 export { refundController } from './refund.controller';
 export { notificationController } from './notification.controller';
 export { promotionController } from './promotion.controller';
+export { statsController } from './stats.controller';
+export { destinationController } from './destination.controller';

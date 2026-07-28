@@ -452,6 +452,15 @@ export class HotelService {
     if (filter.city) {
       where.city = { contains: filter.city, mode: 'insensitive' };
     }
+    // Lọc theo hạng sao — OR trong nhóm (KS có sao thuộc danh sách)
+    if (filter.stars && filter.stars.length > 0) {
+      where.starRating = { in: filter.stars };
+    }
+    // Lọc theo tiện nghi — KS phải có ĐỦ TẤT CẢ: mỗi amenity là một điều kiện `some` riêng, AND lại.
+    // (một `some: { amenityId: { in: [...] } }` chỉ đòi có ÍT NHẤT MỘT — sai yêu cầu.)
+    if (filter.amenities && filter.amenities.length > 0) {
+      where.AND = filter.amenities.map((amenityId) => ({ amenities: { some: { amenityId } } }));
+    }
 
     // Khách sạn phải có ít nhất một loại phòng đang bán đủ sức chứa
     const roomTypeWhere: Prisma.RoomTypeWhereInput = { isActive: true };
@@ -463,6 +472,8 @@ export class HotelService {
     // Giá "từ" mỗi đêm THẬT của từng khách sạn khi có khoảng ngày — chỉ tính trên loại phòng còn
     // trống, và đã áp pricing rule + priceOverride. Rỗng khi tìm không kèm ngày (xem bên dưới).
     const realMinPricePerNight = new Map<string, Prisma.Decimal>();
+    // Tổng số phòng còn trống của mỗi khách sạn cho kỳ ở — cho badge "chỉ còn N phòng" (chỉ khi có ngày)
+    const availableRoomsPerHotel = new Map<string, number>();
 
     // Có khoảng ngày ⇒ tính tồn kho từng loại phòng ứng viên rồi chỉ giữ khách sạn còn phòng
     if (filter.checkIn && filter.checkOut) {
@@ -478,11 +489,14 @@ export class HotelService {
       // Tận dụng luôn quote vừa tính (không thêm truy vấn): giá mỗi đêm = tổng kỳ ở ÷ số đêm.
       // Giá từng đêm có thể khác nhau (cuối tuần, lễ) nên đây là mức trung bình mỗi đêm.
       for (const candidate of available) {
-        const perNight = quotes.get(candidate.id)!.totalPrice.div(numNights).toDecimalPlaces(2);
+        const quote = quotes.get(candidate.id)!;
+        const perNight = quote.totalPrice.div(numNights).toDecimalPlaces(2);
         const current = realMinPricePerNight.get(candidate.hotelId);
         if (!current || perNight.lessThan(current)) {
           realMinPricePerNight.set(candidate.hotelId, perNight);
         }
+        // Cộng dồn phòng trống của các loại phòng trong cùng khách sạn
+        availableRoomsPerHotel.set(candidate.hotelId, (availableRoomsPerHotel.get(candidate.hotelId) ?? 0) + quote.availableRooms);
       }
     }
 
@@ -496,9 +510,10 @@ export class HotelService {
       include: {
         images: { where: { isPrimary: true }, take: 1 },
         roomTypes: { where: roomTypeWhere, select: { basePrice: true } },
+        // 3 tiện nghi để hiện nhanh trên thẻ (topAmenities)
+        amenities: { take: 3, include: { amenity: { select: { id: true, name: true, icon: true } } } },
       },
     });
-    const totalResults = allHotels.length;
 
     const ratings = await this.getRatingSummaries(allHotels.map((hotel) => hotel.id));
 
@@ -509,18 +524,45 @@ export class HotelService {
     //   trung thực nhất có thể nói ("từ ... /đêm").
     // Chưa gồm thuế/phí (theo thông lệ hiển thị giá phòng mỗi đêm); số phải trả đầy đủ nằm ở bước
     // chọn phòng và ở booking.
-    const enriched = allHotels.map(({ roomTypes, ...hotel }) => ({
+    const enriched = allHotels.map(({ roomTypes, amenities, ...hotel }) => ({
       ...hotel,
       minPrice:
         realMinPricePerNight.get(hotel.id) ??
         (roomTypes.length > 0 ? Prisma.Decimal.min(...roomTypes.map((rt) => rt.basePrice)) : null),
+      topAmenities: amenities.map((ha) => ha.amenity),
+      // Chỉ có nghĩa khi tìm kèm ngày; không ngày ⇒ null để FE khỏi hiện badge sai
+      availableRooms: filter.checkIn && filter.checkOut ? (availableRoomsPerHotel.get(hotel.id) ?? 0) : null,
       ...(ratings.get(hotel.id) ?? { avgRating: null, reviewCount: 0 }),
     }));
 
-    // Sắp xếp theo giá trị đã tính, rồi phân trang bằng slice
-    const results = this.sortSearchResults(enriched, options.sortBy).slice(skip, skip + limit);
+    // priceBounds = min/max giá của kết quả TRƯỚC khi áp lọc giá (nhưng SAU các lọc khác), để thanh
+    // trượt giá của FE không tự bóp hẹp mỗi lần khách kéo. Tính trước khi lọc priceMin/priceMax.
+    const pricesForBounds = enriched.map((h) => h.minPrice).filter((p): p is Prisma.Decimal => p !== null);
+    const priceBounds = pricesForBounds.length
+      ? { min: Prisma.Decimal.min(...pricesForBounds).toString(), max: Prisma.Decimal.max(...pricesForBounds).toString() }
+      : null;
 
-    return { results, page, limit, totalPages: Math.ceil(totalResults / limit), totalResults };
+    // Lọc theo giá thật (tính sau query) và điểm đánh giá (thang 10). null bị loại khi có ràng buộc
+    // tương ứng — KS chưa có giá/đánh giá không thoả điều kiện lọc số.
+    const filtered = enriched.filter((h) => {
+      if (filter.priceMin !== undefined || filter.priceMax !== undefined) {
+        if (h.minPrice === null) return false;
+        const p = h.minPrice.toNumber();
+        if (filter.priceMin !== undefined && p < filter.priceMin) return false;
+        if (filter.priceMax !== undefined && p > filter.priceMax) return false;
+      }
+      if (filter.reviewScore !== undefined) {
+        // avgRating thang 5 → nhân 2 để so với reviewScore thang 10
+        if (h.avgRating === null || h.avgRating * 2 < filter.reviewScore) return false;
+      }
+      return true;
+    });
+
+    // totalResults tính SAU mọi lọc để FE hiển thị đúng số + phân trang đúng
+    const totalResults = filtered.length;
+    const results = this.sortSearchResults(filtered, options.sortBy).slice(skip, skip + limit);
+
+    return { results, page, limit, totalPages: Math.ceil(totalResults / limit), totalResults, priceBounds };
   };
 
   /**

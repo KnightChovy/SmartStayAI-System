@@ -2006,6 +2006,26 @@ paths:
             minimum: 1
           description: Only hotels having a room type with maxOccupancy >= guests
         - in: query
+          name: priceMin
+          schema: { type: number, minimum: 0 }
+          description: 'Min nightly price (real price when dates given, else basePrice). Filtered in the app after price is computed'
+        - in: query
+          name: priceMax
+          schema: { type: number, minimum: 0 }
+          description: 'Max nightly price; must be greater than priceMin'
+        - in: query
+          name: stars
+          schema: { type: string, example: '3,4,5' }
+          description: 'CSV of star ratings 1-5 (OR within the group)'
+        - in: query
+          name: amenities
+          schema: { type: string }
+          description: 'CSV of amenity UUIDs. The hotel must have ALL of them (AND)'
+        - in: query
+          name: reviewScore
+          schema: { type: number, minimum: 0, maximum: 10 }
+          description: 'Minimum guest score on a 10-scale (7/8/9). avgRating is on a 5-scale, so the filter is avgRating*2 >= reviewScore. Hotels with no rating are excluded'
+        - in: query
           name: sortBy
           schema:
             type: string
@@ -4340,6 +4360,79 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
+
+  /platform/stats:
+    get:
+      summary: Platform headline stats (public)
+      description: Public homepage numbers — listed hotels, distinct cities, average published-review score (null-safe), total reviews. Cacheable.
+      tags: [Platform]
+      responses:
+        '200':
+          description: Platform stats
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PlatformStats' }
+
+  /reviews/featured:
+    get:
+      summary: Featured reviews for the homepage (public)
+      description: >
+        Public. Up to `limit` high-rated (overallRating >= 4), published reviews with non-empty
+        content, best first. Names are abbreviated and no email/phone is returned. Replaces the FE
+        fan-out that fetched /reviews for many hotels.
+      tags: [Reviews]
+      parameters:
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 20, default: 8 }
+      responses:
+        '200':
+          description: Featured reviews
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/FeaturedReview' }
+
+  /destinations:
+    get:
+      summary: List destinations (public)
+      description: Public. Cities that have listed hotels, with the hotel count and a representative image. Most hotels first.
+      tags: [Destinations]
+      responses:
+        '200':
+          description: Destinations, most hotels first
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Destination' }
+
+  /destinations/suggest:
+    get:
+      summary: Destination autocomplete (public)
+      description: >
+        Public. Suggests cities and districts that have listed hotels and match `q`, accent-insensitive
+        ("da nang" matches "Đà Nẵng"). Most hotels first. Only suggests real inventory, so the guest
+        never picks a place with 0 results.
+      tags: [Destinations]
+      parameters:
+        - in: query
+          name: q
+          required: true
+          schema: { type: string, minLength: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 20, default: 8 }
+      responses:
+        '200':
+          description: Suggestions, most hotels first
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/DestinationSuggestion' }
+        '400': { $ref: '#/components/responses/BadRequest' }
 
   /deals:
     get:

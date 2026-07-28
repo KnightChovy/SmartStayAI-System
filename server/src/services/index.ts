@@ -23,3 +23,5 @@ export { auditService } from './audit.service';
 export { refundService } from './refund.service';
 export { notificationService } from './notification.service';
 export { promotionService } from './promotion.service';
+export { statsService } from './stats.service';
+export { destinationService } from './destination.service';
