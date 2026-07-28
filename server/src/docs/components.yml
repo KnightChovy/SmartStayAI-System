@@ -762,6 +762,45 @@ components:
         voucherCode: { type: string }
         usedAt: { type: string, format: date-time, nullable: true }
 
+    PlatformStats:
+      type: object
+      description: Homepage headline numbers. Cacheable — they change slowly.
+      properties:
+        totalHotels: { type: integer, description: 'Hotels currently on sale (listed)' }
+        totalCities: { type: integer, description: 'Distinct cities with a listed hotel' }
+        avgRating: { type: number, nullable: true, description: 'Average published-review score, 1 decimal. null when the platform has no review yet' }
+        totalReviews: { type: integer }
+
+    FeaturedReview:
+      type: object
+      description: A high-rated public review for the homepage carousel. Sensitive fields (email/phone) are never included; the name is abbreviated.
+      properties:
+        id: { type: string, format: uuid }
+        content: { type: string }
+        overallRating: { type: integer, minimum: 4, maximum: 5 }
+        customerName: { type: string, example: 'Nguyễn V.', description: 'Abbreviated for privacy' }
+        avatarUrl: { type: string, nullable: true }
+        hotelName: { type: string }
+        hotelCity: { type: string }
+        createdAt: { type: string, format: date-time }
+
+    Destination:
+      type: object
+      description: A city with listed hotels, for the destinations grid.
+      properties:
+        city: { type: string }
+        hotelCount: { type: integer, description: 'Listed hotels in this city' }
+        image: { type: string, nullable: true, description: 'Primary image of a representative hotel' }
+
+    DestinationSuggestion:
+      type: object
+      description: Autocomplete entry — a city or district that has listed hotels.
+      properties:
+        type: { type: string, enum: [city, district] }
+        name: { type: string }
+        city: { type: string, description: 'For a district, the city it belongs to' }
+        hotelCount: { type: integer }
+
     Deal:
       type: object
       description: >

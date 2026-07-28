@@ -20,6 +20,13 @@ export class ReviewController {
     res.send(result);
   });
 
+  // [Public] Đánh giá tiêu biểu cho carousel trang chủ
+  getFeaturedReviews = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const limit = req.query.limit ? Number(req.query.limit) : undefined;
+    const result = await reviewService.getFeaturedReviews(limit);
+    res.send(result);
+  });
+
   // Đánh giá của chính khách đang đăng nhập (mọi trạng thái)
   getMyReviews = catchAsync(async (req: Request, res: Response): Promise<void> => {
     const options = pick(req.query, ['sortBy', 'limit', 'page']);
