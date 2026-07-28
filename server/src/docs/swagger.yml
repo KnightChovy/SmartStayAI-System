@@ -2009,7 +2009,13 @@ paths:
           name: sortBy
           schema:
             type: string
-          description: 'field:(desc|asc) e.g. starRating:desc'
+            enum: [recommended, 'price:asc', 'price:desc', 'rating:desc']
+            default: recommended
+          description: >
+            recommended (default, newest first) · price:asc / price:desc (real nightly price,
+            tax/fee excluded) · rating:desc. Hotels with no price/rating sort last. price and rating
+            are computed after the query, so sorting and pagination happen in the app and stay
+            correct across pages. Any other value is rejected with 400.
         - in: query
           name: limit
           schema:
@@ -4549,9 +4555,12 @@ paths:
       description: >
         Public. Returns full detail of a single active room type belonging to a listed hotel
         (hotel isActive + isListed) — images, amenities, beds and minimal hotel info. When
-        checkIn/checkOut are provided the response also includes numNights, availableRooms and
-        totalPrice for the stay (per-night priceOverride applied). Returns 404 if the room type
-        is hidden or belongs to a hotel that is not on sale.
+        checkIn/checkOut are provided the response ALSO carries the full price breakdown for the
+        stay: numNights, availableRooms, subtotal (room charge with pricing rules + priceOverride),
+        taxAmount, feeAmount and totalPrice. totalPrice = subtotal + taxAmount + feeAmount and
+        matches this room's line in the list endpoint and POST /bookings for the same dates/guests,
+        so the guest sees the exact amount they will pay — the client does not need to estimate tax.
+        Returns 404 if the room type is hidden or its hotel is not on sale.
       tags: [Hotels]
       parameters:
         - in: path
@@ -4568,9 +4577,13 @@ paths:
         - in: query
           name: checkOut
           schema: { type: string, format: date }
+        - in: query
+          name: guests
+          schema: { type: integer, minimum: 1 }
+          description: 'Guest count for per-person fees (defaults to 1). Send the same value used at booking'
       responses:
         '200':
-          description: Room type detail (plus availability and total price when dates given)
+          description: Room type detail; with dates it includes subtotal / taxAmount / feeAmount / totalPrice
           content:
             application/json:
               schema: { $ref: '#/components/schemas/RoomType' }
