@@ -51,7 +51,7 @@ export function AdminPropertiesPage() {
             'Partner',
             'Status',
             'Created',
-            'Actions',
+            '',
           ]}
           rows={rows}
           showStatusIcons

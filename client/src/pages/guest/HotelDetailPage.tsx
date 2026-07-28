@@ -8,10 +8,13 @@ import {
   Image as ImageIcon,
   MapPin,
   ShieldCheck,
+  Star,
   Ticket,
 } from 'lucide-react';
 import { useHotel } from '@/hooks/hotels/use-hotel';
 import { useRoomTypes } from '@/hooks/hotels/use-room-types';
+import { usePublicHotelReviews } from '@/hooks/hotel-reviews';
+import AnchorNav, { type AnchorSection } from '@/components/guest/AnchorNav';
 import { useGeocode } from '@/hooks/geo';
 import { useAuthStore } from '@/stores/authStore';
 import { ROUTES } from '@/constants/routes';
@@ -23,6 +26,7 @@ import HotelReviews from '@/components/guest/HotelReviews';
 import HotelAmenities from '@/components/guest/HotelAmenities';
 import HotelPolicies from '@/components/guest/HotelPolicies';
 import BackLink from '@/components/shared/BackLink';
+import Breadcrumb, { type Crumb } from '@/components/shared/Breadcrumb';
 import HotelNearby from '@/components/guest/HotelNearby';
 import StickyBookingBar from '@/components/guest/StickyBookingBar';
 import GalleryLightbox from '@/components/guest/GalleryLightbox';
@@ -33,6 +37,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { toDateInputValue } from '@/utils/formatDate';
 import { formatAddress } from '@/utils/formatAddress';
+import { getFreeCancellationHours } from '@/utils/cancellationPolicy';
 import type { HotelSearchResult, RoomType } from '@/types/hotel.types';
 
 const FALLBACK =
@@ -40,6 +45,7 @@ const FALLBACK =
 
 export default function HotelDetailPage() {
   const { t } = useTranslation('hotel');
+  const { t: tc } = useTranslation('common');
   const { hotelId = '' } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -134,6 +140,41 @@ export default function HotelDetailPage() {
   const mapLat = hotel?.latitude != null ? Number(hotel.latitude) : geocoded?.lat ?? null;
   const mapLng = hotel?.longitude != null ? Number(hotel.longitude) : geocoded?.lng ?? null;
 
+  // Điểm đánh giá tổng cho header (SS-201). Dùng cùng tham số với <HotelReviews/> nên React Query
+  // dùng chung cache — không phát sinh request thừa. avgRating = null khi chưa có review (không hiện 0).
+  const { data: reviewData } = usePublicHotelReviews(hotelId, {
+    limit: 100,
+    sortBy: 'createdAt:desc',
+  });
+  const reviewCount = reviewData?.totalResults ?? 0;
+  const avgRating = useMemo(() => {
+    const list = reviewData?.results ?? [];
+    if (list.length === 0) return null;
+    return list.reduce((sum, r) => sum + r.overallRating, 0) / list.length;
+  }, [reviewData]);
+
+  // Chỉ hiện anchor cho section thực sự tồn tại (tránh cuộn tới chỗ trống).
+  const hasLocation =
+    (mapLat != null && mapLng != null) || (hotel?.nearbyPlaces?.length ?? 0) > 0;
+  const sections = useMemo<AnchorSection[]>(() => {
+    const list: AnchorSection[] = [{ id: 'overview', label: t('anchorNav.overview') }];
+    if (hotel?.amenities?.length) list.push({ id: 'amenities', label: t('anchorNav.amenities') });
+    if (hasLocation) list.push({ id: 'location', label: t('anchorNav.location') });
+    list.push({ id: 'rooms', label: t('anchorNav.rooms') });
+    list.push({ id: 'reviews', label: t('anchorNav.reviews') });
+    return list;
+  }, [hotel?.amenities?.length, hasLocation, t]);
+
+  // Breadcrumb phân cấp: Trang chủ / Thành phố / Khách sạn (SS-702).
+  // Const thường (không useMemo) — React Compiler tự memo; chỉ dùng để render, không vào effect nào.
+  const crumbs: Crumb[] = [
+    { label: tc('nav.home'), to: ROUTES.home },
+    ...(hotel?.city
+      ? [{ label: hotel.city, to: `${ROUTES.search}?city=${encodeURIComponent(hotel.city)}` }]
+      : []),
+    { label: hotel?.name ?? '' },
+  ];
+
   const handleSelectRoom = (roomType: RoomType) => {
     if (!checkIn || !checkOut) {
       // Chưa chọn ngày → cuộn lên thanh chọn ngày
@@ -163,6 +204,7 @@ export default function HotelDetailPage() {
     <div className="w-full py-8 pb-28">
       <div className="mx-auto max-w-7xl px-margin-mobile md:px-8">
         <BackLink fallbackTo={ROUTES.search} />
+        <Breadcrumb items={crumbs} className="mb-4" />
 
         {/* Gallery — click bất kỳ ảnh nào để mở lightbox toàn màn hình (vuốt / ←→ / Esc) */}
         <div className="relative grid gap-3 md:grid-cols-4 md:grid-rows-2">
@@ -222,12 +264,35 @@ export default function HotelDetailPage() {
           hotelName={hotel?.name ?? ''}
         />
 
+        {/* Thanh điều hướng neo — sticky, scroll spy (SS-201) */}
+        <AnchorNav sections={sections} />
+
         {/* Header */}
-        <div className="mt-6">
+        <div id="overview" className="mt-6 scroll-mt-[var(--app-anchor-offset,7rem)]">
           <h1 className="font-be-vietnam text-3xl font-bold text-on-surface">
             {hotel?.name ?? 'Hotel'}
           </h1>
           <div className="mt-2 flex flex-wrap items-center gap-4 text-sm text-on-surface-variant">
+            {/* Điểm đánh giá tổng của khách — click cuộn tới mục Đánh giá (SS-201) */}
+            {avgRating != null ? (
+              <button
+                type="button"
+                onClick={() =>
+                  document.getElementById('reviews')?.scrollIntoView({ behavior: 'smooth' })
+                }
+                // Chip vàng ĐẶC + chữ tối: `text-premium-gold` trên nền nhạt chỉ đạt contrast
+                // 2.0:1 nên số điểm sẽ mờ — đúng chỗ cần khách đọc được ngay.
+                className="flex items-center gap-1.5 rounded-full bg-premium-gold px-3 py-1 font-bold text-on-surface transition-colors hover:bg-[color-mix(in_oklch,var(--color-premium-gold),black_12%)]"
+              >
+                <Star className="size-3.5 fill-current" aria-hidden="true" />
+                <span>{avgRating.toFixed(1)}</span>
+                <span className="font-normal text-on-surface-variant">
+                  ({t('reviews.count', { count: reviewCount })})
+                </span>
+              </button>
+            ) : (
+              <span className="text-on-surface-variant">{t('noRatingYet')}</span>
+            )}
             {/* Sao = HẠNG khách sạn (khác điểm đánh giá của khách ở mục Reviews) */}
             {hotel?.starRating ? (
               <span
@@ -276,13 +341,15 @@ export default function HotelDetailPage() {
 
         {/* Hỗ trợ ra quyết định: tiện nghi → chính sách → vị trí, trước khi khách chọn phòng */}
         {hotel?.amenities && (
-          <HotelAmenities amenities={hotel.amenities.map(a => a.amenity)} />
+          <div id="amenities" className="scroll-mt-[var(--app-anchor-offset,7rem)]">
+            <HotelAmenities amenities={hotel.amenities.map(a => a.amenity)} />
+          </div>
         )}
         {hotel && <HotelPolicies hotel={hotel} />}
 
         {/* Map — toạ độ từ DB, hoặc geocode từ địa chỉ khi DB chưa có lat/lng */}
-        {(mapLat != null && mapLng != null) || (hotel?.nearbyPlaces?.length ?? 0) > 0 ? (
-          <section className="mt-6">
+        {hasLocation ? (
+          <section id="location" className="mt-6 scroll-mt-[var(--app-anchor-offset,7rem)]">
             <h2 className="mb-3 font-be-vietnam text-2xl font-bold text-on-surface">
               {t('location')}
             </h2>
@@ -301,7 +368,9 @@ export default function HotelDetailPage() {
         {/* Stay picker */}
         <div
           id="stay-picker"
-          className="mt-8 flex flex-col gap-4 rounded-2xl border border-outline-variant/30 bg-surface p-5 md:flex-row md:items-end"
+          // Viền + nền vàng nhạt: đây là bước ĐẦU TIÊN của luồng đặt phòng (không chọn ngày thì
+          // không có giá lẫn phòng trống), nên phải hút mắt hơn các khối thông tin xung quanh.
+          className="mt-8 flex scroll-mt-[var(--app-anchor-offset,7rem)] flex-col gap-4 rounded-2xl border border-premium-gold/45 bg-premium-gold/5 p-5 md:flex-row md:items-end"
         >
           <DateRangePicker
             checkIn={checkIn}
@@ -318,7 +387,7 @@ export default function HotelDetailPage() {
         ) : null}
 
         {/* Room types */}
-        <div className="mt-10 flex flex-wrap items-center justify-between gap-3">
+        <div id="rooms" className="mt-10 flex scroll-mt-[var(--app-anchor-offset,7rem)] flex-wrap items-center justify-between gap-3">
           <h2 className="font-be-vietnam text-2xl font-bold text-on-surface">
             {t('availableRooms')}
           </h2>
@@ -357,6 +426,7 @@ export default function HotelDetailPage() {
                 onSelect={handleSelectRoom}
                 bestValue={roomTypes.length > 1 && rt.id === bestValueRoomId}
                 detailHref={`${ROUTES.roomTypeDetail(rt.hotelId, rt.id)}?${roomQuery}`}
+                freeUntilHours={getFreeCancellationHours(hotel?.settings)}
               />
             ))
           )}
@@ -366,7 +436,7 @@ export default function HotelDetailPage() {
           <div className="mt-6">
             <Button
               size="lg"
-              className="bg-on-surface text-white hover:bg-primary"
+              variant="cta"
               onClick={() => document.getElementById('stay-picker')?.scrollIntoView({ behavior: 'smooth' })}
             >
               {t('pickDates')}
@@ -375,7 +445,9 @@ export default function HotelDetailPage() {
         )}
 
         {/* Bằng chứng xã hội — chốt lại sau khi khách đã xem phòng */}
-        <HotelReviews hotelId={hotelId} />
+        <div id="reviews" className="scroll-mt-[var(--app-anchor-offset,7rem)]">
+          <HotelReviews hotelId={hotelId} />
+        </div>
       </div>
 
       {/* Mobile: giá + CTA luôn trong tầm ngón tay */}

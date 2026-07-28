@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CheckCircle2, CreditCard, RefreshCw, ShieldCheck } from 'lucide-react';
+import { CheckCircle2, ChevronLeft, ChevronRight, CreditCard, RefreshCw, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { AdminPageHeader } from '@/components/admin/shared/AdminPageHeader';
@@ -33,6 +33,8 @@ const paymentStatusOptions: Array<{
 
 export function AdminPaymentsPage() {
   const { data: overview } = useAdminOverview();
+  const [paymentPage, setPaymentPage] = useState(1);
+  const [commissionPage, setCommissionPage] = useState(1);
   const [paymentStatus, setPaymentStatus] = useState<
     NonNullable<AdminPaymentsParams['status']> | 'all'
   >('all');
@@ -43,7 +45,8 @@ export function AdminPaymentsPage() {
     error: paymentsError,
     refetch: refetchPayments,
   } = useAdminPayments({
-    limit: 20,
+    limit: 10,
+    page: paymentPage,
     status: paymentStatus === 'all' ? undefined : paymentStatus,
   });
   const {
@@ -51,7 +54,7 @@ export function AdminPaymentsPage() {
     isLoading: isCommissionsLoading,
     isError: isCommissionsError,
     error: commissionsError,
-  } = useAdminCommissions({ limit: 20 });
+  } = useAdminCommissions({ limit: 10, page: commissionPage });
   const settleCommission = useSettleAdminCommission();
 
   const paymentStats = [
@@ -137,11 +140,12 @@ export function AdminPaymentsPage() {
             <select
               className="h-9 w-44 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-ring focus:ring-3 focus:ring-ring/50"
               id="admin-payment-status-filter"
-              onChange={event =>
+              onChange={event => {
+                setPaymentPage(1);
                 setPaymentStatus(
                   event.target.value as NonNullable<AdminPaymentsParams['status']> | 'all'
-                )
-              }
+                );
+              }}
               value={paymentStatus}
             >
               {paymentStatusOptions.map(option => (
@@ -172,6 +176,51 @@ export function AdminPaymentsPage() {
               'Created',
             ]}
             rows={paymentRows}
+            footer={
+              paymentsData && paymentsData.totalResults > 0 ? (
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-sm text-slate-500">
+                    Showing{' '}
+                    <span className="font-semibold text-slate-700">
+                      {(paymentsData.page - 1) * paymentsData.limit + 1}–
+                      {Math.min(paymentsData.page * paymentsData.limit, paymentsData.totalResults)}
+                    </span>{' '}
+                    of{' '}
+                    <span className="font-semibold text-slate-700">
+                      {paymentsData.totalResults}
+                    </span>{' '}
+                    transactions
+                  </p>
+                  <div className="flex items-center justify-between gap-2 sm:justify-end">
+                    <Button
+                      className="h-9 rounded-xl px-3"
+                      disabled={paymentsData.page <= 1}
+                      onClick={() => setPaymentPage(current => Math.max(1, current - 1))}
+                      type="button"
+                      variant="outline"
+                    >
+                      <ChevronLeft className="size-4" />
+                      Previous
+                    </Button>
+                    <span className="min-w-20 text-center text-sm font-medium text-slate-600">
+                      {paymentsData.page} / {Math.max(paymentsData.totalPages, 1)}
+                    </span>
+                    <Button
+                      className="h-9 rounded-xl px-3"
+                      disabled={paymentsData.page >= paymentsData.totalPages}
+                      onClick={() =>
+                        setPaymentPage(current => Math.min(paymentsData.totalPages, current + 1))
+                      }
+                      type="button"
+                      variant="outline"
+                    >
+                      Next
+                      <ChevronRight className="size-4" />
+                    </Button>
+                  </div>
+                </div>
+              ) : undefined
+            }
           />
         )}
       </section>
@@ -198,6 +247,54 @@ export function AdminPaymentsPage() {
               'Actions',
             ]}
             rows={commissionRows}
+            footer={
+              commissionsData && commissionsData.totalResults > 0 ? (
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-sm text-slate-500">
+                    Showing{' '}
+                    <span className="font-semibold text-slate-700">
+                      {(commissionsData.page - 1) * commissionsData.limit + 1}–
+                      {Math.min(
+                        commissionsData.page * commissionsData.limit,
+                        commissionsData.totalResults
+                      )}
+                    </span>{' '}
+                    of{' '}
+                    <span className="font-semibold text-slate-700">
+                      {commissionsData.totalResults}
+                    </span>{' '}
+                    commissions
+                  </p>
+                  <div className="flex items-center justify-between gap-2 sm:justify-end">
+                    <Button
+                      className="h-9 rounded-xl px-3"
+                      disabled={commissionsData.page <= 1}
+                      onClick={() => setCommissionPage(current => Math.max(1, current - 1))}
+                      type="button"
+                      variant="outline"
+                    >
+                      <ChevronLeft className="size-4" />
+                      Previous
+                    </Button>
+                    <span className="min-w-20 text-center text-sm font-medium text-slate-600">
+                      {commissionsData.page} / {Math.max(commissionsData.totalPages, 1)}
+                    </span>
+                    <Button
+                      className="h-9 rounded-xl px-3"
+                      disabled={commissionsData.page >= commissionsData.totalPages}
+                      onClick={() =>
+                        setCommissionPage(current => Math.min(commissionsData.totalPages, current + 1))
+                      }
+                      type="button"
+                      variant="outline"
+                    >
+                      Next
+                      <ChevronRight className="size-4" />
+                    </Button>
+                  </div>
+                </div>
+              ) : undefined
+            }
             renderLastColumn={row => (
               <Button
                 className="h-8 rounded-full px-3 text-xs"

@@ -1,9 +1,11 @@
 import { api } from '@/lib/api';
 import type {
+  HotelCharge,
   HotelContact,
   HotelNearbyPlace,
   HotelPolicy,
   RoomBed,
+  SetHotelChargesDto,
   SetHotelContactsDto,
   SetHotelNearbyPlacesDto,
   SetHotelPoliciesDto,
@@ -11,8 +13,8 @@ import type {
 } from '@/types/hotel-property.types';
 
 /**
- * Các bộ thông tin "replace-all" của khách sạn: contacts / policies / nearby-places
- * (hotel-level) và bed config (room-type-level). Mỗi PUT thay thế toàn bộ tập.
+ * Các bộ thông tin "replace-all" của khách sạn: contacts / policies / charges /
+ * nearby-places (hotel-level) và bed config (room-type-level). Mỗi PUT thay thế toàn bộ tập.
  */
 export const hotelPropertyService = {
   // ── Contacts ──
@@ -25,13 +27,23 @@ export const hotelPropertyService = {
     return data;
   },
 
-  // ── Policies / fees ──
+  // ── Policies (điều khoản văn bản) ──
   async getPolicies(hotelId: string): Promise<HotelPolicy[]> {
     const { data } = await api.get<HotelPolicy[]>(`/hotels/${hotelId}/policies`);
     return data;
   },
   async setPolicies(hotelId: string, dto: SetHotelPoliciesDto): Promise<HotelPolicy[]> {
     const { data } = await api.put<HotelPolicy[]>(`/hotels/${hotelId}/policies`, dto);
+    return data;
+  },
+
+  // ── Charges (thuế/phí — ĐỔI SỐ Ở ĐÂY LÀ ĐỔI TIỀN KHÁCH TRẢ cho đơn mới) ──
+  async getCharges(hotelId: string): Promise<HotelCharge[]> {
+    const { data } = await api.get<HotelCharge[]>(`/hotels/${hotelId}/charges`);
+    return data;
+  },
+  async setCharges(hotelId: string, dto: SetHotelChargesDto): Promise<HotelCharge[]> {
+    const { data } = await api.put<HotelCharge[]>(`/hotels/${hotelId}/charges`, dto);
     return data;
   },
 

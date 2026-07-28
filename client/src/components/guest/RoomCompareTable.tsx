@@ -123,7 +123,8 @@ export default function RoomCompareTable({ roomTypes, onSelect }: RoomCompareTab
               <td key={rt.id} className="p-3">
                 <Button
                   size="sm"
-                  className="min-h-11 bg-primary text-on-primary hover:bg-primary/90"
+                  variant="cta"
+                  className="min-h-11"
                   onClick={() => onSelect(rt)}
                 >
                   {t('room.bookNow')}

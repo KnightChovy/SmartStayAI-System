@@ -36,6 +36,12 @@
   "qrEmptyHint": "Mã QR e-voucher sẽ hiển thị sau khi đơn được xác nhận / thanh toán.",
   "clearDate": "Xoá ngày",
   "search": "Tìm kiếm",
+  "trust": {
+    "freeCancellation": "Huỷ miễn phí",
+    "noHiddenFees": "Không phí ẩn",
+    "support247": "Hỗ trợ 24/7",
+    "sslSecured": "Bảo mật SSL"
+  },
   "chat": {
     "subtitle": "Trợ lý tìm khách sạn toàn sàn",
     "greeting": "Xin chào! Tôi là trợ lý AI của SmartStay. Bạn muốn nghỉ ở đâu, khoảng ngày nào? Tôi sẽ tìm và gợi ý khách sạn phù hợp trên sàn.",

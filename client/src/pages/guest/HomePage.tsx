@@ -5,6 +5,9 @@ import WhyChooseUs from '../../components/home/WhyChooseUs';
 import WeekendDeals from '../../components/home/WeekendDeals';
 import LoyaltyBanner from '../../components/home/LoyaltyBanner';
 import PopularVietnameseTourists from '../../components/home/PopularVietnameseTourists';
+import Testimonials from '../../components/home/Testimonials';
+import TrustBar from '../../components/shared/TrustBar';
+import PaymentBadges from '../../components/shared/PaymentBadges';
 import WelcomeProfileModal from '../../components/account/WelcomeProfileModal';
 import { useAuthStore } from '@/stores/authStore';
 import { useUpdateProfile } from '@/hooks/account';
@@ -52,10 +55,19 @@ export default function HomePage() {
         đã gỡ vì dữ liệu bịa và bấm vào không ra kết quả.
       */}
       <Hero />
+      {/* Dải tín hiệu tin cậy ngay dưới hero (SS-004) */}
+      <div className="border-b border-outline-variant/20 bg-surface py-5">
+        <TrustBar className="px-margin-mobile" />
+      </div>
       <WhyChooseUs />
       <WeekendDeals />
+      <Testimonials />
       <LoyaltyBanner />
       <PopularVietnameseTourists />
+      {/* Badge thanh toán + SSL (SS-004) */}
+      <div className="bg-surface py-10">
+        <PaymentBadges className="px-margin-mobile" />
+      </div>
 
       <WelcomeProfileModal
         open={showWelcome}

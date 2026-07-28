@@ -79,7 +79,7 @@ export default function HotelReviews({ hotelId }: HotelReviewsProps) {
           {t('reviews.title')}
         </h2>
         <div className="mt-4 flex items-center gap-3 rounded-2xl border border-outline-variant/30 bg-surface p-5">
-          <Sparkles className="size-5 shrink-0 text-primary" aria-hidden="true" />
+          <Sparkles className="size-5 shrink-0 text-premium-gold" aria-hidden="true" />
           <div>
             <p className="font-semibold text-on-surface">{t('reviews.newTitle')}</p>
             <p className="text-sm text-on-surface-variant">{t('reviews.newDesc')}</p>
@@ -97,14 +97,16 @@ export default function HotelReviews({ hotelId }: HotelReviewsProps) {
         {/* Điểm tổng + điểm thành phần */}
         <div className="flex flex-col gap-6 md:flex-row md:items-start">
           <div className="flex items-center gap-3 md:w-56 md:shrink-0">
+            {/* Ô điểm tô vàng ĐẶC — thứ thuyết phục khách đặt phòng nhất trong cả trang.
+                Chữ để màu tối (contrast 8.5:1); chữ trắng trên vàng chỉ được 2.0:1. */}
             <div
-              className="flex size-16 shrink-0 items-center justify-center rounded-2xl bg-primary text-2xl font-bold text-on-primary"
+              className="flex size-16 shrink-0 items-center justify-center rounded-2xl bg-premium-gold text-2xl font-bold text-on-surface shadow-sm"
               aria-hidden="true"
             >
               {overall?.toFixed(1)}
             </div>
             <div>
-              <p className="font-be-vietnam font-bold text-on-surface">
+              <p className="font-be-vietnam text-lg font-bold text-on-surface">
                 {overall != null ? t(scoreLabelKey(overall)) : '—'}
               </p>
               <p className="text-sm text-on-surface-variant">
@@ -123,7 +125,7 @@ export default function HotelReviews({ hotelId }: HotelReviewsProps) {
                 <dd className="flex flex-1 items-center gap-2">
                   <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-container-low">
                     <div
-                      className="h-full rounded-full bg-primary"
+                      className="h-full rounded-full bg-premium-gold"
                       style={{ width: `${((value ?? 0) / 5) * 100}%` }}
                     />
                   </div>
@@ -171,7 +173,7 @@ export default function HotelReviews({ hotelId }: HotelReviewsProps) {
 
           {total > RECENT_COUNT && (
             <p className="flex items-center gap-1.5 text-sm text-on-surface-variant">
-              <MessageSquareQuote className="size-4 text-primary" aria-hidden="true" />
+              <MessageSquareQuote className="size-4 text-premium-gold" aria-hidden="true" />
               {t('reviews.showingRecent', {
                 shown: Math.min(RECENT_COUNT, reviews.length),
                 total,

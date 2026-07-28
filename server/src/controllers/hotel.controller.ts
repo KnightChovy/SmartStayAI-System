@@ -26,7 +26,7 @@ export class HotelController {
 
   // Chi tiết một loại phòng cho guest — public (kèm tồn kho/giá kỳ ở khi có checkIn/checkOut)
   getRoomType = catchAsync(async (req: Request, res: Response): Promise<void> => {
-    const filter = pick(req.query, ['checkIn', 'checkOut']);
+    const filter = pick(req.query, ['checkIn', 'checkOut', 'guests']);
     const roomType = await hotelService.getRoomTypeById(
       req.params.hotelId as string,
       req.params.roomTypeId as string,

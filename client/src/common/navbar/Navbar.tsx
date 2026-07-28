@@ -5,11 +5,13 @@ import {
   ChevronDown,
   HelpCircle,
   Home,
+  PanelLeftClose,
+  PanelLeftOpen,
   Search,
   User as UserIcon,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { SidebarTrigger } from '@/components/ui/sidebar';
+import { useSidebar } from '@/components/ui/sidebar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -37,6 +39,28 @@ export interface CommonNavbarProps {
   helpSlot?: React.ReactNode;
   showDate?: boolean;
   userName?: string;
+}
+
+function SidebarToggleControl() {
+  const { isMobile, openMobile, state, toggleSidebar } = useSidebar();
+  const isExpanded = isMobile ? openMobile : state === 'expanded';
+  const label = isExpanded ? 'Collapse sidebar' : 'Expand sidebar';
+  const Icon = isExpanded ? PanelLeftClose : PanelLeftOpen;
+
+  return (
+    <button
+      aria-label={label}
+      className="group inline-flex h-9 items-center gap-2 rounded-xl border border-slate-200 bg-white px-1.5 pr-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950 active:translate-y-px active:scale-[0.98]"
+      onClick={toggleSidebar}
+      title={label}
+      type="button"
+    >
+      <span className="flex size-6 items-center justify-center rounded-lg bg-slate-100 text-slate-600 transition-colors group-hover:bg-blue-50 group-hover:text-blue-600">
+        <Icon className="size-4" />
+      </span>
+      <span className="hidden sm:inline">{isExpanded ? 'Collapse' : 'Expand'}</span>
+    </button>
+  );
 }
 
 export default function CommonNavbar({
@@ -80,7 +104,7 @@ export default function CommonNavbar({
     <header className="border-b border-outline-variant/40 bg-white px-5 py-2.5 lg:px-6 lg:py-3">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 lg:gap-4 ">
-          <SidebarTrigger className="cursor-pointer" />
+          <SidebarToggleControl />
 
           {showDate &&
             (onDateClick ? (
@@ -104,7 +128,7 @@ export default function CommonNavbar({
         </div>
 
         {searchSlot ?? (
-          <div className="relative w-full max-w-[500px]">
+          <div className="relative w-full max-w-125">
             <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input
               className="h-8 w-full rounded-sm bg-white-container-low pl-8 text-xs"

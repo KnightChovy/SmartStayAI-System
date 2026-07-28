@@ -36,6 +36,12 @@
   "qrEmptyHint": "The e-voucher QR will appear once your booking is confirmed / paid.",
   "clearDate": "Clear date",
   "search": "Search",
+  "trust": {
+    "freeCancellation": "Free cancellation",
+    "noHiddenFees": "No hidden fees",
+    "support247": "24/7 support",
+    "sslSecured": "SSL secured"
+  },
   "chat": {
     "subtitle": "Platform-wide hotel assistant",
     "greeting": "Hi! I'm the SmartStay AI assistant. Where would you like to stay, and for which dates? I'll find and suggest hotels on the platform.",

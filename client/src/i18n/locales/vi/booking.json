@@ -50,6 +50,20 @@
     "priceUpdated": "Tổng tiền khách sạn chốt là {{total}}, khác với số tạm tính. Bấm \"Thử thanh toán lại\" để tiếp tục với số tiền này.",
     "tempPhoneNote": "Số liên hệ cho đơn này: {{phone}}"
   },
+  "terms": {
+    "agreePrefix": "Tôi đồng ý với ",
+    "termsLink": "Điều khoản & Chính sách hủy",
+    "required": "Vui lòng đồng ý với điều khoản để tiếp tục.",
+    "modalTitle": "Điều khoản & Chính sách hủy",
+    "close": "Đóng",
+    "cancellationHeading": "Chính sách hủy",
+    "clauses": [
+      "Đặt phòng chỉ được xác nhận sau khi thanh toán thành công qua cổng của chúng tôi.",
+      "Giá đã bao gồm thuế và phí theo quy định của khách sạn (nếu có).",
+      "Việc nhận/trả phòng tuân theo giờ và giấy tờ tuỳ thân do khách sạn yêu cầu.",
+      "Điều kiện hoàn/hủy áp dụng theo chính sách của khách sạn nêu dưới đây."
+    ]
+  },
   "summary": {
     "roomLine_one": "Phòng × {{count}} đêm",
     "roomLine_other": "Phòng × {{count}} đêm",

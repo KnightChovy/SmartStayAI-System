@@ -5,6 +5,16 @@
     "backHome": "Về trang chủ",
     "explore": "Khám phá chỗ nghỉ"
   },
+  "destinations": {
+    "eyebrow": "Bộ sưu tập điểm đến tuyển chọn",
+    "title": "Khám phá khắp Việt Nam",
+    "subtitle": "Khám phá thông minh giúp bạn tìm được điểm đến phù hợp với chuyến đi của mình."
+  },
+  "deals": {
+    "eyebrow": "Ưu đãi có thời hạn",
+    "title": "Giá ưu đãi dành riêng cho thành viên",
+    "subtitle": "Mở khoá mức giá tốt được tuyển chọn cho thành viên và người đặt sớm."
+  },
   "about": {
     "eyebrow": "Câu chuyện của chúng tôi",
     "title": "Về SmartStay AI",

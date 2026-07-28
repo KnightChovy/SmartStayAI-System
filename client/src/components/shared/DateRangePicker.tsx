@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { DatePicker } from '@/components/ui/date-picker';
 import { cn } from '@/lib/cn';
 import { toDateInputValue } from '@/utils/formatDate';
+import { applyCheckIn, minCheckOut } from '@/utils/stayDates';
 
 interface DateRangePickerProps {
   checkIn: string;
@@ -28,28 +29,9 @@ export default function DateRangePicker({
   const { t } = useTranslation('common');
   const today = toDateInputValue(new Date());
 
-  const handleCheckIn = (value: string) => {
-    if (!value) {
-      onChange({ checkIn: '', checkOut });
-      return;
-    }
-    // checkOut phải luôn sau checkIn — nếu không thì đẩy lên +1 ngày.
-    let nextOut = checkOut;
-    if (!checkOut || new Date(checkOut) <= new Date(value)) {
-      const d = new Date(value);
-      d.setDate(d.getDate() + 1);
-      nextOut = toDateInputValue(d);
-    }
-    onChange({ checkIn: value, checkOut: nextOut });
-  };
-
-  /** Ngày sớm nhất có thể trả phòng = hôm sau của ngày nhận. */
-  const minCheckOut = (() => {
-    if (!checkIn) return today;
-    const d = new Date(checkIn);
-    d.setDate(d.getDate() + 1);
-    return toDateInputValue(d);
-  })();
+  // Luật "ngày trả luôn sau ngày nhận" nằm ở `utils/stayDates` — dùng chung với thanh tìm
+  // kiếm hero để hai chỗ không thể lệch nhau.
+  const handleCheckIn = (value: string) => onChange(applyCheckIn(value, checkOut));
 
   return (
     <div className={cn('grid grid-cols-2 gap-2', className)}>
@@ -73,7 +55,7 @@ export default function DateRangePicker({
         <DatePicker
           value={checkOut}
           onChange={value => onChange({ checkIn, checkOut: value })}
-          min={minCheckOut}
+          min={minCheckOut(checkIn, today)}
           placeholder={t('checkOut')}
           clearLabel={t('clearDate')}
           className="rounded-xl border-outline-variant/40"

@@ -17,6 +17,7 @@ type CreateUserFormState = {
   name: string;
   email: string;
   password: string;
+  confirmPassword: string;
   role: UserRole;
 };
 
@@ -29,6 +30,7 @@ export function AdminCreateUserModal({
     name: '',
     email: '',
     password: '',
+    confirmPassword: '',
     role: UserRole.PLATFORM_MANAGER,
   });
 
@@ -53,6 +55,11 @@ export function AdminCreateUserModal({
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    if (form.password !== form.confirmPassword) {
+      toast.error('Passwords do not match.');
+      return;
+    }
 
     createUser.mutate(
       {
@@ -178,9 +185,32 @@ export function AdminCreateUserModal({
             </div>
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="admin-user-confirm-password">Confirm password</Label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                aria-invalid={
+                  form.confirmPassword.length > 0 && form.password !== form.confirmPassword
+                }
+                className="pl-9"
+                id="admin-user-confirm-password"
+                minLength={8}
+                onChange={event => updateField('confirmPassword', event.target.value)}
+                placeholder="Re-enter temporary password"
+                required
+                type="password"
+                value={form.confirmPassword}
+              />
+            </div>
+            {form.confirmPassword.length > 0 && form.password !== form.confirmPassword ? (
+              <p className="text-xs font-medium text-destructive">Passwords do not match.</p>
+            ) : null}
+          </div>
+
           <button
             className="inline-flex h-11 w-full items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={createUser.isPending}
+            disabled={createUser.isPending || form.password !== form.confirmPassword}
             type="submit"
           >
             {createUser.isPending ? 'Creating...' : 'Create User'}

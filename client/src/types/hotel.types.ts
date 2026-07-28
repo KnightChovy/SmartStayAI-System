@@ -71,6 +71,12 @@ export interface HotelDetail extends HotelSearchResult {
   languagesSpoken?: string[] | null;
   /** Số đêm tối đa cho một lượt đặt (`Hotel.maxLengthOfStay`). */
   maxLengthOfStay?: number | null;
+  /**
+   * Cấu hình khách sạn dạng JSON tự do. Chứa `cancellation.freeUntilHours` dùng cho dòng
+   * chính sách hủy ở booking card (SS-302). Optional: BE cần đảm bảo include field này ở
+   * `GET /hotels/:id` (BE spec item #11) — khi chưa có, FE ẩn dòng thay vì đoán.
+   */
+  settings?: Record<string, unknown> | null;
   /** Tiền cọc thu khi nhận phòng — Decimal ⇒ string qua JSON. */
   securityDepositAmount?: string | null;
   phone?: string | null;
