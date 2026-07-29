@@ -16,6 +16,7 @@ export const queryKeys = {
   },
   users: {
     all: () => ['users'] as const,
+    me: () => ['users', 'me'] as const,
     profile: (userId: string) => ['users', 'profile', userId] as const,
   },
   hotels: {
@@ -46,6 +47,12 @@ export const queryKeys = {
   geo: {
     all: () => ['geo'] as const,
     geocode: (query: string) => ['geo', 'geocode', query] as const,
+  },
+
+  messages: {
+    all: () => ['messages'] as const,
+    mine: () => ['messages', 'mine'] as const,
+    thread: (hotelId: string | null) => ['messages', 'thread', hotelId] as const,
   },
 
   staff: {

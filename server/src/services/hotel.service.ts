@@ -62,8 +62,10 @@ export class HotelService {
       rows.map((row) => [
         row.hotelId,
         {
-          // Làm tròn 1 chữ số ngay ở BE để thẻ danh sách và trang chi tiết không hiện lệch nhau
-          avgRating: row._avg.overallRating === null ? null : Math.round(row._avg.overallRating * 10) / 10,
+          // Điểm hiển thị theo thang 10 (kiểu Booking.com): khách vẫn chấm 1–5 sao, điểm tổng hợp
+          // của khách sạn = trung bình sao × 2. Làm tròn 1 chữ số ngay ở BE để thẻ danh sách và
+          // trang chi tiết không hiện lệch nhau. null khi chưa có review (KHÔNG phải 0).
+          avgRating: row._avg.overallRating === null ? null : Math.round(row._avg.overallRating * 2 * 10) / 10,
           reviewCount: row._count._all,
         },
       ])
@@ -469,8 +471,16 @@ export class HotelService {
     }
     where.roomTypes = { some: roomTypeWhere };
 
-    // Giá "từ" mỗi đêm THẬT của từng khách sạn khi có khoảng ngày — chỉ tính trên loại phòng còn
-    // trống, và đã áp pricing rule + priceOverride. Rỗng khi tìm không kèm ngày (xem bên dưới).
+    // Số khách để nhân phí per_person khi tính giá "từ"; không gửi thì coi như 1 (giống room detail).
+    const numGuests = filter.guests ?? 1;
+    // Số phòng khách cần; không gửi thì coi như 1. Chỉ lọc được khi có ngày (mới biết tồn kho).
+    const roomsWanted = filter.rooms ?? 1;
+    // Thuế/phí theo từng khách sạn — để giá "từ" trên thẻ ĐÃ GỒM thuế/phí, đúng bằng con số khách
+    // thấy ở bước chọn phòng/đặt phòng (không còn cảnh thẻ báo rẻ rồi vào trong đội giá lên).
+    let taxFeeByHotel: Awaited<ReturnType<typeof availabilityService.getTaxFeeCharges>> = new Map();
+
+    // Giá "từ" mỗi đêm THẬT (đã gồm thuế/phí) của từng khách sạn khi có khoảng ngày — chỉ tính trên
+    // loại phòng còn trống, đã áp pricing rule + priceOverride. Rỗng khi tìm không kèm ngày (xem dưới).
     const realMinPricePerNight = new Map<string, Prisma.Decimal>();
     // Tổng số phòng còn trống của mỗi khách sạn cho kỳ ở — cho badge "chỉ còn N phòng" (chỉ khi có ngày)
     const availableRoomsPerHotel = new Map<string, number>();
@@ -484,13 +494,16 @@ export class HotelService {
       const quotes = await availabilityService.getStayQuotes(candidates, filter.checkIn, filter.checkOut);
       const numNights = eachNightOfStay(filter.checkIn, filter.checkOut).length;
       const available = candidates.filter((candidate) => (quotes.get(candidate.id)?.availableRooms ?? 0) > 0);
-      where.id = { in: [...new Set(available.map((candidate) => candidate.hotelId))] };
+      // Thuế/phí của các khách sạn ứng viên, gom trong đúng một truy vấn
+      taxFeeByHotel = await availabilityService.getTaxFeeCharges([...new Set(candidates.map((candidate) => candidate.hotelId))]);
 
-      // Tận dụng luôn quote vừa tính (không thêm truy vấn): giá mỗi đêm = tổng kỳ ở ÷ số đêm.
-      // Giá từng đêm có thể khác nhau (cuối tuần, lễ) nên đây là mức trung bình mỗi đêm.
+      // Tận dụng luôn quote vừa tính (không thêm truy vấn): giá mỗi đêm = (tiền phòng cả kỳ + thuế +
+      // phí) ÷ số đêm. Giá từng đêm có thể khác nhau (cuối tuần, lễ) nên đây là mức trung bình mỗi đêm.
       for (const candidate of available) {
         const quote = quotes.get(candidate.id)!;
-        const perNight = quote.totalPrice.div(numNights).toDecimalPlaces(2);
+        const charges = taxFeeByHotel.get(candidate.hotelId) ?? [];
+        const { taxAmount, feeAmount } = availabilityService.computeTaxAndFees(charges, quote.totalPrice, numNights, numGuests);
+        const perNight = quote.totalPrice.add(taxAmount).add(feeAmount).div(numNights).toDecimalPlaces(2);
         const current = realMinPricePerNight.get(candidate.hotelId);
         if (!current || perNight.lessThan(current)) {
           realMinPricePerNight.set(candidate.hotelId, perNight);
@@ -498,6 +511,11 @@ export class HotelService {
         // Cộng dồn phòng trống của các loại phòng trong cùng khách sạn
         availableRoomsPerHotel.set(candidate.hotelId, (availableRoomsPerHotel.get(candidate.hotelId) ?? 0) + quote.availableRooms);
       }
+
+      // Chỉ giữ khách sạn còn ĐỦ số phòng khách cần (rooms, mặc định 1) — theo tổng phòng trống của KS.
+      where.id = {
+        in: [...availableRoomsPerHotel.entries()].filter(([, count]) => count >= roomsWanted).map(([hotelId]) => hotelId),
+      };
     }
 
     // Lấy TẤT CẢ khách sạn khớp, KHÔNG phân trang ở DB. Lý do: sắp xếp theo 'price'/'rating' dựa
@@ -515,25 +533,36 @@ export class HotelService {
       },
     });
 
+    // Không có ngày ⇒ nhánh trên chưa lấy thuế/phí; lấy cho toàn bộ khách sạn kết quả để giá "từ"
+    // (dựa trên basePrice) vẫn gồm thuế/phí như khi có ngày.
+    if (!(filter.checkIn && filter.checkOut)) {
+      taxFeeByHotel = await availabilityService.getTaxFeeCharges(allHotels.map((hotel) => hotel.id));
+    }
+
     const ratings = await this.getRatingSummaries(allHotels.map((hotel) => hotel.id));
 
-    // Giá "từ" mỗi đêm của khách sạn:
-    // - CÓ ngày ⇒ giá thật đã áp pricing rule/priceOverride, tính từ quote ở trên. Trước đây chỗ này
-    //   lấy thẳng basePrice nên thẻ báo rẻ hơn giá thật khi phòng rẻ nhất đang dính rule tăng giá.
-    // - KHÔNG có ngày ⇒ rule phụ thuộc từng đêm nên chưa xác định được; basePrice thấp nhất là mức
-    //   trung thực nhất có thể nói ("từ ... /đêm").
-    // Chưa gồm thuế/phí (theo thông lệ hiển thị giá phòng mỗi đêm); số phải trả đầy đủ nằm ở bước
-    // chọn phòng và ở booking.
-    const enriched = allHotels.map(({ roomTypes, amenities, ...hotel }) => ({
-      ...hotel,
-      minPrice:
-        realMinPricePerNight.get(hotel.id) ??
-        (roomTypes.length > 0 ? Prisma.Decimal.min(...roomTypes.map((rt) => rt.basePrice)) : null),
-      topAmenities: amenities.map((ha) => ha.amenity),
-      // Chỉ có nghĩa khi tìm kèm ngày; không ngày ⇒ null để FE khỏi hiện badge sai
-      availableRooms: filter.checkIn && filter.checkOut ? (availableRoomsPerHotel.get(hotel.id) ?? 0) : null,
-      ...(ratings.get(hotel.id) ?? { avgRating: null, reviewCount: 0 }),
-    }));
+    // Giá "từ" mỗi đêm của khách sạn, ĐÃ GỒM thuế/phí để đúng bằng số ở bước chọn phòng/đặt phòng
+    // (trước đây thẻ chỉ báo tiền phòng nên khách vào trong mới thấy đội giá):
+    // - CÓ ngày ⇒ giá thật đã áp pricing rule/priceOverride cộng thuế/phí, tính từ quote ở trên.
+    // - KHÔNG có ngày ⇒ rule phụ thuộc từng đêm nên chưa xác định; lấy basePrice thấp nhất rồi cộng
+    //   thuế/phí cho 1 đêm — mức "từ ... /đêm" trung thực nhất có thể nói.
+    const enriched = allHotels.map(({ roomTypes, amenities, ...hotel }) => {
+      let minPrice = realMinPricePerNight.get(hotel.id) ?? null;
+      if (minPrice === null && roomTypes.length > 0) {
+        const baseMin = Prisma.Decimal.min(...roomTypes.map((rt) => rt.basePrice));
+        const charges = taxFeeByHotel.get(hotel.id) ?? [];
+        const { taxAmount, feeAmount } = availabilityService.computeTaxAndFees(charges, baseMin, 1, numGuests);
+        minPrice = baseMin.add(taxAmount).add(feeAmount);
+      }
+      return {
+        ...hotel,
+        minPrice,
+        topAmenities: amenities.map((ha) => ha.amenity),
+        // Chỉ có nghĩa khi tìm kèm ngày; không ngày ⇒ null để FE khỏi hiện badge sai
+        availableRooms: filter.checkIn && filter.checkOut ? (availableRoomsPerHotel.get(hotel.id) ?? 0) : null,
+        ...(ratings.get(hotel.id) ?? { avgRating: null, reviewCount: 0 }),
+      };
+    });
 
     // priceBounds = min/max giá của kết quả TRƯỚC khi áp lọc giá (nhưng SAU các lọc khác), để thanh
     // trượt giá của FE không tự bóp hẹp mỗi lần khách kéo. Tính trước khi lọc priceMin/priceMax.
@@ -552,8 +581,8 @@ export class HotelService {
         if (filter.priceMax !== undefined && p > filter.priceMax) return false;
       }
       if (filter.reviewScore !== undefined) {
-        // avgRating thang 5 → nhân 2 để so với reviewScore thang 10
-        if (h.avgRating === null || h.avgRating * 2 < filter.reviewScore) return false;
+        // avgRating giờ đã ở thang 10 giống reviewScore → so trực tiếp, không nhân thêm
+        if (h.avgRating === null || h.avgRating < filter.reviewScore) return false;
       }
       return true;
     });

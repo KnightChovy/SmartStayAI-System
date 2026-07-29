@@ -50,13 +50,23 @@ type SortDir = 'asc' | 'desc';
 
 const PAGE_SIZE = 10;
 
-/** Booking within the actual check-in window (check-in date ≤ today < check-out date). */
-function canCheckIn(b: HotelBooking, today: string): boolean {
+/** Local instant for a booking's stored UTC date and the hotel's HH:mm operating rule. */
+function bookingMoment(date: string, time: string): Date {
+  return new Date(`${toUtcDateKey(date)}T${time}:00`);
+}
+
+/** Booking within the actual check-in window, including the hotel's check-in opening time. */
+function canCheckIn(b: HotelBooking, today: string, checkInTime: string): boolean {
   return (
     b.status === 'confirmed' &&
     toUtcDateKey(b.checkInDate) <= today &&
-    today < toUtcDateKey(b.checkOutDate)
+    today < toUtcDateKey(b.checkOutDate) &&
+    new Date() >= bookingMoment(b.checkInDate, checkInTime)
   );
+}
+
+function isCheckoutOverdue(b: HotelBooking, checkOutTime: string): boolean {
+  return new Date() > bookingMoment(b.checkOutDate, checkOutTime);
 }
 
 export default function FrontDeskPage() {
@@ -90,12 +100,14 @@ export default function FrontDeskPage() {
   const checkIn = useCheckIn(hotel?.id);
   const checkOut = useCheckOut(hotel?.id);
   const today = todayUtcKey();
+  const checkInTime = hotel?.checkInTime ?? '14:00';
+  const checkOutTime = hotel?.checkOutTime ?? '12:00';
 
   const all = useMemo(() => data?.results ?? [], [data]);
 
   const counts = useMemo(
     () => ({
-      checkin: all.filter(b => canCheckIn(b, today)).length,
+      checkin: all.filter(b => canCheckIn(b, today, checkInTime)).length,
       confirmed: all.filter(b => b.status === 'confirmed').length,
       departure: all.filter(
         b => b.status === 'checked_in' && toUtcDateKey(b.checkOutDate) === today
@@ -103,7 +115,7 @@ export default function FrontDeskPage() {
       inhouse: all.filter(b => b.status === 'checked_in').length,
       pending: all.filter(b => b.status === 'pending').length,
     }),
-    [all, today]
+    [all, today, checkInTime]
   );
 
   const filtered = useMemo(() => {
@@ -117,7 +129,7 @@ export default function FrontDeskPage() {
     const inBucket = (b: HotelBooking) => {
       switch (bucket) {
         case 'checkin':
-          return canCheckIn(b, today);
+          return canCheckIn(b, today, checkInTime);
         case 'confirmed':
           return b.status === 'confirmed';
         case 'departure':
@@ -149,7 +161,7 @@ export default function FrontDeskPage() {
     return all
       .filter(b => inBucket(b) && matchesQuery(b))
       .sort((a, b) => (sort.dir === 'asc' ? compare(a, b) : compare(b, a)));
-  }, [all, bucket, query, today, sort]);
+  }, [all, bucket, query, today, sort, checkInTime]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, pageCount);
@@ -387,7 +399,7 @@ export default function FrontDeskPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-2">
-                        {canCheckIn(b, today) && (
+                        {canCheckIn(b, today, checkInTime) && (
                           <QuickButton
                             busy={rowBusy}
                             onClick={() => setConfirmTarget(b)}
@@ -399,9 +411,13 @@ export default function FrontDeskPage() {
                         {b.status === 'checked_in' && (
                           <QuickButton
                             busy={rowBusy}
-                            onClick={() => quickCheckOut(b)}
+                            onClick={() =>
+                              isCheckoutOverdue(b, checkOutTime)
+                                ? navigate(ROUTES.staffBookingDetail(b.id))
+                                : quickCheckOut(b)
+                            }
                             icon={LogOut}
-                            label="Check-out"
+                            label={isCheckoutOverdue(b, checkOutTime) ? 'Late check-out' : 'Check-out'}
                             tone="amber"
                           />
                         )}

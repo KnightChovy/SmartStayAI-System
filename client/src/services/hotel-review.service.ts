@@ -25,9 +25,18 @@ export const hotelReviewService = {
     return data;
   },
 
-  /** Thống kê tổng hợp review của 1 khách sạn — `GET /hotels/:id/reviews/stats`. */
+  /** Thống kê review của 1 khách sạn cho CHỦ/manager — `GET /hotels/:id/reviews/stats` (auth). */
   async getStats(hotelId: string): Promise<HotelReviewStats> {
     const { data } = await api.get<HotelReviewStats>(`/hotels/${hotelId}/reviews/stats`);
+    return data;
+  },
+
+  /**
+   * Thống kê review CÔNG KHAI — `GET /hotels/:id/review-stats` (public, chỉ đếm review published).
+   * Cùng shape với bản partner; dùng cho trang chi tiết guest (điểm tổng + phân bố sao).
+   */
+  async getPublicStats(hotelId: string): Promise<HotelReviewStats> {
+    const { data } = await api.get<HotelReviewStats>(`/hotels/${hotelId}/review-stats`);
     return data;
   },
 

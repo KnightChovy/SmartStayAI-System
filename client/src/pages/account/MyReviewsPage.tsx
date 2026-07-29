@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MessageSquareQuote, PencilLine, Star } from 'lucide-react';
 import { useMyReviews } from '@/hooks/account';
-import StarRating from '@/components/shared/StarRating';
 import EmptyState from '@/components/shared/EmptyState';
 import ReviewModal from '@/components/account/ReviewModal';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -67,7 +66,10 @@ export default function MyReviewsPage() {
                     </p>
                   </div>
                   <div className="flex shrink-0 items-center gap-3">
-                    <StarRating value={r.overallRating} size={16} />
+                    {/* Điểm đánh giá thang 10 (không dùng 5 sao) */}
+                    <span className="inline-flex items-center rounded-lg bg-premium-gold px-2 py-0.5 text-sm font-bold text-on-surface">
+                      {r.overallRating.toFixed(1)}
+                    </span>
                     <Button
                       variant="outline"
                       size="sm"

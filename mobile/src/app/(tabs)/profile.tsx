@@ -28,6 +28,7 @@ export default function ProfileScreen() {
   ];
 
   const settingItems = [
+    { icon: 'chatbubbles-outline' as const, label: t('account:menu.messages'), sub: t('account:menu.messagesSub'), onPress: () => router.push('/profile/messages') },
     { icon: 'notifications-outline' as const, label: t('account:menu.notifications'), onPress: () => router.push('/notifications') },
     { icon: 'shield-checkmark-outline' as const, label: t('account:menu.security'), onPress: () => router.push('/profile/security') },
     { icon: 'help-circle-outline' as const, label: t('account:menu.help'), onPress: () => router.push('/profile/help-support') },

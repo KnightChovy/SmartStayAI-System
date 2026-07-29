@@ -13,7 +13,15 @@
   "deals": {
     "eyebrow": "Limited-time offers",
     "title": "Exclusive member rates",
-    "subtitle": "Unlock curated rates for our members and early discoverers."
+    "subtitle": "Unlock curated rates for our members and early discoverers.",
+    "perNight": "/ night",
+    "flashSale": "Flash sale",
+    "save": "-{{percent}}%",
+    "endsIn": "Ends in",
+    "ended": "Ended",
+    "viewHotel": "View hotel",
+    "emptyTitle": "No deals right now",
+    "emptyDesc": "There are no active deals at the moment. Check back soon!"
   },
   "about": {
     "eyebrow": "Our story",

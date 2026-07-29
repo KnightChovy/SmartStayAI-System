@@ -57,6 +57,28 @@ export function formatDate(value: string | Date | null | undefined): string {
   return `${dd}-${mm}-${d.getFullYear()}`;
 }
 
+/** "HH:mm" — giờ:phút, cho timestamp dưới bong bóng tin nhắn. */
+export function formatTime(value: string | Date | null | undefined): string {
+  const d = toDate(value);
+  if (!d) return '';
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+/** Thời gian tương đối gọn ("vừa xong", "5 phút", "2 giờ", "3 ngày") cho danh sách hội thoại. */
+export function formatRelative(value: string | Date | null | undefined): string {
+  const d = toDate(value);
+  if (!d) return '';
+  const diffSec = Math.floor((Date.now() - d.getTime()) / 1000);
+  if (diffSec < 60) return 'vừa xong';
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin} phút`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr} giờ`;
+  const diffDay = Math.floor(diffHr / 24);
+  if (diffDay < 7) return `${diffDay} ngày`;
+  return formatDate(d);
+}
+
 /** Đơn vị của thời gian tương đối — component tự dịch sang chữ. */
 export type RelativeTimeUnit = 'now' | 'minutes' | 'hours' | 'yesterday' | 'days' | 'date';
 

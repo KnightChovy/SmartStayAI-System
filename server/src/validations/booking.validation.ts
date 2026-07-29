@@ -1,15 +1,21 @@
 import Joi from 'joi';
 
 export const createBooking = {
-  body: Joi.object().keys({
-    hotelId: Joi.string().uuid().required(),
-    roomTypeId: Joi.string().uuid().required(),
-    checkInDate: Joi.date().iso().required(),
-    checkOutDate: Joi.date().iso().greater(Joi.ref('checkInDate')).required(),
-    numGuests: Joi.number().integer().min(1).required(),
-    specialRequests: Joi.string().max(1000).allow('', null),
-    paymentMethod: Joi.string().valid('vnpay', 'sepay', 'cash').default('vnpay'),
-  }),
+  body: Joi.object()
+    .keys({
+      hotelId: Joi.string().uuid().required(),
+      roomTypeId: Joi.string().uuid().required(),
+      checkInDate: Joi.date().iso().required(),
+      checkOutDate: Joi.date().iso().greater(Joi.ref('checkInDate')).required(),
+      // Số khách: cách MỚI tách người lớn/trẻ em, hoặc cách CŨ gộp (numGuests) cho mobile/link cũ.
+      // Bắt buộc có ÍT NHẤT một trong hai (numGuests | numAdults) — .or ở dưới.
+      numGuests: Joi.number().integer().min(1),
+      numAdults: Joi.number().integer().min(1),
+      numChildren: Joi.number().integer().min(0).default(0),
+      specialRequests: Joi.string().max(1000).allow('', null),
+      paymentMethod: Joi.string().valid('vnpay', 'sepay', 'cash').default('vnpay'),
+    })
+    .or('numGuests', 'numAdults'),
 };
 
 export const getMyBookings = {
