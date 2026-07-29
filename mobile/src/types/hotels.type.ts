@@ -60,7 +60,17 @@ export interface RoomType {
   /** Chỉ có khi search kèm khoảng ngày (checkIn/checkOut). */
   numNights?: number;
   availableRooms?: number;
+  /**
+   * SỐ CUỐI khách trả cả kỳ ở: `subtotal + taxAmount + feeAmount`
+   * (BE `hotel.service.ts` → `getRoomTypes`). KHÔNG cộng thêm thuế lên số này.
+   */
   totalPrice?: string;
+  /** Tiền phòng thuần cả kỳ ở (chưa thuế/phí). Đi kèm `totalPrice` khi có khoảng ngày. */
+  subtotal?: string;
+  /** Thuế thật BE tính (cùng hàm lúc đặt). */
+  taxAmount?: string;
+  /** Phí dịch vụ thật BE tính. */
+  feeAmount?: string;
 }
 
 /** Tham số tìm khách sạn (query string của `GET /hotels`). */

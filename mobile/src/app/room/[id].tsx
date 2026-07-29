@@ -46,11 +46,25 @@ export default function RoomDetailScreen() {
   );
 
   const nights = nightsBetween(checkIn, checkOut);
-  const subtotal = useMemo(() => {
+  // Tiền phòng thuần (chưa thuế/phí) — dùng cho dòng "giá × số đêm".
+  const roomCharge = useMemo(() => {
     if (!room) return 0;
-    if (room.totalPrice) return Number(room.totalPrice);
+    if (room.subtotal) return Number(room.subtotal);
     return Number(room.basePrice) * nights;
   }, [room, nights]);
+  const taxAmount = room?.taxAmount ? Number(room.taxAmount) : 0;
+  const feeAmount = room?.feeAmount ? Number(room.feeAmount) : 0;
+  // Số cuối khách trả: ưu tiên số BE chốt, nếu thiếu thì tự cộng.
+  const grandTotal = useMemo(() => {
+    if (!room) return 0;
+    if (room.totalPrice) return Number(room.totalPrice);
+    return roomCharge + taxAmount + feeAmount;
+  }, [room, roomCharge, taxAmount, feeAmount]);
+  // Suất thuế hiệu dụng (làm tròn 1 chữ số thập phân) để ghi rõ "Thuế (X%)".
+  const taxRate =
+    roomCharge > 0 && taxAmount > 0
+      ? Math.round((taxAmount / roomCharge) * 1000) / 10
+      : 0;
 
   const images = room?.images ?? [];
   const metaItems: RoomMetaIcon[] = room
@@ -222,8 +236,25 @@ export default function RoomDetailScreen() {
           <Heading size="lg" className="font-bevi-bold text-on-surface mb-2">{t('hotel:room.priceDetails')}</Heading>
           <View className="bg-surface rounded-card p-4 mb-2">
             <PriceSummary
-              lines={[{ label: `${formatVnd(room.basePrice)} × ${nights} night${nights > 1 ? 's' : ''}`, value: subtotal }]}
-              total={subtotal}
+              lines={[
+                {
+                  label: t('hotel:room.nightsLine', { price: formatVnd(room.basePrice), count: nights }),
+                  value: roomCharge,
+                },
+                ...(taxAmount > 0
+                  ? [
+                      {
+                        label:
+                          taxRate > 0
+                            ? t('hotel:room.taxWithRate', { rate: taxRate })
+                            : t('hotel:room.tax'),
+                        value: taxAmount,
+                      },
+                    ]
+                  : []),
+                ...(feeAmount > 0 ? [{ label: t('hotel:room.fee'), value: feeAmount }] : []),
+              ]}
+              total={grandTotal}
             />
           </View>
         </View>
@@ -235,7 +266,7 @@ export default function RoomDetailScreen() {
         style={{ paddingBottom: insets.bottom + 12 }}
       >
         <View>
-          <Text bold className="font-bevi-bold text-on-surface text-xl">{formatVnd(subtotal)}</Text>
+          <Text bold className="font-bevi-bold text-on-surface text-xl">{formatVnd(grandTotal)}</Text>
           <Text size="2xs" className="font-bevi text-muted">for {nights} night{nights > 1 ? 's' : ''} (incl. taxes)</Text>
         </View>
         <Pressable
