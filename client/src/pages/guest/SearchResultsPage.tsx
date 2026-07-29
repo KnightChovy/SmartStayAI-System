@@ -6,8 +6,10 @@ import { useSearchHotels } from '@/hooks/hotels/use-search-hotels';
 import { useAmenities } from '@/hooks/hotel-management';
 import HotelCard from '@/components/shared/HotelCard';
 import EmptyState from '@/components/shared/EmptyState';
+import Paginator from '@/components/shared/Paginator';
 import DateRangePicker from '@/components/shared/DateRangePicker';
-import GuestSelector from '@/components/shared/GuestSelector';
+import GuestCounters from '@/components/search/GuestCounters';
+import type { GuestSelection } from '@/components/search/GuestsPopover';
 import SortDropdown from '@/components/search/SortDropdown';
 import PriceRangeSlider from '@/components/search/filters/PriceRangeSlider';
 import StarRatingFilter from '@/components/search/filters/StarRatingFilter';
@@ -49,6 +51,18 @@ export default function SearchResultsPage() {
   const priceMin = params.get('priceMin') ? Number(params.get('priceMin')) : undefined;
   const priceMax = params.get('priceMax') ? Number(params.get('priceMax')) : undefined;
   const reviewScore = params.get('reviewScore') ? Number(params.get('reviewScore')) : undefined;
+
+  // Khách: tách Người lớn / Trẻ em / Số phòng (khớp thanh tìm kiếm hero). Không có `adults`
+  // (link cũ chỉ mang `guests`) thì suy `adults = guests`, `children = 0`.
+  const guestSel: GuestSelection = {
+    adults: params.get('adults')
+      ? Number(params.get('adults'))
+      : params.get('guests')
+        ? Number(params.get('guests'))
+        : 2,
+    children: params.get('children') ? Number(params.get('children')) : 0,
+    rooms: params.get('rooms') ? Number(params.get('rooms')) : 1,
+  };
 
   const filters: HotelSearchParams = useMemo(
     () => ({
@@ -121,6 +135,14 @@ export default function SearchResultsPage() {
     update({ amenities: ids.length ? ids.join(',') : undefined });
   const updateReviewScore = (score?: number) =>
     update({ reviewScore: score != null ? String(score) : undefined });
+  const updateGuests = (sel: GuestSelection) =>
+    update({
+      adults: String(sel.adults),
+      children: String(sel.children),
+      rooms: String(sel.rooms),
+      // Endpoint search chỉ nhận `guests` → giữ đồng bộ = người lớn + trẻ em.
+      guests: String(sel.adults + sel.children),
+    });
   const updatePrice = ([lo, hi]: [number, number]) => {
     // Cả dải = không lọc giá.
     if (lo <= PRICE_MIN && hi >= PRICE_MAX) {
@@ -140,7 +162,7 @@ export default function SearchResultsPage() {
         update({ city: cityInput.trim() || undefined });
         setSheetOpen(false);
       }}
-      className="space-y-3.5"
+      className="space-y-4"
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5 text-sm font-bold text-on-surface">
@@ -178,20 +200,16 @@ export default function SearchResultsPage() {
       </label>
 
       <DateRangePicker
-        className="grid-cols-1"
         checkIn={filters.checkIn ?? ''}
         checkOut={filters.checkOut ?? ''}
         onChange={range => update({ checkIn: range.checkIn, checkOut: range.checkOut })}
       />
 
-      <GuestSelector
-        value={filters.guests ?? 2}
-        onChange={value => update({ guests: String(value) })}
-      />
+      <GuestCounters value={guestSel} onChange={updateGuests} />
 
       <SortDropdown value={sortBy} onChange={value => update({ sortBy: value })} />
 
-      <div className="space-y-3.5 border-t border-outline-variant/30 pt-3.5">
+      <div className="space-y-4 border-t border-outline-variant/30 pt-4">
         <PriceRangeSlider
           bounds={{ min: PRICE_MIN, max: PRICE_MAX }}
           value={[priceMin ?? PRICE_MIN, priceMax ?? PRICE_MAX]}
@@ -247,8 +265,8 @@ export default function SearchResultsPage() {
 
         <div className="mt-6 flex flex-col gap-8 lg:mt-8 lg:flex-row">
           {/* Desktop sidebar */}
-          <aside className="hidden lg:block lg:w-64 lg:shrink-0">
-            <div className="rounded-2xl border border-outline-variant/30 bg-surface p-4 lg:sticky lg:top-24">
+          <aside className="hidden lg:block lg:w-80 lg:shrink-0">
+            <div className="rounded-2xl border border-outline-variant/30 bg-surface p-5 lg:sticky lg:top-24">
               {sidebar}
             </div>
           </aside>
@@ -273,28 +291,23 @@ export default function SearchResultsPage() {
               </div>
             )}
 
-            {data && data.totalPages > 1 && (
-              <div className="mt-8 flex items-center justify-center gap-2">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  disabled={(filters.page ?? 1) <= 1}
-                  onClick={() => update({ page: String((filters.page ?? 1) - 1) }, false)}
-                >
-                  {t('common:previous')}
-                </Button>
-                <span className="px-3 text-sm text-on-surface-variant">
-                  {t('pageOf', { page: data.page, total: data.totalPages })}
-                </span>
-                <Button
-                  variant="outline"
-                  size="lg"
-                  disabled={(filters.page ?? 1) >= data.totalPages}
-                  onClick={() => update({ page: String((filters.page ?? 1) + 1) }, false)}
-                >
-                  {t('common:next')}
-                </Button>
-              </div>
+            {data && (
+              <Paginator
+                page={data.page}
+                totalPages={data.totalPages}
+                onPageChange={p => {
+                  update({ page: p > 1 ? String(p) : undefined }, false);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                hrefForPage={p => {
+                  const next = new URLSearchParams(params);
+                  if (p > 1) next.set('page', String(p));
+                  else next.delete('page');
+                  const s = next.toString();
+                  return s ? `?${s}` : '?';
+                }}
+                className="mt-8"
+              />
             )}
           </section>
         </div>

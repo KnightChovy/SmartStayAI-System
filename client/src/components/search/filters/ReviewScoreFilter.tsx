@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { cn } from '@/lib/cn';
 
 interface ReviewScoreFilterProps {
   /** Điểm tối thiểu thang 10 (7|8|9); BE so trực tiếp `avgRating >= reviewScore`. undefined = bất kỳ. */
@@ -6,37 +7,40 @@ interface ReviewScoreFilterProps {
   onChange: (value?: number) => void;
 }
 
-// avgRating đã ở thang 10 nên nhãn cũng thang 10 (≥9.0/8.0/7.0), khớp thẳng giá trị `score` gửi lên.
-const OPTIONS = [
-  { score: undefined, labelKey: 'reviewScore.any' as const },
-  { score: 9, labelKey: 'reviewScore.score9' as const },
-  { score: 8, labelKey: 'reviewScore.score8' as const },
-  { score: 7, labelKey: 'reviewScore.score7' as const },
-];
+// avgRating đã ở thang 10 nên chip hiện ≥9.0/8.0/7.0, khớp thẳng giá trị gửi lên.
+const SCORES = [9, 8, 7];
 
-/** Lọc theo điểm đánh giá tối thiểu — radio (SS-101). */
+/** Lọc theo điểm đánh giá tối thiểu — chip ngang, single-select (SS-101). */
 export default function ReviewScoreFilter({ value, onChange }: ReviewScoreFilterProps) {
   const { t } = useTranslation('search');
 
+  const chip = (active: boolean) =>
+    cn(
+      'rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors',
+      active
+        ? 'border-primary bg-primary/10 text-primary'
+        : 'border-outline-variant/50 text-on-surface-variant hover:border-primary/60 hover:bg-primary/5'
+    );
+
   return (
-    <div className="space-y-2">
+    <div className="space-y-1.5">
       <p className="text-xs font-semibold text-on-surface-variant">{t('reviewScore.title')}</p>
-      <ul className="space-y-1.5">
-        {OPTIONS.map(opt => (
-          <li key={opt.labelKey}>
-            <label className="flex cursor-pointer items-center gap-2.5 text-sm text-on-surface">
-              <input
-                type="radio"
-                name="reviewScore"
-                checked={value === opt.score}
-                onChange={() => onChange(opt.score)}
-                className="size-4 accent-primary"
-              />
-              {t(opt.labelKey)}
-            </label>
-          </li>
+      <div className="flex flex-wrap gap-2">
+        <button type="button" onClick={() => onChange(undefined)} aria-pressed={value == null} className={chip(value == null)}>
+          {t('reviewScore.any')}
+        </button>
+        {SCORES.map(score => (
+          <button
+            key={score}
+            type="button"
+            onClick={() => onChange(score)}
+            aria-pressed={value === score}
+            className={chip(value === score)}
+          >
+            ≥ {score.toFixed(1)}
+          </button>
         ))}
-      </ul>
+      </div>
     </div>
   );
 }

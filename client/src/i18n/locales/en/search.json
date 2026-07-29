@@ -36,9 +36,6 @@
   },
   "reviewScore": {
     "title": "Review score",
-    "any": "Any",
-    "score9": "Exceptional (≥ 9.0)",
-    "score8": "Very good (≥ 8.0)",
-    "score7": "Good (≥ 7.0)"
+    "any": "Any"
   }
 }

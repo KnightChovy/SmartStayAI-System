@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { Star } from 'lucide-react';
-import { Checkbox } from '@/components/ui/checkbox';
+import { cn } from '@/lib/cn';
 
 interface StarRatingFilterProps {
   /** Các hạng sao đang chọn (1–5). */
@@ -10,7 +10,7 @@ interface StarRatingFilterProps {
 
 const STARS = [5, 4, 3, 2, 1];
 
-/** Lọc theo hạng sao khách sạn — multi-select (SS-101). */
+/** Lọc theo hạng sao khách sạn — chip ngang, multi-select (SS-101). */
 export default function StarRatingFilter({ value, onChange }: StarRatingFilterProps) {
   const { t } = useTranslation('search');
 
@@ -21,21 +21,29 @@ export default function StarRatingFilter({ value, onChange }: StarRatingFilterPr
   return (
     <div className="space-y-1.5">
       <p className="text-xs font-semibold text-on-surface-variant">{t('stars.title')}</p>
-      <ul className="space-y-1">
-        {STARS.map(star => (
-          <li key={star}>
-            <label className="flex cursor-pointer items-center gap-2.5 py-0.5 text-sm text-on-surface">
-              <Checkbox checked={value.includes(star)} onCheckedChange={() => toggle(star)} />
-              <span className="flex items-center gap-0.5">
-                {Array.from({ length: star }).map((_, i) => (
-                  <Star key={i} className="size-3 fill-premium-gold text-premium-gold" aria-hidden="true" />
-                ))}
-                <span className="sr-only">{t('stars.label', { count: star })}</span>
-              </span>
-            </label>
-          </li>
-        ))}
-      </ul>
+      <div className="flex flex-wrap gap-2">
+        {STARS.map(star => {
+          const active = value.includes(star);
+          return (
+            <button
+              key={star}
+              type="button"
+              onClick={() => toggle(star)}
+              aria-pressed={active}
+              aria-label={t('stars.label', { count: star })}
+              className={cn(
+                'flex items-center gap-1 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors',
+                active
+                  ? 'border-premium-gold bg-premium-gold/15 text-on-surface'
+                  : 'border-outline-variant/50 text-on-surface-variant hover:border-premium-gold/60 hover:bg-premium-gold/5'
+              )}
+            >
+              {star}
+              <Star className="size-3 fill-premium-gold text-premium-gold" aria-hidden="true" />
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

@@ -36,9 +36,6 @@
   },
   "reviewScore": {
     "title": "Điểm đánh giá",
-    "any": "Bất kỳ",
-    "score9": "Tuyệt vời (≥ 9.0)",
-    "score8": "Rất tốt (≥ 8.0)",
-    "score7": "Tốt (≥ 7.0)"
+    "any": "Bất kỳ"
   }
 }
