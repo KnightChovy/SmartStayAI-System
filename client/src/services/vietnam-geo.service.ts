@@ -7,9 +7,9 @@ import type {
 const searchKey = () =>
   import.meta.env.VITE_API_SEARCH_KEY as string | undefined;
 
-// Proxied through Vite dev server (/api/vietmap → https://maps.vietmap.vn/api)
-// In production this should be proxied via backend to avoid CORS + key exposure.
-const vietmapProxy = axios.create({ baseURL: '/api/vietmap' });
+const VIETMAP_API_URL = 'https://maps.vietmap.vn/api';
+
+const vietmap = axios.create({ baseURL: VIETMAP_API_URL });
 
 export async function autocompleteAddress(
   text: string
@@ -17,7 +17,7 @@ export async function autocompleteAddress(
   const key = searchKey();
   if (!key || text.trim().length < 2) return [];
   try {
-    const { data } = await vietmapProxy.get<VietmapSuggestion[]>(
+    const { data } = await vietmap.get<VietmapSuggestion[]>(
       '/autocomplete/v4',
       {
         params: { apikey: key, text: text.trim() },
@@ -35,7 +35,7 @@ export async function getPlaceDetail(
   const key = searchKey();
   if (!key || !refId) return null;
   try {
-    const { data } = await vietmapProxy.get<VietmapPlaceDetail>('/place/v3', {
+    const { data } = await vietmap.get<VietmapPlaceDetail>('/place/v3', {
       params: { apikey: key, refid: refId },
     });
     return data ?? null;
