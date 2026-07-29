@@ -1,8 +1,38 @@
 {
   "replying": "● Replying…",
-  "selectHotel": "Select a hotel",
+  "subtitle": "Your smart travel assistant",
+  "greeting": "Hi! I can help you find and choose the right hotel for your trip.",
+  "quick": {
+    "stays": "Find a stay for me",
+    "hanoi": "Hotels in Hanoi",
+    "suggest": "Suggest a hotel"
+  },
   "inputPlaceholder": "Type a message…",
-  "inputDisabled": "Select a hotel to start…",
+  "history": {
+    "title": "Chats",
+    "open": "Chat history",
+    "close": "Close",
+    "newChat": "New chat",
+    "untitled": "New chat",
+    "empty": "No conversations yet",
+    "emptyHint": "Start chatting and your conversations will show up here.",
+    "actions": "Conversation options",
+    "rename": "Rename",
+    "renameTitle": "Rename chat",
+    "renamePlaceholder": "Conversation name",
+    "delete": "Delete",
+    "deleteTitle": "Delete chat?",
+    "deleteMessage": "\"{{title}}\" will be removed from this device. This can't be undone.",
+    "messages_one": "{{count}} message",
+    "messages_other": "{{count}} messages",
+    "time": {
+      "now": "Just now",
+      "minutes": "{{count}}m ago",
+      "hours": "{{count}}h ago",
+      "yesterday": "Yesterday",
+      "days": "{{count}}d ago"
+    }
+  },
   "empty": {
     "title": "Ask me anything",
     "subtitle": "I can help you find rooms, compare prices and answer questions about your stay.",
