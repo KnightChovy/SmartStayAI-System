@@ -10,6 +10,32 @@ This file tracks the accomplished tasks, resolved user requests, and visual/func
 
 ## Completed Tasks Checklist
 
+### July 23, 2026 (continued 2) — Điểm đánh giá chuyển sang thang 10
+
+- [x] **Điểm ĐÁNH GIÁ của khách (review) chuyển từ /5 → /10** theo BE (hạng sao KS `starRating` GIỮ /5 vì là phân loại cơ sở vật chất). Chốt với user: chỉ điểm review lên /10; filter so trực tiếp `avgRating >= reviewScore`; `countByStar` đổi 5 → **10 mức**. `tsc`/`eslint` sạch, i18n cân bằng, build pass.
+  - **Helper dùng chung** `utils/reviewScore.ts`: `REVIEW_SCORE_MAX = 10` + `scoreLabelKey` (ngưỡng /10: ≥9 exceptional, ≥8 excellent, ≥7 veryGood, ≥6 good). Thay 2 bản `scoreLabelKey` /5 trùng nhau ở HotelCard + HotelReviews.
+  - **Type** `hotel-review.types.ts`: `countByStar` → `Record<ReviewScoreBucket, number>` (khoá '1'..'10'); `average.*` là /10.
+  - **HotelReviews** (guest): ô điểm tổng hiện `X.X / 10`, bar tiêu chí ÷10, **phân bố 10 mức** (10→1), điểm từng review đổi từ 5 sao → **badge số /10**.
+  - **HotelCard**: `avgRating` /10 + nhãn theo helper. **RatingBadge**: `{{score}}/10`.
+  - **ReviewScoreFilter**: nhãn ≥9.0/8.0/7.0 (/10), gửi 9/8/7 (BE so trực tiếp, bỏ ×2).
+  - **Testimonials**: featured review `overallRating` /10 → chia 2 khi map cho block 5-sao (chỉ để hiển thị sao).
+  - **ReviewModal** (form khách CHẤM điểm): input đổi sang **thang 10** (`StarRating max={10}`, default 10, mỗi tiêu chí hiện `n/10`), overall preview dạng số `X.X / 10`; `overallRating` gửi BE làm tròn 1–10. Tiện thể chuyển effect reset-form sang pattern render-phase (khoá theo id review) để hết lỗi `react-hooks/set-state-in-effect` (pre-existing).
+  - **MyReviewsPage** (account): điểm review 5 sao → badge số /10. **Partner ReviewsTab**: `Stars` /10→5 sao (÷2, số /10 luôn kèm), CategoryRow/SubRating hiện `X/10`, phân bố **10 mức**.
+  - ⚠️ **Cần khớp thời điểm deploy BE**: FE giờ giả định avgRating/overallRating/subscores là /10 và `countByStar` có khoá 1–10. Nếu BE chưa flip, các số sẽ hiển thị lệch (vd /5 hiện như /10). Deploy FE cùng lúc BE.
+
+### July 23, 2026 (continued) — Tích hợp Nhóm B (BE đã làm xong các endpoint public)
+
+- [x] **Nối FE với backend thật cho toàn bộ Nhóm B** (BE đã merge: `/deals`, search filters + `priceBounds`, sort whitelist, `/platform/stats`, `/reviews/featured`, `/destinations` + `/suggest`, `review-stats`, `cancellationRule`). Đối chiếu hợp đồng thật (route→validation→service) trước khi code. `tsc`/`eslint` sạch, i18n vi/en cân bằng (home 61, common 48, hotel 134, booking 88, pages 84, search 36), `npm run build` pass.
+  - **Data layer mới** (đúng convention): types `deal.types.ts`/`destination.types.ts`/`platform.types.ts` + mở rộng `hotel.types.ts` (`HotelSearchResult` thêm `topAmenities/availableRooms/avgRating/reviewCount`; `HotelSearchParams` thêm `priceMin/priceMax/stars/amenities/reviewScore` + `HotelSortBy`; `HotelSearchResponse` có `priceBounds`; `HotelDetail.cancellationRule`). Services `deal`/`destination`/`platform`; hooks domain `deals`/`destinations`/`platform` + `usePublicReviewStats`. `hotelService.search` trả `HotelSearchResponse`.
+  - **SS-101/103/005/102** — `SearchResultsPage` viết lại: `components/search/filters/` (`PriceRangeSlider` dùng `ui/slider.tsx` radix mới — commit khi thả tay, `StarRatingFilter`, `AmenitiesFilter` từ `useAmenities('hotel')`, `ReviewScoreFilter`) + `SortDropdown` (4 giá trị whitelist) + sync toàn bộ lên URL + "Xoá tất cả" + badge đếm active + **bottom-sheet mobile** (`ui/sheet`). `HotelCard` thêm điểm đánh giá + nhãn + reviewCount, 3 topAmenities, badge urgency `availableRooms`.
+  - **SS-501** — `DealsPage` bỏ tái dùng `WeekendDeals`, dùng `useDeals` (`GET /v1/deals`) + `DealCard` (giá gốc gạch ngang + badge `-%` + countdown flash sale + mark "Đã kết thúc"), có loading/empty.
+  - **SS-002/004** — `Hero` subtitle dùng `platform/stats` (số KS thật); `RatingBadge` (shared) từ stats; `Testimonials` chuyển sang `useFeaturedReviews` (`GET /v1/reviews/featured`) thay cho fan-out per-hotel.
+  - **SS-601 + SS-001** — `TrendingDestinations`/`DiscoverVietnam`/`PopularVietnameseTourists` chuyển sang `useDestinations` (`GET /v1/destinations`, hotelCount + ảnh thật); `DestinationAutocomplete` chuyển từ VietMap sang `GET /v1/destinations/suggest` (city/district thật + số KS, chọn xong set về CITY để search chắc ra kết quả).
+  - **SS-302** — `CancellationLine` giờ đọc `hotel.cancellationRule.freeUntilHours` (BE trả top-level, luôn có, mặc định 48h) → dòng chính sách hủy hiện thật; giữ `getFreeCancellationHours(settings)` làm fallback.
+  - **SS-202** — `HotelReviews` viết lại: điểm tổng + trung bình tiêu chí + **phân bố sao** từ `GET /hotels/:id/review-stats` (public, tính trên TẤT CẢ review published) + danh sách phân trang "Xem thêm" (limit tăng dần). Header `HotelDetailPage` cũng dùng `usePublicReviewStats` (bỏ fetch 100-review thừa).
+  - ⚠️ **CÒN THIẾU BE (chưa làm được)**: **SS-401 contactPhone** — `booking.validation` chưa nhận `contactPhone`, model `Booking` chưa có cột → luồng phone giữ nguyên (lưu vào profile như cũ). **SS-202 lọc theo điểm** — `GET /reviews` chưa có `minRating`/`ratingBucket` server-side nên chỉ có pagination + breakdown, chưa có filter.
+  - ⚠️ **Chưa drive được browser** → phần thị giác (filter sidebar + bottom-sheet, DealCard countdown, HotelCard rating, phân bố sao, autocomplete /suggest) cần xem qua.
+
 ### July 23, 2026 (continued 8)
 
 - [x] **Guest · Hotel detail — làm nổi khối "thuyết phục đặt phòng" (stay picker, điểm đánh giá, anchor nav)**:

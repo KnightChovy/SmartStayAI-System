@@ -45,4 +45,15 @@ export const queryKeys = {
   geo: {
     geocode: (query: string) => ['geo', 'geocode', query] as const,
   },
+  deals: {
+    list: (params: object) => ['deals', 'list', params] as const,
+  },
+  destinations: {
+    list: ['destinations', 'list'] as const,
+    suggest: (params: object) => ['destinations', 'suggest', params] as const,
+  },
+  platform: {
+    stats: ['platform', 'stats'] as const,
+    featuredReviews: (params: object) => ['platform', 'featured-reviews', params] as const,
+  },
 } as const;

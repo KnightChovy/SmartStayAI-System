@@ -11,6 +11,8 @@
     "dealsCta": "See today's deals",
     "destinationSearching": "Searching destinations…",
     "destinationEmpty": "No matching suggestions",
+    "hotelCount_one": "{{count}} hotel",
+    "hotelCount_other": "{{count}} hotels",
     "adults": "Adults",
     "children": "Children",
     "childrenHint": "Ages 0–17",
@@ -79,5 +81,7 @@
   "testimonials": {
     "title": "What guests say about SmartStay",
     "subtitle": "Real experiences from travelers who booked on the platform."
-  }
+  },
+  "statsSubtitle": "Over {{count}} hotels across Vietnam · Best prices · Free cancellation",
+  "ratingBadge": "{{score}}/10 from {{count}} reviews"
 }

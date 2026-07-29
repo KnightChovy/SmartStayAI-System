@@ -1,8 +1,8 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Loader2, MapPin } from 'lucide-react';
-import { autocompleteAddress } from '@/services/vietnam-geo.service';
-import type { VietmapSuggestion } from '@/types/vietnam-geo.types';
+import { useDestinationSuggest } from '@/hooks/destinations';
+import type { DestinationSuggestion } from '@/types/destination.types';
 import { cn } from '@/lib/cn';
 
 interface DestinationAutocompleteProps {
@@ -17,6 +17,11 @@ interface DestinationAutocompleteProps {
   inputClassName?: string;
 }
 
+/**
+ * Ô nhập điểm đến có gợi ý (SS-001) — nguồn `GET /v1/destinations/suggest` (BE).
+ * Gợi ý là city/district thật trên sàn kèm số khách sạn. Chọn xong luôn set về CITY để bộ
+ * lọc search (so theo `city`) chắc chắn ra kết quả. Debounce 250ms; điều hướng ↑/↓/Enter/Esc.
+ */
 export default function DestinationAutocomplete({
   id,
   value,
@@ -26,44 +31,29 @@ export default function DestinationAutocomplete({
   inputClassName,
 }: DestinationAutocompleteProps) {
   const { t } = useTranslation('home');
-  const [suggestions, setSuggestions] = useState<VietmapSuggestion[]>([]);
-  const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
+  const [debounced, setDebounced] = useState('');
   const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const containerRef = useRef<HTMLDivElement>(null);
   const listboxId = useId();
 
-  // Debounce 250ms — mỗi lần đổi text hẹn gọi lại autocomplete, huỷ lượt trước.
-  // Mọi setState nằm TRONG callback async của timer (không đồng bộ trong thân effect) để
-  // không kích hoạt cascading render (react-hooks/set-state-in-effect).
+  // Debounce 250ms giá trị đưa vào query (setState trong callback async, không đồng bộ trong effect).
   useEffect(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
-    const text = value.trim();
-    timerRef.current = setTimeout(async () => {
-      if (text.length < 2) {
-        setSuggestions([]);
-        setLoading(false);
-        return;
-      }
-      setLoading(true);
-      const result = await autocompleteAddress(text);
-      setSuggestions(result.slice(0, 8));
-      setActiveIndex(-1);
-      setLoading(false);
-    }, 250);
+    timerRef.current = setTimeout(() => setDebounced(value.trim()), 250);
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, [value]);
 
+  const { data, isFetching } = useDestinationSuggest(debounced);
+  const suggestions: DestinationSuggestion[] = data ?? [];
+
   // Đóng dropdown khi bấm ra ngoài.
   useEffect(() => {
     const onClickOutside = (e: MouseEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(e.target as Node)
-      ) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setOpen(false);
       }
     };
@@ -71,17 +61,14 @@ export default function DestinationAutocomplete({
     return () => document.removeEventListener('mousedown', onClickOutside);
   }, []);
 
-  const pick = (s: VietmapSuggestion) => {
-    // Lấy tên địa điểm làm điểm đến; search theo `city` là so text nên giữ tên gọn.
-    const picked = s.name || s.display;
-    onChange(picked);
+  const pick = (s: DestinationSuggestion) => {
+    // Luôn set về CITY để search (lọc theo `city`) chắc chắn ra kết quả, kể cả khi chọn district.
+    onChange(s.city);
     setOpen(false);
-    setSuggestions([]);
-    onSelect?.(picked);
+    onSelect?.(s.city);
   };
 
-  const showList =
-    open && (loading || suggestions.length > 0 || value.trim().length >= 2);
+  const showList = open && debounced.length >= 1;
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (!showList) return;
@@ -110,13 +97,12 @@ export default function DestinationAutocomplete({
         aria-expanded={showList}
         aria-controls={listboxId}
         aria-autocomplete="list"
-        aria-activedescendant={
-          activeIndex >= 0 ? `${listboxId}-opt-${activeIndex}` : undefined
-        }
+        aria-activedescendant={activeIndex >= 0 ? `${listboxId}-opt-${activeIndex}` : undefined}
         value={value}
         onChange={e => {
           onChange(e.target.value);
           setOpen(true);
+          setActiveIndex(-1);
         }}
         onFocus={() => setOpen(true)}
         onKeyDown={handleKeyDown}
@@ -134,10 +120,9 @@ export default function DestinationAutocomplete({
           role="listbox"
           className="absolute left-0 top-full z-30 mt-3 max-h-72 w-full min-w-64 overflow-auto rounded-2xl border border-outline-variant/30 bg-white p-1.5 text-left shadow-2xl"
         >
-          {loading && suggestions.length === 0 ? (
+          {isFetching && suggestions.length === 0 ? (
             <li className="flex items-center gap-2 px-3 py-3 text-sm text-on-surface-variant">
-              <Loader2 className="size-4 animate-spin" />{' '}
-              {t('hero.destinationSearching')}
+              <Loader2 className="size-4 animate-spin" /> {t('hero.destinationSearching')}
             </li>
           ) : suggestions.length === 0 ? (
             <li className="px-3 py-3 text-sm text-on-surface-variant">
@@ -145,7 +130,7 @@ export default function DestinationAutocomplete({
             </li>
           ) : (
             suggestions.map((s, i) => (
-              <li key={s.ref_id} role="none">
+              <li key={`${s.type}-${s.name}-${i}`} role="none">
                 <button
                   type="button"
                   role="option"
@@ -154,22 +139,21 @@ export default function DestinationAutocomplete({
                   onMouseEnter={() => setActiveIndex(i)}
                   onClick={() => pick(s)}
                   className={cn(
-                    'flex w-full items-start gap-2.5 rounded-xl px-3 py-2.5 text-left transition-colors',
-                    i === activeIndex
-                      ? 'bg-primary/10'
-                      : 'hover:bg-surface-container'
+                    'flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left transition-colors',
+                    i === activeIndex ? 'bg-primary/10' : 'hover:bg-surface-container'
                   )}
                 >
-                  <MapPin className="mt-0.5 size-4 shrink-0 text-primary" />
-                  <span className="min-w-0">
+                  <MapPin className="size-4 shrink-0 text-primary" />
+                  <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-medium text-on-surface">
-                      {s.name || s.display}
+                      {s.name}
                     </span>
-                    {s.address && (
-                      <span className="block truncate text-xs text-on-surface-variant">
-                        {s.address}
-                      </span>
+                    {s.type === 'district' && (
+                      <span className="block truncate text-xs text-on-surface-variant">{s.city}</span>
                     )}
+                  </span>
+                  <span className="shrink-0 text-xs text-on-surface-variant">
+                    {t('hero.hotelCount', { count: s.hotelCount })}
                   </span>
                 </button>
               </li>

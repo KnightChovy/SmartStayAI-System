@@ -8,7 +8,11 @@ import { ErrorState, EmptyState } from '@/components/hotel-partner/shared/states
 import { ListSkeleton } from '@/components/shared/skeletons';
 import { cn } from '@/lib/cn';
 import { formatDate } from '@/utils/formatDate';
-import type { HotelReview, HotelReviewStatus } from '@/types/hotel-review.types';
+import type {
+  HotelReview,
+  HotelReviewStatus,
+  ReviewScoreBucket,
+} from '@/types/hotel-review.types';
 import { REVIEW_STATUS_CONFIG, REVIEW_STATUS_OPTIONS } from './labels';
 
 const PAGE_SIZE = 10;
@@ -56,8 +60,10 @@ export function ReviewsTab({ hotelId }: ReviewsTabProps) {
             <p className="mt-1 text-5xl font-bold tracking-tight text-amber-500">
               {stats.average.overall !== null ? stats.average.overall.toFixed(1) : '—'}
             </p>
-            <Stars value={Math.round(stats.average.overall ?? 0)} />
-            <p className="mt-2 text-xs text-slate-400">{stats.total} published review(s)</p>
+            <Stars value={stats.average.overall ?? 0} />
+            <p className="mt-2 text-xs text-slate-400">
+              out of 10 · {stats.total} published review(s)
+            </p>
           </div>
 
           {/* Category averages */}
@@ -79,21 +85,24 @@ export function ReviewsTab({ hotelId }: ReviewsTabProps) {
               Distribution
             </h3>
             <div className="space-y-1.5">
-              {([5, 4, 3, 2, 1] as const).map(star => {
-                const count = stats.countByStar[String(star) as '1' | '2' | '3' | '4' | '5'];
-                const pct = stats.total > 0 ? (count / stats.total) * 100 : 0;
-                return (
-                  <div key={star} className="flex items-center gap-2 text-xs">
-                    <span className="flex w-8 items-center gap-0.5 text-slate-500">
-                      {star} <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-                    </span>
-                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
-                      <div className="h-full rounded-full bg-amber-400" style={{ width: `${pct}%` }} />
+              {(['10', '9', '8', '7', '6', '5', '4', '3', '2', '1'] as ReviewScoreBucket[]).map(
+                bucket => {
+                  const count = stats.countByStar[bucket];
+                  const pct = stats.total > 0 ? (count / stats.total) * 100 : 0;
+                  return (
+                    <div key={bucket} className="flex items-center gap-2 text-xs">
+                      <span className="w-6 text-right tabular-nums text-slate-500">{bucket}</span>
+                      <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
+                        <div
+                          className="h-full rounded-full bg-amber-400"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                      <span className="w-6 text-right tabular-nums text-slate-400">{count}</span>
                     </div>
-                    <span className="w-6 text-right tabular-nums text-slate-400">{count}</span>
-                  </div>
-                );
-              })}
+                  );
+                }
+              )}
             </div>
           </div>
         </div>
@@ -163,7 +172,9 @@ export function ReviewsTab({ hotelId }: ReviewsTabProps) {
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
+/** Điểm thang 10 → 5 sao (chia 2) chỉ để hiển thị trực quan; số /10 luôn hiện kèm bên cạnh. */
 function Stars({ value }: { value: number }) {
+  const outOfFive = Math.round(value / 2);
   return (
     <div className="mt-1 flex gap-0.5">
       {Array.from({ length: 5 }).map((_, i) => (
@@ -171,7 +182,7 @@ function Stars({ value }: { value: number }) {
           key={i}
           className={cn(
             'h-4 w-4',
-            i < value ? 'fill-amber-400 text-amber-400' : 'text-slate-200'
+            i < outOfFive ? 'fill-amber-400 text-amber-400' : 'text-slate-200'
           )}
         />
       ))}
@@ -183,9 +194,8 @@ function CategoryRow({ label, value }: { label: string; value: number | null }) 
   return (
     <div className="flex items-center justify-between text-sm">
       <span className="text-slate-600">{label}</span>
-      <span className="flex items-center gap-1 font-semibold text-slate-800">
-        {value !== null ? value.toFixed(1) : '—'}
-        <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+      <span className="font-semibold text-slate-800">
+        {value !== null ? `${value.toFixed(1)}/10` : '—'}
       </span>
     </div>
   );
@@ -242,10 +252,7 @@ function SubRating({ label, value }: { label: string; value: number }) {
   return (
     <span className="flex items-center gap-1">
       {label}:
-      <span className="flex items-center gap-0.5 font-medium text-slate-700">
-        {value}
-        <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-      </span>
+      <span className="font-medium text-slate-700">{value}/10</span>
     </span>
   );
 }

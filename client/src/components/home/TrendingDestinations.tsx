@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { useCityDestinations } from '@/hooks/home';
+import { useDestinations } from '@/hooks/destinations';
 
 const FALLBACK_IMAGE =
   'https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=1200&auto=format&fit=crop';
@@ -8,10 +8,10 @@ const FALLBACK_IMAGE =
 export default function TrendingDestinations() {
   const navigate = useNavigate();
   const { t } = useTranslation('home');
-  const { destinations, isLoading } = useCityDestinations();
+  const { data, isLoading } = useDestinations();
 
-  // Top thành phố theo số lượng khách sạn thật đang mở bán.
-  const top = destinations.slice(0, 3);
+  // Top thành phố theo số lượng khách sạn thật (`GET /v1/destinations` — đã sort).
+  const top = (data ?? []).slice(0, 3);
 
   // Đang tải hoặc chưa có dữ liệu thật → không render section (tránh khoảng trống lạ).
   if (!isLoading && top.length === 0) return null;
@@ -49,7 +49,7 @@ export default function TrendingDestinations() {
                     {dest.city}
                   </h3>
                   <p className="text-xs font-bold opacity-80 uppercase tracking-widest font-be-vietnam">
-                    {t('trending.properties', { count: dest.count })}
+                    {t('trending.properties', { count: dest.hotelCount })}
                   </p>
                 </div>
               </div>
