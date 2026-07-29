@@ -17,7 +17,6 @@ import { getFreeCancellationHours } from '@/utils/cancellationPolicy';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { formatAddress } from '@/utils/formatAddress';
-import { estimateTaxAndFees } from '@/utils/estimateTaxAndFees';
 import type { RoomType } from '@/types/hotel.types';
 import { cn } from '@/lib/cn';
 
@@ -27,9 +26,9 @@ const FALLBACK =
 /**
  * Chi tiết một loại phòng (`GET /hotels/:hotelId/room-types/:roomTypeId`) — public.
  *
- * ⚠️ Giá: endpoint chi tiết trả `totalPrice` là **tiền phòng thuần** (khác endpoint danh sách
- * vốn đã gồm thuế/phí) và KHÔNG trả `taxAmount`/`feeAmount`, nên trang này phải tự ước tính
- * thuế từ `policies` của khách sạn — giống trang checkout. Số chốt vẫn là `POST /bookings`.
+ * Giá đọc THẲNG số BE trả (`subtotal` + `taxAmount` + `feeAmount` = `totalPrice`, tính bằng
+ * đúng `computeTaxAndFees` lúc đặt) nên trùng khớp thẻ phòng ở trang chi tiết khách sạn.
+ * TUYỆT ĐỐI không ước tính thêm thuế lên `totalPrice` — số đó ĐÃ gồm thuế/phí.
  */
 export default function RoomDetailPage() {
   const { t } = useTranslation('hotel');
@@ -45,7 +44,6 @@ export default function RoomDetailPage() {
   // Khách tách người lớn / trẻ em; link cũ chỉ có `guests` ⇒ coi toàn bộ là người lớn.
   const adults = Number(params.get('adults')) || Number(params.get('guests')) || 1;
   const children = Number(params.get('children')) || 0;
-  const guests = adults + children;
 
   const {
     data: roomType,
@@ -53,12 +51,9 @@ export default function RoomDetailPage() {
     isError,
   } = useRoomType(hotelId, roomTypeId, { checkIn, checkOut, adults, children });
 
-  // Cần `charges` (thuế/phí) để ước tính giá cuối — endpoint chi tiết phòng KHÔNG trả thuế.
-  // Dùng chung query key với trang chi tiết KS nên thường ăn cache, không tốn request thừa.
-  const { data: hotelDetail, isPlaceholderData } = useHotel(hotelId ?? '');
-  // `useHotel` dựng placeholder với các relation RỖNG → đọc lúc chưa có data thật sẽ tính ra
-  // "không thuế" cho KS có VAT. Chưa về ⇒ `undefined` = chưa biết ⇒ im lặng, không đoán.
-  const charges = isPlaceholderData ? undefined : hotelDetail?.charges;
+  // Lấy `HotelDetail` cho breadcrumb + chính sách huỷ + state sang checkout. Dùng chung query
+  // key với trang chi tiết KS nên thường ăn cache, không tốn request thừa.
+  const { data: hotelDetail } = useHotel(hotelId ?? '');
 
   const gallery = useMemo(() => {
     const imgs = roomType?.images?.map(i => i.url) ?? [];
@@ -66,29 +61,22 @@ export default function RoomDetailPage() {
   }, [roomType]);
 
   const hasStayQuote = roomType?.totalPrice != null;
-  const subtotal = Number(roomType?.totalPrice ?? 0);
-  const taxFee = estimateTaxAndFees({
-    charges,
-    subtotal,
-    numNights: roomType?.numNights ?? 0,
-    numGuests: guests,
-  });
-  const total = taxFee ? taxFee.total : subtotal;
+  // `totalPrice` của BE = subtotal + thuế + phí (SỐ CUỐI khách trả). Bản cũ coi nó là tiền phòng
+  // thuần rồi cộng thuế ước tính lên trên ⇒ THUẾ TÍNH HAI LẦN: phòng 1.022.000 ở trang chi tiết
+  // KS bị đội lên 1.153.760 ở trang này.
+  const total = Number(roomType?.totalPrice ?? 0);
+  const taxFee =
+    roomType?.taxAmount != null && roomType?.feeAmount != null
+      ? Number(roomType.taxAmount) + Number(roomType.feeAmount)
+      : null;
 
   const handleBook = () => {
     if (!roomType) return;
-    // Checkout nhận `RoomType` (shape của endpoint DANH SÁCH). Endpoint chi tiết trả tiền
-    // phòng thuần ở `totalPrice` ⇒ map sang `subtotal` cho đúng nghĩa, và để `totalPrice`
-    // trống (số đó ở đây CHƯA gồm thuế nên không được coi là tổng) — checkout sẽ ước tính
-    // thuế từ `policies` như luồng thường.
-    const bookable: RoomType = {
-      ...roomType,
-      subtotal: roomType.totalPrice ?? undefined,
-      totalPrice: undefined,
-    };
+    // Truyền NGUYÊN VẸN: endpoint chi tiết giờ trả cùng shape giá với endpoint danh sách
+    // (`subtotal`/`taxAmount`/`feeAmount`/`totalPrice`) nên checkout đọc thẳng số thật của BE.
     const bookingState = {
       hotel: hotelDetail,
-      roomType: bookable,
+      roomType: roomType as RoomType,
       checkIn,
       checkOut,
       adults,
@@ -284,13 +272,11 @@ export default function RoomDetailPage() {
                 <p className="mt-1 font-be-vietnam text-2xl font-bold text-on-surface">
                   {format(total)}
                 </p>
-                {/* Chưa biết chính sách → không nói gì về thuế (không đoán thay khách sạn) */}
-                {taxFee && (
+                {/* BE không tách khoản (`null`) → im lặng, không đoán thay khách sạn. */}
+                {taxFee != null && (
                   <p className="mt-1 text-xs text-on-surface-variant">
-                    {taxFee.taxAmount + taxFee.feeAmount > 0
-                      ? t('roomDetail.estIncludesTaxes', {
-                          amount: format(taxFee.taxAmount + taxFee.feeAmount),
-                        })
+                    {taxFee > 0
+                      ? t('room.inclTaxesFees', { amount: format(taxFee) })
                       : t('room.noExtraTaxes')}
                   </p>
                 )}

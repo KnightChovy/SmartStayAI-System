@@ -156,7 +156,6 @@
     "about": "About this room",
     "highlights": "Highlights",
     "amenities": "Room amenities",
-    "estIncludesTaxes": "Includes ~{{amount}} taxes & fees (estimated)",
     "soldOut": "Sold out for these dates",
     "pickDates": "Pick your dates to see the stay total and availability."
   }
