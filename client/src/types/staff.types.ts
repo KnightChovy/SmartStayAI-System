@@ -35,6 +35,9 @@ export interface StaffHotel {
   name: string;
   city: string;
   address?: string;
+  /** Hotel operating hours returned by the existing staff-hotel endpoint. */
+  checkInTime?: string | null;
+  checkOutTime?: string | null;
 }
 
 // ============================================================

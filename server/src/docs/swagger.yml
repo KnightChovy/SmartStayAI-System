@@ -2004,7 +2004,19 @@ paths:
           schema:
             type: integer
             minimum: 1
-          description: Only hotels having a room type with maxOccupancy >= guests
+          description: 'Total guests (legacy). Only hotels having a room type with maxOccupancy >= guests. Prefer adults + children below; when both are sent, guests = adults + children'
+        - in: query
+          name: adults
+          schema: { type: integer, minimum: 1 }
+          description: 'Adults (new guest picker). Merged with children into total guests'
+        - in: query
+          name: children
+          schema: { type: integer, minimum: 0 }
+          description: 'Children. Merged with adults into total guests (pricing counts every guest the same)'
+        - in: query
+          name: rooms
+          schema: { type: integer, minimum: 1 }
+          description: 'Rooms wanted (default 1). With dates, only hotels having at least this many free rooms are returned'
         - in: query
           name: priceMin
           schema: { type: number, minimum: 0 }
@@ -2024,7 +2036,7 @@ paths:
         - in: query
           name: reviewScore
           schema: { type: number, minimum: 0, maximum: 10 }
-          description: 'Minimum guest score on a 10-scale (7/8/9). avgRating is on a 5-scale, so the filter is avgRating*2 >= reviewScore. Hotels with no rating are excluded'
+          description: 'Minimum guest score on a 10-scale (7/8/9). avgRating is also on a 10-scale, so the filter is avgRating >= reviewScore. Hotels with no rating are excluded'
         - in: query
           name: sortBy
           schema:
@@ -2571,6 +2583,13 @@ paths:
           schema:
             type: integer
             minimum: 1
+          description: 'Total guests (legacy). Or send adults + children below — server merges them'
+        - in: query
+          name: adults
+          schema: { type: integer, minimum: 1 }
+        - in: query
+          name: children
+          schema: { type: integer, minimum: 0 }
         - in: query
           name: minPrice
           schema:
@@ -2756,7 +2775,7 @@ paths:
                 - roomTypeId
                 - checkInDate
                 - checkOutDate
-                - numGuests
+              description: 'Send guest count either the new way (numAdults + numChildren) or the legacy way (numGuests). At least one of numGuests / numAdults is required. Server derives numGuests = numAdults + numChildren; numGuests alone is treated as all adults.'
               properties:
                 hotelId:
                   type: string
@@ -2774,6 +2793,16 @@ paths:
                 numGuests:
                   type: integer
                   minimum: 1
+                  description: 'Legacy total guests. Optional if numAdults is sent'
+                numAdults:
+                  type: integer
+                  minimum: 1
+                  description: 'Adults. Validated against room type maxAdults when the hotel configured it'
+                numChildren:
+                  type: integer
+                  minimum: 0
+                  default: 0
+                  description: 'Children. Validated against room type maxChildren. Priced the same as adults (per-person fees count every guest)'
                 specialRequests:
                   type: string
                 paymentMethod:
@@ -2789,7 +2818,8 @@ paths:
                 roomTypeId: 22222222-2222-2222-2222-222222222222
                 checkInDate: '2026-07-01'
                 checkOutDate: '2026-07-03'
-                numGuests: 2
+                numAdults: 2
+                numChildren: 1
                 paymentMethod: cash
       responses:
         '201':
@@ -4699,7 +4729,13 @@ paths:
         - in: query
           name: guests
           schema: { type: integer, minimum: 1 }
-          description: 'Guest count for per-person fees (defaults to 1). Send the same value used at booking'
+          description: 'Guest count for per-person fees (defaults to 1). Send the same value used at booking. Or send adults + children — server merges them'
+        - in: query
+          name: adults
+          schema: { type: integer, minimum: 1 }
+        - in: query
+          name: children
+          schema: { type: integer, minimum: 0 }
       responses:
         '200':
           description: Room type detail; with dates it includes subtotal / taxAmount / feeAmount / totalPrice

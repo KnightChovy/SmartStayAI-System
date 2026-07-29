@@ -198,6 +198,26 @@ This file tracks the accomplished tasks, resolved user requests, and structural/
   - **Wire `(tabs)/profile.tsx`**: chuyển `BENEFIT_ITEMS`/`FINANCE_ITEMS`/`SETTING_ITEMS` từ hằng số tĩnh (không `onPress`) thành mảng dựng trong component (cần `router`), mỗi item trỏ đúng route tương ứng; nút quick-action "SmartStay Plus" → `/profile/rewards`; "Notifications" trỏ thẳng route `/notifications` đã có sẵn từ trước (chỉ chưa được liên kết) — màn này vốn đã lấy dữ liệu thật từ booking, không phải mock.
   - `npx tsc --noEmit`: sạch ở toàn bộ file mới/sửa (chỉ còn các lỗi pre-existing của scaffolding `components/ui/*` gluestack).
 
+### July 29, 2026
+
+- [x] **Đổi mật khẩu (Security) — thêm ô "mật khẩu hiện tại" + gọi đúng endpoint xác minh**:
+  - **Rà soát BE trước**: `PATCH /v1/users/:userId` (self-access) chỉ băm `password` mới **không** kiểm mật khẩu cũ. BE đã có endpoint chuyên biệt **`PATCH /v1/users/me/password`** (`user.route.ts`, auth) nhận `{ currentPassword, newPassword }`: `user.service.changeMyPassword` `bcrypt.compare` mật khẩu hiện tại (sai → 400 "Mật khẩu hiện tại không đúng"), chặn trùng mật khẩu cũ (400), rồi trả **204**. Màn `profile/security.tsx` trước đây đổi mật khẩu qua `useUpdateProfile({ password })` → **bỏ qua xác minh mật khẩu cũ**.
+  - **Tầng dữ liệu** (1 endpoint = 1 hook, đúng AGENTS): type `ChangePasswordPayload` (`types/users.type.ts`); `usersService.changeMyPassword` (`PATCH /users/me/password`); hook `use-change-password.ts` + barrel (`useMutation`, `userId` chỉ để chặn khi chưa đăng nhập — BE lấy id từ token).
+  - **UI** `profile/security.tsx`: thêm ô **Current password** (trên New/Confirm), `autoCapitalize="none"` cả 3 ô; validate thứ tự current-required → tối thiểu 8 ký tự → khớp confirm → khác mật khẩu cũ; đổi từ `useUpdateProfile` sang `useChangePassword`, reset cả 3 ô khi thành công, lỗi BE hiện inline.
+  - **i18n**: thêm `account.security.currentPassword` / `currentRequired` / `sameAsOld` (EN/VI cân bằng).
+  - `npx tsc --noEmit`: sạch ở file mới/sửa (39 lỗi còn lại đều pre-existing của `components/ui/*`).
+
+### July 29, 2026 (continued)
+
+- [x] **Sửa hồ sơ mobile bám theo client: bỏ "New password", cho sửa đủ trường + upload avatar**:
+  - **Rà soát client + BE trước**: client `ProfileForm` gọi **`GET/PATCH /v1/users/me`** (không phải `/users/:userId`) với view-model phẳng; BE có `updateMyProfile` (route `PATCH /users/me`, auth) nhận `fullName / phone / avatarUrl / dateOfBirth / nationality / idCardNumber / passportNumber` (+ preferences), upsert bảng `UserProfile`, trả User kèm `profile`, **không** cho đổi email/role/status. Avatar: `POST /v1/uploads` (multipart field `file`, query `folder`) → `{ url, publicId }` (Cloudinary). Mobile trước đây chỉ sửa được name/email/**password** qua `PATCH /users/:userId`.
+  - **Tầng dữ liệu** (đúng AGENTS, 1 endpoint = 1 hook): types `MyProfile` (view-model phẳng) / `MyProfileResponse` / `MyProfileRaw` / `UpdateMyProfilePayload`; `usersService.getMyProfile` + `updateMyProfile` (map `toViewModel`/`toDto` y hệt client — cắt `dateOfBirth` còn `YYYY-MM-DD`, chuỗi rỗng → `null`); hooks `use-my-profile` (GET, enabled theo đăng nhập) + `use-update-my-profile` (PATCH, đồng bộ `authStore` fullName/phone/avatarUrl để navbar/prefill thấy ngay); thêm key `users.me`. Upload: `services/upload.service.ts` (`uploadImage(uri)` — FormData `{ uri, name, type }` vì RN không có `File`) + `hooks/uploads/use-upload-image`.
+  - **UI** `profile/edit.tsx` viết lại theo layout trong ảnh: card **Ảnh đại diện** (ảnh tròn/khởi tạo chữ + nút "Tải ảnh lên" qua `expo-image-picker` → upload → set `avatarUrl`, có "Xoá ảnh"); các cặp trường 2 cột **Họ tên / SĐT**, **Email** (chỉ đọc, nền mờ + badge "Đã xác minh" theo `emailVerifiedAt`), **Ngày sinh** (ô YYYY-MM-DD + icon lịch, validate ngày thật/không tương lai) **/ Quốc tịch**, **Số CCCD/CMND / Số hộ chiếu**. **Bỏ hẳn ô New password** — đổi mật khẩu đã có màn Security riêng. Chỉ gửi field đã đổi; loading spinner khi tải profile; footer dùng `Math.max(insets.bottom,12)+12`.
+  - `app.json`: thêm plugin `expo-image-picker` (`photosPermission`). ⚠️ Thêm native plugin → cần **rebuild dev client** (`npx expo start -c` không đủ cho native config).
+  - **i18n**: mở rộng `account.edit.*` (photo/upload/uploading/remove/uploadError/phone/verified/dob/nationality/idCard/passport/emailNote/nameRequired/save…) + `common.ok` — EN/VI cân bằng.
+  - `tsc` **0 lỗi** mới (39 lỗi còn lại đều pre-existing `components/ui/*`), `eslint` sạch ở toàn bộ file mới/sửa.
+  - ⚠️ **Còn lại**: DOB nhập tay dạng YYYY-MM-DD (chưa có native date-picker — client dùng `<DatePicker>`); preferences (ngôn ngữ/tiền tệ/marketing) BE có nhưng **không** nằm trong ảnh nên chưa đưa vào form mobile. `useGetProfile`/`useUpdateProfile` (bản `/users/:userId`) giữ lại nhưng không còn màn nào dùng.
+
 ### July 13, 2026
 
 - [x] **Đối chiếu Swagger deploy (onrender) — sửa path lấy KS staff cho đúng endpoint BE đã ship**:

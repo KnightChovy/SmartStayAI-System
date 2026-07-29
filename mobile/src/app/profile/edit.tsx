@@ -1,19 +1,29 @@
-import { useState } from 'react';
-import { View, ScrollView, Pressable, TextInput, KeyboardAvoidingView, Platform, Alert } from 'react-native';
+import { useEffect, useState } from 'react';
+import { View, ScrollView, Pressable, TextInput, KeyboardAvoidingView, Platform, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
+import * as ImagePicker from 'expo-image-picker';
 import { Text } from '@/components/ui/text';
 import { Heading } from '@/components/ui/heading';
-import { useUpdateProfile } from '@/hooks/users';
-import { useAuthStore } from '@/stores/authStore';
+import { useMyProfile, useUpdateMyProfile } from '@/hooks/users';
+import { useUploadImage } from '@/hooks/uploads';
 import { getInitials } from '@/utils/hotel';
-import type { UpdateProfilePayload } from '@/types/users.type';
+import type { MyProfile, UpdateMyProfilePayload } from '@/types/users.type';
 import { GUEST_COLORS } from '@/constants/guestTheme';
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+/** Ngày sinh hợp lệ: đúng định dạng YYYY-MM-DD, là ngày thật, không ở tương lai. */
+function isValidDob(value: string): boolean {
+  if (!value) return true; // để trống là hợp lệ (không bắt buộc)
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const d = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return false;
+  if (value !== d.toISOString().slice(0, 10)) return false; // chặn 2026-02-30
+  return d.getTime() <= Date.now();
+}
 
 /** Lấy message lỗi từ axios error mà không dùng `any`. */
 function errorMessage(err: unknown, fallback: string): string {
@@ -24,51 +34,81 @@ function errorMessage(err: unknown, fallback: string): string {
   return fallback;
 }
 
+const norm = (v: string | null | undefined) => (v ?? '').trim();
+
 export default function EditProfileScreen() {
   const router = useRouter();
   const { t } = useTranslation(['account', 'common']);
   const insets = useSafeAreaInsets();
-  const user = useAuthStore((s) => s.user);
-  const updateProfile = useUpdateProfile();
+  const { data: profile, isLoading } = useMyProfile();
+  const updateProfile = useUpdateMyProfile();
+  const uploadImage = useUploadImage();
 
-  const [name, setName] = useState(user?.fullName ?? '');
-  const [email, setEmail] = useState(user?.email ?? '');
-  const [password, setPassword] = useState('');
+  const [form, setForm] = useState<MyProfile | null>(null);
   const [touched, setTouched] = useState(false);
   const [formError, setFormError] = useState('');
 
-  const nameError = !name.trim() ? 'Name is required' : '';
-  const emailError = !EMAIL_RE.test(email.trim()) ? 'Enter a valid email' : '';
-  const passwordError = password.length > 0 && password.length < 8 ? 'Password must be at least 8 characters' : '';
-  const valid = !nameError && !emailError && !passwordError;
+  // Seed form 1 lần khi profile tải xong.
+  useEffect(() => {
+    if (profile && !form) setForm(profile);
+  }, [profile, form]);
+
+  const set = <K extends keyof MyProfile>(key: K, value: MyProfile[K]) => {
+    setForm((prev) => (prev ? { ...prev, [key]: value } : prev));
+  };
+
+  const nameError = form && !form.fullName.trim() ? t('account:edit.nameRequired', 'Name is required') : '';
+  const dobError = form && !isValidDob(form.dateOfBirth ?? '') ? t('account:edit.dobInvalid') : '';
+  const valid = !nameError && !dobError;
+
+  async function pickAvatar() {
+    setFormError('');
+    const res = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (res.canceled || !res.assets[0]?.uri) return;
+    try {
+      const { url } = await uploadImage.mutateAsync({ uri: res.assets[0].uri, folder: 'avatars' });
+      set('avatarUrl', url);
+    } catch (err) {
+      setFormError(errorMessage(err, t('account:edit.uploadError')));
+    }
+  }
 
   async function handleSave() {
+    if (!form || !profile) return;
     setTouched(true);
     setFormError('');
     if (!valid) return;
 
-    // Chỉ gửi field thực sự thay đổi (backend yêu cầu tối thiểu 1 field).
-    const payload: UpdateProfilePayload = {};
-    if (name.trim() !== user?.fullName) payload.name = name.trim();
-    if (email.trim() !== user?.email) payload.email = email.trim();
-    if (password.length >= 8) payload.password = password;
+    // Chỉ gửi field thực sự thay đổi (BE yêu cầu tối thiểu 1 field).
+    const patch: UpdateMyProfilePayload = {};
+    if (form.fullName.trim() !== norm(profile.fullName)) patch.fullName = form.fullName.trim();
+    if (norm(form.phone) !== norm(profile.phone)) patch.phone = norm(form.phone);
+    if (norm(form.avatarUrl) !== norm(profile.avatarUrl)) patch.avatarUrl = norm(form.avatarUrl);
+    if (norm(form.dateOfBirth) !== norm(profile.dateOfBirth)) patch.dateOfBirth = norm(form.dateOfBirth);
+    if (norm(form.nationality) !== norm(profile.nationality)) patch.nationality = norm(form.nationality);
+    if (norm(form.idCardNumber) !== norm(profile.idCardNumber)) patch.idCardNumber = norm(form.idCardNumber);
+    if (norm(form.passportNumber) !== norm(profile.passportNumber)) patch.passportNumber = norm(form.passportNumber);
 
-    if (Object.keys(payload).length === 0) {
+    if (Object.keys(patch).length === 0) {
       router.back();
       return;
     }
 
     try {
-      await updateProfile.mutateAsync(payload);
-      Alert.alert('Profile updated', 'Your changes have been saved.', [
-        { text: 'OK', onPress: () => router.back() },
-      ]);
+      await updateProfile.mutateAsync(patch);
+      Alert.alert(t('account:edit.saved'), undefined, [{ text: t('common:ok', 'OK'), onPress: () => router.back() }]);
     } catch (err) {
-      setFormError(errorMessage(err, 'Could not update your profile. Please try again.'));
+      setFormError(errorMessage(err, t('account:edit.failed')));
     }
   }
 
-  const initials = getInitials(name || user?.fullName);
+  const initials = getInitials(form?.fullName || profile?.fullName);
+  const busy = updateProfile.isPending || uploadImage.isPending;
 
   return (
     <View className="flex-1 bg-canvas">
@@ -82,41 +122,149 @@ export default function EditProfileScreen() {
         </View>
       </SafeAreaView>
 
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 100 }}>
-          {/* Avatar */}
-          <View className="items-center py-4">
-            <View className="w-24 h-24 rounded-full bg-bronze items-center justify-center">
-              <Text bold className="font-bevi-bold text-on-surface text-3xl">{initials}</Text>
-            </View>
-          </View>
-
-          <View className="bg-surface rounded-card p-4 gap-3.5">
-            <Field label="Full name" value={name} onChangeText={setName} placeholder={t('account:edit.namePlaceholder')} error={touched ? nameError : ''} autoCapitalize="words" />
-            <Field label="Email" value={email} onChangeText={setEmail} placeholder={t('account:edit.emailPlaceholder')} error={touched ? emailError : ''} keyboardType="email-address" autoCapitalize="none" />
-            <Field label="New password (optional)" value={password} onChangeText={setPassword} placeholder={t('account:edit.newPasswordPlaceholder')} error={touched ? passwordError : ''} secureTextEntry autoCapitalize="none" />
-            <Text size="xs" className="font-bevi text-muted">{t('account:edit.phoneNote')}</Text>
-          </View>
-
-          {formError ? (
-            <View className="bg-red-50 rounded-field px-3 py-2.5 mt-3 flex-row items-start gap-2">
-              <Ionicons name="alert-circle" size={18} color="#DC2626" />
-              <Text size="sm" className="font-bevi text-red-600 flex-1">{formError}</Text>
-            </View>
-          ) : null}
-        </ScrollView>
-
-        <View className="absolute bottom-0 left-0 right-0 bg-surface border-t border-hairline/30 px-5 pt-3" style={{ paddingBottom: insets.bottom + 12 }}>
-          <Pressable
-            disabled={updateProfile.isPending}
-            onPress={handleSave}
-            className="bg-on-surface rounded-card py-3.5 items-center"
-            style={{ opacity: updateProfile.isPending ? 0.6 : 1 }}
-          >
-            <Text bold className="font-bevi-bold text-white text-base">{updateProfile.isPending ? 'Saving…' : 'Save changes'}</Text>
-          </Pressable>
+      {isLoading || !form ? (
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator color={GUEST_COLORS.onSurface} />
         </View>
-      </KeyboardAvoidingView>
+      ) : (
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 100 }}>
+            {/* Avatar */}
+            <View className="bg-surface rounded-card p-4 flex-row items-center gap-4">
+              {form.avatarUrl ? (
+                <Image source={{ uri: form.avatarUrl }} style={{ width: 72, height: 72, borderRadius: 36 }} contentFit="cover" />
+              ) : (
+                <View className="w-[72px] h-[72px] rounded-full bg-bronze items-center justify-center">
+                  <Text bold className="font-bevi-bold text-on-surface text-2xl">{initials}</Text>
+                </View>
+              )}
+              <View className="flex-1">
+                <Text size="sm" bold className="font-bevi-bold text-on-surface mb-2">{t('account:edit.photo')}</Text>
+                <View className="flex-row items-center gap-2">
+                  <Pressable
+                    disabled={uploadImage.isPending}
+                    onPress={pickAvatar}
+                    className="flex-row items-center gap-2 border border-hairline/60 rounded-field px-3.5 py-2"
+                  >
+                    <Ionicons name={uploadImage.isPending ? 'hourglass-outline' : 'cloud-upload-outline'} size={16} color={GUEST_COLORS.onSurface} />
+                    <Text size="sm" bold className="font-bevi-bold text-on-surface">
+                      {uploadImage.isPending ? t('account:edit.uploading') : t('account:edit.upload')}
+                    </Text>
+                  </Pressable>
+                  {form.avatarUrl ? (
+                    <Pressable onPress={() => set('avatarUrl', null)} hitSlop={6} className="px-2 py-2">
+                      <Text size="sm" className="font-bevi text-muted">{t('account:edit.remove')}</Text>
+                    </Pressable>
+                  ) : null}
+                </View>
+              </View>
+            </View>
+
+            {/* Basic info */}
+            <View className="bg-surface rounded-card p-4 gap-3.5 mt-3">
+              <View className="flex-row gap-3">
+                <Field
+                  className="flex-1"
+                  label={t('account:edit.name')}
+                  value={form.fullName}
+                  onChangeText={(v) => set('fullName', v)}
+                  placeholder={t('account:edit.namePlaceholder')}
+                  error={touched ? nameError : ''}
+                  autoCapitalize="words"
+                />
+                <Field
+                  className="flex-1"
+                  label={t('account:edit.phone')}
+                  value={form.phone ?? ''}
+                  onChangeText={(v) => set('phone', v)}
+                  placeholder={t('account:edit.phonePlaceholder')}
+                  keyboardType="phone-pad"
+                />
+              </View>
+
+              {/* Email — chỉ đọc, có badge đã xác minh */}
+              <View>
+                <Text size="sm" bold className="font-bevi-bold text-on-surface mb-1.5">{t('account:edit.email')}</Text>
+                <View className="flex-row items-center gap-2">
+                  <View className="flex-1 border border-hairline/50 rounded-field px-3 h-11 justify-center bg-surface-low">
+                    <Text size="sm" className="font-bevi text-muted">{form.email}</Text>
+                  </View>
+                  {form.emailVerifiedAt ? (
+                    <View className="flex-row items-center gap-1">
+                      <Ionicons name="checkmark-circle" size={16} color="#059669" />
+                      <Text size="xs" bold className="font-bevi-bold text-green-600">{t('account:edit.verified')}</Text>
+                    </View>
+                  ) : null}
+                </View>
+              </View>
+
+              <View className="flex-row gap-3">
+                <Field
+                  className="flex-1"
+                  label={t('account:edit.dob')}
+                  value={form.dateOfBirth ?? ''}
+                  onChangeText={(v) => set('dateOfBirth', v)}
+                  placeholder={t('account:edit.dobPlaceholder')}
+                  error={touched ? dobError : ''}
+                  keyboardType="numbers-and-punctuation"
+                  autoCapitalize="none"
+                  icon="calendar-outline"
+                />
+                <Field
+                  className="flex-1"
+                  label={t('account:edit.nationality')}
+                  value={form.nationality ?? ''}
+                  onChangeText={(v) => set('nationality', v)}
+                  placeholder={t('account:edit.nationalityPlaceholder')}
+                  autoCapitalize="words"
+                />
+              </View>
+
+              <View className="flex-row gap-3">
+                <Field
+                  className="flex-1"
+                  label={t('account:edit.idCard')}
+                  value={form.idCardNumber ?? ''}
+                  onChangeText={(v) => set('idCardNumber', v)}
+                  placeholder={t('account:edit.idCardPlaceholder')}
+                  keyboardType="number-pad"
+                  autoCapitalize="none"
+                />
+                <Field
+                  className="flex-1"
+                  label={t('account:edit.passport')}
+                  value={form.passportNumber ?? ''}
+                  onChangeText={(v) => set('passportNumber', v)}
+                  placeholder={t('account:edit.passportPlaceholder')}
+                  autoCapitalize="characters"
+                />
+              </View>
+
+              <Text size="xs" className="font-bevi text-muted">{t('account:edit.emailNote')}</Text>
+            </View>
+
+            {formError ? (
+              <View className="bg-red-50 rounded-field px-3 py-2.5 mt-3 flex-row items-start gap-2">
+                <Ionicons name="alert-circle" size={18} color="#DC2626" />
+                <Text size="sm" className="font-bevi text-red-600 flex-1">{formError}</Text>
+              </View>
+            ) : null}
+          </ScrollView>
+
+          <View className="absolute bottom-0 left-0 right-0 bg-surface border-t border-hairline/30 px-5 pt-3" style={{ paddingBottom: Math.max(insets.bottom, 12) + 12 }}>
+            <Pressable
+              disabled={busy}
+              onPress={handleSave}
+              className="bg-on-surface rounded-card py-3.5 items-center"
+              style={{ opacity: busy ? 0.6 : 1 }}
+            >
+              <Text bold className="font-bevi-bold text-white text-base">
+                {updateProfile.isPending ? t('account:security.updating') : t('account:edit.save', 'Save changes')}
+              </Text>
+            </Pressable>
+          </View>
+        </KeyboardAvoidingView>
+      )}
     </View>
   );
 }
@@ -129,23 +277,26 @@ interface FieldProps {
   error?: string;
   keyboardType?: React.ComponentProps<typeof TextInput>['keyboardType'];
   autoCapitalize?: React.ComponentProps<typeof TextInput>['autoCapitalize'];
-  secureTextEntry?: boolean;
+  icon?: keyof typeof Ionicons.glyphMap;
+  className?: string;
 }
 
-function Field({ label, value, onChangeText, placeholder, error, keyboardType, autoCapitalize, secureTextEntry }: FieldProps) {
+function Field({ label, value, onChangeText, placeholder, error, keyboardType, autoCapitalize, icon, className }: FieldProps) {
   return (
-    <View>
+    <View className={className}>
       <Text size="sm" bold className="font-bevi-bold text-on-surface mb-1.5">{label}</Text>
-      <TextInput
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={placeholder}
-        placeholderTextColor={GUEST_COLORS.muted}
-        keyboardType={keyboardType}
-        autoCapitalize={autoCapitalize}
-        secureTextEntry={secureTextEntry}
-        className={`border rounded-field px-3 h-11 text-on-surface text-sm ${error ? 'border-red-400' : 'border-hairline/50'}`}
-      />
+      <View className={`flex-row items-center border rounded-field px-3 h-11 ${error ? 'border-red-400' : 'border-hairline/50'}`}>
+        {icon ? <Ionicons name={icon} size={16} color={GUEST_COLORS.muted} style={{ marginRight: 8 }} /> : null}
+        <TextInput
+          value={value}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          placeholderTextColor={GUEST_COLORS.muted}
+          keyboardType={keyboardType}
+          autoCapitalize={autoCapitalize}
+          className="flex-1 text-on-surface text-sm"
+        />
+      </View>
       {error ? <Text size="xs" className="font-bevi text-red-500 mt-1">{error}</Text> : null}
     </View>
   );

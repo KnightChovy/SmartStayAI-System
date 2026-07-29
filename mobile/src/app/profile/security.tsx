@@ -6,7 +6,7 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Text } from '@/components/ui/text';
 import { Heading } from '@/components/ui/heading';
-import { useUpdateProfile, useDeleteAccount } from '@/hooks/users';
+import { useChangePassword, useDeleteAccount } from '@/hooks/users';
 import { GUEST_COLORS } from '@/constants/guestTheme';
 
 
@@ -22,9 +22,10 @@ function errorMessage(err: unknown, fallback: string): string {
 export default function SecurityScreen() {
   const router = useRouter();
   const { t } = useTranslation(['account', 'common']);
-  const updateProfile = useUpdateProfile();
+  const changePassword = useChangePassword();
   const deleteAccount = useDeleteAccount();
 
+  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [formError, setFormError] = useState('');
@@ -33,6 +34,10 @@ export default function SecurityScreen() {
   async function handleChangePassword() {
     setFormError('');
     setSaved(false);
+    if (!currentPassword) {
+      setFormError(t('account:security.currentRequired'));
+      return;
+    }
     if (newPassword.length < 8) {
       setFormError(t('account:security.tooShort'));
       return;
@@ -41,8 +46,13 @@ export default function SecurityScreen() {
       setFormError(t('account:security.mismatch'));
       return;
     }
+    if (newPassword === currentPassword) {
+      setFormError(t('account:security.sameAsOld'));
+      return;
+    }
     try {
-      await updateProfile.mutateAsync({ password: newPassword });
+      await changePassword.mutateAsync({ currentPassword, newPassword });
+      setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
       setSaved(true);
@@ -87,35 +97,38 @@ export default function SecurityScreen() {
           <Heading size="md" className="font-bevi-bold text-on-surface mb-1">{t('account:security.changePassword')}</Heading>
           <Text size="sm" className="font-bevi text-muted mb-3">{t('account:security.hint')}</Text>
 
-          <Text size="xs" className="font-bevi text-on-surface-variant mb-1">{t('account:security.newPassword')}</Text>
-          <TextInput
-            secureTextEntry
+          <PasswordField
+            label={t('account:security.currentPassword')}
+            value={currentPassword}
+            onChangeText={setCurrentPassword}
+            showLabel={t('account:security.showPassword')}
+            hideLabel={t('account:security.hidePassword')}
+          />
+          <PasswordField
+            label={t('account:security.newPassword')}
             value={newPassword}
             onChangeText={setNewPassword}
-            placeholder="••••••••"
-            placeholderTextColor={GUEST_COLORS.muted}
-            className="mb-3 rounded-field border border-hairline/50 px-3.5 py-3 text-on-surface"
+            showLabel={t('account:security.showPassword')}
+            hideLabel={t('account:security.hidePassword')}
           />
-          <Text size="xs" className="font-bevi text-on-surface-variant mb-1">{t('account:security.confirmPassword')}</Text>
-          <TextInput
-            secureTextEntry
+          <PasswordField
+            label={t('account:security.confirmPassword')}
             value={confirmPassword}
             onChangeText={setConfirmPassword}
-            placeholder="••••••••"
-            placeholderTextColor={GUEST_COLORS.muted}
-            className="mb-3 rounded-field border border-hairline/50 px-3.5 py-3 text-on-surface"
+            showLabel={t('account:security.showPassword')}
+            hideLabel={t('account:security.hidePassword')}
           />
 
           {formError ? <Text size="sm" className="font-bevi text-red-600 mb-2">{formError}</Text> : null}
           {saved ? <Text size="sm" className="font-bevi text-green-600 mb-2">{t('account:security.updated')}</Text> : null}
 
           <Pressable
-            disabled={updateProfile.isPending}
+            disabled={changePassword.isPending}
             onPress={handleChangePassword}
             className="bg-on-surface rounded-card py-3 items-center"
           >
             <Text bold className="font-bevi-bold text-white">
-              {updateProfile.isPending ? t('account:security.updating') : t('account:security.update')}
+              {changePassword.isPending ? t('account:security.updating') : t('account:security.update')}
             </Text>
           </Pressable>
         </View>
@@ -138,5 +151,43 @@ export default function SecurityScreen() {
         </View>
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+interface PasswordFieldProps {
+  label: string;
+  value: string;
+  onChangeText: (v: string) => void;
+  showLabel: string;
+  hideLabel: string;
+}
+
+/** Ô mật khẩu có nút con mắt ẩn/hiện — giữ đúng style ô nhập của màn Security. */
+function PasswordField({ label, value, onChangeText, showLabel, hideLabel }: PasswordFieldProps) {
+  const [visible, setVisible] = useState(false);
+  return (
+    <View className="mb-3">
+      <Text size="xs" className="font-bevi text-on-surface-variant mb-1">{label}</Text>
+      <View className="flex-row items-center rounded-field border border-hairline/50 px-3.5">
+        <TextInput
+          secureTextEntry={!visible}
+          autoCapitalize="none"
+          value={value}
+          onChangeText={onChangeText}
+          placeholder="••••••••"
+          placeholderTextColor={GUEST_COLORS.muted}
+          className="flex-1 py-3 text-on-surface"
+        />
+        <Pressable
+          onPress={() => setVisible((v) => !v)}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={visible ? hideLabel : showLabel}
+          className="pl-2 py-1"
+        >
+          <Ionicons name={visible ? 'eye-off-outline' : 'eye-outline'} size={20} color={GUEST_COLORS.muted} />
+        </Pressable>
+      </View>
+    </View>
   );
 }

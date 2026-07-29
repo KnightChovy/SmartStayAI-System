@@ -7,10 +7,14 @@ import { hotelService } from '../services';
 
 export class HotelController {
   searchHotels = catchAsync(async (req: Request, res: Response): Promise<void> => {
-    const raw = pick(req.query, ['city', 'checkIn', 'checkOut', 'guests', 'priceMin', 'priceMax', 'stars', 'amenities', 'reviewScore']);
+    const raw = pick(req.query, ['city', 'checkIn', 'checkOut', 'guests', 'adults', 'children', 'rooms', 'priceMin', 'priceMax', 'stars', 'amenities', 'reviewScore']);
+    // Bộ chọn khách mới của FE gửi adults + children riêng; gộp thành tổng khách để lọc sức chứa.
+    // Vẫn nhận 'guests' kiểu cũ (mobile + link đã lưu) — ưu tiên adults/children khi có.
+    const guests = raw.adults !== undefined ? Number(raw.adults) + Number(raw.children ?? 0) : raw.guests;
     // stars / amenities gửi lên dạng CSV ("3,4,5") — tách thành mảng ở đây, service nhận mảng
     const filter = {
       ...raw,
+      ...(guests !== undefined && { guests }),
       ...(raw.stars !== undefined && { stars: String(raw.stars).split(',').map(Number) }),
       ...(raw.amenities !== undefined && { amenities: String(raw.amenities).split(',') }),
     };
@@ -25,14 +29,20 @@ export class HotelController {
   });
 
   getRoomTypes = catchAsync(async (req: Request, res: Response): Promise<void> => {
-    const filter = pick(req.query, ['checkIn', 'checkOut', 'guests', 'minPrice', 'maxPrice', 'bedType', 'viewType']);
+    const raw = pick(req.query, ['checkIn', 'checkOut', 'guests', 'adults', 'children', 'minPrice', 'maxPrice', 'bedType', 'viewType']);
+    // Gộp adults + children thành tổng khách; vẫn nhận 'guests' kiểu cũ.
+    const guests = raw.adults !== undefined ? Number(raw.adults) + Number(raw.children ?? 0) : raw.guests;
+    const filter = { ...raw, ...(guests !== undefined && { guests }) };
     const roomTypes = await hotelService.getRoomTypes(req.params.hotelId as string, filter);
     res.send(roomTypes);
   });
 
   // Chi tiết một loại phòng cho guest — public (kèm tồn kho/giá kỳ ở khi có checkIn/checkOut)
   getRoomType = catchAsync(async (req: Request, res: Response): Promise<void> => {
-    const filter = pick(req.query, ['checkIn', 'checkOut', 'guests']);
+    const raw = pick(req.query, ['checkIn', 'checkOut', 'guests', 'adults', 'children']);
+    // Gộp adults + children thành tổng khách; vẫn nhận 'guests' kiểu cũ.
+    const guests = raw.adults !== undefined ? Number(raw.adults) + Number(raw.children ?? 0) : raw.guests;
+    const filter = { ...raw, ...(guests !== undefined && { guests }) };
     const roomType = await hotelService.getRoomTypeById(
       req.params.hotelId as string,
       req.params.roomTypeId as string,

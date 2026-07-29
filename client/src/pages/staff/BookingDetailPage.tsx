@@ -55,8 +55,9 @@ export default function BookingDetailPage() {
 
   const [roomId, setRoomId] = useState('');
   const [voucherCode, setVoucherCode] = useState('');
-  const [extraCharge, setExtraCharge] = useState('');
+  const [lateCheckoutReason, setLateCheckoutReason] = useState('');
   const [confirmNoShow, setConfirmNoShow] = useState(false);
+  const [confirmLateCheckout, setConfirmLateCheckout] = useState(false);
 
   if (isLoading) return <p className="text-sm text-slate-500">Loading booking…</p>;
   if (isError || !booking)
@@ -75,8 +76,13 @@ export default function BookingDetailPage() {
   const today = todayUtcKey();
   const checkInKey = toUtcDateKey(booking.checkInDate);
   const checkOutKey = toUtcDateKey(booking.checkOutDate);
+  const checkInTime = hotel?.checkInTime ?? '14:00';
+  const checkOutTime = hotel?.checkOutTime ?? '12:00';
   const beforeWindow = today < checkInKey;
   const afterWindow = today >= checkOutKey;
+  const beforeCheckInTime = new Date() < bookingMoment(booking.checkInDate, checkInTime);
+  const afterCheckOutTime = new Date() > bookingMoment(booking.checkOutDate, checkOutTime);
+  const checkInLocked = beforeWindow || beforeCheckInTime;
 
   // Available rooms of the right type for the receptionist to assign (empty = let BE auto-assign).
   const availableRooms = (rooms ?? []).filter(
@@ -99,6 +105,17 @@ export default function BookingDetailPage() {
 
   const busy =
     checkIn.isPending || checkOut.isPending || recordCash.isPending || noShow.isPending;
+
+  const completeCheckOut = () =>
+    run(
+      () =>
+        checkOut.mutateAsync({
+          bookingId: booking.id,
+          payload: {},
+        }),
+      afterCheckOutTime ? 'Late check-out recorded successfully.' : 'Guest checked out successfully.',
+      'Check-out failed.'
+    );
 
   // Xác nhận check-in từ modal (quét QR): BE tự gán phòng trống, redeem voucher đã quét.
   const handleConfirmCheckIn = async () => {
@@ -134,7 +151,7 @@ export default function BookingDetailPage() {
             <Row label="Guests" value={`${booking.numGuests} guest(s)`} />
             <Row
               label="Check-in → Check-out"
-              value={`${formatDate(booking.checkInDate)} → ${formatDate(booking.checkOutDate)} (${booking.numNights} night(s))`}
+              value={`${formatDate(booking.checkInDate)} ${checkInTime} → ${formatDate(booking.checkOutDate)} ${checkOutTime} (${booking.numNights} night(s))`}
             />
             {assignedRooms && <Row label="Assigned rooms" value={assignedRooms} />}
             {booking.specialRequests && (
@@ -193,12 +210,17 @@ export default function BookingDetailPage() {
 
             {booking.status === 'confirmed' && (
               <div className="mb-3 space-y-3">
-                {beforeWindow && (
+                {checkInLocked && (
                   <div className="flex items-start gap-2 rounded-lg bg-amber-50 p-2.5 text-xs text-amber-700">
                     <CalendarClock className="mt-0.5 size-3.5 shrink-0" />
-                    The check-in date ({formatDate(booking.checkInDate)}) has not arrived yet.
-                    Check-in is not available.
+                    Check-in opens at {checkInTime} on {formatDate(booking.checkInDate)}.
                   </div>
+                )}
+                {!checkInLocked && (
+                  <p className="rounded-lg bg-slate-50 p-2.5 text-xs text-slate-600">
+                    Check-in is allowed from {checkInTime} on{' '}
+                    {formatDate(booking.checkInDate)}.
+                  </p>
                 )}
 
                 <div className="space-y-1.5">
@@ -209,7 +231,7 @@ export default function BookingDetailPage() {
                     id="room"
                     value={roomId}
                     onChange={e => setRoomId(e.target.value)}
-                    disabled={beforeWindow}
+                    disabled={checkInLocked}
                     title={
                       roomId
                         ? availableRooms.find(r => r.id === roomId)?.roomNumber
@@ -244,10 +266,10 @@ export default function BookingDetailPage() {
 
                 <Button
                   className="w-full bg-emerald-600 text-white hover:bg-emerald-700"
-                  disabled={busy || beforeWindow}
+                  disabled={busy || checkInLocked}
                   title={
-                    beforeWindow
-                      ? `Check-in opens on ${formatDate(booking.checkInDate)}`
+                    checkInLocked
+                      ? `Check-in opens at ${checkInTime} on ${formatDate(booking.checkInDate)}`
                       : undefined
                   }
                   onClick={() =>
@@ -277,33 +299,46 @@ export default function BookingDetailPage() {
 
             {booking.status === 'checked_in' && (
               <div className="mb-3 space-y-2">
-                <Label htmlFor="extra" className="text-xs text-slate-500">
-                  Extra charge (if any)
-                </Label>
-                <Input
-                  id="extra"
-                  type="number"
-                  min={0}
-                  value={extraCharge}
-                  onChange={e => setExtraCharge(e.target.value)}
-                  placeholder="0"
-                />
+                <p
+                  className={
+                    afterCheckOutTime
+                      ? 'rounded-lg bg-rose-50 p-2.5 text-xs text-rose-700'
+                      : 'rounded-lg bg-amber-50 p-2.5 text-xs text-amber-700'
+                  }
+                >
+                  {afterCheckOutTime
+                    ? `Late check-out: the ${checkOutTime} deadline has passed. Enter the reason, then confirm checkout.`
+                    : `Check-out deadline: ${checkOutTime} on ${formatDate(booking.checkOutDate)}.`}
+                </p>
+                {afterCheckOutTime && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="late-checkout-reason" className="text-xs text-slate-500">
+                      Reason for late check-out
+                    </Label>
+                    <Input
+                      id="late-checkout-reason"
+                      value={lateCheckoutReason}
+                      onChange={e => setLateCheckoutReason(e.target.value)}
+                      placeholder="e.g. Guest requested a late departure"
+                    />
+                  </div>
+                )}
                 <Button
                   className="w-full"
                   disabled={busy}
-                  onClick={() =>
-                    run(
-                      () =>
-                        checkOut.mutateAsync({
-                          bookingId: booking.id,
-                          payload: extraCharge ? { extraCharge: Number(extraCharge) } : {},
-                        }),
-                      'Guest checked out successfully.',
-                      'Check-out failed.'
-                    )
-                  }
+                  onClick={() => {
+                    if (!afterCheckOutTime) {
+                      completeCheckOut();
+                      return;
+                    }
+                    if (!lateCheckoutReason.trim()) {
+                      toast.error('Enter a reason for the late check-out.');
+                      return;
+                    }
+                    setConfirmLateCheckout(true);
+                  }}
                 >
-                  <LogOut className="size-4" /> Check-out
+                  <LogOut className="size-4" /> {afterCheckOutTime ? 'Confirm late check-out' : 'Check-out'}
                 </Button>
               </div>
             )}
@@ -373,13 +408,26 @@ export default function BookingDetailPage() {
         message={`${booking.customer.fullName} (${booking.bookingCode}) will be marked as a no-show and the held room released. This cannot be undone from the front desk.`}
       />
 
+      <ConfirmDialog
+        open={confirmLateCheckout}
+        onClose={() => setConfirmLateCheckout(false)}
+        onConfirm={async () => {
+          await completeCheckOut();
+          setConfirmLateCheckout(false);
+        }}
+        loading={checkOut.isPending}
+        title="Confirm late check-out?"
+        confirmLabel="Complete late check-out"
+        message={`Reason: ${lateCheckoutReason.trim()}. Confirm the actual departure before freeing the room for housekeeping.`}
+      />
+
       {booking.status === 'confirmed' && (
         <CheckInConfirmModal
           open={showCheckInConfirm}
           onClose={() => setShowCheckInConfirm(false)}
           onConfirm={handleConfirmCheckIn}
           isPending={checkIn.isPending}
-          disabled={beforeWindow}
+          disabled={checkInLocked}
           guestName={booking.customer.fullName}
           bookingCode={booking.bookingCode}
           roomTypeName={booking.roomType.name}
@@ -388,8 +436,8 @@ export default function BookingDetailPage() {
           numNights={booking.numNights}
           voucherCode={scanVoucher || booking.voucher?.voucherCode}
           warning={
-            beforeWindow
-              ? `The check-in date (${formatDate(booking.checkInDate)}) has not arrived yet.`
+            checkInLocked
+              ? `Check-in opens at ${checkInTime} on ${formatDate(booking.checkInDate)}.`
               : null
           }
         />
@@ -407,6 +455,10 @@ function BackLink() {
       <ArrowLeft className="size-4" /> Front desk
     </Link>
   );
+}
+
+function bookingMoment(date: string, time: string): Date {
+  return new Date(`${toUtcDateKey(date)}T${time}:00`);
 }
 
 function Card({ title, children }: { title: string; children: ReactNode }) {

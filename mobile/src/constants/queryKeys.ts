@@ -16,6 +16,7 @@ export const queryKeys = {
   },
   users: {
     all: () => ['users'] as const,
+    me: () => ['users', 'me'] as const,
     profile: (userId: string) => ['users', 'profile', userId] as const,
   },
   hotels: {
