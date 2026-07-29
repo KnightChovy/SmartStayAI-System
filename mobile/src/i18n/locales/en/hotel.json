@@ -45,7 +45,12 @@
     "onlyLeft_other": "Only {{count}} left",
     "roomsLeft_one": "{{count}} room left",
     "roomsLeft_other": "{{count}} rooms left",
-    "viewDetails": "View details"
+    "viewDetails": "View details",
+    "nightsLine_one": "{{price}} × {{count}} night",
+    "nightsLine_other": "{{price}} × {{count}} nights",
+    "tax": "Taxes",
+    "taxWithRate": "Taxes ({{rate}}%)",
+    "fee": "Service fee"
   },
   "picker": {
     "title": "Select dates",
