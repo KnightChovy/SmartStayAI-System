@@ -204,8 +204,20 @@ export class BookingService {
     if (!roomType) {
       throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy loại phòng trong khách sạn này');
     }
-    if (payload.numGuests > roomType.maxOccupancy) {
+    // Số khách: nhận cách mới (numAdults/numChildren) hoặc cũ (numGuests). Chỉ có numGuests ⇒ coi tất
+    // cả là người lớn (tương thích ngược). Tiền vẫn tính theo TỔNG khách, không phân biệt trẻ em.
+    const numAdults = payload.numAdults ?? payload.numGuests ?? 1;
+    const numChildren = payload.numChildren ?? 0;
+    const numGuests = numAdults + numChildren;
+    if (numGuests > roomType.maxOccupancy) {
       throw new ApiError(httpStatus.BAD_REQUEST, `Loại phòng này chỉ chứa tối đa ${roomType.maxOccupancy} khách`);
+    }
+    // maxAdults/maxChildren tuỳ chọn: chỉ chặn khi khách sạn có khai để tránh chặn oan loại phòng cũ chưa cấu hình
+    if (roomType.maxAdults !== null && numAdults > roomType.maxAdults) {
+      throw new ApiError(httpStatus.BAD_REQUEST, `Loại phòng này chỉ chứa tối đa ${roomType.maxAdults} người lớn`);
+    }
+    if (roomType.maxChildren !== null && numChildren > roomType.maxChildren) {
+      throw new ApiError(httpStatus.BAD_REQUEST, `Loại phòng này chỉ chứa tối đa ${roomType.maxChildren} trẻ em`);
     }
 
     // Giá từng đêm áp pricing rule giống hệt lúc search (xem availability.service.priceForNight)
@@ -247,7 +259,7 @@ export class BookingService {
         taxFeeCharges,
         subtotal,
         nights.length,
-        payload.numGuests
+        numGuests
       );
 
       const isCash = method === 'cash';
@@ -261,7 +273,9 @@ export class BookingService {
           checkInDate: checkIn,
           checkOutDate: checkOut,
           numNights: nights.length,
-          numGuests: payload.numGuests,
+          numGuests,
+          numAdults,
+          numChildren,
           basePricePerNight: roomType.basePrice,
           subtotal,
           discountAmount: 0,

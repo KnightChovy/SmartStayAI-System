@@ -17,8 +17,9 @@ export class StatsService {
     return {
       totalHotels,
       totalCities: cities.length,
-      // Làm tròn 1 chữ số như mọi chỗ khác; null khi chưa có review (không phải 0)
-      avgRating: reviewAgg._avg.overallRating === null ? null : Math.round(reviewAgg._avg.overallRating * 10) / 10,
+      // Thang 10 (trung bình sao 1–5 × 2), làm tròn 1 chữ số như mọi chỗ khác; null khi chưa có
+      // review (không phải 0)
+      avgRating: reviewAgg._avg.overallRating === null ? null : Math.round(reviewAgg._avg.overallRating * 2 * 10) / 10,
       totalReviews: reviewAgg._count._all,
     };
   };

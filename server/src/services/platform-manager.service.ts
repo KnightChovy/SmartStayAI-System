@@ -12,7 +12,7 @@ const SCORE_WEIGHTS = { rating: 0.4, occupancy: 0.25, cancellation: 0.2, respons
 
 // ===== Helpers chuẩn hoá từng chỉ số về thang điểm 0..100 =====
 
-const ratingToScore = (avg: number | null): number | null => (avg === null ? null : Math.round((avg / 5) * 100));
+const ratingToScore = (avg: number | null): number | null => (avg === null ? null : Math.round((avg / 10) * 100));
 const occupancyToScore = (rate: number | null): number | null => (rate === null ? null : Math.round(rate * 100));
 // Huỷ càng ít điểm càng cao
 const cancellationToScore = (rate: number | null): number | null => (rate === null ? null : Math.round((1 - rate) * 100));
@@ -210,7 +210,8 @@ export class PlatformManagerService {
     const totalRoomsSum = occ._sum.totalRooms ?? 0;
     const occupancyRate = totalRoomsSum > 0 ? (occ._sum.bookedRooms ?? 0) / totalRoomsSum : null;
     const cancellationRate = totalBookings > 0 ? cancelledBookings / totalBookings : null;
-    const avgRating = ratingAgg._count._all > 0 ? Number(ratingAgg._avg.overallRating) : null;
+    // Thang 10 (trung bình sao 1–5 × 2), làm tròn 1 chữ số — đồng bộ với rating hiển thị toàn sàn
+    const avgRating = ratingAgg._count._all > 0 ? Math.round(Number(ratingAgg._avg.overallRating) * 2 * 10) / 10 : null;
     const avgResponseMinutes = await avgResponseMinutesForHotel(hotelId, from, to);
 
     const scores = {
@@ -286,7 +287,7 @@ export class PlatformManagerService {
       const cancelled = cancelledMap.get(h.id) ?? 0;
       const cancellationRate = total > 0 ? cancelled / total : null;
       const rating = ratingMap.get(h.id);
-      const avgRating = rating && rating.count > 0 ? Number(rating.avg) : null;
+      const avgRating = rating && rating.count > 0 ? Math.round(Number(rating.avg) * 2 * 10) / 10 : null;
       const responseRaw = responseMap.get(h.id);
       const avgResponseMinutes = responseRaw === undefined || responseRaw === null ? null : Number(responseRaw);
 
