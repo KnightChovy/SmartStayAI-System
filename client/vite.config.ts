@@ -6,15 +6,7 @@ import tailwindcss from '@tailwindcss/vite';
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  server: {
-    proxy: {
-      '/api/vietmap': {
-        target: 'https://maps.vietmap.vn/api',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/vietmap/, ''),
-      },
-    },
-  },
+
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
