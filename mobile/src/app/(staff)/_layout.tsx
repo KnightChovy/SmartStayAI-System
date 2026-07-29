@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { CUSTOMER_HOME, isStaff } from '@/constants/roles';
 import { useAuthStore } from '@/stores/authStore';
 import { useStaffStore } from '@/stores/staffStore';
@@ -6,7 +6,7 @@ import { useMyStaffHotels } from '@/hooks/staff';
 import { Ionicons } from '@expo/vector-icons';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { Redirect, Tabs } from 'expo-router';
-import { Pressable, Text, View } from 'react-native';
+import { Keyboard, Pressable, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { STAFF_GRADIENT } from '@/constants/staffTheme';
@@ -52,6 +52,30 @@ const TAB_CONFIG: Record<
 
 function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const { bottom } = useSafeAreaInsets();
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener('keyboardDidShow', () =>
+      setIsKeyboardVisible(true)
+    );
+    const hideSubscription = Keyboard.addListener('keyboardDidHide', () =>
+      setIsKeyboardVisible(false)
+    );
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
+
+  if (isKeyboardVisible) return null;
+
+  // Màn chi tiết (conversation/[id], bookings/[id], check-in/[id]…) không nằm trong
+  // TAB_CONFIG — ẩn hẳn tab bar để chúng chiếm trọn window. Nếu để bar hiện rồi ẩn
+  // lúc bàn phím lên, KeyboardAvoidingView đã đo khung theo chiều cao CŨ ⇒ padding
+  // thiếu đúng bằng chiều cao tab bar và ô nhập bị bàn phím che.
+  const activeRoute = state.routes[state.index];
+  if (!activeRoute || !TAB_CONFIG[activeRoute.name]) return null;
 
   return (
     <View
@@ -203,7 +227,10 @@ export default function StaffTabsLayout() {
   return (
     <Tabs
       tabBar={(props) => <CustomTabBar {...props} />}
-      screenOptions={{ headerShown: false }}
+      screenOptions={{
+        headerShown: false,
+        tabBarHideOnKeyboard: true,
+      }}
     >
       <Tabs.Screen name="dashboard" />
       <Tabs.Screen name="bookings" />
