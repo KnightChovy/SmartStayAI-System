@@ -45,7 +45,12 @@
     "onlyLeft_other": "Chỉ còn {{count}} phòng",
     "roomsLeft_one": "Còn {{count}} phòng",
     "roomsLeft_other": "Còn {{count}} phòng",
-    "viewDetails": "Xem chi tiết"
+    "viewDetails": "Xem chi tiết",
+    "nightsLine_one": "{{price}} × {{count}} đêm",
+    "nightsLine_other": "{{price}} × {{count}} đêm",
+    "tax": "Thuế",
+    "taxWithRate": "Thuế ({{rate}}%)",
+    "fee": "Phí dịch vụ"
   },
   "picker": {
     "title": "Chọn ngày",
