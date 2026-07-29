@@ -1,12 +1,11 @@
 import { api } from '@/lib/api';
-import type { Paginated } from '@/types/api.types';
 import type {
   AddHotelImagesDto,
   Hotel,
   HotelDetail,
   HotelImage,
   HotelSearchParams,
-  HotelSearchResult,
+  HotelSearchResponse,
   PartnerHotel,
   RoomType,
   RoomTypeDetail,
@@ -28,9 +27,9 @@ function cleanParams<T extends object>(params: T): Record<string, unknown> {
 }
 
 export const hotelService = {
-  /** Tìm khách sạn (`GET /hotels`). Public. */
-  async search(params: HotelSearchParams): Promise<Paginated<HotelSearchResult>> {
-    const { data } = await api.get<Paginated<HotelSearchResult>>('/hotels', {
+  /** Tìm khách sạn (`GET /hotels`). Public. Trả kèm `priceBounds` (SS-101). */
+  async search(params: HotelSearchParams): Promise<HotelSearchResponse> {
+    const { data } = await api.get<HotelSearchResponse>('/hotels', {
       params: cleanParams(params),
     });
     return data;

@@ -24,6 +24,13 @@ export interface HotelImage {
   sortOrder?: number | null;
 }
 
+/** Tiện nghi rút gọn hiển thị trên card search (BE trả tối đa 3). */
+export interface TopAmenity {
+  id: string;
+  name: string;
+  icon?: string | null;
+}
+
 /** Khách sạn trong kết quả tìm kiếm (kèm ảnh primary + giá "từ"). */
 export interface HotelSearchResult {
   id: string;
@@ -43,6 +50,25 @@ export interface HotelSearchResult {
   images: HotelImage[];
   /** basePrice thấp nhất trong các loại phòng phù hợp; null nếu chưa có. */
   minPrice: string | null;
+  /** Tối đa 3 tiện nghi nổi bật (SS-102). */
+  topAmenities?: TopAmenity[];
+  /** Tổng phòng trống khi search có ngày; null khi tìm không kèm ngày (SS-102). */
+  availableRooms?: number | null;
+  /** Điểm đánh giá TB (thang 5, 1 chữ số); null khi chưa có review (SS-005). */
+  avgRating?: number | null;
+  /** Số lượng đánh giá (SS-005). */
+  reviewCount?: number;
+}
+
+/** Response `GET /hotels` — Paginated + `priceBounds` để FE set min/max slider (SS-101). */
+export interface HotelSearchResponse {
+  results: HotelSearchResult[];
+  page: number;
+  limit: number;
+  totalPages: number;
+  totalResults: number;
+  /** Dải giá/đêm của toàn bộ kết quả TRƯỚC khi áp filter giá; null khi không có giá. */
+  priceBounds: { min: string; max: string } | null;
 }
 
 /**
@@ -72,11 +98,15 @@ export interface HotelDetail extends HotelSearchResult {
   /** Số đêm tối đa cho một lượt đặt (`Hotel.maxLengthOfStay`). */
   maxLengthOfStay?: number | null;
   /**
-   * Cấu hình khách sạn dạng JSON tự do. Chứa `cancellation.freeUntilHours` dùng cho dòng
-   * chính sách hủy ở booking card (SS-302). Optional: BE cần đảm bảo include field này ở
-   * `GET /hotels/:id` (BE spec item #11) — khi chưa có, FE ẩn dòng thay vì đoán.
+   * Cấu hình khách sạn dạng JSON tự do. Chứa `cancellation.freeUntilHours`. Ưu tiên đọc
+   * `cancellationRule` (đã parse) thay vì tự bóc `settings`.
    */
   settings?: Record<string, unknown> | null;
+  /**
+   * Chính sách hủy đã parse sẵn (BE trả top-level ở `GET /hotels/:id`) — dùng cho dòng
+   * chính sách hủy ở booking card (SS-302). `freeUntilHours > 0` = hủy miễn phí trước N giờ.
+   */
+  cancellationRule?: { freeUntilHours: number; latePenalty: string } | null;
   /** Tiền cọc thu khi nhận phòng — Decimal ⇒ string qua JSON. */
   securityDepositAmount?: string | null;
   phone?: string | null;
@@ -319,14 +349,27 @@ export interface RoomTypeDetailParams {
 }
 
 /** Tham số tìm khách sạn (query string của `GET /hotels`). */
+/** Giá trị sort được BE whitelist (SS-103). */
+export type HotelSortBy = 'recommended' | 'price:asc' | 'price:desc' | 'rating:desc';
+
 export interface HotelSearchParams {
   city?: string;
   checkIn?: string;
   checkOut?: string;
   guests?: number;
-  sortBy?: string;
+  sortBy?: HotelSortBy;
   page?: number;
   limit?: number;
+  /** Giá/đêm tối thiểu (VNĐ) — SS-101. */
+  priceMin?: number;
+  /** Giá/đêm tối đa (> priceMin) — SS-101. */
+  priceMax?: number;
+  /** CSV hạng sao, vd "3,4,5" (OR trong nhóm) — SS-101. */
+  stars?: string;
+  /** CSV amenityId (UUID) — KS phải có ĐỦ tất cả (AND) — SS-101. */
+  amenities?: string;
+  /** Điểm đánh giá tối thiểu, thang 10 (7|8|9) — SS-101. */
+  reviewScore?: number;
 }
 
 /** Tham số lọc loại phòng trong 1 khách sạn. */

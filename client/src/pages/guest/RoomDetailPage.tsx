@@ -339,7 +339,10 @@ export default function RoomDetailPage() {
 
             {/* Chính sách hủy (SS-302) */}
             <CancellationLine
-              freeUntilHours={getFreeCancellationHours(hotelDetail?.settings)}
+              freeUntilHours={
+                hotelDetail?.cancellationRule?.freeUntilHours ??
+                getFreeCancellationHours(hotelDetail?.settings)
+              }
               className="mt-3 justify-center"
             />
           </div>

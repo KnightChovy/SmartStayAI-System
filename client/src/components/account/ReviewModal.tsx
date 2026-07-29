@@ -38,11 +38,14 @@ function errorMessage(err: unknown, fallback: string): string {
   return fallback;
 }
 
+/** Thang điểm đánh giá (BE thang 10) — khác hạng sao KS. */
+const RATING_MAX = 10;
+
 const EMPTY = {
-  cleanlinessRating: 5,
-  serviceRating: 5,
-  locationRating: 5,
-  valueRating: 5,
+  cleanlinessRating: RATING_MAX,
+  serviceRating: RATING_MAX,
+  locationRating: RATING_MAX,
+  valueRating: RATING_MAX,
   title: '',
   content: '',
   images: [] as string[],
@@ -67,24 +70,29 @@ export default function ReviewModal({
   const [form, setForm] = useState(EMPTY);
   const [imageUrl, setImageUrl] = useState('');
 
-  // Mở lại: chế độ sửa → điền từ review cũ; chế độ tạo → form trống.
-  useEffect(() => {
-    if (!open) return;
-    setForm(
-      existingReview
-        ? {
-            cleanlinessRating: existingReview.cleanlinessRating,
-            serviceRating: existingReview.serviceRating,
-            locationRating: existingReview.locationRating,
-            valueRating: existingReview.valueRating,
-            title: existingReview.title ?? '',
-            content: existingReview.content,
-            images: existingReview.images,
-          }
-        : EMPTY
-    );
-    setImageUrl('');
-  }, [open, existingReview]);
+  // Mở lại / đổi review → nạp lại form. Chỉnh trong render (không dùng effect) để tránh cascading
+  // render; khoá theo id review nên không clobber khi khách đang gõ (open + cùng review = không reset).
+  const reviewKey = open ? (existingReview?.id ?? 'new') : null;
+  const [syncedKey, setSyncedKey] = useState<string | null>(null);
+  if (reviewKey !== syncedKey) {
+    setSyncedKey(reviewKey);
+    if (open) {
+      setForm(
+        existingReview
+          ? {
+              cleanlinessRating: existingReview.cleanlinessRating,
+              serviceRating: existingReview.serviceRating,
+              locationRating: existingReview.locationRating,
+              valueRating: existingReview.valueRating,
+              title: existingReview.title ?? '',
+              content: existingReview.content,
+              images: existingReview.images,
+            }
+          : EMPTY
+      );
+      setImageUrl('');
+    }
+  }
 
   // Đóng bằng phím Esc.
   useEffect(() => {
@@ -99,7 +107,7 @@ export default function ReviewModal({
   const set = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) =>
     setForm(prev => ({ ...prev, [key]: value }));
 
-  // Overall = trung bình 4 tiêu chí; BE cần số nguyên 1–5 nên làm tròn khi gửi.
+  // Overall = trung bình 4 tiêu chí; BE cần số nguyên 1–10 nên làm tròn khi gửi.
   const avgRating =
     (form.cleanlinessRating + form.serviceRating + form.locationRating + form.valueRating) / 4;
   const overallRating = Math.round(avgRating);
@@ -208,8 +216,10 @@ export default function ReviewModal({
               </span>
             </Label>
             <div className="flex items-center gap-2">
-              <StarRating value={overallRating} size={28} />
-              <span className="text-sm font-semibold text-on-surface">{avgRating.toFixed(1)}</span>
+              <span className="inline-flex items-baseline gap-0.5 rounded-lg bg-premium-gold px-2.5 py-1 text-on-surface">
+                <span className="text-xl font-bold">{avgRating.toFixed(1)}</span>
+                <span className="text-xs font-semibold opacity-70">/ {RATING_MAX}</span>
+              </span>
             </div>
           </div>
 
@@ -217,13 +227,20 @@ export default function ReviewModal({
             {SUBSCORES.map(({ key, labelKey }) => (
               <div
                 key={key}
-                className="flex items-center justify-between rounded-xl bg-surface-container-low px-3 py-2"
+                className="flex flex-col gap-1.5 rounded-xl bg-surface-container-low px-3 py-2"
               >
-                <span className="text-sm text-on-surface-variant">{t(labelKey)}</span>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-on-surface-variant">{t(labelKey)}</span>
+                  <span className="text-sm font-semibold text-on-surface">
+                    {form[key as SubKey]}/{RATING_MAX}
+                  </span>
+                </div>
+                {/* Bộ chọn điểm 1–10 (thang 10) */}
                 <StarRating
                   value={form[key as SubKey]}
                   editable
-                  size={18}
+                  max={RATING_MAX}
+                  size={16}
                   onChange={v => set(key as SubKey, v)}
                 />
               </div>

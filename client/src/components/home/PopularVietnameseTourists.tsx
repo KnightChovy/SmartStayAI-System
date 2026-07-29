@@ -1,53 +1,19 @@
-import { useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { MapPin } from 'lucide-react';
-import { useSearchHotels } from '@/hooks/hotels';
-import type { HotelSearchResult } from '@/types/hotel.types';
-
-/** Điểm đến suy ra từ danh sách khách sạn thật. */
-interface Destination {
-  city: string;
-  hotelCount: number;
-  img: string | null;
-}
-
-/** Ảnh đại diện của một khách sạn: ưu tiên ảnh primary, sau đó ảnh đầu tiên. */
-function coverOf(hotel: HotelSearchResult): string | null {
-  const images = hotel.images ?? [];
-  return (images.find(i => i.isPrimary) ?? images[0])?.url ?? null;
-}
+import { useDestinations } from '@/hooks/destinations';
 
 /**
- * Điểm đến phổ biến — gom từ chính khách sạn đang bán (`GET /hotels`), KHÔNG hardcode.
+ * Điểm đến phổ biến — số khách sạn thật từ `GET /v1/destinations` (đã sort nhiều KS nhất lên đầu).
  * Trước đây khối này liệt kê Singapore / Thái Lan / Hàn Quốc / Nhật Bản: sàn chỉ có khách sạn
- * ở Việt Nam nên bấm vào luôn ra 0 kết quả. Suy từ dữ liệu thật thì mỗi thẻ chắc chắn dẫn tới
- * một trang search có phòng, và tự cập nhật khi partner mở bán ở thành phố mới.
+ * ở Việt Nam nên bấm vào luôn ra 0 kết quả. Nay mỗi thẻ chắc chắn dẫn tới một trang search có phòng.
  */
 export default function PopularVietnameseTourists() {
   const navigate = useNavigate();
   const { t } = useTranslation('home');
-  const { data, isLoading } = useSearchHotels({ limit: 50 });
+  const { data, isLoading } = useDestinations();
 
-  const destinations = useMemo<Destination[]>(() => {
-    const byCity = new Map<string, Destination>();
-    for (const hotel of data?.results ?? []) {
-      const existing = byCity.get(hotel.city);
-      if (existing) {
-        existing.hotelCount += 1;
-        existing.img ??= coverOf(hotel);
-      } else {
-        byCity.set(hotel.city, {
-          city: hotel.city,
-          hotelCount: 1,
-          img: coverOf(hotel),
-        });
-      }
-    }
-    return [...byCity.values()]
-      .sort((a, b) => b.hotelCount - a.hotelCount)
-      .slice(0, 8);
-  }, [data]);
+  const destinations = (data ?? []).slice(0, 8);
 
   // Chưa có khách sạn nào đang bán → ẩn hẳn khối thay vì hiện lưới rỗng.
   if (!isLoading && destinations.length === 0) return null;
@@ -78,12 +44,12 @@ export default function PopularVietnameseTourists() {
               className="group text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary rounded-3xl"
             >
               <div className="h-36 sm:h-48 rounded-3xl overflow-hidden mb-3 relative shadow-md bg-surface-container-low">
-                {dest.img ? (
+                {dest.image ? (
                   <img
                     alt={dest.city}
                     loading="lazy"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    src={dest.img}
+                    src={dest.image}
                   />
                 ) : (
                   <div className="flex h-full items-center justify-center text-on-surface-variant">
