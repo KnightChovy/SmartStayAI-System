@@ -19,5 +19,9 @@
   "defaultPlace": "Vietnam",
   "empty": "No hotels found",
   "error": "Couldn't load hotels. Please try again.",
-  "viewRoom": "View room"
+  "viewRoom": "View room",
+  "addDates": "Add dates",
+  "clearDates": "Clear dates",
+  "stayGuests_one": "{{count}} guest",
+  "stayGuests_other": "{{count}} guests"
 }

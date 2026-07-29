@@ -1,10 +1,13 @@
 import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
+import { ROUTES } from '@/constants/routes';
+import { useAuthStore } from '@/stores/authStore';
 import { Button } from '../ui/button';
 
 export default function LoyaltyBanner() {
   const navigate = useNavigate();
   const { t } = useTranslation('home');
+  const isAuthenticated = useAuthStore(state => Boolean(state.user));
   return (
     <section className="max-w-7xl mx-auto px-margin-mobile md:px-8 mb-section-gap w-full">
       <div className="relative rounded-3xl bg-inverse-surface p-12 md:p-16 overflow-hidden flex flex-col lg:flex-row items-center justify-between gap-12">
@@ -52,8 +55,10 @@ export default function LoyaltyBanner() {
         <div className="relative z-10 flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
           {/* Nút chính trước đây là `bg-primary` (#5f5e5b) đặt trên nền `inverse-surface`
               (#313030) — hai màu xám sát nhau, contrast ~1.4:1 nên nút gần như tàng hình. */}
+          {/* Trang `/account/loyalty` đã gỡ (BE không có endpoint loyalty) — khách chưa
+              đăng nhập thì mời đăng ký, đã đăng nhập thì đẩy sang ưu đãi đang chạy thật. */}
           <Button
-            onClick={() => navigate('/account/loyalty')}
+            onClick={() => navigate(isAuthenticated ? ROUTES.deals : ROUTES.register)}
             variant="cta"
             className="h-auto rounded-2xl px-10 py-5 font-be-vietnam text-sm shadow-lg"
           >

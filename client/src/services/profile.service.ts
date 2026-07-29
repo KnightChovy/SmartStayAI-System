@@ -3,6 +3,7 @@ import type {
   UserProfile,
   MyProfileResponse,
   UpdateMyProfileDto,
+  ChangePasswordDto,
 } from '@/types/account.types';
 
 /**
@@ -55,5 +56,10 @@ export const profileService = {
   async update(patch: Partial<UserProfile>): Promise<UserProfile> {
     const { data } = await api.patch<MyProfileResponse>('/users/me', toDto(patch));
     return toViewModel(data);
+  },
+
+  /** Đổi mật khẩu (`PATCH /users/me/password`). BE trả 204, không có body. */
+  async changePassword(dto: ChangePasswordDto): Promise<void> {
+    await api.patch('/users/me/password', dto);
   },
 };

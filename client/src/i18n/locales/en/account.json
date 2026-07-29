@@ -7,8 +7,6 @@
     "bookings": "My bookings",
     "messages": "Messages",
     "reviews": "My reviews",
-    "loyalty": "Loyalty",
-    "vouchers": "Vouchers",
     "notifications": "Notifications",
     "settings": "Settings"
   },
@@ -29,7 +27,8 @@
     "emptyUpcoming": "No upcoming stays",
     "emptyPast": "No past stays yet",
     "emptyDesc": "When you book a stay, it will appear here.",
-    "findStay": "Find a stay"
+    "findStay": "Find a stay",
+    "showing": "Showing {{from}}–{{to}} of {{total}} bookings"
   },
   "detail": {
     "notFound": "Booking not found.",
@@ -93,13 +92,6 @@
       }
     }
   },
-  "loyalty": {
-    "title": "Loyalty rewards",
-    "member": "{{tier}} member",
-    "pointsAvailable": "points available",
-    "ptsTo": "{{points}} pts to {{tier}}",
-    "pointsHistory": "Points history"
-  },
   "notifications": {
     "title": "Notifications",
     "markAllRead": "Mark all read",
@@ -112,17 +104,20 @@
     "title": "Settings",
     "subtitle": "Security and account preferences.",
     "changePassword": "Change password",
+    "passwordHint": "New password must be at least 8 characters and contain a letter and a number.",
     "current": "Current",
     "new": "New",
     "confirm": "Confirm",
     "updatePassword": "Update password",
-    "passwordUpdated": "Password updated (demo).",
-    "activeSessions": "Active sessions",
-    "thisDevice": "This device",
-    "signOut": "Sign out",
-    "deleteTitle": "Delete account",
-    "deleteDesc": "Permanently remove your account and personal data. This cannot be undone.",
-    "deleteBtn": "Delete my account"
+    "passwordUpdated": "Password updated.",
+    "passwordError": "Couldn't change your password. Please try again.",
+    "errors": {
+      "currentRequired": "Please enter your current password.",
+      "tooShort": "Password must be at least 8 characters.",
+      "needLetterAndNumber": "Password must contain at least 1 letter and 1 number.",
+      "confirmRequired": "Please confirm your new password.",
+      "mismatch": "Passwords do not match."
+    }
   },
   "reviews": {
     "title": "My reviews",
@@ -133,19 +128,6 @@
     "hidden": "Hidden",
     "editFeedback": "Edit feedback",
     "responseFromProperty": "Response from property"
-  },
-  "vouchers": {
-    "title": "Vouchers & offers",
-    "subtitle": "Apply a code at checkout to redeem your discount.",
-    "emptyTitle": "No vouchers",
-    "emptyDesc": "Check back later for new offers.",
-    "percentOff": "{{value}}% off",
-    "fixedOff": "{{value}} off",
-    "freeNight": "{{value}} free night",
-    "minNights": "Min {{count}} nights · ",
-    "validUntil": "Valid until {{date}}",
-    "copied": "Copied",
-    "copy": "Copy"
   },
   "profile": {
     "title": "Profile",

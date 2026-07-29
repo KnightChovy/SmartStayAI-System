@@ -8,6 +8,7 @@ import { Text } from '@/components/ui/text';
 import { Heading } from '@/components/ui/heading';
 import { StarRating } from '@/components/shared/StarRating';
 import { LuxButton } from '@/components/guest/LuxButton';
+import { REVIEW_SCORE_MAX } from '@/utils/reviewScore';
 import { useCreateReview, useUpdateReview } from '@/hooks/reviews';
 import { GUEST_COLORS, PLACEHOLDER } from '@/constants/guestTheme';
 import { errorMessage } from '@/utils/errorMessage';
@@ -32,10 +33,10 @@ interface RatingForm {
 }
 
 const EMPTY: RatingForm = {
-  cleanlinessRating: 5,
-  serviceRating: 5,
-  locationRating: 5,
-  valueRating: 5,
+  cleanlinessRating: REVIEW_SCORE_MAX,
+  serviceRating: REVIEW_SCORE_MAX,
+  locationRating: REVIEW_SCORE_MAX,
+  valueRating: REVIEW_SCORE_MAX,
   title: '',
   content: '',
   images: [],
@@ -53,8 +54,8 @@ interface ReviewSheetProps {
 }
 
 /**
- * Sheet viết/sửa đánh giá — bám đúng `ReviewModal` của client:
- * khách chấm 4 tiêu chí, **điểm tổng là trung bình làm tròn** (BE cần số nguyên 1..5),
+ * Sheet viết/sửa đánh giá — bám đúng `ReviewModal` của client (thang /10):
+ * khách chấm 4 tiêu chí trên thang 10, **điểm tổng là trung bình làm tròn** (1..10),
  * ảnh nhập bằng URL (BE chỉ nhận URI, không nhận `file://`).
  */
 export function ReviewSheet({
@@ -189,33 +190,43 @@ export function ReviewSheet({
                 </Text>
               </View>
 
-              {/* Điểm tổng: chỉ đọc, suy từ 4 tiêu chí — giống hệt client. */}
+              {/* Điểm tổng: chỉ đọc, suy từ 4 tiêu chí — thang /10 giống hệt client. */}
               <View className="mt-5 items-center rounded-card border border-hairline/30 bg-surface-low py-4">
                 <Text className="font-bevi-bold uppercase tracking-[1px] text-on-surface-variant" size="xs">
                   {t('account:review.overall')}
                 </Text>
-                <View className="my-2">
-                  <StarRating count={overallRating} size={26} />
+                <View className="my-1.5 flex-row items-baseline gap-0.5">
+                  <Text className="font-bevi-bold text-on-surface" size="3xl">
+                    {avg.toFixed(1)}
+                  </Text>
+                  <Text className="font-bevi-bold text-muted" size="sm">
+                    /{REVIEW_SCORE_MAX}
+                  </Text>
                 </View>
-                <Text className="font-bevi-bold text-on-surface" size="lg">
-                  {avg.toFixed(1)}
-                </Text>
                 <Text className="font-bevi text-muted" size="xs">
                   {t('account:review.overallHint')}
                 </Text>
               </View>
 
               {SUBSCORES.map(s => (
-                <View key={s.key} className="mt-4 flex-row items-center justify-between">
-                  <Text className="font-bevi-medium text-on-surface" size="sm">
-                    {t(`account:review.${s.labelKey}`)}
-                  </Text>
-                  <StarRating
-                    count={form[s.key]}
-                    size={24}
-                    onRate={v => setForm(f => ({ ...f, [s.key]: v }))}
-                    accessibilityLabel={t(`account:review.${s.labelKey}`)}
-                  />
+                <View key={s.key} className="mt-4 rounded-card border border-hairline/30 bg-surface-low px-3.5 py-3">
+                  <View className="flex-row items-center justify-between">
+                    <Text className="font-bevi-medium text-on-surface" size="sm">
+                      {t(`account:review.${s.labelKey}`)}
+                    </Text>
+                    <Text className="font-bevi-bold text-on-surface" size="sm">
+                      {form[s.key]}/{REVIEW_SCORE_MAX}
+                    </Text>
+                  </View>
+                  <View className="mt-2">
+                    <StarRating
+                      count={form[s.key]}
+                      total={REVIEW_SCORE_MAX}
+                      size={22}
+                      onRate={v => setForm(f => ({ ...f, [s.key]: v }))}
+                      accessibilityLabel={t(`account:review.${s.labelKey}`)}
+                    />
+                  </View>
                 </View>
               ))}
 

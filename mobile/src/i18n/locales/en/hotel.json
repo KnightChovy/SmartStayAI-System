@@ -50,7 +50,11 @@
     "nightsLine_other": "{{price}} × {{count}} nights",
     "tax": "Taxes",
     "taxWithRate": "Taxes ({{rate}}%)",
-    "fee": "Service fee"
+    "fee": "Service fee",
+    "perNight": "/ night",
+    "nightsTotal_one": "{{count}} night · total",
+    "nightsTotal_other": "{{count}} nights · total",
+    "inclTaxesFees": "incl. {{amount}} taxes & fees"
   },
   "picker": {
     "title": "Select dates",

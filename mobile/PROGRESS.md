@@ -22,6 +22,28 @@ This file tracks the accomplished tasks, resolved user requests, and structural/
   - `/(staff)/conversation/[id]` dùng `KeyboardAvoidingView` với `padding` trên iOS và `height` trên Android, nên composer co lên theo vùng còn thấy được thay vì phụ thuộc vào window resize.
   - Vùng danh sách tin nhắn có `flex-1` để luôn nhường phần đáy cho composer; khi focus ô nhập, thread tự cuộn về tin mới nhất. Thêm `keyboardShouldPersistTaps="handled"` để thao tác trong luồng chat không làm keyboard đóng ngoài ý muốn.
   - Bổ sung Android `softwareKeyboardLayoutMode: "pan"` và `tabBarHideOnKeyboard` cho Staff Tabs. Vì tab bar là custom component, nó còn tự lắng nghe keyboard để ẩn hẳn lúc nhập, đảm bảo không chiếm/chồng vùng composer.
+### July 30, 2026 — Review chuyển sang thang /10 (theo web FE)
+
+- [x] **Đổi toàn bộ đánh giá của khách từ /5 → /10 để khớp web client** (yêu cầu: "sửa mobile thành 10 theo fe, ko sửa BE"):
+  - **Nguyên nhân lỗi gốc** khách gặp (`"overallRating must be ≤ 5"`...): **web ReviewModal đã lên /10** (`RATING_MAX=10`) nhưng **BE Joi vẫn `.max(5)`** ⇒ submit web bị 400. Mobile trước đây gửi /5 nên không lỗi, nhưng lệch thang với web.
+  - **Đã làm** (mirror web): util mới `utils/reviewScore.ts` (`REVIEW_SCORE_MAX=10`, `scoreLabelKey` ngưỡng ≥9/≥8/≥7/≥6, `scoreColor`); `ReviewSheet` input 10 sao/tiêu chí + điểm tổng `X.X /10`; `HotelReviews` thanh điểm ÷10 + ô tổng `/10` + nhãn theo ngưỡng /10; `ReviewCard` + `my-reviews` đổi sao → badge số `/10`. `tsc`/`eslint` sạch.
+  - ⚠️⚠️ **QUAN TRỌNG — submit sẽ 400 cho tới khi sửa BE**: vì **KHÔNG đụng BE** (theo yêu cầu) mà BE vẫn `Joi.number().min(1).max(5)` (`server/src/validations/review.validation.ts:4`), nên giờ **mobile gửi điểm >5 sẽ bị 400 y hệt web**. Muốn submit chạy phải đổi BE `.max(5)` → `.max(10)` (cả `createReview` lẫn `updateReview`). Đây là việc BE, chưa làm theo yêu cầu.
+  - ⚠️ **Dữ liệu cũ hiển thị lệch** (giống web đã ghi nhận): review đã lưu là /5, nay hiển thị như /10 ⇒ 5.0 cũ hiện thành "5.0/10" (nhìn như trung bình). Chỉ đúng hẳn khi BE lên /10 + review mới. ⚠️ Chưa chạy được app ⇒ nhờ xem lại thị giác form 10 sao + badge.
+
+### July 29, 2026 (continued 2) — Price details tách khoản + khớp giá thẻ ngoài ↔ chi tiết
+
+- [x] **Tách "Price details" ở màn phòng thành Tiền phòng → Thuế (X%) → [Phí] → Total** (theo yêu cầu):
+  - `RoomType` (`types/hotels.type.ts`) khai thêm `subtotal`/`taxAmount`/`feeAmount` — BE `GET /hotels/:id/room-types` **đã** trả tách khoản (`subtotal + taxAmount + feeAmount = totalPrice`, cùng hàm `computeTaxAndFees` lúc đặt), mobile chỉ chưa khai type nên trước đây không dựng breakdown được.
+  - `room/[id].tsx`: `PriceSummary` giờ có dòng tiền phòng + **Thuế (X%)** (suất hiệu dụng = `taxAmount/subtotal`, làm tròn 1 chữ số) + Phí dịch vụ (chỉ khi > 0) + Total = `totalPrice`. i18n `hotel:room.{nightsLine,tax,taxWithRate,fee}` (en/vi cân bằng).
+- [x] **Fix "ngoài 2tr6, ấn vô 2tr436"** — hai nguyên nhân:
+  - **Bug nhãn dòng** (do lần trước): dòng ghi `basePrice × N đêm` nhưng value là `subtotal` (đã giảm giá) ⇒ không khớp. Nay nhãn dùng **giá mỗi đêm hiệu dụng** = `subtotal / số đêm`, nên "X × N = subtotal" cộng đúng.
+  - **Thẻ danh sách hiện `basePrice` (giá gốc), bỏ qua pricing rule + thuế/phí**: KS Đà Nẵng có rule **early_bird −15%** (seed) áp cho lưu trú trong 30 ngày ⇒ 2.600.000 → 2.210.000, +8% thuế +50k phí = 2.436.800. `RoomTypeCard` giờ **mirror web client**: có khoảng ngày (`totalPrice` present) → hiện **tổng cả kỳ đã gồm thuế/phí** + caption "N đêm · tổng" + "gồm X thuế & phí"; không có ngày → `basePrice` "/ đêm". i18n `hotel:room.{perNight,nightsTotal,inclTaxesFees}`.
+  - `tsc` sạch (ngoài `components/ui/*` pre-existing), `eslint` sạch. ⚠️ Chưa chạy được app ⇒ nhờ xem lại thị giác thẻ phòng + breakdown.
+- [x] **Fix giá "từ" ở màn Search lệch với giá trong chi tiết** ("from 1.022.000" nhưng vào thấy 876.200) — **bộ chọn ngày ngay trên màn Search (như web)**:
+  - **Nguyên nhân**: Search **không có bộ chọn ngày**, gọi API không kèm ngày ⇒ BE tính giá "từ" theo **basePrice** (chưa áp pricing rule): 900.000 + 8% + 50k = 1.022.000. Còn trang chi tiết **luôn mặc định hôm nay→mai** ⇒ áp early_bird −15% → phòng rẻ nhất 765.000 + thuế/phí = 876.200.
+  - **Cách chọn (theo yêu cầu user)**: **KHÔNG** ép mặc định today→tomorrow ngầm (hướng đó lọc mất KS hết phòng đêm nay). Thay vào đó thêm **`StayPickerSheet` ngay trên màn Search** (giống web): mặc định **TRỐNG** ⇒ hiện **mọi KS**, giá "từ" là ước tính theo basePrice. Khách chọn ngày → refetch có ngày ⇒ giá "từ" áp đúng pricing rule + thuế/phí; ngày được mang sang `/hotel/[id]` qua `detailParams` ⇒ giá trong khớp giá ngoài. Có nút **×** để xoá ngày về lại "mọi KS".
+  - `(tabs)/search.tsx`: state `stayCheckIn/Out/guests` + `pickerOpen`; bar ngày/khách trong header tối; `guests` chỉ gửi khi có ngày (không ngày = duyệt, không lọc sức chứa). i18n `search:{addDates,clearDates,stayGuests}` (en/vi cân bằng). `tsc`/`eslint` sạch.
+  - ⚠️ **Còn lại (giống hệt web)**: nếu **không chọn ngày** rồi bấm vào KS, trang chi tiết vẫn tự mặc định today→tomorrow (hành vi cũ, web cũng vậy) ⇒ giá "từ" ngoài (ước tính) có thể lệch giá trong (đã giảm). Chọn ngày trên Search là hết lệch. ⚠️ Chưa chạy được app ⇒ nhờ xem lại thị giác bar ngày + luồng chọn.
 
 ### July 17, 2026 (continued)
 
