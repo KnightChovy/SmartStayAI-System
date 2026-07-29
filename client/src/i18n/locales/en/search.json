@@ -8,11 +8,37 @@
   "cityPlaceholder": "City, e.g. Da Nang",
   "sortBy": "Sort by",
   "sortRecommended": "Recommended",
+  "sortPriceAsc": "Price: low to high",
+  "sortPriceDesc": "Price: high to low",
+  "sortRatingDesc": "Top rated",
   "sortStar": "Star rating: high to low",
   "sortNewest": "Newest",
   "errorTitle": "Something went wrong",
   "errorDesc": "We couldn't load search results. Please try again.",
   "emptyTitle": "No stays found",
-  "emptyDesc": "Try adjusting your dates, destination, or guest count.",
-  "pageOf": "Page {{page}} of {{total}}"
+  "emptyDesc": "Try adjusting your dates, destination, or relaxing the filters.",
+  "pageOf": "Page {{page}} of {{total}}",
+  "clearAll": "Clear all",
+  "openFilters": "Filters",
+  "price": {
+    "title": "Price / night",
+    "min": "Min",
+    "max": "Max"
+  },
+  "stars": {
+    "title": "Star rating",
+    "label": "{{count}} stars"
+  },
+  "amenities": {
+    "title": "Amenities",
+    "showMore": "Show more",
+    "showLess": "Show less"
+  },
+  "reviewScore": {
+    "title": "Review score",
+    "any": "Any",
+    "score9": "Exceptional (≥ 9.0)",
+    "score8": "Very good (≥ 8.0)",
+    "score7": "Good (≥ 7.0)"
+  }
 }

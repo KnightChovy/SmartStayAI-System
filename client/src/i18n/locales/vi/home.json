@@ -11,6 +11,8 @@
     "dealsCta": "Xem ưu đãi hôm nay",
     "destinationSearching": "Đang tìm điểm đến…",
     "destinationEmpty": "Không có gợi ý phù hợp",
+    "hotelCount_one": "{{count}} KS",
+    "hotelCount_other": "{{count}} KS",
     "adults": "Người lớn",
     "children": "Trẻ em",
     "childrenHint": "0–17 tuổi",
@@ -79,5 +81,7 @@
   "testimonials": {
     "title": "Khách hàng nói gì về SmartStay",
     "subtitle": "Trải nghiệm thật từ những du khách đã đặt phòng trên sàn."
-  }
+  },
+  "statsSubtitle": "Hơn {{count}} khách sạn tại Việt Nam · Giá tốt nhất · Huỷ miễn phí",
+  "ratingBadge": "{{score}}/10 từ {{count}} đánh giá"
 }

@@ -13,7 +13,15 @@
   "deals": {
     "eyebrow": "Ưu đãi có thời hạn",
     "title": "Giá ưu đãi dành riêng cho thành viên",
-    "subtitle": "Mở khoá mức giá tốt được tuyển chọn cho thành viên và người đặt sớm."
+    "subtitle": "Mở khoá mức giá tốt được tuyển chọn cho thành viên và người đặt sớm.",
+    "perNight": "/ đêm",
+    "flashSale": "Flash sale",
+    "save": "-{{percent}}%",
+    "endsIn": "Kết thúc sau",
+    "ended": "Đã kết thúc",
+    "viewHotel": "Xem khách sạn",
+    "emptyTitle": "Chưa có ưu đãi nào",
+    "emptyDesc": "Hiện chưa có deal đang chạy. Bạn quay lại sau nhé!"
   },
   "about": {
     "eyebrow": "Câu chuyện của chúng tôi",

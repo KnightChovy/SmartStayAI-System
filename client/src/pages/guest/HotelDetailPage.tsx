@@ -8,12 +8,11 @@ import {
   Image as ImageIcon,
   MapPin,
   ShieldCheck,
-  Star,
   Ticket,
 } from 'lucide-react';
 import { useHotel } from '@/hooks/hotels/use-hotel';
 import { useRoomTypes } from '@/hooks/hotels/use-room-types';
-import { usePublicHotelReviews } from '@/hooks/hotel-reviews';
+import { usePublicReviewStats } from '@/hooks/hotel-reviews';
 import AnchorNav, { type AnchorSection } from '@/components/guest/AnchorNav';
 import { useGeocode } from '@/hooks/geo';
 import { useAuthStore } from '@/stores/authStore';
@@ -38,6 +37,8 @@ import { Button } from '@/components/ui/button';
 import { toDateInputValue } from '@/utils/formatDate';
 import { formatAddress } from '@/utils/formatAddress';
 import { getFreeCancellationHours } from '@/utils/cancellationPolicy';
+import { scoreColorClass } from '@/utils/reviewScore';
+import { cn } from '@/lib/cn';
 import type { HotelSearchResult, RoomType } from '@/types/hotel.types';
 
 const FALLBACK =
@@ -140,18 +141,11 @@ export default function HotelDetailPage() {
   const mapLat = hotel?.latitude != null ? Number(hotel.latitude) : geocoded?.lat ?? null;
   const mapLng = hotel?.longitude != null ? Number(hotel.longitude) : geocoded?.lng ?? null;
 
-  // Điểm đánh giá tổng cho header (SS-201). Dùng cùng tham số với <HotelReviews/> nên React Query
-  // dùng chung cache — không phát sinh request thừa. avgRating = null khi chưa có review (không hiện 0).
-  const { data: reviewData } = usePublicHotelReviews(hotelId, {
-    limit: 100,
-    sortBy: 'createdAt:desc',
-  });
-  const reviewCount = reviewData?.totalResults ?? 0;
-  const avgRating = useMemo(() => {
-    const list = reviewData?.results ?? [];
-    if (list.length === 0) return null;
-    return list.reduce((sum, r) => sum + r.overallRating, 0) / list.length;
-  }, [reviewData]);
+  // Điểm đánh giá tổng cho header (SS-201) — lấy từ endpoint stats công khai (tính trên TẤT CẢ
+  // review published, chính xác hơn mẫu). Dùng chung cache với <HotelReviews/>. null khi chưa có.
+  const { data: reviewStats } = usePublicReviewStats(hotelId);
+  const reviewCount = reviewStats?.total ?? 0;
+  const avgRating = reviewStats?.average.overall ?? null;
 
   // Chỉ hiện anchor cho section thực sự tồn tại (tránh cuộn tới chỗ trống).
   const hasLocation =
@@ -280,13 +274,14 @@ export default function HotelDetailPage() {
                 onClick={() =>
                   document.getElementById('reviews')?.scrollIntoView({ behavior: 'smooth' })
                 }
-                // Chip vàng ĐẶC + chữ tối: `text-premium-gold` trên nền nhạt chỉ đạt contrast
-                // 2.0:1 nên số điểm sẽ mờ — đúng chỗ cần khách đọc được ngay.
-                className="flex items-center gap-1.5 rounded-full bg-premium-gold px-3 py-1 font-bold text-on-surface transition-colors hover:bg-[color-mix(in_oklch,var(--color-premium-gold),black_12%)]"
+                // Badge điểm màu theo mức, KHÔNG icon sao — tránh lẫn với hạng sao KS ngay cạnh.
+                className={cn(
+                  'flex items-center gap-1.5 rounded-full px-3 py-1 font-bold transition-opacity hover:opacity-90',
+                  scoreColorClass(avgRating)
+                )}
               >
-                <Star className="size-3.5 fill-current" aria-hidden="true" />
-                <span>{avgRating.toFixed(1)}</span>
-                <span className="font-normal text-on-surface-variant">
+                <span className="tabular-nums">{avgRating.toFixed(1)}</span>
+                <span className="font-normal opacity-80">
                   ({t('reviews.count', { count: reviewCount })})
                 </span>
               </button>
@@ -426,7 +421,10 @@ export default function HotelDetailPage() {
                 onSelect={handleSelectRoom}
                 bestValue={roomTypes.length > 1 && rt.id === bestValueRoomId}
                 detailHref={`${ROUTES.roomTypeDetail(rt.hotelId, rt.id)}?${roomQuery}`}
-                freeUntilHours={getFreeCancellationHours(hotel?.settings)}
+                freeUntilHours={
+                  hotel?.cancellationRule?.freeUntilHours ??
+                  getFreeCancellationHours(hotel?.settings)
+                }
               />
             ))
           )}

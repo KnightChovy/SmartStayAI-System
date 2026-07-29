@@ -56,8 +56,13 @@ export interface PublicReviewsParams {
 export type HotelReviewsResponse = Paginated<HotelReview>;
 
 /** Thống kê tổng hợp review (`GET /hotels/:id/reviews/stats`, tính trên review đã published). */
+/** Khoá phân bố điểm 1..10 (BE dùng thang 10 cho điểm đánh giá). */
+export type ReviewScoreBucket =
+  | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '10';
+
 export interface HotelReviewStats {
   total: number;
+  /** Trung bình theo thang 10; null khi chưa có review. */
   average: {
     overall: number | null;
     cleanliness: number | null;
@@ -65,12 +70,6 @@ export interface HotelReviewStats {
     location: number | null;
     value: number | null;
   };
-  /** Số review published theo từng mức sao overall (1..5). */
-  countByStar: {
-    '1': number;
-    '2': number;
-    '3': number;
-    '4': number;
-    '5': number;
-  };
+  /** Số review published theo từng mức điểm overall (1..10). */
+  countByStar: Record<ReviewScoreBucket, number>;
 }

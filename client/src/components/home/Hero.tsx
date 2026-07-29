@@ -2,10 +2,16 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { Tag } from 'lucide-react';
 import { ROUTES } from '@/constants/routes';
+import { usePlatformStats } from '@/hooks/platform';
 import HeroSearchBar from '../search/HeroSearchBar';
 
 export default function Hero() {
   const { t } = useTranslation('home');
+  const { data: stats } = usePlatformStats();
+  // Lợi ích cụ thể bằng số thật (SS-002); chưa có số thì dùng subtitle mặc định.
+  const subtitle = stats
+    ? t('statsSubtitle', { count: stats.totalHotels })
+    : t('hero.subtitle');
 
   return (
     // `overflow-x-clip` chứ KHÔNG phải `overflow-hidden`: dropdown gợi ý điểm đến của thanh
@@ -32,7 +38,7 @@ export default function Hero() {
           {t('hero.title')}
         </h1>
         <p className="font-be-vietnam text-lg text-white/90 max-w-xl mx-auto drop-shadow">
-          {t('hero.subtitle')}
+          {subtitle}
         </p>
         {/* CTA phụ dưới tiêu đề — link nhanh tới ưu đãi */}
         <Link

@@ -8,11 +8,37 @@
   "cityPlaceholder": "Thành phố, vd. Đà Nẵng",
   "sortBy": "Sắp xếp theo",
   "sortRecommended": "Đề xuất",
+  "sortPriceAsc": "Giá: thấp đến cao",
+  "sortPriceDesc": "Giá: cao đến thấp",
+  "sortRatingDesc": "Đánh giá cao nhất",
   "sortStar": "Hạng sao: cao đến thấp",
   "sortNewest": "Mới nhất",
   "errorTitle": "Đã xảy ra lỗi",
   "errorDesc": "Không tải được kết quả tìm kiếm. Vui lòng thử lại.",
   "emptyTitle": "Không tìm thấy chỗ nghỉ",
-  "emptyDesc": "Thử điều chỉnh ngày, điểm đến hoặc số khách.",
-  "pageOf": "Trang {{page}} / {{total}}"
+  "emptyDesc": "Thử điều chỉnh ngày, điểm đến hoặc nới lỏng bộ lọc.",
+  "pageOf": "Trang {{page}} / {{total}}",
+  "clearAll": "Xoá tất cả",
+  "openFilters": "Bộ lọc",
+  "price": {
+    "title": "Khoảng giá / đêm",
+    "min": "Tối thiểu",
+    "max": "Tối đa"
+  },
+  "stars": {
+    "title": "Hạng sao",
+    "label": "{{count}} sao"
+  },
+  "amenities": {
+    "title": "Tiện nghi",
+    "showMore": "Xem thêm",
+    "showLess": "Thu gọn"
+  },
+  "reviewScore": {
+    "title": "Điểm đánh giá",
+    "any": "Bất kỳ",
+    "score9": "Tuyệt vời (≥ 9.0)",
+    "score8": "Rất tốt (≥ 8.0)",
+    "score7": "Tốt (≥ 7.0)"
+  }
 }

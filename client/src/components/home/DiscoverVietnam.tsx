@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { Button } from '../ui/button';
-import { useCityDestinations } from '@/hooks/home';
+import { useDestinations } from '@/hooks/destinations';
 
 const FALLBACK_IMAGE =
   'https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=1200&auto=format&fit=crop';
@@ -9,12 +9,10 @@ const FALLBACK_IMAGE =
 export default function DiscoverVietnam() {
   const navigate = useNavigate();
   const { t } = useTranslation('home');
-  const { destinations, isLoading } = useCityDestinations();
+  const { data, isLoading } = useDestinations();
 
-  // Điểm đến trong nước (Việt Nam) thật, tối đa 4 thành phố nhiều khách sạn nhất.
-  const cities = destinations
-    .filter(d => !d.country || d.country.toLowerCase().includes('viet'))
-    .slice(0, 4);
+  // Tối đa 4 thành phố nhiều khách sạn nhất (`GET /v1/destinations` — sàn chỉ có KS ở VN).
+  const cities = (data ?? []).slice(0, 4);
 
   if (!isLoading && cities.length === 0) return null;
 
@@ -68,7 +66,7 @@ export default function DiscoverVietnam() {
                   {dest.city}
                 </h4>
                 <p className="text-on-surface-variant text-sm font-be-vietnam">
-                  {t('discover.stays', { count: dest.count })}
+                  {t('discover.stays', { count: dest.hotelCount })}
                 </p>
               </div>
             ))}
