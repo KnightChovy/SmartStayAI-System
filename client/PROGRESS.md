@@ -2,6 +2,10 @@
 
 This file tracks the accomplished tasks, resolved user requests, and visual/functional refactoring completed in the client application.
 
+## July 29, 2026
+
+- [x] **Floating chat initial quick replies**: Các gợi ý trả lời nhanh chỉ xuất hiện dưới lời chào ban đầu của SmartStay AI; phản hồi AI sau khi chat, fallback và lỗi không hiển thị lại gợi ý.
+
 ---
 
 ## Completed Tasks Checklist
