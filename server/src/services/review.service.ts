@@ -258,20 +258,25 @@ export class ReviewService {
       prisma.review.groupBy({ by: ['overallRating'], where, _count: { _all: true } }),
     ]);
 
-    // Chuẩn hoá phân bố 1..5 sao, điền 0 cho mức sao chưa có đánh giá
+    // Chuẩn hoá phân bố 1..5 sao, điền 0 cho mức sao chưa có đánh giá. Đây là HISTOGRAM số lượng
+    // theo từng mức sao khách chấm (1–5) nên GIỮ thang 5 — khác với điểm tổng hợp bên dưới.
     const countByStar: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
     for (const row of byRating) {
       countByStar[row.overallRating] = row._count._all;
     }
 
+    // Điểm tổng hợp hiển thị theo thang 10 (kiểu Booking.com): trung bình sao (1–5) × 2, làm tròn
+    // 1 chữ số. null khi chưa có review (không phải 0).
+    const toScore10 = (avg: number | null) => (avg === null ? null : Math.round(avg * 2 * 10) / 10);
+
     return {
       total: agg._count._all,
       average: {
-        overall: agg._avg.overallRating,
-        cleanliness: agg._avg.cleanlinessRating,
-        service: agg._avg.serviceRating,
-        location: agg._avg.locationRating,
-        value: agg._avg.valueRating,
+        overall: toScore10(agg._avg.overallRating),
+        cleanliness: toScore10(agg._avg.cleanlinessRating),
+        service: toScore10(agg._avg.serviceRating),
+        location: toScore10(agg._avg.locationRating),
+        value: toScore10(agg._avg.valueRating),
       },
       countByStar,
     };

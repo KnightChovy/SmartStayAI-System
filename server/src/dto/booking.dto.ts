@@ -9,7 +9,12 @@ export interface CreateBookingDto {
   roomTypeId: string;
   checkInDate: Date;
   checkOutDate: Date;
-  numGuests: number;
+  // Số khách: cách MỚI tách người lớn/trẻ em (numAdults + numChildren), hoặc cách CŨ gộp (numGuests)
+  // cho mobile/link cũ. Server suy numGuests = numAdults + numChildren; chỉ có numGuests thì coi tất
+  // cả là người lớn. Tiền vẫn tính theo TỔNG khách, không phân biệt trẻ em / người lớn.
+  numGuests?: number;
+  numAdults?: number;
+  numChildren?: number;
   specialRequests?: string;
   // 'vnpay' = trả trước qua cổng (mặc định); 'sepay' = chuyển khoản quét QR;
   // 'cash' = trả tiền mặt tại khách sạn khi tới

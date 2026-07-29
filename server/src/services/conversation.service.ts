@@ -573,7 +573,7 @@ export class ConversationService {
             const star = h.starRating ? `${h.starRating} sao, ` : '';
             const price = h.minPrice ? `từ ${h.minPrice} VND/đêm` : 'giá liên hệ';
             const amenities = h.topAmenities.map((a) => a.name).join(', ');
-            const rating = h.avgRating ? ` | ${h.avgRating}/5 (${h.reviewCount} đánh giá)` : '';
+            const rating = h.avgRating ? ` | ${h.avgRating}/10 (${h.reviewCount} đánh giá)` : '';
             return `- ${h.name} (${star}${h.city}): ${price}${rating}${amenities ? ` | tiện nghi: ${amenities}` : ''}`;
           })
           .join('\n');

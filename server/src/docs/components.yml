@@ -582,7 +582,7 @@ components:
         latitude: { type: string, nullable: true }
         longitude: { type: string, nullable: true }
         starRating: { type: integer, nullable: true, description: 'Hotel star classification (1-5), not a guest score' }
-        avgRating: { type: number, nullable: true, description: 'Average guest score over published reviews, rounded to 1 decimal. null when the hotel has no review yet (not 0)' }
+        avgRating: { type: number, nullable: true, description: 'Average guest score over published reviews on a 10-scale (guests rate 1-5 stars, averaged then doubled), rounded to 1 decimal. null when the hotel has no review yet (not 0)' }
         reviewCount: { type: integer, description: 'Number of published reviews' }
         cancellationRule:
           allOf:
@@ -698,7 +698,7 @@ components:
         country: { type: string }
         address: { type: string }
         starRating: { type: integer, nullable: true, description: 'Hotel star classification (1-5), not a guest score' }
-        avgRating: { type: number, nullable: true, description: 'Average guest score over published reviews, rounded to 1 decimal. null when the hotel has no review yet (not 0)' }
+        avgRating: { type: number, nullable: true, description: 'Average guest score over published reviews on a 10-scale (guests rate 1-5 stars, averaged then doubled), rounded to 1 decimal. null when the hotel has no review yet (not 0)' }
         reviewCount: { type: integer, description: 'Number of published reviews' }
         topAmenities:
           type: array
@@ -712,7 +712,7 @@ components:
         availableRooms: { type: integer, nullable: true, description: 'Total rooms left across the hotel for the stay. Only when checkIn/checkOut are given; null otherwise. FE shows an urgency badge when small' }
         isActive: { type: boolean }
         isListed: { type: boolean }
-        minPrice: { type: string, nullable: true, description: 'Lowest nightly price among matching room types (Decimal as string), excluding tax and fees. With checkIn/checkOut it is the real price for those dates (pricing rules and priceOverride applied, averaged per night, only rooms still available); without dates, rules cannot be resolved so it falls back to the lowest basePrice' }
+        minPrice: { type: string, nullable: true, description: 'Lowest nightly price among matching room types (Decimal as string), INCLUDING tax and fees so it matches the room-detail/booking figure. With checkIn/checkOut it is the real price for those dates (pricing rules and priceOverride applied, tax/fees added, averaged per night, only rooms still available); without dates, rules cannot be resolved so it falls back to the lowest basePrice plus one night of tax/fees' }
         images:
           type: array
           description: Cover image only
@@ -768,7 +768,7 @@ components:
       properties:
         totalHotels: { type: integer, description: 'Hotels currently on sale (listed)' }
         totalCities: { type: integer, description: 'Distinct cities with a listed hotel' }
-        avgRating: { type: number, nullable: true, description: 'Average published-review score, 1 decimal. null when the platform has no review yet' }
+        avgRating: { type: number, nullable: true, description: 'Average published-review score on a 10-scale (star average doubled), 1 decimal. null when the platform has no review yet' }
         totalReviews: { type: integer }
 
     FeaturedReview:
@@ -905,6 +905,8 @@ components:
         checkOutDate: { type: string, format: date }
         numNights: { type: integer }
         numGuests: { type: integer }
+        numAdults: { type: integer, description: 'Adults (numGuests = numAdults + numChildren)' }
+        numChildren: { type: integer, description: 'Children (priced the same as adults)' }
         basePricePerNight: { type: string, description: Decimal as string }
         subtotal: { type: string, description: 'Room charge only (nightly prices with pricing rules applied), before tax and fees' }
         discountAmount: { type: string }
@@ -1072,6 +1074,8 @@ components:
         checkOutDate: { type: string, format: date }
         numNights: { type: integer }
         numGuests: { type: integer }
+        numAdults: { type: integer, description: 'Adults (numGuests = numAdults + numChildren)' }
+        numChildren: { type: integer, description: 'Children (priced the same as adults)' }
         subtotal: { type: string }
         discountAmount: { type: string }
         taxAmount: { type: string }
@@ -1124,6 +1128,8 @@ components:
         checkOutDate: { type: string, format: date }
         numNights: { type: integer }
         numGuests: { type: integer }
+        numAdults: { type: integer, description: 'Adults (numGuests = numAdults + numChildren)' }
+        numChildren: { type: integer, description: 'Children (priced the same as adults)' }
         totalAmount: { type: string, description: Decimal as string }
         status: { type: string, enum: [pending, confirmed, checked_in, checked_out, cancelled, no_show] }
         source: { type: string, enum: [website, mobile_app, walk_in, ota] }
@@ -1274,6 +1280,7 @@ components:
         total: { type: integer }
         average:
           type: object
+          description: 'Average per criterion on a 10-scale (guests rate 1-5 stars, averaged then doubled), rounded to 1 decimal. null when there is no review yet.'
           properties:
             overall: { type: number, nullable: true }
             cleanliness: { type: number, nullable: true }
@@ -1282,7 +1289,7 @@ components:
             value: { type: number, nullable: true }
         countByStar:
           type: object
-          description: Number of published reviews per overall star (1..5)
+          description: Number of published reviews per overall star the guest gave (1..5 stars, unchanged)
           properties:
             '1': { type: integer }
             '2': { type: integer }
@@ -1381,7 +1388,7 @@ components:
           properties:
             occupancyRate: { type: number, nullable: true, description: '0..1 (Σ bookedRooms / Σ totalRooms)' }
             cancellationRate: { type: number, nullable: true, description: '0..1 (cancelled / total bookings)' }
-            avgRating: { type: number, nullable: true, description: '0..5 (published reviews, lifetime)' }
+            avgRating: { type: number, nullable: true, description: '0..10 (published reviews, lifetime; star average doubled)' }
             avgResponseMinutes: { type: number, nullable: true, description: avg minutes from a guest message to the next staff reply }
             totalBookings: { type: integer }
             cancelledBookings: { type: integer }

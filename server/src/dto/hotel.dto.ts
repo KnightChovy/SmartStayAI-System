@@ -5,13 +5,16 @@ export interface HotelSearchFilter {
   city?: string;
   checkIn?: Date;
   checkOut?: Date;
+  // Tổng số khách (người lớn + trẻ em) để lọc theo sức chứa loại phòng. Controller gộp adults+children.
   guests?: number;
+  // Số phòng khách cần — chỉ giữ khách sạn còn đủ số phòng trống này (mặc định 1). Chỉ áp khi có ngày.
+  rooms?: number;
   // ----- Bộ lọc nâng cao (P0-1). AND giữa các nhóm, OR trong một nhóm. -----
   priceMin?: number;
   priceMax?: number;
   stars?: number[]; // OR: KS có starRating thuộc danh sách này
   amenities?: string[]; // AND: KS phải có ĐỦ TẤT CẢ amenityId này
-  // Điểm đánh giá tối thiểu theo THANG 10 (7/8/9). avgRating (thang 5) quy đổi: avgRating * 2 >= reviewScore.
+  // Điểm đánh giá tối thiểu theo THANG 10 (7/8/9). avgRating cũng ở thang 10 → lọc trực tiếp: avgRating >= reviewScore.
   reviewScore?: number;
 }
 

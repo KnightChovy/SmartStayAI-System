@@ -6,7 +6,12 @@ export const searchHotels = {
       city: Joi.string(),
       checkIn: Joi.date().iso(),
       checkOut: Joi.date().iso().greater(Joi.ref('checkIn')),
+      // Số khách: cách mới tách người lớn/trẻ em (adults + children) hoặc cách cũ gộp (guests).
+      // Controller gộp adults+children thành tổng khách; vẫn nhận guests cũ cho mobile/link đã lưu.
       guests: Joi.number().integer().min(1),
+      adults: Joi.number().integer().min(1),
+      children: Joi.number().integer().min(0),
+      rooms: Joi.number().integer().min(1),
       // WHITELIST bắt buộc: 'price'/'rating' KHÔNG phải cột DB (tính sau query) — trước đây nhét
       // thẳng vào Prisma orderBy nên gửi 'price:asc' làm SẬP trang (500). Giá trị lạ giờ trả 400.
       sortBy: Joi.string().valid('recommended', 'price:asc', 'price:desc', 'rating:desc'),
@@ -243,7 +248,10 @@ export const getRoomTypes = {
     .keys({
       checkIn: Joi.date().iso(),
       checkOut: Joi.date().iso().greater(Joi.ref('checkIn')),
+      // Tổng khách (guests) hoặc tách người lớn/trẻ em (adults + children) — controller gộp lại
       guests: Joi.number().integer().min(1),
+      adults: Joi.number().integer().min(1),
+      children: Joi.number().integer().min(0),
       minPrice: Joi.number().min(0),
       maxPrice: Joi.number().min(0),
       bedType: Joi.string(),
@@ -262,8 +270,11 @@ export const getRoomType = {
     .keys({
       checkIn: Joi.date().iso(),
       checkOut: Joi.date().iso().greater(Joi.ref('checkIn')),
-      // Số khách để nhân phí per_person cho khớp báo giá — không gửi thì coi như 1
+      // Số khách để nhân phí per_person cho khớp báo giá — không gửi thì coi như 1.
+      // Nhận tổng (guests) hoặc tách người lớn/trẻ em (adults + children) — controller gộp lại.
       guests: Joi.number().integer().min(1),
+      adults: Joi.number().integer().min(1),
+      children: Joi.number().integer().min(0),
     })
     .and('checkIn', 'checkOut'),
 };
