@@ -156,7 +156,6 @@
     "about": "Giới thiệu phòng",
     "highlights": "Điểm nổi bật",
     "amenities": "Tiện nghi trong phòng",
-    "estIncludesTaxes": "Đã gồm ~{{amount}} thuế & phí (ước tính)",
     "soldOut": "Hết phòng cho khoảng ngày này",
     "pickDates": "Chọn ngày để xem giá cả kỳ ở và số phòng trống."
   }

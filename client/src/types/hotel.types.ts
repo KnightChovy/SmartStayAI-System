@@ -296,10 +296,9 @@ export interface RoomType {
   numNights?: number;
   availableRooms?: number;
   /**
-   * ⚠️ `totalPrice` ở ĐÂY (`GET /hotels/:id/room-types`) là SỐ CUỐI khách trả:
-   * `subtotal + taxAmount + feeAmount` (BE `hotel.service.ts` → `getRoomTypes`).
+   * ⚠️ `totalPrice` là SỐ CUỐI khách trả: `subtotal + taxAmount + feeAmount`
+   * (BE `hotel.service.ts` → `getRoomTypes`, endpoint chi tiết cũng vậy).
    * KHÔNG cộng thêm thuế lên số này nữa — sẽ tính thuế hai lần.
-   * (Khác với `RoomTypeDetail.totalPrice` = tiền phòng thuần — xem type đó.)
    */
   totalPrice?: string;
   /** Tiền phòng thuần cả kỳ ở (chưa thuế/phí). Đi kèm `totalPrice` khi có khoảng ngày. */
@@ -325,17 +324,15 @@ export interface RoomTypeHotelSummary {
 /**
  * Chi tiết một loại phòng (`GET /hotels/:hotelId/room-types/:roomTypeId`) — public.
  *
- * ⚠️ Khác biệt QUAN TRỌNG so với `RoomType` của endpoint danh sách: ở đây BE **không**
- * trả `subtotal`/`taxAmount`/`feeAmount`, và `totalPrice` là **tiền phòng thuần**
- * (chưa thuế/phí) — xem `hotel.service.ts` → `getRoomTypeById`. Vì vậy trang chi tiết
- * phải tự ước tính thuế từ `policies` của khách sạn (như trang checkout đang làm).
- * `null` khi không tính được giá.
+ * Giá **cùng shape với endpoint danh sách**: `subtotal` + `taxAmount` + `feeAmount` =
+ * `totalPrice` (số cuối khách trả), tính bằng đúng `computeTaxAndFees` như lúc đặt
+ * (`hotel.service.ts` → `getRoomTypeById`). Cả 4 field chỉ có khi truyền đủ checkIn + checkOut.
+ *
+ * ⚠️ Trước đây endpoint này trả `totalPrice` là tiền phòng THUẦN và không có tách khoản —
+ * đừng khôi phục giả định cũ: cộng thuế lên `totalPrice` là tính thuế hai lần.
  */
-export interface RoomTypeDetail
-  extends Omit<RoomType, 'totalPrice' | 'subtotal' | 'taxAmount' | 'feeAmount'> {
+export interface RoomTypeDetail extends RoomType {
   hotel: RoomTypeHotelSummary;
-  /** Tiền phòng thuần cả kỳ ở — chỉ có khi truyền cả checkIn + checkOut. */
-  totalPrice?: string | null;
 }
 
 /**
