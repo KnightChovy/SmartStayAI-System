@@ -1,7 +1,11 @@
 import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { MapPin } from 'lucide-react';
+import CardCarousel from '@/components/shared/CardCarousel';
 import { useDestinations } from '@/hooks/destinations';
+
+/** Ô điểm đến nhỏ hơn thẻ khách sạn ⇒ nhét được nhiều hơn mỗi khung (giữ 2 cột như bản lưới cũ trên mobile). */
+const TILE_BASIS = 'basis-1/2 sm:basis-1/3 lg:basis-1/4';
 
 /**
  * Điểm đến phổ biến — số khách sạn thật từ `GET /v1/destinations` (đã sort nhiều KS nhất lên đầu).
@@ -25,7 +29,7 @@ export default function PopularVietnameseTourists() {
       </h2>
 
       {isLoading ? (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+        <CardCarousel count={4} basisClassName={TILE_BASIS}>
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="animate-pulse">
               <div className="h-36 sm:h-48 rounded-3xl bg-surface-container-low" />
@@ -33,9 +37,9 @@ export default function PopularVietnameseTourists() {
               <div className="mt-1.5 h-3 w-1/2 rounded bg-surface-container-low" />
             </div>
           ))}
-        </div>
+        </CardCarousel>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+        <CardCarousel count={destinations.length} basisClassName={TILE_BASIS}>
           {destinations.map(dest => (
             <button
               key={dest.city}
@@ -66,7 +70,7 @@ export default function PopularVietnameseTourists() {
               </p>
             </button>
           ))}
-        </div>
+        </CardCarousel>
       )}
     </section>
   );

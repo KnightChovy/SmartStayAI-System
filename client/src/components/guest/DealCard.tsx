@@ -83,24 +83,33 @@ export default function DealCard({ deal }: DealCardProps) {
           <span className="line-clamp-1">{deal.city}</span>
         </p>
 
-        {/* Countdown flash sale */}
+        {/* Countdown flash sale — "Kết thúc sau 1d 05:22:31" dài hơn bản EN, cắt đuôi
+            thay vì để xuống dòng làm lệch chiều cao thẻ so với các thẻ cùng hàng. */}
         {isFlash && countdown && (
           <p className="mt-3 flex items-center gap-1.5 text-sm font-semibold text-error">
-            <Clock className="size-4" aria-hidden="true" /> {t('deals.endsIn')} {countdown}
+            <Clock className="size-4 shrink-0" aria-hidden="true" />
+            <span className="truncate">
+              {t('deals.endsIn')} {countdown}
+            </span>
           </p>
         )}
 
-        <div className="mt-auto flex items-end justify-between gap-2 pt-4">
-          <div>
-            <p className="text-sm text-on-surface-variant line-through">
-              {format(deal.originalPrice)}
-            </p>
-            <p className="font-be-vietnam text-xl font-bold text-on-surface">
-              {format(deal.discountedPrice)}
-              <span className="text-sm font-normal text-on-surface-variant"> {t('deals.perNight')}</span>
-            </p>
-          </div>
-          <span className="rounded-full bg-premium-gold/20 px-4 py-2 text-sm font-semibold text-on-surface transition-colors group-hover:bg-premium-gold">
+        {/* Giá và CTA xếp DỌC, không chia ngang: thẻ chỉ rộng ~246px ở grid 4 cột, mà
+            "779.000 VNĐ / đêm" + "Xem khách sạn" cộng lại vượt quá — nhãn tiếng Việt dài
+            hơn tiếng Anh nên phần tràn rơi đúng vào đơn vị "/ đêm". */}
+        <div className="mt-auto pt-4">
+          <p className="text-sm text-on-surface-variant line-through">
+            {format(deal.originalPrice)}
+          </p>
+          <p className="font-be-vietnam text-xl font-bold text-on-surface">
+            {/* Số tiền và đơn vị mỗi cái là một khối không-ngắt: nếu có xuống dòng thì
+                ngắt giữa hai khối, tuyệt đối không cắt đôi "779.000" hay "/ đêm". */}
+            <span className="whitespace-nowrap">{format(deal.discountedPrice)}</span>{' '}
+            <span className="whitespace-nowrap text-sm font-normal text-on-surface-variant">
+              {t('deals.perNight')}
+            </span>
+          </p>
+          <span className="mt-3 flex min-h-11 w-full items-center justify-center rounded-full bg-premium-gold/20 px-4 text-center text-sm font-semibold text-on-surface transition-colors group-hover:bg-premium-gold">
             {t('deals.viewHotel')}
           </span>
         </div>
