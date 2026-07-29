@@ -57,6 +57,35 @@ export function formatDate(value: string | Date | null | undefined): string {
   return `${dd}-${mm}-${d.getFullYear()}`;
 }
 
+/** Đơn vị của thời gian tương đối — component tự dịch sang chữ. */
+export type RelativeTimeUnit = 'now' | 'minutes' | 'hours' | 'yesterday' | 'days' | 'date';
+
+/** Trả về MÔ TẢ thời gian tương đối, không phải chuỗi hiển thị: file này cố ý không chứa `t()`
+ *  (mọi formatter ở đây đều i18n-free), nên phần dịch để component lo.
+ *  Quá 7 ngày trả `date` → nơi gọi dùng `formatDate()`. */
+export function relativeTimeParts(
+  value: number | string | Date | null | undefined,
+  now: number = Date.now(),
+): { unit: RelativeTimeUnit; count: number } {
+  const d = typeof value === 'number' ? new Date(value) : toDate(value);
+  if (!d) return { unit: 'date', count: 0 };
+
+  const diffMs = now - d.getTime();
+  if (diffMs < 60_000) return { unit: 'now', count: 0 };
+  if (diffMs < 3_600_000) return { unit: 'minutes', count: Math.floor(diffMs / 60_000) };
+
+  // So theo NGÀY LỊCH chứ không theo mốc 24 giờ: 23:00 hôm qua nhìn từ 01:00 hôm nay là
+  // "Hôm qua", nói "2 giờ trước" thì đúng số nhưng sai cảm nhận về ngày.
+  const startOfToday = new Date(now);
+  startOfToday.setHours(0, 0, 0, 0);
+  const dayDiff = Math.floor((startOfToday.getTime() - d.getTime()) / 86_400_000) + 1;
+
+  if (dayDiff <= 0) return { unit: 'hours', count: Math.floor(diffMs / 3_600_000) };
+  if (dayDiff === 1) return { unit: 'yesterday', count: 1 };
+  if (dayDiff < 7) return { unit: 'days', count: dayDiff };
+  return { unit: 'date', count: dayDiff };
+}
+
 /** Số đêm giữa hai mốc (tối thiểu 0). */
 export function nightsBetween(
   checkIn: string | Date | null | undefined,
