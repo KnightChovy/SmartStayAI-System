@@ -169,7 +169,7 @@ export function FloatingChatWidget() {
     const aiTime = now();
     // Cập nhật bong bóng AI theo `aiId`, KHÔNG theo vị trí cuối mảng: updater của setState có thể
     // chạy 2 lần (StrictMode) và nhánh "sửa tin cuối" từng ghi đè nhầm lên chính tin của khách.
-    const updateAi = (fullText: string, isComplete = false) => {
+    const updateAi = (fullText: string) => {
       setMessages(prev => {
         if (!prev.some(item => item.id === aiId)) {
           return [
@@ -179,9 +179,6 @@ export function FloatingChatWidget() {
               sender: 'ai',
               text: fullText,
               time: aiTime,
-              quickReplies: isComplete
-                ? greetingMessage(t).quickReplies
-                : undefined,
             },
           ];
         }
@@ -190,9 +187,6 @@ export function FloatingChatWidget() {
             ? {
                 ...item,
                 text: fullText,
-                quickReplies: isComplete
-                  ? greetingMessage(t).quickReplies
-                  : undefined,
               }
             : item
         );
@@ -213,16 +207,7 @@ export function FloatingChatWidget() {
           setConversationId(result.conversationId);
         }
         if (result.reply.trim()) {
-          updateAi(result.reply, true);
-        } else {
-          // Stream xong nhưng không có reply tổng hợp — gắn quick replies vào tin đã stream.
-          setMessages(prev =>
-            prev.map(item =>
-              item.id === aiId
-                ? { ...item, quickReplies: greetingMessage(t).quickReplies }
-                : item
-            )
-          );
+          updateAi(result.reply);
         }
       } catch (streamErr) {
         // Stream lỗi → thử endpoint không stream, tái dùng đúng bong bóng AI.
@@ -232,7 +217,7 @@ export function FloatingChatWidget() {
             message: text,
           });
           setConversationId(fallback.conversationId);
-          updateAi(fallback.reply, true);
+          updateAi(fallback.reply);
         } catch {
           throw streamErr;
         }
@@ -245,7 +230,6 @@ export function FloatingChatWidget() {
           sender: 'ai',
           text: errorMessage(err, t('chat.error')),
           time: now(),
-          quickReplies: greetingMessage(t).quickReplies,
         },
       ]);
     } finally {
@@ -253,7 +237,6 @@ export function FloatingChatWidget() {
     }
   };
 
-  const latestMessageIndex = messages.length - 1;
   const messageValue = watch('message');
   const isSendDisabled = !messageValue.trim() || isTyping;
 
@@ -385,7 +368,7 @@ export function FloatingChatWidget() {
                         </div>
 
                         {isAi &&
-                          index === latestMessageIndex &&
+                          item.id === 'greeting' &&
                           item.quickReplies &&
                           item.quickReplies.length > 0 && (
                             <div className="mt-1 flex flex-wrap gap-1.5">
