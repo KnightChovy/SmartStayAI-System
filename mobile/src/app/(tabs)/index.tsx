@@ -56,7 +56,14 @@ export default function HomeScreen() {
   const { user } = useAuthStore();
   const initials = getInitials(user?.fullName);
 
-  const { data: hotelsData, isLoading } = useGetHotels({ limit: 10 });
+  // Dashboard phải lấy giá theo đúng kỳ ở khách đang chọn. Có checkIn/checkOut thì BE
+  // áp pricing rule/deal, kiểm tra tồn kho và trả minPrice đã gồm thuế/phí thay vì giá niêm yết.
+  const { data: hotelsData, isLoading } = useGetHotels({
+    limit: 10,
+    checkIn,
+    checkOut,
+    guests,
+  });
   const hotels = hotelsData?.results ?? [];
 
   function goToSearch() {
@@ -375,7 +382,7 @@ export default function HomeScreen() {
                 onPress={() =>
                   router.push({
                     pathname: '/hotel/[id]',
-                    params: { id: hotel.id },
+                    params: { id: hotel.id, checkIn, checkOut, guests: String(guests) },
                   })
                 }
               />
