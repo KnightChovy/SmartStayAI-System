@@ -49,6 +49,12 @@ export const queryKeys = {
     geocode: (query: string) => ['geo', 'geocode', query] as const,
   },
 
+  messages: {
+    all: () => ['messages'] as const,
+    mine: () => ['messages', 'mine'] as const,
+    thread: (hotelId: string | null) => ['messages', 'thread', hotelId] as const,
+  },
+
   staff: {
     all: () => ['staff'] as const,
     myHotels: () => ['staff', 'my-hotels'] as const,
