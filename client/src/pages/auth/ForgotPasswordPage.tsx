@@ -77,7 +77,7 @@ export default function ForgotPasswordPage() {
             className="inline-block hover:opacity-90 transition-opacity"
           >
             <h1 className="font-display-lg text-3xl font-extrabold tracking-widest uppercase text-black ">
-              Smart Stay Ai
+              StayHub
             </h1>
           </Link>
         </div>

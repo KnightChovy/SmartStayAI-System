@@ -85,7 +85,7 @@
       },
       "approved": {
         "title": "Khách sạn đã duyệt",
-        "desc": "Chờ SmartStay chuyển khoản về tài khoản của bạn"
+        "desc": "Chờ StayHub chuyển khoản về tài khoản của bạn"
       },
       "processed": {
         "title": "Đã hoàn tiền",
@@ -171,7 +171,7 @@
     "saved": "Đã lưu!"
   },
   "welcome": {
-    "title": "Chào mừng đến với SmartStay! 🎉",
+    "title": "Chào mừng đến với StayHub! 🎉",
     "subtitle": "Xác nhận thông tin để chúng tôi cá nhân hoá kỳ nghỉ của bạn.",
     "fullName": "Họ và tên",
     "email": "Email",

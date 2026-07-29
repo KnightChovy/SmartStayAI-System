@@ -51,21 +51,21 @@ function CounterRow({ label, hint, value, min, onChange }: RowProps) {
  * khớp với `GuestsPopover` của thanh tìm kiếm hero (không gộp chung một số nữa).
  */
 export default function GuestCounters({ value, onChange }: GuestCountersProps) {
-  const { t } = useTranslation('home');
+  const { t } = useTranslation(['home', 'common']);
 
   return (
     <div className="space-y-1.5">
       <p className="text-xs font-semibold text-on-surface-variant">{t('hero.guests')}</p>
       <div className="divide-y divide-outline-variant/20 rounded-xl border border-outline-variant/40 px-3">
         <CounterRow
-          label={t('hero.adults')}
+          label={t('common:adults')}
           value={value.adults}
           min={1}
           onChange={adults => onChange({ ...value, adults })}
         />
         <CounterRow
-          label={t('hero.children')}
-          hint={t('hero.childrenHint')}
+          label={t('common:children')}
+          hint={t('common:childrenHint')}
           value={value.children}
           min={0}
           onChange={children => onChange({ ...value, children })}

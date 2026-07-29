@@ -44,11 +44,11 @@ export default function PartnerLandingPage() {
           <div>
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white/70 border border-role-partner-primary/20 px-3 py-1 text-xs font-semibold text-role-partner-primary mb-5">
               <Sparkles className="w-3.5 h-3.5" />
-              Smart Stay AI for Partners
+              StayHub for Partners
             </span>
             <h1 className="font-be-vietnam text-4xl md:text-5xl lg:text-6xl font-bold leading-[1.1] text-on-surface mb-5">
               List your property on{' '}
-              <span className="text-role-partner-primary">Smart Stay AI</span>
+              <span className="text-role-partner-primary">StayHub</span>
             </h1>
             <p className="text-lg text-on-surface-variant max-w-lg mb-8">
               Reach millions of travelers, manage bookings with AI-powered
@@ -250,8 +250,8 @@ export default function PartnerLandingPage() {
             Ready to welcome your first guests?
           </h2>
           <p className="text-white/85 text-lg mb-8 max-w-xl mx-auto">
-            Join thousands of properties growing with Smart Stay AI. It's free
-            to list and takes just minutes to start.
+            Join thousands of properties growing with StayHub. It's free to list
+            and takes just minutes to start.
           </p>
           <Button
             onClick={getStarted}

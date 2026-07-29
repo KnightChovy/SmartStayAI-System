@@ -51,7 +51,10 @@
     "deposit": "Security deposit",
     "depositValue": "{{amount}} taken at check-in, refunded at check-out",
     "languages": "Languages spoken",
-    "important": "Important"
+    "important": "Important",
+    "showMore_one": "Show 1 more policy",
+    "showMore_other": "Show {{count}} more policies",
+    "showLess": "Show less"
   },
   "nearby": {
     "title": "What's nearby",
@@ -71,7 +74,7 @@
     "count_one": "{{count}} review",
     "count_other": "{{count}} reviews",
     "aria": "Guest score {{score}} out of 5, based on {{count}} reviews",
-    "newTitle": "New on Smart Stay",
+    "newTitle": "New on StayHub",
     "newDesc": "This property doesn't have guest reviews yet. Be the first to review it after your stay.",
     "guest": "Guest",
     "showingRecent": "Showing the {{shown}} most recent of {{total}} reviews.",

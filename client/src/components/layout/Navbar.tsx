@@ -70,7 +70,10 @@ export default function Navbar() {
     const el = navRef.current;
     if (!el) return;
     const publish = () =>
-      document.documentElement.style.setProperty('--app-navbar-h', `${el.offsetHeight}px`);
+      document.documentElement.style.setProperty(
+        '--app-navbar-h',
+        `${el.offsetHeight}px`
+      );
     publish();
     const observer = new ResizeObserver(publish);
     observer.observe(el);
@@ -97,7 +100,7 @@ export default function Navbar() {
           to="/"
           className="font-be-vietnam font-bold tracking-tight text-on-surface text-2xl"
         >
-          Smart Stay AI
+          StayHub
         </Link>
         <div className="flex items-center gap-6">
           <div className="hidden md:flex items-center gap-6 text-sm font-semibold text-on-surface-variant">
@@ -223,7 +226,11 @@ export default function Navbar() {
               aria-controls="mobile-nav"
               className="md:hidden inline-flex size-11 items-center justify-center rounded-xl text-on-surface hover:bg-surface-container-low transition-colors"
             >
-              {menuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+              {menuOpen ? (
+                <X className="size-5" />
+              ) : (
+                <Menu className="size-5" />
+              )}
             </button>
           </div>
         </div>

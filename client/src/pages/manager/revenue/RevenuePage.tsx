@@ -1,12 +1,7 @@
 import { useState } from 'react';
-import { Download, Loader2, TrendingUp } from 'lucide-react';
+import { Download, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
-import {
-  useRevenueSummary,
-  useRevenueTimeSeries,
-  useRevenueBreakdown,
-} from '@/hooks/revenue';
-import { revenueService } from '@/services/revenue.service';
+import { useRevenueSummary, useRevenueTimeSeries } from '@/hooks/revenue';
 import { exportToCsv } from '@/utils/exportCsv';
 import type { DateRange } from '@/types/revenue.types';
 import {
@@ -16,57 +11,39 @@ import {
 } from '@/components/manager/revenue/RevenueDateRangePicker';
 import { RevenueKpiCards } from '@/components/manager/revenue/RevenueKpiCards';
 import { RevenueVsCommissionChart } from '@/components/manager/revenue/RevenueVsCommissionChart';
-import { RevenueVsTargetChart } from '@/components/manager/revenue/RevenueVsTargetChart';
-import { RevenueBreakdownChart } from '@/components/manager/revenue/RevenueBreakdownChart';
-import { RevenuePartnerTable } from '@/components/manager/revenue/RevenuePartnerTable';
+import { RevenueCommissionSplit } from '@/components/manager/revenue/RevenueCommissionSplit';
 
 export default function RevenuePage() {
   const [range, setRange] = useState<DateRange>(() => resolvePreset('thisMonth'));
   const [preset, setPreset] = useState<RangePreset>('thisMonth');
   const [compare, setCompare] = useState(false);
-  const [exporting, setExporting] = useState(false);
 
   const summary = useRevenueSummary(range);
   const timeSeries = useRevenueTimeSeries({ ...range, compare });
-  const breakdown = useRevenueBreakdown(range);
 
   const handleRangeChange = (next: DateRange, nextPreset: RangePreset) => {
     setRange(next);
     setPreset(nextPreset);
   };
 
-  const handleExport = async () => {
-    try {
-      setExporting(true);
-      const res = await revenueService.getByPartner({
-        from: range.from,
-        to: range.to,
-        limit: 1000,
-        page: 1,
-      });
-      if (res.results.length === 0) {
-        toast.error('No data to export for the selected period');
-        return;
-      }
-      exportToCsv(
-        `revenue-${range.from}_${range.to}`,
-        [
-          { header: 'Hotel', value: r => r.hotelName },
-          { header: 'Bookings', value: r => r.bookings },
-          { header: 'Gross Revenue (VND)', value: r => r.grossRevenue },
-          { header: 'Commission (VND)', value: r => r.commission },
-          { header: 'Commission Rate (%)', value: r => r.commissionRate },
-          { header: 'Change (%)', value: r => r.changePct ?? '' },
-          { header: 'Status', value: r => r.status },
-        ],
-        res.results
-      );
-      toast.success('CSV report exported');
-    } catch {
-      toast.error('CSV export failed, please try again');
-    } finally {
-      setExporting(false);
+  // Xuất chính chuỗi thời gian đang hiển thị — không gọi lại API, không xuất số khác trên màn hình.
+  const handleExport = () => {
+    const points = timeSeries.data?.points ?? [];
+    if (points.length === 0) {
+      toast.error('No data to export for the selected period');
+      return;
     }
+    exportToCsv(
+      `revenue-${range.from}_${range.to}`,
+      [
+        { header: 'Period', value: p => p.period },
+        { header: 'Gross Revenue (VND)', value: p => p.revenue },
+        { header: 'Commission (VND)', value: p => p.commission },
+        { header: 'Bookings', value: p => p.bookings },
+      ],
+      points
+    );
+    toast.success('CSV report exported');
   };
 
   return (
@@ -88,14 +65,10 @@ export default function RevenuePage() {
             <button
               type="button"
               onClick={handleExport}
-              disabled={exporting}
+              disabled={timeSeries.isLoading}
               className="flex items-center gap-2 text-sm font-medium text-white bg-role-manager-primary rounded-lg px-3 py-2 hover:bg-role-manager-secondary transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {exporting ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Download className="w-4 h-4" />
-              )}
+              <Download className="w-4 h-4" />
               Export CSV
             </button>
           </div>
@@ -110,7 +83,7 @@ export default function RevenuePage() {
         onRetry={() => summary.refetch()}
       />
 
-      {/* Revenue vs Commission + Breakdown */}
+      {/* Revenue vs Commission + commission status */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <RevenueVsCommissionChart
           data={timeSeries.data}
@@ -120,24 +93,13 @@ export default function RevenuePage() {
           compare={compare}
           onToggleCompare={() => setCompare(c => !c)}
         />
-        <RevenueBreakdownChart
-          data={breakdown.data}
-          isLoading={breakdown.isLoading}
-          isError={breakdown.isError}
-          onRetry={() => breakdown.refetch()}
+        <RevenueCommissionSplit
+          data={summary.data}
+          isLoading={summary.isLoading}
+          isError={summary.isError}
+          onRetry={() => summary.refetch()}
         />
       </div>
-
-      {/* Revenue vs Target */}
-      <RevenueVsTargetChart
-        data={timeSeries.data}
-        isLoading={timeSeries.isLoading}
-        isError={timeSeries.isError}
-        onRetry={() => timeSeries.refetch()}
-      />
-
-      {/* Partner ranking table */}
-      <RevenuePartnerTable range={range} />
     </div>
   );
 }

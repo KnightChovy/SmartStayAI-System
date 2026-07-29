@@ -47,7 +47,7 @@ export function StaffLayout() {
     <SidebarProvider>
       <CommonSidebar
         logoChar="S"
-        title="SmartStay AI"
+        title="StayHub"
         subtitle="Staff Portal"
         navItems={navItems}
         onLogout={() => logout()}

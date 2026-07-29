@@ -85,7 +85,7 @@
       },
       "approved": {
         "title": "Approved by the property",
-        "desc": "Waiting for SmartStay to transfer the money to you"
+        "desc": "Waiting for StayHub to transfer the money to you"
       },
       "processed": {
         "title": "Refunded",
@@ -171,7 +171,7 @@
     "saved": "Saved!"
   },
   "welcome": {
-    "title": "Welcome to SmartStay! 🎉",
+    "title": "Welcome to StayHub! 🎉",
     "subtitle": "Confirm your details so we can personalize your stays.",
     "fullName": "Full name",
     "email": "Email",

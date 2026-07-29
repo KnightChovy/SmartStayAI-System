@@ -48,7 +48,7 @@
   --radius-4xl: calc(var(--radius) * 2.6);
   --radius-xxl: 32px;
 
-  /* Smart Stay AI Custom Colors */
+  /* StayHub Custom Colors */
   --color-on-secondary-container: #785e39;
   --color-surface-container-high: #eae7e7;
   --color-surface-container-lowest: #ffffff;
@@ -100,21 +100,21 @@
   --color-premium-gold: #d4af37;
 
   /* Role Themes Configuration */
-  --color-role-admin-primary: #1E293B;
+  --color-role-admin-primary: #1e293b;
   --color-role-admin-secondary: #334155;
-  --color-role-admin-light: #F1F5F9;
+  --color-role-admin-light: #f1f5f9;
 
-  --color-role-manager-primary: #2563EB;
-  --color-role-manager-secondary: #3B82F6;
-  --color-role-manager-light: #DBEAFE;
+  --color-role-manager-primary: #2563eb;
+  --color-role-manager-secondary: #3b82f6;
+  --color-role-manager-light: #dbeafe;
 
-  --color-role-partner-primary: #4F46E5;
-  --color-role-partner-secondary: #6366F1;
-  --color-role-partner-light: #EEF2FF;
+  --color-role-partner-primary: #4f46e5;
+  --color-role-partner-secondary: #6366f1;
+  --color-role-partner-light: #eef2ff;
 
   --color-role-staff-primary: #475569;
-  --color-role-staff-secondary: #64748B;
-  --color-role-staff-light: #E2E8F0;
+  --color-role-staff-secondary: #64748b;
+  --color-role-staff-light: #e2e8f0;
 
   /* Custom Spacing */
   --spacing-margin-mobile: 24px;

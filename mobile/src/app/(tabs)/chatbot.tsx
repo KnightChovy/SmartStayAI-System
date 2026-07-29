@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+
 import {
   View,
   FlatList,
@@ -13,20 +14,30 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { Text } from '@/components/ui/text';
-import { ChatHistoryDrawer, MessageBubble, RenameSessionDialog } from '@/components/chat';
+import {
+  ChatHistoryDrawer,
+  MessageBubble,
+  RenameSessionDialog,
+} from '@/components/chat';
 import { useChatbot } from '@/hooks/chat';
 import { GUEST_COLORS } from '@/constants/guestTheme';
 import type { ChatMessage, ChatSession } from '@/hooks/chat';
 
-
 export default function ChatbotScreen() {
   const { t } = useTranslation(['chat', 'common']);
-  const greeting = useMemo<ChatMessage>(() => ({
-    id: 'greeting',
-    role: 'assistant',
-    text: t('chat:greeting'),
-    quickReplies: [t('chat:quick.stays'), t('chat:quick.hanoi'), t('chat:quick.suggest')],
-  }), [t]);
+  const greeting = useMemo<ChatMessage>(
+    () => ({
+      id: 'greeting',
+      role: 'assistant',
+      text: t('chat:greeting'),
+      quickReplies: [
+        t('chat:quick.stays'),
+        t('chat:quick.hanoi'),
+        t('chat:quick.suggest'),
+      ],
+    }),
+    [t],
+  );
   const {
     messages,
     sendMessage,
@@ -73,7 +84,9 @@ export default function ChatbotScreen() {
   function handleRequestDelete(session: ChatSession) {
     Alert.alert(
       t('chat:history.deleteTitle'),
-      t('chat:history.deleteMessage', { title: session.title || t('chat:history.untitled') }),
+      t('chat:history.deleteMessage', {
+        title: session.title || t('chat:history.untitled'),
+      }),
       [
         { text: t('common:cancel'), style: 'cancel' },
         {
@@ -104,8 +117,14 @@ export default function ChatbotScreen() {
             <View className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-surface bg-green-500" />
           </View>
           <View className="flex-1">
-            <Text bold className="font-bevi-bold text-on-surface text-base">SmartStay AI</Text>
-            <Text size="2xs" className={`font-bevi ${isStreaming ? 'text-green-600' : 'text-muted'}`} numberOfLines={1}>
+            <Text bold className="font-bevi-bold text-on-surface text-base">
+              SmartStay AI
+            </Text>
+            <Text
+              size="2xs"
+              className={`font-bevi ${isStreaming ? 'text-green-600' : 'text-muted'}`}
+              numberOfLines={1}
+            >
               {isStreaming ? t('chat:replying') : t('chat:subtitle')}
             </Text>
           </View>
@@ -121,7 +140,11 @@ export default function ChatbotScreen() {
           accessibilityState={{ disabled: isStreaming }}
           className={isStreaming ? 'opacity-40' : undefined}
         >
-          <Ionicons name="create-outline" size={22} color={GUEST_COLORS.onSurface} />
+          <Ionicons
+            name="create-outline"
+            size={22}
+            color={GUEST_COLORS.onSurface}
+          />
         </Pressable>
       </View>
 
@@ -149,7 +172,9 @@ export default function ChatbotScreen() {
           className="flex-1"
           data={invertedMessages}
           keyExtractor={(m) => m.id}
-          renderItem={({ item }) => <MessageBubble message={item} onQuickReply={handleSend} />}
+          renderItem={({ item }) => (
+            <MessageBubble message={item} onQuickReply={handleSend} />
+          )}
           // Ít tin (vừa vào, mới có lời chào) thì content ngắn hơn khung: mặc định `inverted` sẽ dồn
           // xuống đáy màn hình, nhìn như hội thoại đã chạy dở. `flexGrow` cho container cao bằng
           // khung, `justify-end` đẩy tin về cuối trục CHƯA LẬT — sau khi lật thành ra nằm trên đầu.
@@ -160,7 +185,9 @@ export default function ChatbotScreen() {
             paddingTop: 12,
             paddingBottom: 12,
           }}
-          keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+          keyboardDismissMode={
+            Platform.OS === 'ios' ? 'interactive' : 'on-drag'
+          }
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         />
@@ -186,7 +213,11 @@ export default function ChatbotScreen() {
             {isStreaming ? (
               <ActivityIndicator size="small" color={GUEST_COLORS.muted} />
             ) : (
-              <Ionicons name="send" size={18} color={canSend ? GUEST_COLORS.white : GUEST_COLORS.muted} />
+              <Ionicons
+                name="send"
+                size={18}
+                color={canSend ? GUEST_COLORS.white : GUEST_COLORS.muted}
+              />
             )}
           </Pressable>
         </View>

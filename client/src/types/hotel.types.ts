@@ -346,6 +346,10 @@ export interface RoomTypeDetail
 export interface RoomTypeDetailParams {
   checkIn?: string;
   checkOut?: string;
+  /** Tổng khách (cách cũ) — bị `adults` ghi đè nếu có. */
+  guests?: number;
+  adults?: number;
+  children?: number;
 }
 
 /** Tham số tìm khách sạn (query string của `GET /hotels`). */
@@ -356,7 +360,14 @@ export interface HotelSearchParams {
   city?: string;
   checkIn?: string;
   checkOut?: string;
+  /**
+   * Tổng khách (cách CŨ). BE vẫn nhận để link đã lưu + app mobile không vỡ, nhưng khi có
+   * `adults` thì BE **bỏ qua** field này và tự cộng `adults + children`.
+   */
   guests?: number;
+  /** Người lớn (≥ 1). Có field này thì BE ưu tiên `adults + children` làm tổng khách. */
+  adults?: number;
+  children?: number;
   sortBy?: HotelSortBy;
   page?: number;
   limit?: number;
@@ -376,7 +387,10 @@ export interface HotelSearchParams {
 export interface RoomTypeParams {
   checkIn?: string;
   checkOut?: string;
+  /** Tổng khách (cách cũ) — bị `adults` ghi đè nếu có. */
   guests?: number;
+  adults?: number;
+  children?: number;
   minPrice?: number;
   maxPrice?: number;
   bedType?: string;

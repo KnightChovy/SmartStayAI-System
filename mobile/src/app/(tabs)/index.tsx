@@ -1,5 +1,13 @@
 import { useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  View,
+} from 'react-native';
 import { Image } from 'expo-image';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -15,9 +23,18 @@ import { LuxButton } from '@/components/guest';
 import { useGetHotels } from '@/hooks/hotels';
 import { useAuthStore } from '@/stores/authStore';
 import { getInitials } from '@/utils/hotel';
-import { formatDateShort, todayKey, toDateKey, addDays } from '@/utils/formatDate';
+import {
+  formatDateShort,
+  todayKey,
+  toDateKey,
+  addDays,
+} from '@/utils/formatDate';
 import { DESTINATIONS } from '@/constants/destinations';
-import { GUEST_COLORS, HOME_HERO_IMAGE, PLACEHOLDER } from '@/constants/guestTheme';
+import {
+  GUEST_COLORS,
+  HOME_HERO_IMAGE,
+  PLACEHOLDER,
+} from '@/constants/guestTheme';
 
 const PROPERTY_TYPES = [
   { id: '1', labelKey: 'hotels', icon: 'bed-outline' as const },
@@ -60,14 +77,27 @@ export default function HomeScreen() {
 
       {/* Thanh trên: nền surface mờ như navbar của client (bg-surface/80), chữ đậm — không
           phải khối navy đặc như bản cũ. */}
-      <View className="border-b border-hairline/30 bg-surface" style={{ paddingTop: top }}>
+      <View
+        className="border-b border-hairline/30 bg-surface"
+        style={{ paddingTop: top }}
+      >
         <View className="flex-row items-center justify-between px-5 py-3">
-          <Heading className="font-bevi-bold tracking-tight text-on-surface" size="lg">
-            SmartStay AI
+          <Heading
+            className="font-bevi-bold tracking-tight text-on-surface"
+            size="lg"
+          >
+            StayHub
           </Heading>
           <View className="flex-row items-center gap-4">
-            <Pressable hitSlop={8} onPress={() => router.push('/notifications')}>
-              <Ionicons name="notifications-outline" size={23} color={GUEST_COLORS.onSurface} />
+            <Pressable
+              hitSlop={8}
+              onPress={() => router.push('/notifications')}
+            >
+              <Ionicons
+                name="notifications-outline"
+                size={23}
+                color={GUEST_COLORS.onSurface}
+              />
               <View className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border border-surface bg-danger" />
             </Pressable>
             <Pressable onPress={() => router.push('/(tabs)/profile')}>
@@ -81,20 +111,38 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: bottom + 16 }}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: bottom + 16 }}
+      >
         {/* Hero: ảnh + phủ SÁNG dần (không phải phủ tối) để chữ đậm vẫn đọc được —
             đúng công thức Hero của client (from-surface/50 to-surface/35). */}
         <View className="pb-6">
-          <View className="absolute left-0 right-0 top-0" style={{ height: 210 }}>
-            <Image source={HOME_HERO_IMAGE} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} />
+          <View
+            className="absolute left-0 right-0 top-0"
+            style={{ height: 210 }}
+          >
+            <Image
+              source={HOME_HERO_IMAGE}
+              style={StyleSheet.absoluteFill}
+              contentFit="cover"
+              transition={200}
+            />
             <LinearGradient
-              colors={['rgba(252,249,248,0.55)', 'rgba(252,249,248,0.75)', 'rgba(245,242,238,1)']}
+              colors={[
+                'rgba(252,249,248,0.55)',
+                'rgba(252,249,248,0.75)',
+                'rgba(245,242,238,1)',
+              ]}
               style={StyleSheet.absoluteFill}
             />
           </View>
 
           <View className="mb-5 px-5 pt-7">
-            <Heading className="font-bevi-bold leading-9 text-on-surface" size="2xl">
+            <Heading
+              className="font-bevi-bold leading-9 text-on-surface"
+              size="2xl"
+            >
               {t('home:heroTitle')}
             </Heading>
             <Text className="mt-1 font-bevi text-on-surface-variant" size="sm">
@@ -105,7 +153,11 @@ export default function HomeScreen() {
           {/* Thẻ tìm kiếm trắng nổi trên ảnh — chữ ký thị giác của Hero client. */}
           <View className="mx-5 rounded-panel border border-hairline/20 bg-surface-lowest p-4 shadow-lg">
             <View className="mb-3 h-12 flex-row items-center rounded-field border border-hairline/50 bg-surface-low px-3">
-              <Ionicons name="location-outline" size={18} color={GUEST_COLORS.muted} />
+              <Ionicons
+                name="location-outline"
+                size={18}
+                color={GUEST_COLORS.muted}
+              />
               <TextInput
                 className="ml-2 h-full flex-1 font-bevi text-[15px] text-on-surface"
                 placeholder={t('home:destinationPlaceholder')}
@@ -121,25 +173,52 @@ export default function HomeScreen() {
               onPress={() => setPickerOpen(true)}
               className="mb-3 h-12 flex-row items-center rounded-field border border-hairline/50 bg-surface-low px-3"
             >
-              <Ionicons name="calendar-outline" size={17} color={GUEST_COLORS.muted} />
-              <Text className="ml-2 flex-1 font-bevi-medium text-on-surface" size="sm" numberOfLines={1}>
+              <Ionicons
+                name="calendar-outline"
+                size={17}
+                color={GUEST_COLORS.muted}
+              />
+              <Text
+                className="ml-2 flex-1 font-bevi-medium text-on-surface"
+                size="sm"
+                numberOfLines={1}
+              >
                 {formatDateShort(checkIn)} → {formatDateShort(checkOut)}
               </Text>
-              <Ionicons name="chevron-down" size={14} color={GUEST_COLORS.muted} />
+              <Ionicons
+                name="chevron-down"
+                size={14}
+                color={GUEST_COLORS.muted}
+              />
             </Pressable>
 
             <Pressable
               onPress={() => setPickerOpen(true)}
               className="mb-4 h-12 flex-row items-center rounded-field border border-hairline/50 bg-surface-low px-3"
             >
-              <Ionicons name="people-outline" size={17} color={GUEST_COLORS.muted} />
-              <Text className="ml-2 flex-1 font-bevi-medium text-on-surface" size="sm">
+              <Ionicons
+                name="people-outline"
+                size={17}
+                color={GUEST_COLORS.muted}
+              />
+              <Text
+                className="ml-2 flex-1 font-bevi-medium text-on-surface"
+                size="sm"
+              >
                 {t('common:guests', { count: guests })}
               </Text>
-              <Ionicons name="chevron-down" size={14} color={GUEST_COLORS.muted} />
+              <Ionicons
+                name="chevron-down"
+                size={14}
+                color={GUEST_COLORS.muted}
+              />
             </Pressable>
 
-            <LuxButton label={t('home:search')} icon="search" onPress={goToSearch} />
+            <LuxButton
+              label={t('home:search')}
+              icon="search"
+              onPress={goToSearch}
+            />
           </View>
         </View>
 
@@ -153,31 +232,44 @@ export default function HomeScreen() {
               <Text className="font-bevi-bold text-on-surface" size="sm">
                 {t('home:deals.title')}
               </Text>
-              <Text className="mt-0.5 font-bevi text-on-surface-variant" size="xs">
+              <Text
+                className="mt-0.5 font-bevi text-on-surface-variant"
+                size="xs"
+              >
                 {t('home:deals.body')}
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color={GUEST_COLORS.bronze} />
+            <Ionicons
+              name="chevron-forward"
+              size={18}
+              color={GUEST_COLORS.bronze}
+            />
           </Pressable>
 
           <Heading className="mb-3 font-bevi-bold text-on-surface" size="md">
             {t('home:propertyTypes.title')}
           </Heading>
           <View className="mb-6 flex-row gap-2">
-            {PROPERTY_TYPES.map(type => {
+            {PROPERTY_TYPES.map((type) => {
               const active = activeType === type.id;
               return (
                 <Pressable
                   key={type.id}
                   onPress={() => setActiveType(type.id)}
                   className={`flex-row items-center gap-1.5 rounded-full border px-4 py-2.5 ${
-                    active ? 'border-on-surface bg-on-surface' : 'border-hairline/60 bg-surface'
+                    active
+                      ? 'border-on-surface bg-on-surface'
+                      : 'border-hairline/60 bg-surface'
                   }`}
                 >
                   <Ionicons
                     name={type.icon}
                     size={15}
-                    color={active ? GUEST_COLORS.white : GUEST_COLORS.onSurfaceVariant}
+                    color={
+                      active
+                        ? GUEST_COLORS.white
+                        : GUEST_COLORS.onSurfaceVariant
+                    }
                   />
                   <Text
                     className={`font-bevi-semibold ${active ? 'text-white' : 'text-on-surface'}`}
@@ -194,7 +286,10 @@ export default function HomeScreen() {
             <Heading className="font-bevi-bold text-on-surface" size="md">
               {t('home:explore.title')}
             </Heading>
-            <Pressable onPress={() => router.push('/(tabs)/search')} hitSlop={8}>
+            <Pressable
+              onPress={() => router.push('/(tabs)/search')}
+              hitSlop={8}
+            >
               <Text className="font-bevi-semibold text-bronze" size="sm">
                 {t('home:explore.seeAll')}
               </Text>
@@ -205,18 +300,42 @@ export default function HomeScreen() {
             data={DESTINATIONS}
             horizontal
             showsHorizontalScrollIndicator={false}
-            keyExtractor={d => d.id}
-            contentContainerStyle={{ gap: 10, paddingBottom: 4, marginBottom: 24 }}
+            keyExtractor={(d) => d.id}
+            contentContainerStyle={{
+              gap: 10,
+              paddingBottom: 4,
+              marginBottom: 24,
+            }}
             renderItem={({ item }) => (
               <Pressable
-                onPress={() => router.push({ pathname: '/(tabs)/search', params: { city: item.city } })}
+                onPress={() =>
+                  router.push({
+                    pathname: '/(tabs)/search',
+                    params: { city: item.city },
+                  })
+                }
                 className="justify-end overflow-hidden rounded-card"
-                style={{ width: 130, height: 160, backgroundColor: GUEST_COLORS.surfaceContainer }}
+                style={{
+                  width: 130,
+                  height: 160,
+                  backgroundColor: GUEST_COLORS.surfaceContainer,
+                }}
               >
-                <Image source={{ uri: item.image }} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} />
+                <Image
+                  source={{ uri: item.image }}
+                  style={StyleSheet.absoluteFill}
+                  contentFit="cover"
+                  transition={200}
+                />
                 <LinearGradient
                   colors={['transparent', 'rgba(28,27,27,0.75)']}
-                  style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 90 }}
+                  style={{
+                    position: 'absolute',
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    height: 90,
+                  }}
                 />
                 <View className="p-3">
                   <Text className="font-bevi-bold text-white" size="sm">
@@ -239,17 +358,26 @@ export default function HomeScreen() {
             </View>
           ) : hotels.length === 0 ? (
             <View className="items-center gap-2 py-10">
-              <Ionicons name="bed-outline" size={38} color={GUEST_COLORS.hairline} />
+              <Ionicons
+                name="bed-outline"
+                size={38}
+                color={GUEST_COLORS.hairline}
+              />
               <Text className="font-bevi text-muted" size="sm">
                 {t('home:favorites.empty')}
               </Text>
             </View>
           ) : (
-            hotels.map(hotel => (
+            hotels.map((hotel) => (
               <HotelCard
                 key={hotel.id}
                 hotel={hotel}
-                onPress={() => router.push({ pathname: '/hotel/[id]', params: { id: hotel.id } })}
+                onPress={() =>
+                  router.push({
+                    pathname: '/hotel/[id]',
+                    params: { id: hotel.id },
+                  })
+                }
               />
             ))
           )}

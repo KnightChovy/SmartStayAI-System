@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "SmartStay AI",
-    "slug": "smartstay-ai",
+    "name": "StayHub",
+    "slug": "stayhub",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -45,13 +45,13 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Cho phép SmartStay dùng camera để quét mã QR e-voucher của khách khi check-in."
+          "cameraPermission": "Cho phép StayHub dùng camera để quét mã QR e-voucher của khách khi check-in."
         }
       ],
       [
         "expo-image-picker",
         {
-          "photosPermission": "Cho phép SmartStay truy cập thư viện ảnh để đặt ảnh đại diện của bạn."
+          "photosPermission": "Cho phép StayHub truy cập thư viện ảnh để đặt ảnh đại diện của bạn."
         }
       ],
       "expo-localization"

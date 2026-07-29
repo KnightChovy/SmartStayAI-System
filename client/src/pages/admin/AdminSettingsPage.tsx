@@ -87,13 +87,13 @@ export function AdminSettingsPage() {
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="hotel-name">Hotel group name</Label>
-              <Input id="hotel-name" defaultValue="Smart Stay Collection" />
+              <Input id="hotel-name" defaultValue="StayHub Collection" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="support-email">Support email</Label>
               <Input
                 id="support-email"
-                defaultValue="support@smartstay.ai"
+                defaultValue="support@stayhub.ai"
                 type="email"
               />
             </div>

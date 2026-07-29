@@ -1,6 +1,6 @@
-# AGENTS.md — SmartStay AI · Frontend
+# AGENTS.md — StayHub · Frontend
 
-> **SmartStay AI** — AI-Powered Hotel Booking and Customer Engagement Platform  
+> **StayHub** — AI-Powered Hotel Booking and Customer Engagement Platform  
 > Stack: **Vite + React 19 + TypeScript**
 
 ---
@@ -21,7 +21,7 @@
 
 ## 1. Tổng quan dự án
 
-SmartStay AI frontend là ứng dụng **single-page application (SPA)** phục vụ **5 role-based portal** trên cùng một codebase Vite + React + TypeScript:
+StayHub frontend là ứng dụng **single-page application (SPA)** phục vụ **5 role-based portal** trên cùng một codebase Vite + React + TypeScript:
 
 | Portal        | Route prefix     | Người dùng                  |
 | ------------- | ---------------- | --------------------------- |
@@ -488,7 +488,7 @@ LoginPage → authService.login() → lưu JWT vào authStore
 
 ## 8. Hướng dẫn cho AI Agent
 
-> Đọc section này trước khi sinh code cho dự án SmartStay AI frontend.
+> Đọc section này trước khi sinh code cho dự án StayHub frontend.
 
 ### Nguyên tắc bắt buộc
 
@@ -605,7 +605,7 @@ File `.env` **không commit** (có trong `.gitignore`).
 VITE_API_BASE_URL=http://localhost:3001/api
 
 # App
-VITE_APP_NAME=SmartStay AI
+VITE_APP_NAME=StayHub
 VITE_BASE_PATH=/
 
 # Firebase Cloud Messaging

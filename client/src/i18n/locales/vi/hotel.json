@@ -51,7 +51,10 @@
     "deposit": "Tiền cọc",
     "depositValue": "{{amount}} thu khi nhận phòng, hoàn lại lúc trả phòng",
     "languages": "Ngôn ngữ phục vụ",
-    "important": "Quan trọng"
+    "important": "Quan trọng",
+    "showMore_one": "Xem thêm {{count}} chính sách",
+    "showMore_other": "Xem thêm {{count}} chính sách",
+    "showLess": "Thu gọn"
   },
   "nearby": {
     "title": "Địa điểm lân cận",
@@ -71,7 +74,7 @@
     "count_one": "{{count}} đánh giá",
     "count_other": "{{count}} đánh giá",
     "aria": "Điểm đánh giá của khách {{score}} trên 5, dựa trên {{count}} đánh giá",
-    "newTitle": "Mới trên Smart Stay",
+    "newTitle": "Mới trên StayHub",
     "newDesc": "Khách sạn này chưa có đánh giá nào. Hãy là người đầu tiên đánh giá sau khi lưu trú.",
     "guest": "Khách",
     "showingRecent": "Đang hiện {{shown}} đánh giá mới nhất trong tổng {{total}}.",

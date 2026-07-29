@@ -42,13 +42,16 @@ export default function RoomDetailPage() {
 
   const checkIn = params.get('checkIn') ?? '';
   const checkOut = params.get('checkOut') ?? '';
-  const guests = Number(params.get('guests')) || 1;
+  // Khách tách người lớn / trẻ em; link cũ chỉ có `guests` ⇒ coi toàn bộ là người lớn.
+  const adults = Number(params.get('adults')) || Number(params.get('guests')) || 1;
+  const children = Number(params.get('children')) || 0;
+  const guests = adults + children;
 
   const {
     data: roomType,
     isLoading,
     isError,
-  } = useRoomType(hotelId, roomTypeId, { checkIn, checkOut });
+  } = useRoomType(hotelId, roomTypeId, { checkIn, checkOut, adults, children });
 
   // Cần `charges` (thuế/phí) để ước tính giá cuối — endpoint chi tiết phòng KHÔNG trả thuế.
   // Dùng chung query key với trang chi tiết KS nên thường ăn cache, không tốn request thừa.
@@ -88,7 +91,8 @@ export default function RoomDetailPage() {
       roomType: bookable,
       checkIn,
       checkOut,
-      guests,
+      adults,
+      children,
     };
     if (!isAuthenticated) {
       navigate(ROUTES.login, {

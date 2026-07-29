@@ -1,4 +1,9 @@
-import { AlertTriangle, FileClock, ShieldAlert, ShieldCheck } from 'lucide-react';
+import {
+  AlertTriangle,
+  FileClock,
+  ShieldAlert,
+  ShieldCheck,
+} from 'lucide-react';
 import { AdminPageHeader } from '@/components/admin/shared/AdminPageHeader';
 import { AdminTable } from '@/components/admin/shared/AdminTable';
 import { useAdminAuditLogs } from '@/hooks/admin';
@@ -21,7 +26,7 @@ export function AdminSystemPage() {
     <div className="space-y-6">
       <AdminPageHeader
         title="System Monitor"
-        description="Monitor system logs, audit trails, and security events across SmartStay AI."
+        description="Monitor system logs, audit trails, and security events across StayHub."
       />
 
       <section className="grid gap-4 md:grid-cols-3">
@@ -53,7 +58,9 @@ export function AdminSystemPage() {
             <h2 className="text-lg font-bold">Recent Audit Events</h2>
           </div>
           {isLoading && (
-            <p className="text-sm text-muted-foreground">Loading audit logs...</p>
+            <p className="text-sm text-muted-foreground">
+              Loading audit logs...
+            </p>
           )}
           {isError && (
             <p className="text-sm font-medium text-destructive">
@@ -64,7 +71,9 @@ export function AdminSystemPage() {
             headers={['ID', 'Actor', 'Action', 'Entity', 'Date']}
             rows={auditRows}
             renderLastColumn={row => (
-              <span className="text-sm font-semibold text-slate-700">{row[4]}</span>
+              <span className="text-sm font-semibold text-slate-700">
+                {row[4]}
+              </span>
             )}
           />
         </div>
