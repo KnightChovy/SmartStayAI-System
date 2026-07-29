@@ -62,10 +62,10 @@ export class HotelService {
       rows.map((row) => [
         row.hotelId,
         {
-          // Điểm hiển thị theo thang 10 (kiểu Booking.com): khách vẫn chấm 1–5 sao, điểm tổng hợp
-          // của khách sạn = trung bình sao × 2. Làm tròn 1 chữ số ngay ở BE để thẻ danh sách và
-          // trang chi tiết không hiện lệch nhau. null khi chưa có review (KHÔNG phải 0).
-          avgRating: row._avg.overallRating === null ? null : Math.round(row._avg.overallRating * 2 * 10) / 10,
+          // Điểm hiển thị theo thang 10: khách chấm trực tiếp trên thang 10 nên chỉ cần trung bình,
+          // làm tròn 1 chữ số ngay ở BE để thẻ danh sách và trang chi tiết không hiện lệch nhau.
+          // null khi chưa có review (KHÔNG phải 0).
+          avgRating: row._avg.overallRating === null ? null : Math.round(row._avg.overallRating * 10) / 10,
           reviewCount: row._count._all,
         },
       ])

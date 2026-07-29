@@ -103,11 +103,11 @@ components:
       required: [bookingId, overallRating, cleanlinessRating, serviceRating, locationRating, valueRating, content]
       properties:
         bookingId: { type: string, format: uuid }
-        overallRating: { type: integer, minimum: 1, maximum: 5 }
-        cleanlinessRating: { type: integer, minimum: 1, maximum: 5 }
-        serviceRating: { type: integer, minimum: 1, maximum: 5 }
-        locationRating: { type: integer, minimum: 1, maximum: 5 }
-        valueRating: { type: integer, minimum: 1, maximum: 5 }
+        overallRating: { type: integer, minimum: 1, maximum: 10 }
+        cleanlinessRating: { type: integer, minimum: 1, maximum: 10 }
+        serviceRating: { type: integer, minimum: 1, maximum: 10 }
+        locationRating: { type: integer, minimum: 1, maximum: 10 }
+        valueRating: { type: integer, minimum: 1, maximum: 10 }
         title: { type: string, maxLength: 200 }
         content: { type: string, maxLength: 2000 }
         images:
@@ -120,11 +120,11 @@ components:
       minProperties: 1
       description: All fields optional; at least one required. Sending `images` replaces the whole set.
       properties:
-        overallRating: { type: integer, minimum: 1, maximum: 5 }
-        cleanlinessRating: { type: integer, minimum: 1, maximum: 5 }
-        serviceRating: { type: integer, minimum: 1, maximum: 5 }
-        locationRating: { type: integer, minimum: 1, maximum: 5 }
-        valueRating: { type: integer, minimum: 1, maximum: 5 }
+        overallRating: { type: integer, minimum: 1, maximum: 10 }
+        cleanlinessRating: { type: integer, minimum: 1, maximum: 10 }
+        serviceRating: { type: integer, minimum: 1, maximum: 10 }
+        locationRating: { type: integer, minimum: 1, maximum: 10 }
+        valueRating: { type: integer, minimum: 1, maximum: 10 }
         title: { type: string, maxLength: 200, nullable: true }
         content: { type: string, maxLength: 2000 }
         images:
@@ -582,7 +582,7 @@ components:
         latitude: { type: string, nullable: true }
         longitude: { type: string, nullable: true }
         starRating: { type: integer, nullable: true, description: 'Hotel star classification (1-5), not a guest score' }
-        avgRating: { type: number, nullable: true, description: 'Average guest score over published reviews on a 10-scale (guests rate 1-5 stars, averaged then doubled), rounded to 1 decimal. null when the hotel has no review yet (not 0)' }
+        avgRating: { type: number, nullable: true, description: 'Average guest score over published reviews on a 10-scale (guests rate each criterion 1-10 directly), rounded to 1 decimal. null when the hotel has no review yet (not 0)' }
         reviewCount: { type: integer, description: 'Number of published reviews' }
         cancellationRule:
           allOf:
@@ -698,7 +698,7 @@ components:
         country: { type: string }
         address: { type: string }
         starRating: { type: integer, nullable: true, description: 'Hotel star classification (1-5), not a guest score' }
-        avgRating: { type: number, nullable: true, description: 'Average guest score over published reviews on a 10-scale (guests rate 1-5 stars, averaged then doubled), rounded to 1 decimal. null when the hotel has no review yet (not 0)' }
+        avgRating: { type: number, nullable: true, description: 'Average guest score over published reviews on a 10-scale (guests rate each criterion 1-10 directly), rounded to 1 decimal. null when the hotel has no review yet (not 0)' }
         reviewCount: { type: integer, description: 'Number of published reviews' }
         topAmenities:
           type: array
@@ -768,7 +768,7 @@ components:
       properties:
         totalHotels: { type: integer, description: 'Hotels currently on sale (listed)' }
         totalCities: { type: integer, description: 'Distinct cities with a listed hotel' }
-        avgRating: { type: number, nullable: true, description: 'Average published-review score on a 10-scale (star average doubled), 1 decimal. null when the platform has no review yet' }
+        avgRating: { type: number, nullable: true, description: 'Average published-review score on a 10-scale (guests rate 1-10), 1 decimal. null when the platform has no review yet' }
         totalReviews: { type: integer }
 
     FeaturedReview:
@@ -777,7 +777,7 @@ components:
       properties:
         id: { type: string, format: uuid }
         content: { type: string }
-        overallRating: { type: integer, minimum: 4, maximum: 5 }
+        overallRating: { type: integer, minimum: 8, maximum: 10 }
         customerName: { type: string, example: 'Nguyễn V.', description: 'Abbreviated for privacy' }
         avatarUrl: { type: string, nullable: true }
         hotelName: { type: string }
@@ -1284,7 +1284,7 @@ components:
         total: { type: integer }
         average:
           type: object
-          description: 'Average per criterion on a 10-scale (guests rate 1-5 stars, averaged then doubled), rounded to 1 decimal. null when there is no review yet.'
+          description: 'Average per criterion on a 10-scale (guests rate each criterion 1-10 directly), rounded to 1 decimal. null when there is no review yet.'
           properties:
             overall: { type: number, nullable: true }
             cleanliness: { type: number, nullable: true }
@@ -1293,7 +1293,7 @@ components:
             value: { type: number, nullable: true }
         countByStar:
           type: object
-          description: Number of published reviews per overall star the guest gave (1..5 stars, unchanged)
+          description: Number of published reviews per overall score the guest gave (keys 1..10)
           properties:
             '1': { type: integer }
             '2': { type: integer }
@@ -1392,7 +1392,7 @@ components:
           properties:
             occupancyRate: { type: number, nullable: true, description: '0..1 (Σ bookedRooms / Σ totalRooms)' }
             cancellationRate: { type: number, nullable: true, description: '0..1 (cancelled / total bookings)' }
-            avgRating: { type: number, nullable: true, description: '0..10 (published reviews, lifetime; star average doubled)' }
+            avgRating: { type: number, nullable: true, description: '0..10 (published reviews, lifetime; guests rate 1-10)' }
             avgResponseMinutes: { type: number, nullable: true, description: avg minutes from a guest message to the next staff reply }
             totalBookings: { type: integer }
             cancelledBookings: { type: integer }
