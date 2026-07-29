@@ -850,6 +850,26 @@ const main = async (): Promise<void> => {
   });
   console.log('\n  ✓ 4 pricing rule: weekend, seasonal, early_bird, occupancy');
 
+  // ----- Rule GIẢM GIÁ (adjustmentValue < 0) để trang /deals có deal thật -----
+  // Deal = khách sạn đang có rule giảm hiệu lực HÔM NAY; giảm trừ thẳng vào giá phòng (không cần mã).
+  // priority cao hơn rule phụ thu để bảo đảm áp được ngay hôm nay. Cùng Saigon early_bird -15% ở trên
+  // ⇒ /deals có 3 khách sạn (Saigon, Đà Nẵng, Hà Nội).
+  await prisma.pricingRule.create({
+    data: {
+      hotelId: danang.id, name: 'Flash sale hôm nay — giảm 25%',
+      ruleType: 'seasonal' as PricingRuleType, startDate: daysFromNow(0), endDate: daysFromNow(1),
+      dayOfWeek: [], adjustmentType: 'percentage' as AdjustmentType, adjustmentValue: -25, priority: 30, isActive: true,
+    },
+  });
+  await prisma.pricingRule.create({
+    data: {
+      hotelId: hanoi.id, name: 'Ưu đãi mở bán — giảm 20%',
+      ruleType: 'seasonal' as PricingRuleType, startDate: daysFromNow(0), endDate: daysFromNow(45),
+      dayOfWeek: [], adjustmentType: 'percentage' as AdjustmentType, adjustmentValue: -20, priority: 30, isActive: true,
+    },
+  });
+  console.log('  ✓ 2 rule giảm giá cho /deals: Đà Nẵng -25% (flash), Hà Nội -20%');
+
   // ----- Phụ thu ngày lễ: mỗi khách sạn × mỗi dịp lễ (roomTypeId để trống = áp cả khách sạn) -----
   for (const hotel of createdHotels) {
     for (const holiday of HOLIDAYS) {
@@ -1077,34 +1097,8 @@ const main = async (): Promise<void> => {
   });
   console.log('  ✓ ví khách: customer@ 2.000.000đ (trả trọn đơn), customer2@ 300.000đ (trả kết hợp)');
 
-  // ----- Promotion đang hiệu lực để trang /deals có deal thật (đủ 3 loại giảm giá) -----
-  // createdBy = manager (bắt buộc). applicableRoomTypeIds rỗng = áp giá gốc thấp nhất của cả KS.
-  await prisma.promotion.createMany({
-    data: [
-      {
-        hotelId: nhatrang.id, createdBy: manager.id, name: 'Ưu đãi hè Nha Trang', code: 'SUMMER25',
-        description: 'Giảm 25% mọi loại phòng trong mùa hè.', discountType: 'percentage', discountValue: 25,
-        startDate: daysFromNow(-2), endDate: daysFromNow(20), applicableRoomTypeIds: [], isActive: true,
-      },
-      {
-        hotelId: saigon.id, createdBy: manager.id, name: 'Giảm 200K cho khách công tác', code: 'WORK200',
-        description: 'Giảm thẳng 200.000đ mỗi đêm.', discountType: 'fixed_amount', discountValue: 200_000,
-        startDate: daysFromNow(-1), endDate: daysFromNow(30), applicableRoomTypeIds: [], isActive: true,
-      },
-      {
-        hotelId: danang.id, createdBy: manager.id, name: 'Flash sale cuối tuần', code: 'FLASH30',
-        description: 'Giảm 30% — chỉ còn ít giờ!', discountType: 'percentage', discountValue: 30,
-        // Sắp hết hạn (< 48h) ⇒ dealType = flash_sale để FE hiện countdown
-        startDate: daysFromNow(-1), endDate: new Date(Date.now() + 12 * 60 * 60 * 1000), applicableRoomTypeIds: [], isActive: true,
-      },
-      {
-        hotelId: hanoi.id, createdBy: manager.id, name: 'Ở 3 đêm tặng 1', code: 'STAY3GET1',
-        description: 'Ở 3 đêm được miễn phí 1 đêm.', discountType: 'free_night', discountValue: 1, minNights: 3,
-        startDate: daysFromNow(-3), endDate: daysFromNow(45), applicableRoomTypeIds: [], isActive: true,
-      },
-    ],
-  });
-  console.log('  ✓ 4 promotion cho /deals: 25% Nha Trang, -200K Saigon, flash 30% Đà Nẵng, ở-3-tặng-1 Hà Nội');
+  // Lưu ý: trang /deals KHÔNG còn dùng model Promotion — deal được suy ra từ pricing rule GIẢM GIÁ
+  // (xem các rule âm ở trên + promotion.service.ts). Không seed Promotion nữa.
 
   console.log('\nSeed xong.\n');
   console.log('Tài khoản mẫu — quy ước <role>@gmail.com / <role>123:');

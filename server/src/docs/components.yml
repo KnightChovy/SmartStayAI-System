@@ -804,21 +804,25 @@ components:
     Deal:
       type: object
       description: >
-        A live promotion on a listed hotel, shaped for the guest /deals page. Only promotions that
-        are active, inside their date window, and not out of uses are returned.
+        A hotel that currently has an ACTIVE discounting pricing rule (adjustmentValue < 0) effective
+        today, shaped for the guest /deals page. The discounted price is computed by the same pricing
+        engine used at booking (for tonight, i.e. checkIn..checkOut below) and INCLUDES tax and fees,
+        so it exactly matches the room price shown on the hotel detail page for that date. The discount
+        is applied directly to the room price — there is no promo code to enter. (Promotions are no
+        longer used for this page.)
       properties:
-        promotionId: { type: string, format: uuid }
         hotelId: { type: string, format: uuid }
         hotelName: { type: string }
         city: { type: string }
         image: { type: string, nullable: true, description: 'Hotel primary image URL, null if none' }
-        code: { type: string, example: SUMMER25 }
-        name: { type: string }
-        originalPrice: { type: string, description: 'Decimal as string — lowest applicable room base price' }
-        discountedPrice: { type: string, description: 'Decimal as string, never below 0' }
-        discountPercent: { type: integer, description: 'Actual percent off (rounded). For free_night it is the effective discount over the minimum stay' }
-        dealType: { type: string, enum: [flash_sale, standard], description: 'flash_sale when expiring within 48h (derived from endDate, no schema column)' }
-        expiresAt: { type: string, format: date-time }
+        name: { type: string, description: 'Name of the discount pricing rule (e.g. "Flash sale hôm nay — giảm 25%")' }
+        originalPrice: { type: string, description: 'Decimal as string — cheapest room nightly price WITHOUT the discount, including tax & fees' }
+        discountedPrice: { type: string, description: 'Decimal as string — same room WITH the discount applied, including tax & fees. Matches the hotel-detail room price for checkIn..checkOut' }
+        discountPercent: { type: integer, description: 'Actual percent off, computed from originalPrice vs discountedPrice (the two values shown), so the badge matches the numbers' }
+        dealType: { type: string, enum: [flash_sale, standard], description: 'flash_sale when the rule expires within 48h (from the rule endDate)' }
+        checkIn: { type: string, format: date, description: 'Date the deal price is computed for (today). Link "View hotel" with this so the detail page shows the same price' }
+        checkOut: { type: string, format: date, description: 'checkIn + 1 night' }
+        expiresAt: { type: string, format: date-time, description: 'End date of the discount rule' }
 
     CustomerWallet:
       type: object
