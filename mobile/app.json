@@ -48,6 +48,12 @@
           "cameraPermission": "Cho phép SmartStay dùng camera để quét mã QR e-voucher của khách khi check-in."
         }
       ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Cho phép SmartStay truy cập thư viện ảnh để đặt ảnh đại diện của bạn."
+        }
+      ],
       "expo-localization"
     ],
     "experiments": {
