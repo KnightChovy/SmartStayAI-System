@@ -13,7 +13,7 @@
     "viewAll": "View all",
     "seeAllCount_one": "See {{count}} review",
     "seeAllCount_other": "See all {{count}} reviews",
-    "newTitle": "New on SmartStay",
+    "newTitle": "New on StayHub",
     "newDesc": "This property has no reviews yet. Be one of the first to stay and share your experience.",
     "guest": "Guest",
     "cleanliness": "Cleanliness",
@@ -50,7 +50,11 @@
     "nightsLine_other": "{{price}} × {{count}} nights",
     "tax": "Taxes",
     "taxWithRate": "Taxes ({{rate}}%)",
-    "fee": "Service fee"
+    "fee": "Service fee",
+    "perNight": "/ night",
+    "nightsTotal_one": "{{count}} night · total",
+    "nightsTotal_other": "{{count}} nights · total",
+    "inclTaxesFees": "incl. {{amount}} taxes & fees"
   },
   "picker": {
     "title": "Select dates",

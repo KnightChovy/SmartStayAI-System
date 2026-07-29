@@ -42,9 +42,9 @@ export default function VerifyEmailPage() {
             to="/"
             className="inline-block hover:opacity-90 transition-opacity"
           >
-         <h1 className="font-display-lg text-3xl font-extrabold tracking-widest uppercase text-black-">
-                  SMART STAY AI
-              </h1>
+            <h1 className="font-display-lg text-3xl font-extrabold tracking-widest uppercase text-black-">
+              StayHub
+            </h1>
           </Link>
         </div>
 

@@ -16,7 +16,7 @@ interface BreadcrumbProps {
 
 /**
  * Breadcrumb điều hướng phân cấp (SS-702) cho các trang sâu (HotelDetail, RoomDetail):
- * `Trang chủ / Nha Trang / SmartStay Nha Trang Bay / Deluxe Hướng Vịnh`.
+ * `Trang chủ / Nha Trang / StayHub Nha Trang Bay / Deluxe Hướng Vịnh`.
  * Các mục dùng `<Link>` nên nút Back của trình duyệt vẫn hoạt động bình thường.
  */
 export default function Breadcrumb({ items, className }: BreadcrumbProps) {
@@ -38,7 +38,10 @@ export default function Breadcrumb({ items, className }: BreadcrumbProps) {
                 ) : (
                   <span
                     aria-current={isLast ? 'page' : undefined}
-                    className={cn('max-w-[16rem] truncate', isLast && 'font-medium text-on-surface')}
+                    className={cn(
+                      'max-w-[16rem] truncate',
+                      isLast && 'font-medium text-on-surface'
+                    )}
                   >
                     {item.label}
                   </span>

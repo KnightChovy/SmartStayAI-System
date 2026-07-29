@@ -41,7 +41,10 @@ const footerItems = [
 
 /** Route được phép truy cập kể cả khi chưa verify (để partner còn hoàn tất hồ sơ + sửa profile). */
 function isAllowedWhenUnverified(pathname: string): boolean {
-  return pathname.startsWith('/partner/verify') || pathname.startsWith('/partner/profile');
+  return (
+    pathname.startsWith('/partner/verify') ||
+    pathname.startsWith('/partner/profile')
+  );
 }
 
 export function HotelPartnerLayout() {
@@ -57,7 +60,7 @@ export function HotelPartnerLayout() {
   return (
     <SidebarProvider>
       <CommonSidebar
-        title="SmartStay AI"
+        title="StayHub"
         subtitle="Partner Portal"
         navItems={navItems}
         footerItems={footerItems}

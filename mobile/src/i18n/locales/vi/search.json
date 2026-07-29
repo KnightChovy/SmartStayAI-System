@@ -19,5 +19,9 @@
   "defaultPlace": "Việt Nam",
   "empty": "Không tìm thấy khách sạn nào",
   "error": "Không tải được danh sách khách sạn. Vui lòng thử lại.",
-  "viewRoom": "Xem phòng"
+  "viewRoom": "Xem phòng",
+  "addDates": "Chọn ngày",
+  "clearDates": "Xoá ngày",
+  "stayGuests_one": "{{count}} khách",
+  "stayGuests_other": "{{count}} khách"
 }

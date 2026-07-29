@@ -21,7 +21,7 @@ export function PartnerSignupBrandPanel() {
       />
       <div className="relative z-10 flex items-center justify-between">
         <h1 className="text-xl font-extrabold tracking-widest uppercase text-white">
-          SMART STAY AI
+          StayHub
         </h1>
         <Link
           to={ROUTES.listYourProperty}

@@ -6,8 +6,6 @@ import MyBookingsPage from '@/pages/account/MyBookingsPage';
 import BookingDetailPage from '@/pages/account/BookingDetailPage';
 import MessagesPage from '@/pages/account/MessagesPage';
 import MyReviewsPage from '@/pages/account/MyReviewsPage';
-import LoyaltyPage from '@/pages/account/LoyaltyPage';
-import MyVouchersPage from '@/pages/account/MyVouchersPage';
 import NotificationsPage from '@/pages/account/NotificationsPage';
 import AccountSettingsPage from '@/pages/account/AccountSettingsPage';
 
@@ -28,8 +26,6 @@ export const accountRoute: RouteObject = {
         { path: 'bookings/:bookingId', element: <BookingDetailPage /> },
         { path: 'messages', element: <MessagesPage /> },
         { path: 'reviews', element: <MyReviewsPage /> },
-        { path: 'loyalty', element: <LoyaltyPage /> },
-        { path: 'vouchers', element: <MyVouchersPage /> },
         { path: 'notifications', element: <NotificationsPage /> },
         { path: 'settings', element: <AccountSettingsPage /> },
       ],

@@ -81,13 +81,13 @@ export class ReviewService {
   };
 
   /**
-   * [Public] Đánh giá tiêu biểu cho carousel trang chủ — điểm cao (>= 4), đã công khai, có nội dung.
+   * [Public] Đánh giá tiêu biểu cho carousel trang chủ — điểm cao (>= 8 trên thang 10), đã công khai, có nội dung.
    * ẨN thông tin nhạy cảm: chỉ trả tên VIẾT TẮT (vd "Nguyễn V."), không email/phone.
    * Thay cho việc FE phải fan-out gọi /reviews cho hàng chục khách sạn rồi tự gom.
    */
   getFeaturedReviews = async (limit = 8) => {
     const reviews = await prisma.review.findMany({
-      where: { status: 'published', overallRating: { gte: 4 }, content: { not: '' } },
+      where: { status: 'published', overallRating: { gte: 8 }, content: { not: '' } },
       orderBy: [{ overallRating: 'desc' }, { createdAt: 'desc' }],
       take: limit,
       include: {
@@ -258,16 +258,15 @@ export class ReviewService {
       prisma.review.groupBy({ by: ['overallRating'], where, _count: { _all: true } }),
     ]);
 
-    // Chuẩn hoá phân bố 1..5 sao, điền 0 cho mức sao chưa có đánh giá. Đây là HISTOGRAM số lượng
-    // theo từng mức sao khách chấm (1–5) nên GIỮ thang 5 — khác với điểm tổng hợp bên dưới.
-    const countByStar: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    // Phân bố điểm 1..10, điền 0 cho mức chưa có. HISTOGRAM số lượng review theo từng mức điểm khách
+    // chấm (thang 10). Giữ tên field countByStar cho tương thích FE, nhưng khoá giờ là 1..10.
+    const countByStar: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0, 10: 0 };
     for (const row of byRating) {
       countByStar[row.overallRating] = row._count._all;
     }
 
-    // Điểm tổng hợp hiển thị theo thang 10 (kiểu Booking.com): trung bình sao (1–5) × 2, làm tròn
-    // 1 chữ số. null khi chưa có review (không phải 0).
-    const toScore10 = (avg: number | null) => (avg === null ? null : Math.round(avg * 2 * 10) / 10);
+    // Điểm hiển thị theo thang 10 (khách chấm trực tiếp 1–10), làm tròn 1 chữ số. null khi chưa có review.
+    const toScore10 = (avg: number | null) => (avg === null ? null : Math.round(avg * 10) / 10);
 
     return {
       total: agg._count._all,

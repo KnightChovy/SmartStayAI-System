@@ -167,7 +167,7 @@ export function HotelProfileFormModal({ open, onClose, hotel }: HotelProfileForm
             name="name"
             label="Hotel name"
             required
-            placeholder="e.g. SmartStay Hà Nội Old Quarter"
+            placeholder="e.g. StayHub Hà Nội Old Quarter"
           />
 
           <TextField<HotelProfileFormValues>

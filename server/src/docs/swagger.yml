@@ -4407,7 +4407,7 @@ paths:
     get:
       summary: Featured reviews for the homepage (public)
       description: >
-        Public. Up to `limit` high-rated (overallRating >= 4), published reviews with non-empty
+        Public. Up to `limit` high-rated (overallRating >= 8 on the 1-10 scale), published reviews with non-empty
         content, best first. Names are abbreviated and no email/phone is returned. Replaces the FE
         fan-out that fetched /reviews for many hotels.
       tags: [Reviews]
@@ -4468,10 +4468,13 @@ paths:
     get:
       summary: List active deals (guest)
       description: >
-        Public. Returns live promotions for the /deals page — active, inside their start/end window,
-        with uses left, on a hotel that is on sale. Each deal carries the original price (lowest
-        applicable room base price), the discounted price, and the actual percent off. Sorted by
-        biggest discount first. Promotions whose applicable room types are all gone are skipped.
+        Public. Returns hotels that currently have an ACTIVE discounting pricing rule
+        (adjustmentValue < 0) effective today, for the /deals page. The discounted price is computed
+        by the same pricing engine used at booking (for tonight) and INCLUDES tax & fees, so it matches
+        the room price shown on the hotel detail page for checkIn..checkOut. The discount is applied
+        directly to the room price — no promo code. Sorted by biggest discount first. Hotels whose rule
+        does not actually lower tonight's price (wrong day-of-week, occupancy not met, out-of-stock, or
+        outranked by a surcharge rule) are skipped.
       tags: [Deals]
       parameters:
         - in: query

@@ -9,7 +9,7 @@
   "quick": {
     "bookings": "Bookings",
     "bookingsSub": "View history",
-    "plus": "SmartStay Plus",
+    "plus": "StayHub Plus",
     "plusSub": "Silver Member"
   },
   "sections": {
@@ -116,7 +116,7 @@
     "error": "Error"
   },
   "rewards": {
-    "title": "SmartStay Plus",
+    "title": "StayHub Plus",
     "history": "Points history",
     "points": "points"
   },
@@ -134,7 +134,7 @@
   "paymentMethods": {
     "title": "Payment methods",
     "empty": "No saved payment methods",
-    "emptyBody": "SmartStay doesn't store your cards. You pay securely through VNPay each time you book."
+    "emptyBody": "StayHub doesn't store your cards. You pay securely through VNPay each time you book."
   },
   "help": {
     "title": "Help & support",

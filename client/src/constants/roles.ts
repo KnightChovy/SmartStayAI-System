@@ -1,5 +1,5 @@
 /**
- * Hệ thống role của SmartStay AI. Giá trị phải khớp với backend
+ * Hệ thống role của StayHub. Giá trị phải khớp với backend
  * (`server/src/config/roles.ts`).
  */
 export const UserRole = {

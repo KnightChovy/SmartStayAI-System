@@ -65,6 +65,9 @@ export default function RoomDetailScreen() {
     roomCharge > 0 && taxAmount > 0
       ? Math.round((taxAmount / roomCharge) * 1000) / 10
       : 0;
+  // Giá MỖI ĐÊM đã áp pricing rule (subtotal / số đêm) — KHÔNG dùng basePrice cho nhãn dòng,
+  // vì basePrice là giá gốc chưa giảm ⇒ "basePrice × N đêm" sẽ không khớp subtotal.
+  const effectiveNightly = nights > 0 ? roomCharge / nights : roomCharge;
 
   const images = room?.images ?? [];
   const metaItems: RoomMetaIcon[] = room
@@ -238,7 +241,7 @@ export default function RoomDetailScreen() {
             <PriceSummary
               lines={[
                 {
-                  label: t('hotel:room.nightsLine', { price: formatVnd(room.basePrice), count: nights }),
+                  label: t('hotel:room.nightsLine', { price: formatVnd(effectiveNightly), count: nights }),
                   value: roomCharge,
                 },
                 ...(taxAmount > 0

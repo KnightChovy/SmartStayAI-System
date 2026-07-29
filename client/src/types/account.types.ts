@@ -65,23 +65,10 @@ export interface UpdateMyProfileDto {
   marketingOptIn?: boolean;
 }
 
-// ----- Loyalty -----
-export type LoyaltyTier = 'bronze' | 'silver' | 'gold' | 'platinum';
-export type LoyaltyTxType = 'earn' | 'redeem' | 'expire' | 'adjustment';
-
-export interface LoyaltyTransaction {
-  id: string;
-  type: LoyaltyTxType;
-  points: number;
-  description?: string | null;
-  createdAt: string;
-  expiresAt?: string | null;
-}
-
-export interface LoyaltyAccount {
-  totalPoints: number;
-  tier: LoyaltyTier;
-  transactions: LoyaltyTransaction[];
+/** Body của `PATCH /users/me/password`. */
+export interface ChangePasswordDto {
+  currentPassword: string;
+  newPassword: string;
 }
 
 // ----- Notifications (`/v1/notifications`, khớp model Prisma `Notification`) -----
@@ -187,19 +174,4 @@ export interface MyReviewRaw {
   hotel: { id: string; name: string };
   booking: { bookingCode: string };
   images: { url: string }[];
-}
-
-
-// ----- Promotions / Vouchers -----
-export type DiscountType = 'percentage' | 'fixed_amount' | 'free_night';
-
-export interface PromotionItem {
-  id: string;
-  name: string;
-  code: string;
-  description?: string;
-  discountType: DiscountType;
-  discountValue: number;
-  minNights?: number;
-  endDate: string;
 }

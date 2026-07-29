@@ -160,7 +160,7 @@ export function AdminCreateUserModal({
                 className="pl-9"
                 id="admin-user-email"
                 onChange={event => updateField('email', event.target.value)}
-                placeholder="user@smartstay.ai"
+                placeholder="user@stayhub.ai"
                 required
                 type="email"
                 value={form.email}

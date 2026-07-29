@@ -18,7 +18,7 @@ export function AdminUsersHeader({
   return (
     <AdminPageHeader
       title="User Moderation"
-      description="Monitor and manage the Smart Stay community."
+      description="Monitor and manage the StayHub community."
       actions={
         <>
           <Button

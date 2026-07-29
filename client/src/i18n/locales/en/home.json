@@ -13,20 +13,13 @@
     "destinationEmpty": "No matching suggestions",
     "hotelCount_one": "{{count}} hotel",
     "hotelCount_other": "{{count}} hotels",
-    "adults": "Adults",
-    "children": "Children",
-    "childrenHint": "Ages 0–17",
     "rooms": "Rooms",
-    "adultsCount_one": "{{count}} adult",
-    "adultsCount_other": "{{count}} adults",
-    "childrenCount_one": "{{count}} child",
-    "childrenCount_other": "{{count}} children",
     "roomsCount_one": "{{count}} room",
     "roomsCount_other": "{{count}} rooms",
     "addDate": "Add date"
   },
   "whyChoose": {
-    "title": "Why choose SmartStay?",
+    "title": "Why choose StayHub?",
     "freeCancellation": {
       "title": "Free Cancellation",
       "desc": "Flexible stays for peace of mind in changing times"
@@ -66,7 +59,7 @@
   },
   "loyalty": {
     "title": "Travel more, spend less.",
-    "subtitle": "Join SmartStay Rewards and earn points on every booking. Gold status is just a few stays away.",
+    "subtitle": "Join StayHub Rewards and earn points on every booking. Gold status is just a few stays away.",
     "pointsBack": "10% Points Back",
     "freeUpgrades": "Free Upgrades",
     "prioritySupport": "Priority Support",
@@ -79,7 +72,7 @@
     "stays_other": "{{count}} places to stay"
   },
   "testimonials": {
-    "title": "What guests say about SmartStay",
+    "title": "What guests say about StayHub",
     "subtitle": "Real experiences from travelers who booked on the platform."
   },
   "statsSubtitle": "Over {{count}} hotels across Vietnam · Best prices · Free cancellation",

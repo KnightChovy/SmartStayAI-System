@@ -78,7 +78,7 @@ export default function RegisterPage() {
         {/* Top row: logo + back to website */}
         <div className="relative z-10 flex items-center justify-between">
           <h1 className="font-display-lg text-xl font-extrabold tracking-widest uppercase text-white">
-            SMART STAY AI
+            StayHub
           </h1>
           <Link
             to="/"
@@ -216,7 +216,9 @@ export default function RegisterPage() {
                 <button
                   className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-center text-on-surface-variant/60 hover:text-on-surface transition-colors cursor-pointer outline-none bg-transparent border-none p-0"
                   type="button"
-                  aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                  aria-label={
+                    showConfirmPassword ? 'Hide password' : 'Show password'
+                  }
                   onClick={() => setShowConfirmPassword(v => !v)}
                 >
                   <span className="material-symbols-outlined text-[20px]">
@@ -231,18 +233,18 @@ export default function RegisterPage() {
               )}
             </div>
 
-              <Button
-                className="w-full h-11 font-label-lg text-label-sm rounded-full shadow-lg hover:bg-primary/90 active:scale-95 transition-all flex items-center justify-center gap-2 group cursor-pointer outline-none border-none bg-black text-white"
-                type="submit" 
-                disabled={isSendingOtp}
-              >
-                {isSendingOtp ? t('register.submitting') : t('register.submit')}
-                {!isSendingOtp && (
-                  <span className="material-symbols-outlined text-[20px] group-hover:translate-x-1 transition-transform">
-                    arrow_forward
-                  </span>
-                )}
-              </Button>
+            <Button
+              className="w-full h-11 font-label-lg text-label-sm rounded-full shadow-lg hover:bg-primary/90 active:scale-95 transition-all flex items-center justify-center gap-2 group cursor-pointer outline-none border-none bg-black text-white"
+              type="submit"
+              disabled={isSendingOtp}
+            >
+              {isSendingOtp ? t('register.submitting') : t('register.submit')}
+              {!isSendingOtp && (
+                <span className="material-symbols-outlined text-[20px] group-hover:translate-x-1 transition-transform">
+                  arrow_forward
+                </span>
+              )}
+            </Button>
 
             <div className="flex items-center gap-4 my-stack-md">
               <div className="h-px flex-1 bg-outline-variant/30"></div>

@@ -63,7 +63,10 @@ export default function ManagerDashboardPage() {
     return resolveDashboardPreset(preset);
   }, [preset, searchParams]);
 
-  const handleRangeChange = (next: DashboardRange, nextPreset: DashboardPreset) => {
+  const handleRangeChange = (
+    next: DashboardRange,
+    nextPreset: DashboardPreset
+  ) => {
     const params = new URLSearchParams(searchParams);
     params.set('preset', nextPreset);
     if (nextPreset === 'custom') {
@@ -118,13 +121,21 @@ export default function ManagerDashboardPage() {
       <div className="bg-white rounded-xl border border-slate-200 p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Platform Overview</h1>
-            <p className="text-slate-500 text-sm mt-1">Monitor and manage the SmartStay AI platform</p>
+            <h1 className="text-2xl font-bold text-slate-900">
+              Platform Overview
+            </h1>
+            <p className="text-slate-500 text-sm mt-1">
+              Monitor and manage the StayHub platform
+            </p>
           </div>
           <div className="flex flex-col sm:flex-row sm:items-center gap-2">
             <DashboardSearch />
             <div className="flex items-center gap-2">
-              <DashboardDateRangePicker value={range} preset={preset} onChange={handleRangeChange} />
+              <DashboardDateRangePicker
+                value={range}
+                preset={preset}
+                onChange={handleRangeChange}
+              />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
@@ -158,7 +169,10 @@ export default function ManagerDashboardPage() {
 
       {/* Pending queue + Revenue trend */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <PendingQueueCard pendingCount={pending.count} isLoading={pending.isLoading} />
+        <PendingQueueCard
+          pendingCount={pending.count}
+          isLoading={pending.isLoading}
+        />
         <div className="lg:col-span-2">
           <RevenueTrendChart
             data={timeSeries.data}

@@ -36,9 +36,7 @@ export function BookingSidebar({
               </span>
             ))}
           </div>
-          <h2 className="font-bold text-lg text-on-surface mb-1">
-            Smart Stay AI
-          </h2>
+          <h2 className="font-bold text-lg text-on-surface mb-1">StayHub</h2>
           <p className="text-xs font-semibold text-on-surface-variant flex items-center gap-1">
             <span className="material-symbols-outlined text-base text-primary">
               location_on

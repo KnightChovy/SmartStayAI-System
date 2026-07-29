@@ -120,10 +120,13 @@ export default function SearchResultsPage() {
     const q = new URLSearchParams();
     if (filters.checkIn) q.set('checkIn', filters.checkIn);
     if (filters.checkOut) q.set('checkOut', filters.checkOut);
-    if (filters.guests) q.set('guests', String(filters.guests));
+    // Mang TÁCH người lớn/trẻ em sang trang chi tiết — gửi số gộp thì bộ chọn bên đó không
+    // dựng lại được lựa chọn của khách (trẻ em sẽ bị đếm thành người lớn).
+    q.set('adults', String(guestSel.adults));
+    q.set('children', String(guestSel.children));
     const s = q.toString();
     return s ? `?${s}` : '';
-  }, [filters.checkIn, filters.checkOut, filters.guests]);
+  }, [filters.checkIn, filters.checkOut, guestSel.adults, guestSel.children]);
 
   const results = data?.results ?? [];
 

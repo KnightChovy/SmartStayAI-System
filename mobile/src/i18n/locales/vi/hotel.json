@@ -13,7 +13,7 @@
     "viewAll": "Xem tất cả",
     "seeAllCount_one": "Xem {{count}} đánh giá",
     "seeAllCount_other": "Xem tất cả {{count}} đánh giá",
-    "newTitle": "Mới trên SmartStay",
+    "newTitle": "Mới trên StayHub",
     "newDesc": "Chỗ nghỉ này chưa có đánh giá nào. Hãy là một trong những khách đầu tiên chia sẻ trải nghiệm.",
     "guest": "Khách",
     "cleanliness": "Sạch sẽ",
@@ -50,7 +50,11 @@
     "nightsLine_other": "{{price}} × {{count}} đêm",
     "tax": "Thuế",
     "taxWithRate": "Thuế ({{rate}}%)",
-    "fee": "Phí dịch vụ"
+    "fee": "Phí dịch vụ",
+    "perNight": "/ đêm",
+    "nightsTotal_one": "Tổng {{count}} đêm",
+    "nightsTotal_other": "Tổng {{count}} đêm",
+    "inclTaxesFees": "gồm {{amount}} thuế & phí"
   },
   "picker": {
     "title": "Chọn ngày",

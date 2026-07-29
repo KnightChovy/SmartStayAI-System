@@ -13,20 +13,13 @@
     "destinationEmpty": "Không có gợi ý phù hợp",
     "hotelCount_one": "{{count}} KS",
     "hotelCount_other": "{{count}} KS",
-    "adults": "Người lớn",
-    "children": "Trẻ em",
-    "childrenHint": "0–17 tuổi",
     "rooms": "Phòng",
-    "adultsCount_one": "{{count}} người lớn",
-    "adultsCount_other": "{{count}} người lớn",
-    "childrenCount_one": "{{count}} trẻ em",
-    "childrenCount_other": "{{count}} trẻ em",
     "roomsCount_one": "{{count}} phòng",
     "roomsCount_other": "{{count}} phòng",
     "addDate": "Thêm ngày"
   },
   "whyChoose": {
-    "title": "Vì sao chọn SmartStay?",
+    "title": "Vì sao chọn StayHub?",
     "freeCancellation": {
       "title": "Huỷ miễn phí",
       "desc": "Linh hoạt cho sự an tâm trong thời điểm thay đổi"
@@ -66,7 +59,7 @@
   },
   "loyalty": {
     "title": "Đi nhiều hơn, chi ít hơn.",
-    "subtitle": "Tham gia SmartStay Rewards và tích điểm mỗi lần đặt phòng. Hạng Vàng chỉ cách bạn vài kỳ nghỉ.",
+    "subtitle": "Tham gia StayHub Rewards và tích điểm mỗi lần đặt phòng. Hạng Vàng chỉ cách bạn vài kỳ nghỉ.",
     "pointsBack": "Hoàn 10% điểm",
     "freeUpgrades": "Nâng hạng miễn phí",
     "prioritySupport": "Hỗ trợ ưu tiên",
@@ -79,7 +72,7 @@
     "stays_other": "{{count}} chỗ nghỉ"
   },
   "testimonials": {
-    "title": "Khách hàng nói gì về SmartStay",
+    "title": "Khách hàng nói gì về StayHub",
     "subtitle": "Trải nghiệm thật từ những du khách đã đặt phòng trên sàn."
   },
   "statsSubtitle": "Hơn {{count}} khách sạn tại Việt Nam · Giá tốt nhất · Huỷ miễn phí",

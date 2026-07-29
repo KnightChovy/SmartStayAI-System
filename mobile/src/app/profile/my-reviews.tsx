@@ -7,9 +7,9 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Text } from '@/components/ui/text';
 import { Heading } from '@/components/ui/heading';
-import { StarRating } from '@/components/shared/StarRating';
 import { ReviewSheet } from '@/components/guest';
 import { useMyReviews } from '@/hooks/reviews';
+import { REVIEW_SCORE_MAX, scoreColor } from '@/utils/reviewScore';
 import { formatDateShort } from '@/utils/formatDate';
 import { GUEST_COLORS } from '@/constants/guestTheme';
 import type { MyReview } from '@/types/reviews.type';
@@ -115,7 +115,16 @@ export default function MyReviewsScreen() {
                   )}
                 </View>
 
-                <StarRating count={item.overallRating} size={14} />
+                <View className="flex-row">
+                  <View
+                    className="rounded-md px-2 py-0.5"
+                    style={{ backgroundColor: scoreColor(item.overallRating).bg }}
+                  >
+                    <Text size="xs" className="font-bevi-bold" style={{ color: scoreColor(item.overallRating).text }}>
+                      {item.overallRating}/{REVIEW_SCORE_MAX}
+                    </Text>
+                  </View>
+                </View>
 
                 {item.title ? (
                   <Text className="mb-1 mt-2 font-bevi-bold text-on-surface" size="sm">

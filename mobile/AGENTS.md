@@ -1,6 +1,6 @@
-# AGENTS.md — SmartStay AI · Mobile
+# AGENTS.md — StayHub · Mobile
 
-> **SmartStay AI** — AI-Powered Hotel Booking and Customer Engagement Platform
+> **StayHub** — AI-Powered Hotel Booking and Customer Engagement Platform
 > Stack: **Expo SDK 56 + Expo Router + React Native 0.85 + TypeScript + NativeWind 4**
 
 > ⚠️ **Expo ĐÃ THAY ĐỔI.** Đọc đúng docs theo phiên bản tại
@@ -26,7 +26,7 @@
 
 ## 1. Tổng quan dự án
 
-SmartStay AI mobile là ứng dụng **React Native (Expo)** dành cho **khách đặt phòng
+StayHub mobile là ứng dụng **React Native (Expo)** dành cho **khách đặt phòng
 (Guest/Customer)** — bản đồng hành của web frontend trong cùng monorepo. App dùng
 **Expo Router** (file-based routing) và gọi chung **REST API backend** với client web.
 
@@ -237,20 +237,20 @@ eas build --profile production --platform all        # store build
 
 ### 5.2 Đặt tên
 
-| Loại               | Convention                   | Ví dụ                               |
-| ------------------ | ---------------------------- | ----------------------------------- |
-| Folder             | `kebab-case`                 | `room-card`, `handle-booking`       |
-| Biến / hàm         | `camelCase`                  | `roomPrice`, `handleBooking`        |
-| Component folder   | `kebab-case`                 | `room-card`, `booking-form`         |
-| File component     | `PascalCase.tsx`             | `RoomCard.tsx`                      |
-| **Route file**     | `kebab-case` / `[param]`     | `payment-result.tsx`, `[id].tsx`    |
-| File non-component | `camelCase.ts` / `kebab`     | `booking.service.ts`, `use-rooms.ts`|
-| Constant           | `UPPER_SNAKE_CASE`           | `MAX_GUESTS`, `DEFAULT_PAGE_SIZE`   |
-| Env variable       | `EXPO_PUBLIC_UPPER_SNAKE`    | `EXPO_PUBLIC_API_BASE_URL`          |
-| Interface / Type   | `PascalCase`                 | `BookingDto`, `ApiResponse`         |
-| Enum + giá trị     | `PascalCase` + `UPPER_SNAKE` | `BookingStatus.IN_PROGRESS`         |
-| Zustand store hook | `use[Name]Store`             | `useAuthStore`                      |
-| React Query key    | từ `queryKeys.ts`            | `queryKeys.rooms.detail(id)`        |
+| Loại               | Convention                   | Ví dụ                                |
+| ------------------ | ---------------------------- | ------------------------------------ |
+| Folder             | `kebab-case`                 | `room-card`, `handle-booking`        |
+| Biến / hàm         | `camelCase`                  | `roomPrice`, `handleBooking`         |
+| Component folder   | `kebab-case`                 | `room-card`, `booking-form`          |
+| File component     | `PascalCase.tsx`             | `RoomCard.tsx`                       |
+| **Route file**     | `kebab-case` / `[param]`     | `payment-result.tsx`, `[id].tsx`     |
+| File non-component | `camelCase.ts` / `kebab`     | `booking.service.ts`, `use-rooms.ts` |
+| Constant           | `UPPER_SNAKE_CASE`           | `MAX_GUESTS`, `DEFAULT_PAGE_SIZE`    |
+| Env variable       | `EXPO_PUBLIC_UPPER_SNAKE`    | `EXPO_PUBLIC_API_BASE_URL`           |
+| Interface / Type   | `PascalCase`                 | `BookingDto`, `ApiResponse`          |
+| Enum + giá trị     | `PascalCase` + `UPPER_SNAKE` | `BookingStatus.IN_PROGRESS`          |
+| Zustand store hook | `use[Name]Store`             | `useAuthStore`                       |
+| React Query key    | từ `queryKeys.ts`            | `queryKeys.rooms.detail(id)`         |
 
 > **Route default export:** mỗi file trong `app/` phải **`export default`** một
 > component (yêu cầu của Expo Router). Đây là ngoại lệ duy nhất của quy tắc
@@ -274,11 +274,20 @@ interface RoomCardProps {
   className?: string;
 }
 
-export function RoomCard({ room, onSelect, isHighlighted = false, className }: RoomCardProps) {
+export function RoomCard({
+  room,
+  onSelect,
+  isHighlighted = false,
+  className,
+}: RoomCardProps) {
   return (
     <Pressable
       onPress={() => onSelect?.(room.id)}
-      className={cn('rounded-lg p-4 bg-white', isHighlighted && 'ring-2 ring-brand', className)}
+      className={cn(
+        'rounded-lg p-4 bg-white',
+        isHighlighted && 'ring-2 ring-brand',
+        className,
+      )}
     >
       <Text className="text-base font-semibold">{room.name}</Text>
     </Pressable>
@@ -310,7 +319,8 @@ export function useCreateBooking() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: bookingService.create,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.bookings.all() }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: queryKeys.bookings.all() }),
   });
 }
 
@@ -323,12 +333,12 @@ import { useCreateBooking } from '@/hooks/bookings';
 
 ### 5.5 State management — quy tắc chọn
 
-| Loại state                            | Công cụ                              |
-| ------------------------------------- | ------------------------------------ |
-| Dữ liệu từ API (server state)         | **TanStack Query**                   |
-| Auth session, chat history, UI global | **Zustand** (persist qua storage)    |
-| Form state                            | React Hook Form                      |
-| UI local (toggle, modal)              | `useState`                           |
+| Loại state                            | Công cụ                           |
+| ------------------------------------- | --------------------------------- |
+| Dữ liệu từ API (server state)         | **TanStack Query**                |
+| Auth session, chat history, UI global | **Zustand** (persist qua storage) |
+| Form state                            | React Hook Form                   |
+| UI local (toggle, modal)              | `useState`                        |
 
 > **Không** lưu dữ liệu API vào Zustand — đây là việc của TanStack Query.
 > Token auth lưu qua **`expo-secure-store`** (nhạy cảm), không để trong AsyncStorage thường.
@@ -346,7 +356,7 @@ import { useCreateBooking } from '@/hooks/bookings';
 
 ```tsx
 import { cn } from '@/lib/cn';
-<View className={cn('rounded-lg p-4', isActive && 'bg-brand/10', className)} />
+<View className={cn('rounded-lg p-4', isActive && 'bg-brand/10', className)} />;
 ```
 
 ### 5.7 Error handling
@@ -468,7 +478,8 @@ export default function HotelDetailScreen() {
   const { data, isLoading, isError } = useRoom(id);
 
   if (isLoading) return <Text className="p-4">Loading…</Text>;
-  if (isError) return <Text className="p-4 text-error">Something went wrong</Text>;
+  if (isError)
+    return <Text className="p-4 text-error">Something went wrong</Text>;
 
   return (
     <View className="flex-1 p-4">
@@ -520,14 +531,18 @@ import { queryKeys } from '@/constants/queryKeys';
 import { myService } from '@/services/my.service';
 
 export function useMyEntities() {
-  return useQuery({ queryKey: queryKeys.myEntities.all(), queryFn: myService.getAll });
+  return useQuery({
+    queryKey: queryKeys.myEntities.all(),
+    queryFn: myService.getAll,
+  });
 }
 
 export function useCreateMyEntity() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: myService.create,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.myEntities.all() }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: queryKeys.myEntities.all() }),
   });
 }
 ```
@@ -543,9 +558,9 @@ interface MyStore {
   reset: () => void;
 }
 
-export const useMyStore = create<MyStore>(set => ({
+export const useMyStore = create<MyStore>((set) => ({
   value: '',
-  setValue: value => set({ value }),
+  setValue: (value) => set({ value }),
   reset: () => set({ value: '' }),
 }));
 ```
@@ -577,7 +592,7 @@ File `.env` **không commit** (có trong `.gitignore`). Secret thật để tron
 EXPO_PUBLIC_API_BASE_URL=http://localhost:5000/api
 
 # App
-EXPO_PUBLIC_APP_NAME=SmartStay AI
+EXPO_PUBLIC_APP_NAME=StayHub
 
 # Map (nếu dùng)
 EXPO_PUBLIC_MAP_KEY=
@@ -596,22 +611,22 @@ const apiUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 ## Dependencies chính
 
-| Package                              | Mục đích                                |
-| ------------------------------------ | --------------------------------------- |
-| `expo` (~56) + `expo-router`         | Framework + file-based routing          |
-| `react-native` + `react`            | UI framework                            |
-| `nativewind` + `tailwindcss`         | Utility-first styling (className)       |
-| `@tanstack/react-query`              | Server state & data fetching            |
-| `zustand`                            | Global client state                     |
-| `axios`                              | HTTP client                             |
-| `zod` + `react-hook-form`            | Schema validation + forms               |
-| `clsx` + `tailwind-merge`            | Class merging (`cn()` helper)           |
-| `expo-image`                         | Ảnh có cache/placeholder                |
-| `expo-secure-store`                  | Lưu token an toàn                       |
-| `react-native-reanimated` (v4)       | Animation                               |
-| `react-native-safe-area-context`     | Safe-area insets                        |
-| `react-native-gesture-handler`       | Cử chỉ / navigation gestures            |
-| `expo-notifications`                 | Push notifications                      |
+| Package                          | Mục đích                          |
+| -------------------------------- | --------------------------------- |
+| `expo` (~56) + `expo-router`     | Framework + file-based routing    |
+| `react-native` + `react`         | UI framework                      |
+| `nativewind` + `tailwindcss`     | Utility-first styling (className) |
+| `@tanstack/react-query`          | Server state & data fetching      |
+| `zustand`                        | Global client state               |
+| `axios`                          | HTTP client                       |
+| `zod` + `react-hook-form`        | Schema validation + forms         |
+| `clsx` + `tailwind-merge`        | Class merging (`cn()` helper)     |
+| `expo-image`                     | Ảnh có cache/placeholder          |
+| `expo-secure-store`              | Lưu token an toàn                 |
+| `react-native-reanimated` (v4)   | Animation                         |
+| `react-native-safe-area-context` | Safe-area insets                  |
+| `react-native-gesture-handler`   | Cử chỉ / navigation gestures      |
+| `expo-notifications`             | Push notifications                |
 
 > Cài thư viện Expo bằng `npx expo install <pkg>` (không phải `npm install`) để khớp
 > đúng version với SDK 56.
