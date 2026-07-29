@@ -3,6 +3,7 @@ import { Tag } from 'lucide-react';
 import { useDeals } from '@/hooks/deals';
 import DealCard from '../../components/guest/DealCard';
 import LoyaltyBanner from '../../components/home/LoyaltyBanner';
+import CardGrid from '@/components/shared/CardGrid';
 import EmptyState from '@/components/shared/EmptyState';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -26,11 +27,11 @@ export default function DealsPage() {
 
       <section className="mx-auto mb-16 w-full max-w-7xl px-margin-mobile md:px-8">
         {isLoading ? (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <CardGrid count={4}>
             {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-80 w-full rounded-3xl" />
+              <Skeleton key={i} className="h-80 rounded-3xl" />
             ))}
-          </div>
+          </CardGrid>
         ) : isError || !deals || deals.length === 0 ? (
           <EmptyState
             icon={Tag}
@@ -38,11 +39,11 @@ export default function DealsPage() {
             description={t('deals.emptyDesc')}
           />
         ) : (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <CardGrid count={deals.length}>
             {deals.map(deal => (
               <DealCard key={deal.promotionId} deal={deal} />
             ))}
-          </div>
+          </CardGrid>
         )}
       </section>
 
