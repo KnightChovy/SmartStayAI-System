@@ -3,9 +3,11 @@ import type { Content, FunctionDeclaration, Part, FunctionCall } from '@google/g
 import config from '../../config/config';
 import type { AiProvider, AiTool, ChatMessage } from './ai.types';
 
-// Model free, nhanh. flash-lite có quota free/ngày RỘNG hơn gemini-2.5-flash (chỉ ~20 req/ngày).
-// Nếu báo 429 "limit: 0", model đó không free trên key của bạn — đổi tên khác.
-const GEMINI_MODEL = 'gemini-2.5-flash-lite';
+// Bản "lite" = rẻ & nhanh nhất, đủ cho concierge. GHIM số hiệu cụ thể thay vì alias
+// 'gemini-flash-lite-latest': alias tự nhảy phiên bản, đang demo mà model đổi tính nết thì không lần ra.
+// Model cũ bị gỡ sẽ báo 404 "no longer available to new users" — lúc đó tra danh sách còn dùng được bằng
+// GET https://generativelanguage.googleapis.com/v1beta/models?key=... rồi đổi tên ở đây.
+const GEMINI_MODEL = 'gemini-3.5-flash-lite';
 // Model đổi chữ → vector (free). Nếu lỗi 404, đổi tên theo docs Gemini hiện hành.
 const EMBED_MODEL = 'gemini-embedding-001';
 const MAX_TOOL_ROUNDS = 5;
@@ -120,8 +122,12 @@ export class GeminiProvider implements AiProvider {
         return response.text ?? ''; // không → đây là câu trả lời cuối
       }
 
-      // ③ lưu lượt "Gemini xin gọi hàm"
-      contents.push({ role: 'model', parts: calls.map((c) => ({ functionCall: c })) });
+      // ③ lưu lượt "Gemini xin gọi hàm" — đẩy NGUYÊN content model trả về, KHÔNG dựng lại từ
+      //    calls.map(c => ({ functionCall: c })). Từ Gemini 3.x, part chứa functionCall còn kèm
+      //    `thoughtSignature` (dấu vết suy luận) nằm CÙNG CẤP với functionCall; dựng lại tay là mất
+      //    nó ⇒ vòng sau API trả 400 "Function call is missing a thought_signature".
+      const modelContent = response.candidates?.[0]?.content;
+      contents.push(modelContent ?? { role: 'model', parts: calls.map((c) => ({ functionCall: c })) });
 
       // ④ chạy execute từng tool
       const resultParts: Part[] = [];
@@ -142,11 +148,7 @@ export class GeminiProvider implements AiProvider {
   // Bản STREAM của chatWithTools: vòng lặp y hệt, nhưng dùng generateContentStream và `yield`
   // từng mẩu text ra ngay khi nhận được (thay vì đợi đủ rồi return một cục).
   // Là async generator (async *...) nên không viết được dạng arrow field.
-  async *chatWithToolsStream(
-    systemPrompt: string,
-    messages: ChatMessage[],
-    tools: AiTool[]
-  ): AsyncGenerator<string> {
+  async *chatWithToolsStream(systemPrompt: string, messages: ChatMessage[], tools: AiTool[]): AsyncGenerator<string> {
     const contents = this.toContents(messages);
     const functionDeclarations = this.toDeclarations(tools);
 
@@ -168,13 +170,19 @@ export class GeminiProvider implements AiProvider {
       );
 
       const calls: FunctionCall[] = [];
+      // Giữ NGUYÊN part gốc của model (không chỉ mỗi functionCall): từ Gemini 3.x, part gọi hàm còn
+      // kèm `thoughtSignature` cùng cấp, thiếu nó thì vòng sau API trả 400 (xem ghi chú ở chatWithTools).
+      const modelParts: Part[] = [];
       // eslint-disable-next-line no-restricted-syntax
       for await (const chunk of stream) {
         if (chunk.text) {
           yield chunk.text; // đẩy ngay mẩu chữ ra ngoài
         }
-        if (chunk.functionCalls) {
-          calls.push(...chunk.functionCalls); // gom các lần xin gọi hàm
+        for (const part of chunk.candidates?.[0]?.content?.parts ?? []) {
+          if (part.functionCall) {
+            modelParts.push(part); // nguyên vẹn, kể cả thoughtSignature
+            calls.push(part.functionCall);
+          }
         }
       }
 
@@ -183,7 +191,7 @@ export class GeminiProvider implements AiProvider {
       }
 
       // Có gọi tool → xử lý y như bản không stream rồi lặp lại
-      contents.push({ role: 'model', parts: calls.map((c) => ({ functionCall: c })) });
+      contents.push({ role: 'model', parts: modelParts });
       const resultParts: Part[] = [];
       for (const call of calls) {
         const tool = tools.find((t) => t.name === call.name);

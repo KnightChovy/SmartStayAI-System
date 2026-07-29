@@ -26,7 +26,12 @@ import {
 } from '@/components/ui/sheet';
 import type { HotelSearchParams, HotelSortBy } from '@/types/hotel.types';
 
-const SORT_VALUES: HotelSortBy[] = ['recommended', 'price:asc', 'price:desc', 'rating:desc'];
+const SORT_VALUES: HotelSortBy[] = [
+  'recommended',
+  'price:asc',
+  'price:desc',
+  'rating:desc',
+];
 
 /** Dải giá cố định cho slider (0 – 100 triệu VNĐ) — không phụ thuộc kết quả hiện tại. */
 const PRICE_MIN = 0;
@@ -38,19 +43,24 @@ export default function SearchResultsPage() {
   const [params, setParams] = useSearchParams();
   const [sheetOpen, setSheetOpen] = useState(false);
 
-  // ---- Đọc filter từ URL ----
   const rawSort = params.get('sortBy');
   const sortBy: HotelSortBy = SORT_VALUES.includes(rawSort as HotelSortBy)
     ? (rawSort as HotelSortBy)
-    : 'recommended';
+    : 'rating:desc';
   const starsArr = (params.get('stars') ?? '')
     .split(',')
     .map(Number)
     .filter(n => n >= 1 && n <= 5);
   const amenArr = (params.get('amenities') ?? '').split(',').filter(Boolean);
-  const priceMin = params.get('priceMin') ? Number(params.get('priceMin')) : undefined;
-  const priceMax = params.get('priceMax') ? Number(params.get('priceMax')) : undefined;
-  const reviewScore = params.get('reviewScore') ? Number(params.get('reviewScore')) : undefined;
+  const priceMin = params.get('priceMin')
+    ? Number(params.get('priceMin'))
+    : undefined;
+  const priceMax = params.get('priceMax')
+    ? Number(params.get('priceMax'))
+    : undefined;
+  const reviewScore = params.get('reviewScore')
+    ? Number(params.get('reviewScore'))
+    : undefined;
 
   // Khách: tách Người lớn / Trẻ em / Số phòng (khớp thanh tìm kiếm hero). Không có `adults`
   // (link cũ chỉ mang `guests`) thì suy `adults = guests`, `children = 0`.
@@ -93,7 +103,10 @@ export default function SearchResultsPage() {
   }
 
   /** Cập nhật một (hoặc nhiều) tham số lọc trên URL, reset page khi đổi filter. */
-  const update = (patch: Record<string, string | undefined>, resetPage = true) => {
+  const update = (
+    patch: Record<string, string | undefined>,
+    resetPage = true
+  ) => {
     const next = new URLSearchParams(params);
     Object.entries(patch).forEach(([key, value]) => {
       if (value === undefined || value === '') next.delete(key);
@@ -202,12 +215,17 @@ export default function SearchResultsPage() {
       <DateRangePicker
         checkIn={filters.checkIn ?? ''}
         checkOut={filters.checkOut ?? ''}
-        onChange={range => update({ checkIn: range.checkIn, checkOut: range.checkOut })}
+        onChange={range =>
+          update({ checkIn: range.checkIn, checkOut: range.checkOut })
+        }
       />
 
       <GuestCounters value={guestSel} onChange={updateGuests} />
 
-      <SortDropdown value={sortBy} onChange={value => update({ sortBy: value })} />
+      <SortDropdown
+        value={sortBy}
+        onChange={value => update({ sortBy: value })}
+      />
 
       <div className="space-y-4 border-t border-outline-variant/30 pt-4">
         <PriceRangeSlider
@@ -217,7 +235,11 @@ export default function SearchResultsPage() {
         />
         <StarRatingFilter value={starsArr} onChange={updateStars} />
         {amenityList && amenityList.length > 0 && (
-          <AmenitiesFilter amenities={amenityList} value={amenArr} onChange={updateAmenities} />
+          <AmenitiesFilter
+            amenities={amenityList}
+            value={amenArr}
+            onChange={updateAmenities}
+          />
         )}
         <ReviewScoreFilter value={reviewScore} onChange={updateReviewScore} />
       </div>
@@ -234,10 +256,14 @@ export default function SearchResultsPage() {
     <div className="w-full py-10">
       <div className="mx-auto max-w-7xl px-margin-mobile md:px-8">
         <h1 className="font-be-vietnam text-3xl font-bold text-on-surface">
-          {filters.city ? t('titleCity', { city: filters.city }) : t('titleDefault')}
+          {filters.city
+            ? t('titleCity', { city: filters.city })
+            : t('titleDefault')}
         </h1>
         <p className="mt-1 text-sm text-on-surface-variant">
-          {data ? t('resultsFound', { count: data.totalResults }) : t('searching')}
+          {data
+            ? t('resultsFound', { count: data.totalResults })
+            : t('searching')}
         </p>
 
         {/* Mobile: nút mở bộ lọc dạng bottom-sheet (SS-704) */}
@@ -254,7 +280,10 @@ export default function SearchResultsPage() {
                 )}
               </Button>
             </SheetTrigger>
-            <SheetContent side="bottom" className="max-h-[85vh] overflow-auto rounded-t-2xl p-4">
+            <SheetContent
+              side="bottom"
+              className="max-h-[85vh] overflow-auto rounded-t-2xl p-4"
+            >
               <SheetHeader className="sr-only">
                 <SheetTitle>{t('filters')}</SheetTitle>
               </SheetHeader>
@@ -280,13 +309,24 @@ export default function SearchResultsPage() {
                 ))}
               </div>
             ) : isError ? (
-              <EmptyState title={t('errorTitle')} description={t('errorDesc')} />
+              <EmptyState
+                title={t('errorTitle')}
+                description={t('errorDesc')}
+              />
             ) : results.length === 0 ? (
-              <EmptyState icon={Search} title={t('emptyTitle')} description={t('emptyDesc')} />
+              <EmptyState
+                icon={Search}
+                title={t('emptyTitle')}
+                description={t('emptyDesc')}
+              />
             ) : (
               <div className="space-y-4">
                 {results.map(hotel => (
-                  <HotelCard key={hotel.id} hotel={hotel} searchQuery={detailQuery} />
+                  <HotelCard
+                    key={hotel.id}
+                    hotel={hotel}
+                    searchQuery={detailQuery}
+                  />
                 ))}
               </div>
             )}
