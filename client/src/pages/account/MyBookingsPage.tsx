@@ -6,6 +6,7 @@ import { ROUTES } from '@/constants/routes';
 import { cn } from '@/lib/cn';
 import BookingListItem from '@/components/account/BookingListItem';
 import EmptyState from '@/components/shared/EmptyState';
+import Paginator from '@/components/shared/Paginator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import type { Booking } from '@/types/booking.types';
@@ -15,9 +16,15 @@ type Tab = 'upcoming' | 'past';
 /** Trạng thái coi là "sắp tới" (chưa trả phòng / chưa hủy). */
 const UPCOMING_STATUSES = new Set(['pending', 'confirmed', 'checked_in']);
 
+const PAGE_SIZE = 5;
+
 export default function MyBookingsPage() {
   const { t } = useTranslation('account');
   const [tab, setTab] = useState<Tab>('upcoming');
+  const [page, setPage] = useState(1);
+  // BE `GET /bookings/me` chỉ lọc được MỘT status, mà 2 tab gộp 3 status mỗi bên
+  // (và tab hiện số đếm của cả hai) nên không phân trang phía server được:
+  // lấy trọn danh sách (limit tối đa BE cho phép) rồi cắt trang ở client.
   const { data, isLoading, isError } = useMyBookings({ limit: 100 });
 
   const { upcoming, past } = useMemo(() => {
@@ -29,6 +36,16 @@ export default function MyBookingsPage() {
   }, [data]);
 
   const list = tab === 'upcoming' ? upcoming : past;
+  const totalPages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
+  // Danh sách co lại (huỷ đơn / refetch) có thể làm trang hiện tại vượt quá số trang
+  // → kẹp lại ngay trong render thay vì để hiện một trang rỗng rồi mới sửa bằng effect.
+  const currentPage = Math.min(page, totalPages);
+  const pageItems = list.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  const changeTab = (next: Tab) => {
+    setTab(next);
+    setPage(1);
+  };
 
   return (
     <div>
@@ -39,7 +56,7 @@ export default function MyBookingsPage() {
         {(['upcoming', 'past'] as Tab[]).map(tabKey => (
           <button
             key={tabKey}
-            onClick={() => setTab(tabKey)}
+            onClick={() => changeTab(tabKey)}
             className={cn(
               'rounded-lg px-4 py-2 text-sm font-semibold transition-colors',
               tab === tabKey ? 'bg-surface text-on-surface shadow-sm' : 'text-on-surface-variant'
@@ -49,6 +66,18 @@ export default function MyBookingsPage() {
           </button>
         ))}
       </div>
+
+      {/* Dòng đếm hiện cả khi chỉ có 1 trang — `Paginator` tự ẩn lúc đó, không có dòng này
+          thì khách không hề biết danh sách đang được cắt trang. */}
+      {!isLoading && !isError && list.length > 0 && (
+        <p className="mt-5 text-sm text-on-surface-variant">
+          {t('bookings.showing', {
+            from: (currentPage - 1) * PAGE_SIZE + 1,
+            to: Math.min(currentPage * PAGE_SIZE, list.length),
+            total: list.length,
+          })}
+        </p>
+      )}
 
       <div className="mt-6 space-y-4">
         {isLoading ? (
@@ -67,9 +96,16 @@ export default function MyBookingsPage() {
             }
           />
         ) : (
-          list.map(b => <BookingListItem key={b.id} booking={b} />)
+          pageItems.map(b => <BookingListItem key={b.id} booking={b} />)
         )}
       </div>
+
+      <Paginator
+        page={currentPage}
+        totalPages={totalPages}
+        onPageChange={setPage}
+        className="mt-6"
+      />
     </div>
   );
 }

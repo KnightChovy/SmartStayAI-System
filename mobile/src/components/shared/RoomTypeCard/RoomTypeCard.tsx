@@ -34,6 +34,15 @@ export function RoomTypeCard({ room, selected = false, onPress }: RoomTypeCardPr
   const lowStock =
     typeof room.availableRooms === 'number' && room.availableRooms > 0 && room.availableRooms <= 3;
   const soldOut = room.availableRooms === 0;
+  // Khi có khoảng ngày, BE trả `totalPrice` (đã áp pricing rule + thuế/phí) = ĐÚNG số khách trả.
+  // Hiện số này thay cho basePrice để thẻ ngoài khớp với tổng ở màn chi tiết (không còn "ngoài 2tr6,
+  // vào 2tr436"). Không có ngày ⇒ chưa biết giá theo đêm ⇒ hiện basePrice "từ ... / đêm".
+  const hasQuote = room.totalPrice !== undefined;
+  const taxFeeTotal =
+    room.taxAmount != null && room.feeAmount != null
+      ? Number(room.taxAmount) + Number(room.feeAmount)
+      : null;
+  const nights = room.numNights ?? 0;
 
   return (
     <Pressable
@@ -63,9 +72,23 @@ export function RoomTypeCard({ room, selected = false, onPress }: RoomTypeCardPr
         <Text bold className="font-bevi-bold text-on-surface text-[15px] mb-1">{room.name}</Text>
         <Text size="xs" className="font-bevi text-on-surface-variant mb-2.5">{meta || `Up to ${room.maxOccupancy} guests`}</Text>
         <View className="flex-row items-center justify-between">
-          <View>
-            <Text bold className="font-bevi-bold text-on-surface text-lg">{formatVnd(room.basePrice)}</Text>
-            <Text size="2xs" className="font-bevi text-muted">/ night</Text>
+          <View className="flex-1 pr-2">
+            {hasQuote ? (
+              <>
+                <Text size="2xs" className="font-bevi text-muted">{t('hotel:room.nightsTotal', { count: nights })}</Text>
+                <Text bold className="font-bevi-bold text-on-surface text-lg">{formatVnd(room.totalPrice!)}</Text>
+                {taxFeeTotal != null && taxFeeTotal > 0 && (
+                  <Text size="2xs" className="font-bevi text-muted">
+                    {t('hotel:room.inclTaxesFees', { amount: formatVnd(taxFeeTotal) })}
+                  </Text>
+                )}
+              </>
+            ) : (
+              <>
+                <Text bold className="font-bevi-bold text-on-surface text-lg">{formatVnd(room.basePrice)}</Text>
+                <Text size="2xs" className="font-bevi text-muted">{t('hotel:room.perNight')}</Text>
+              </>
+            )}
           </View>
           <View className="flex-row items-center gap-1.5 bg-on-surface rounded-field px-4 py-2.5">
             <Text size="sm" bold className="font-bevi-bold text-white">{t('hotel:room.viewDetails')}</Text>

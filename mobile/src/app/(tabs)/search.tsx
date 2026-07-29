@@ -11,6 +11,8 @@ import { useDebounce } from '@/hooks/ui/use-debounce';
 import { useGetHotels } from '@/hooks/hotels';
 import { getPrimaryImageUrl, getHotelLocation } from '@/utils/hotel';
 import { formatVnd } from '@/utils/formatCurrency';
+import { formatDateShort } from '@/utils/formatDate';
+import { StayPickerSheet } from '@/components/shared/StayPickerSheet';
 import type { HotelSearchResult } from '@/types/hotels.type';
 import { GUEST_COLORS } from '@/constants/guestTheme';
 
@@ -58,13 +60,32 @@ export default function SearchScreen() {
   const [query, setQuery] = useState('');
   const debouncedQuery = useDebounce(query, 400);
 
+  // Ngày/khách chọn NGAY TRÊN màn search (như web) — mặc định TRỐNG để hiện MỌI khách sạn (không lọc
+  // theo tồn kho đêm nay). Khi khách chọn ngày, giá "từ" áp đúng pricing rule + thuế/phí = số ở bước
+  // chọn phòng, và ngày được mang sang trang chi tiết để hai bên khớp nhau.
+  const [stayCheckIn, setStayCheckIn] = useState<string | undefined>(checkIn);
+  const [stayCheckOut, setStayCheckOut] = useState<string | undefined>(checkOut);
+  const [stayGuests, setStayGuests] = useState<number>(guests ? Number(guests) : 2);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const hasDates = Boolean(stayCheckIn && stayCheckOut);
+
   const { data, isLoading, isError, refetch, isRefetching } = useGetHotels({
     city,
-    checkIn,
-    checkOut,
-    guests: guests ? Number(guests) : undefined,
+    checkIn: stayCheckIn,
+    checkOut: stayCheckOut,
+    // Chỉ lọc theo số khách khi đã có ngày — không có ngày = chế độ duyệt, hiện mọi KS.
+    guests: hasDates ? stayGuests : undefined,
   });
   const results = data?.results ?? [];
+
+  // Params điều hướng sang trang chi tiết: mang theo ngày đã chọn (nếu có) để giá bên trong khớp
+  // giá "từ" ngoài này; luôn kèm guests để chi tiết dùng đúng số khách.
+  const detailParams = (id: string) => ({
+    id,
+    ...(stayCheckIn ? { checkIn: stayCheckIn } : {}),
+    ...(stayCheckOut ? { checkOut: stayCheckOut } : {}),
+    guests: String(stayGuests),
+  });
 
   function toggleFilter(id: string) {
     setActiveFilters((prev) => (prev.includes(id) ? prev.filter((f) => f !== id) : [...prev, id]));
@@ -147,6 +168,37 @@ export default function SearchScreen() {
             </Pressable>
           ))}
         </View>
+
+        {/* Date & guests selector (chọn ngay trên màn search như web). Trống = hiện mọi KS. */}
+        <View className="px-4 pb-2.5 flex-row items-center gap-2">
+          <Pressable
+            onPress={() => setPickerOpen(true)}
+            className="flex-1 flex-row items-center gap-2 bg-surface/15 rounded-field px-3 py-2.5"
+          >
+            <Ionicons name="calendar-outline" size={16} color={GUEST_COLORS.white} />
+            <Text size="sm" bold className="font-bevi-bold text-white flex-1" numberOfLines={1}>
+              {hasDates
+                ? `${formatDateShort(stayCheckIn!)} → ${formatDateShort(stayCheckOut!)}`
+                : t('search:addDates')}
+            </Text>
+            <View className="w-px h-4 bg-white/25" />
+            <Ionicons name="people-outline" size={16} color={GUEST_COLORS.white} />
+            <Text size="sm" bold className="font-bevi-bold text-white">{t('search:stayGuests', { count: stayGuests })}</Text>
+          </Pressable>
+          {hasDates && (
+            <Pressable
+              onPress={() => {
+                setStayCheckIn(undefined);
+                setStayCheckOut(undefined);
+              }}
+              hitSlop={8}
+              className="w-9 h-9 rounded-field bg-surface/15 items-center justify-center"
+              accessibilityLabel={t('search:clearDates')}
+            >
+              <Ionicons name="close" size={16} color={GUEST_COLORS.white} />
+            </Pressable>
+          )}
+        </View>
       </SafeAreaView>
 
       {/* Results */}
@@ -184,7 +236,7 @@ export default function SearchScreen() {
             const imageUrl = getPrimaryImageUrl(item.images);
             return (
               <Pressable
-                onPress={() => router.push({ pathname: '/hotel/[id]', params: { id: item.id, ...(checkIn ? { checkIn } : {}), ...(checkOut ? { checkOut } : {}), ...(guests ? { guests } : {}) } })}
+                onPress={() => router.push({ pathname: '/hotel/[id]', params: detailParams(item.id) })}
                 className="bg-surface rounded-panel overflow-hidden"
               >
                 {/* Image */}
@@ -237,7 +289,7 @@ export default function SearchScreen() {
                       )}
                     </View>
                     <Pressable
-                      onPress={() => router.push({ pathname: '/hotel/[id]', params: { id: item.id, ...(checkIn ? { checkIn } : {}), ...(checkOut ? { checkOut } : {}), ...(guests ? { guests } : {}) } })}
+                      onPress={() => router.push({ pathname: '/hotel/[id]', params: detailParams(item.id) })}
                       className="bg-bronze rounded-field px-4 py-2.5"
                     >
                       <Text bold className="font-bevi-bold text-on-surface text-sm">{t('search:viewRoom')}</Text>
@@ -250,6 +302,20 @@ export default function SearchScreen() {
           ListFooterComponent={<View style={{ height: bottom + 80 }} />}
         />
       )}
+
+      <StayPickerSheet
+        visible={pickerOpen}
+        initialCheckIn={stayCheckIn}
+        initialCheckOut={stayCheckOut}
+        initialGuests={stayGuests}
+        onClose={() => setPickerOpen(false)}
+        onApply={({ checkIn: ci, checkOut: co, guests: g }) => {
+          setStayCheckIn(ci);
+          setStayCheckOut(co);
+          setStayGuests(g);
+          setPickerOpen(false);
+        }}
+      />
     </View>
   );
 }

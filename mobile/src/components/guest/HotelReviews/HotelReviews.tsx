@@ -6,28 +6,12 @@ import { Text } from '@/components/ui/text';
 import { Heading } from '@/components/ui/heading';
 import { ReviewCard } from '@/components/guest/ReviewCard';
 import { useGetReviews, useHotelReviewStats } from '@/hooks/reviews';
+import { REVIEW_SCORE_MAX, scoreLabelKey } from '@/utils/reviewScore';
 import { GUEST_COLORS } from '@/constants/guestTheme';
 import type { ReviewStats } from '@/types/reviews.type';
 
 /** Số review hiện ngay tại trang chi tiết; còn lại xem ở màn "tất cả". */
 const RECENT_COUNT = 3;
-
-/** Union chứ không phải `string`: để `t()` kiểm được key lúc build. */
-type ScoreLabelKey =
-  | 'reviews.exceptional'
-  | 'reviews.excellent'
-  | 'reviews.veryGood'
-  | 'reviews.good'
-  | 'reviews.score';
-
-/** Nhãn theo điểm — cùng ngưỡng với client (Booking.com style). */
-function scoreLabelKey(score: number): ScoreLabelKey {
-  if (score >= 4.5) return 'reviews.exceptional';
-  if (score >= 4) return 'reviews.excellent';
-  if (score >= 3.5) return 'reviews.veryGood';
-  if (score >= 3) return 'reviews.good';
-  return 'reviews.score';
-}
 
 const SUBSCORES = [
   { key: 'cleanliness', labelKey: 'reviews.cleanliness' },
@@ -43,7 +27,7 @@ function SubScoreBar({ label, value }: { label: string; value: number | null }) 
         {label}
       </Text>
       <View className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-container">
-        <View className="h-full rounded-full bg-bronze" style={{ width: `${((value ?? 0) / 5) * 100}%` }} />
+        <View className="h-full rounded-full bg-bronze" style={{ width: `${((value ?? 0) / REVIEW_SCORE_MAX) * 100}%` }} />
       </View>
       <Text className="w-7 text-right font-bevi-bold text-on-surface" size="xs">
         {value != null ? value.toFixed(1) : '—'}
@@ -116,8 +100,11 @@ export function HotelReviews({ hotelId }: { hotelId: string }) {
       <View className="mb-3 rounded-card border border-hairline/30 bg-surface p-4">
         <View className="mb-4 flex-row items-center gap-3">
           <View className="h-14 w-14 items-center justify-center rounded-field bg-on-surface">
-            <Text className="font-bevi-bold text-white" size="lg">
+            <Text className="font-bevi-bold text-white" size="md">
               {overall != null ? overall.toFixed(1) : '—'}
+            </Text>
+            <Text className="font-bevi text-white/70" size="2xs">
+              /{REVIEW_SCORE_MAX}
             </Text>
           </View>
           <View className="flex-1">

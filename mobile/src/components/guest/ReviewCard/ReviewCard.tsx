@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { Text } from '@/components/ui/text';
-import { StarRating } from '@/components/shared/StarRating';
+import { REVIEW_SCORE_MAX, scoreColor } from '@/utils/reviewScore';
 import { getInitials } from '@/utils/hotel';
 import { formatDateShort } from '@/utils/formatDate';
 import { GUEST_COLORS } from '@/constants/guestTheme';
@@ -49,7 +49,14 @@ export function ReviewCard({ review, className }: ReviewCardProps) {
               {name}
             </Text>
             <View className="mt-0.5 flex-row items-center gap-1.5">
-              <StarRating count={review.overallRating} size={11} />
+              <View
+                className="rounded-md px-1.5 py-0.5"
+                style={{ backgroundColor: scoreColor(review.overallRating).bg }}
+              >
+                <Text size="2xs" className="font-bevi-bold" style={{ color: scoreColor(review.overallRating).text }}>
+                  {review.overallRating}/{REVIEW_SCORE_MAX}
+                </Text>
+              </View>
               <Text className="font-bevi text-muted" size="xs">
                 {formatDateShort(review.createdAt)}
               </Text>

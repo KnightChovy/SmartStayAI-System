@@ -30,12 +30,6 @@ export const queryKeys = {
   reviews: {
     mine: ['reviews', 'mine'] as const,
   },
-  loyalty: {
-    account: ['loyalty', 'account'] as const,
-  },
-  vouchers: {
-    available: ['vouchers', 'available'] as const,
-  },
   notifications: {
     /** Prefix chung — invalidate key này là quét sạch cả list lẫn badge. */
     all: ['notifications'] as const,

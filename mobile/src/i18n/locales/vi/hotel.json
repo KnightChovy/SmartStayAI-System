@@ -50,7 +50,11 @@
     "nightsLine_other": "{{price}} × {{count}} đêm",
     "tax": "Thuế",
     "taxWithRate": "Thuế ({{rate}}%)",
-    "fee": "Phí dịch vụ"
+    "fee": "Phí dịch vụ",
+    "perNight": "/ đêm",
+    "nightsTotal_one": "Tổng {{count}} đêm",
+    "nightsTotal_other": "Tổng {{count}} đêm",
+    "inclTaxesFees": "gồm {{amount}} thuế & phí"
   },
   "picker": {
     "title": "Chọn ngày",
