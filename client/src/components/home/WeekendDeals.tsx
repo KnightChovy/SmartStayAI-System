@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { Button } from '../ui/button';
+import CardGrid from '@/components/shared/CardGrid';
 import { useHotelsPricedToday } from '@/hooks/home';
 import { ROUTES } from '@/constants/routes';
 import { useMoney } from '@/hooks/currency';
@@ -45,7 +46,7 @@ export default function WeekendDeals() {
           {t('weekend.viewAll')}
         </Button>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <CardGrid count={isLoading ? 4 : hotels.length}>
         {isLoading
           ? Array.from({ length: 4 }).map((_, i) => (
               <div
@@ -126,7 +127,7 @@ export default function WeekendDeals() {
                 </div>
               );
             })}
-      </div>
+      </CardGrid>
     </section>
   );
 }
