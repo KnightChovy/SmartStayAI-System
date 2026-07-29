@@ -1,7 +1,7 @@
 import Joi from 'joi';
 
-// Điểm đánh giá theo thang 1–5, bắt buộc cho từng tiêu chí
-const ratingField = Joi.number().integer().min(1).max(5).required();
+// Điểm đánh giá theo thang 1–10, bắt buộc cho từng tiêu chí (khách chấm trực tiếp trên thang 10)
+const ratingField = Joi.number().integer().min(1).max(10).required();
 
 // Khách viết đánh giá sau khi trả phòng
 export const createReview = {
@@ -25,11 +25,11 @@ export const updateMyReview = {
   }),
   body: Joi.object()
     .keys({
-      overallRating: Joi.number().integer().min(1).max(5),
-      cleanlinessRating: Joi.number().integer().min(1).max(5),
-      serviceRating: Joi.number().integer().min(1).max(5),
-      locationRating: Joi.number().integer().min(1).max(5),
-      valueRating: Joi.number().integer().min(1).max(5),
+      overallRating: Joi.number().integer().min(1).max(10),
+      cleanlinessRating: Joi.number().integer().min(1).max(10),
+      serviceRating: Joi.number().integer().min(1).max(10),
+      locationRating: Joi.number().integer().min(1).max(10),
+      valueRating: Joi.number().integer().min(1).max(10),
       title: Joi.string().max(200).allow('', null),
       content: Joi.string().max(2000),
       images: Joi.array().items(Joi.string().uri()).max(10),

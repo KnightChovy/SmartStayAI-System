@@ -4407,7 +4407,7 @@ paths:
     get:
       summary: Featured reviews for the homepage (public)
       description: >
-        Public. Up to `limit` high-rated (overallRating >= 4), published reviews with non-empty
+        Public. Up to `limit` high-rated (overallRating >= 8 on the 1-10 scale), published reviews with non-empty
         content, best first. Names are abbreviated and no email/phone is returned. Replaces the FE
         fan-out that fetched /reviews for many hotels.
       tags: [Reviews]
