@@ -8,6 +8,21 @@ This file tracks the accomplished tasks, resolved user requests, and structural/
 
 ## Completed Tasks Checklist
 
+### July 29, 2026
+
+- [x] **Staff conversation — bàn phím iOS vẫn che ô nhập (lượt vá trước chưa dứt điểm)**:
+  - **Nguyên nhân thật**: `(staff)/conversation/[id]` nằm **trong Tabs navigator**, nên khung màn hình = window − tab bar. iOS bắn `keyboardWillShow` → `KeyboardAvoidingView` tính `padding = frameBottom − keyboardScreenY` = **kbHeight − tabBarHeight**; ngay sau đó tab bar bị ẩn (`tabBarHideOnKeyboard` + custom bar tự `return null`), màn hình dài thêm đúng chiều cao tab bar nhưng padding đã chốt theo khung cũ ⇒ composer bị che **đúng một tab bar (~80px)**. Vá bằng `softwareKeyboardLayoutMode: "pan"` ở lượt trước không đụng tới nhánh iOS nên vô hiệu.
+  - **Sửa gốc**: `(staff)/_layout` ẩn hẳn tab bar khi route đang mở **không có trong `TAB_CONFIG`** (mọi màn chi tiết: conversation/bookings/check-in). Màn chi tiết chiếm trọn window ⇒ KAV chỉ đo một khung duy nhất, không còn cuộc đua layout. Đây cũng là việc PROGRESS 30/06 ghi "còn lại: detail screen vẫn thấy tab bar".
+  - **Composer**: bỏ `SafeAreaView edges={['bottom']}` (bọc **ngoài** KAV nên cộng thêm ~34px thừa lúc bàn phím mở) → tự tính `paddingBottom = isKeyboardOpen ? 8 : Math.max(insets.bottom, 8)`; nghe `keyboardWillShow/Hide` (iOS) · `keyboardDidShow/Hide` (Android) và cuộn về tin mới nhất khi bàn phím lên.
+  - **Android**: gỡ `softwareKeyboardLayoutMode: "pan"` khỏi `app.json` (về mặc định `resize`) và đổi `behavior` Android từ `'height'` → `undefined` — window đã tự co, thêm behavior là co **hai lần**. Đồng bộ với cách chatbox guest đang làm. ⚠️ Đổi native config ⇒ cần **rebuild dev client**, `expo start -c` không đủ.
+  - Thêm `keyboardDismissMode` `interactive` (iOS) / `on-drag` (Android) để vuốt đọc lại lịch sử không bị đóng bàn phím ngay từ cú vuốt đầu.
+  - `tsc` **0 lỗi** ở file staff, `eslint` không phát sinh lỗi mới (21 lỗi còn lại pre-existing). ⚠️ Chưa chạy được app trong phiên này ⇒ nhờ bạn thử lại trên iPhone.
+
+- [x] **Staff Inbox — keyboard không còn che khung trả lời**:
+  - `/(staff)/conversation/[id]` dùng `KeyboardAvoidingView` với `padding` trên iOS và `height` trên Android, nên composer co lên theo vùng còn thấy được thay vì phụ thuộc vào window resize.
+  - Vùng danh sách tin nhắn có `flex-1` để luôn nhường phần đáy cho composer; khi focus ô nhập, thread tự cuộn về tin mới nhất. Thêm `keyboardShouldPersistTaps="handled"` để thao tác trong luồng chat không làm keyboard đóng ngoài ý muốn.
+  - Bổ sung Android `softwareKeyboardLayoutMode: "pan"` và `tabBarHideOnKeyboard` cho Staff Tabs. Vì tab bar là custom component, nó còn tự lắng nghe keyboard để ẩn hẳn lúc nhập, đảm bảo không chiếm/chồng vùng composer.
+
 ### July 17, 2026 (continued)
 
 - [x] **Đánh giá khách sạn cho guest — bám theo cách client làm; sửa luôn 3 lỗ hổng ở màn chi tiết KS**:

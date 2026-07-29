@@ -8,17 +8,17 @@ const promptTemplates = [
   {
     title: 'Guest Booking Assistant',
     description: 'Handles room discovery, booking questions, and upsell prompts.',
-    model: 'gemini-2.5-flash-lite',
+    model: 'gemini-3.5-flash-lite',
   },
   {
     title: 'Marketing Content Draft',
     description: 'Generates campaign copy, social captions, and hotel descriptions.',
-    model: 'gemini-2.5-flash-lite',
+    model: 'gemini-3.5-flash-lite',
   },
   {
     title: 'Review Sentiment Classifier',
     description: 'Classifies guest feedback sentiment and escalation priority.',
-    model: 'gemini-2.5-flash-lite',
+    model: 'gemini-3.5-flash-lite',
   },
 ];
 
@@ -57,7 +57,7 @@ export function AdminAiSettingsPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="ai-fallback">Fallback model</Label>
-              <Input id="ai-fallback" defaultValue="gemini-2.5-flash-lite" />
+              <Input id="ai-fallback" defaultValue="gemini-3.5-flash-lite" />
             </div>
           </div>
         </div>

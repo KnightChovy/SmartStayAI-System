@@ -1,6 +1,7 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Alert,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -8,7 +9,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Spinner } from '@/components/ui/spinner';
@@ -70,6 +71,28 @@ export default function StaffConversationScreen() {
   const hotelId = useStaffHotelId();
   const conversationId = id ?? '';
   const scrollRef = useRef<ScrollView>(null);
+  const insets = useSafeAreaInsets();
+
+  // Bàn phím đang mở thì phần đệm dưới do KeyboardAvoidingView lo (nó đã bao cả
+  // vùng home indicator); đóng lại mới cần safe-area, nếu không sẽ dư một khoảng.
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+  useEffect(() => {
+    const show = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      () => {
+        setIsKeyboardOpen(true);
+        scrollRef.current?.scrollToEnd({ animated: true });
+      }
+    );
+    const hide = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => setIsKeyboardOpen(false)
+    );
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
 
   const { data: conversation, isLoading, isError, refetch } = useConversation(
     hotelId ?? '',
@@ -138,57 +161,67 @@ export default function StaffConversationScreen() {
           onAction={refetch}
         />
       ) : (
-        <SafeAreaView className="flex-1" edges={['bottom']}>
-          <KeyboardAvoidingView
+        <KeyboardAvoidingView
+          className="flex-1"
+          // Android dùng windowSoftInputMode `resize` (mặc định) — window đã tự co,
+          // thêm behavior nữa là co hai lần. iOS phải tự đẩy bằng padding.
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <ScrollView
+            ref={scrollRef}
             className="flex-1"
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            contentContainerStyle={{ padding: 16 }}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+            onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: false })}
           >
-            <ScrollView
-              ref={scrollRef}
-              contentContainerStyle={{ padding: 16 }}
-              showsVerticalScrollIndicator={false}
-              onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: false })}
-            >
-              {conversation.messages.map((m) => (
-                <MessageBubble key={m.id} message={m} />
-              ))}
-            </ScrollView>
+            {conversation.messages.map((m) => (
+              <MessageBubble key={m.id} message={m} />
+            ))}
+          </ScrollView>
 
-            {/* Composer */}
-            {isClosed ? (
-              <View className="border-t border-gray-100 bg-white p-4">
-                <Text size="sm" className="text-gray-400 text-center">
-                  This conversation is closed — you can't reply.
-                </Text>
-              </View>
-            ) : (
-              <View className="border-t border-gray-100 bg-white px-3 pt-2.5 pb-2 flex-row items-end gap-2">
-                <TextInput
-                  placeholder="Type a reply…"
-                  placeholderTextColor="#9CA3AF"
-                  value={text}
-                  onChangeText={setText}
-                  multiline
-                  className="flex-1 bg-gray-50 border border-gray-200 rounded-2xl px-4 py-2.5 text-gray-900 text-base max-h-28"
-                />
-                <Pressable
-                  onPress={handleSend}
-                  disabled={!text.trim() || reply.isPending}
-                  className={cn(
-                    'h-11 w-11 rounded-full items-center justify-center',
-                    !text.trim() || reply.isPending ? 'bg-staff-300' : 'bg-staff-700'
-                  )}
-                >
-                  {reply.isPending ? (
-                    <Spinner color="#FFFFFF" />
-                  ) : (
-                    <Ionicons name="arrow-up" size={20} color="#FFFFFF" />
-                  )}
-                </Pressable>
-              </View>
-            )}
-          </KeyboardAvoidingView>
-        </SafeAreaView>
+          {/* Composer */}
+          {isClosed ? (
+            <View
+              className="border-t border-gray-100 bg-white px-4 pt-4"
+              style={{ paddingBottom: isKeyboardOpen ? 16 : Math.max(insets.bottom, 16) }}
+            >
+              <Text size="sm" className="text-gray-400 text-center">
+                This conversation is closed — you cannot reply.
+              </Text>
+            </View>
+          ) : (
+            <View
+              className="border-t border-gray-100 bg-white px-3 pt-2.5 flex-row items-end gap-2"
+              style={{ paddingBottom: isKeyboardOpen ? 8 : Math.max(insets.bottom, 8) }}
+            >
+              <TextInput
+                placeholder="Type a reply…"
+                placeholderTextColor="#9CA3AF"
+                value={text}
+                onChangeText={setText}
+                onFocus={() => scrollRef.current?.scrollToEnd({ animated: true })}
+                multiline
+                className="flex-1 bg-gray-50 border border-gray-200 rounded-2xl px-4 py-2.5 text-gray-900 text-base max-h-28"
+              />
+              <Pressable
+                onPress={handleSend}
+                disabled={!text.trim() || reply.isPending}
+                className={cn(
+                  'h-11 w-11 rounded-full items-center justify-center',
+                  !text.trim() || reply.isPending ? 'bg-staff-300' : 'bg-staff-700'
+                )}
+              >
+                {reply.isPending ? (
+                  <Spinner color="#FFFFFF" />
+                ) : (
+                  <Ionicons name="arrow-up" size={20} color="#FFFFFF" />
+                )}
+              </Pressable>
+            </View>
+          )}
+        </KeyboardAvoidingView>
       )}
     </View>
   );
