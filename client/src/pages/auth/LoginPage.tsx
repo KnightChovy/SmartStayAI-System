@@ -89,7 +89,7 @@ export default function LoginPage() {
         {/* Top row: logo + back to website */}
         <div className="relative z-10 flex items-center justify-between">
           <h1 className="font-display-lg text-xl font-extrabold tracking-widest uppercase text-white">
-            SMART STAY AI
+            StayHub
           </h1>
           <Link
             to="/"

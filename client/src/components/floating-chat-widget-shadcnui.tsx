@@ -298,7 +298,7 @@ export function FloatingChatWidget() {
                   </div>
                   <div className="min-w-0">
                     <h3 className="truncate text-sm font-semibold text-foreground">
-                      SmartStay AI
+                      StayHub
                     </h3>
                     <p className="truncate text-xs text-muted-foreground">
                       {t('chat.subtitle')}
@@ -350,7 +350,7 @@ export function FloatingChatWidget() {
                       >
                         {!isGuest && (
                           <span className="text-xs font-medium text-muted-foreground">
-                            SmartStay AI
+                            StayHub
                           </span>
                         )}
                         <div

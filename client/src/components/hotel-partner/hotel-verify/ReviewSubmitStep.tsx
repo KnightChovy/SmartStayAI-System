@@ -452,8 +452,8 @@ export function ReviewSubmitStep({
             </p>
             <p className="text-[13px] text-slate-600 leading-relaxed">
               I understand that submitting false documents may result in
-              permanent ban from the SmartStay AI platform. By clicking submit,
-              I also agree to the Terms of Service and Privacy Policy.
+              permanent ban from the StayHub platform. By clicking submit, I
+              also agree to the Terms of Service and Privacy Policy.
             </p>
           </div>
         </label>

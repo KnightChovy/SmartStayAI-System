@@ -149,7 +149,14 @@ export interface CreateBookingPayload {
   roomTypeId: string;
   checkInDate: string;
   checkOutDate: string;
-  numGuests: number;
+  /**
+   * Tách người lớn / trẻ em. BE kiểm RIÊNG `numAdults` với `roomType.maxAdults` và
+   * `numChildren` với `maxChildren` (`booking.service.ts`), nên gộp tất cả vào `numGuests`
+   * là coi trẻ em như người lớn ⇒ đơn 2 lớn + 2 nhỏ có thể bị từ chối oan ở phòng
+   * `maxAdults = 2`. Joi bắt buộc có ít nhất một trong `numGuests | numAdults`.
+   */
+  numAdults: number;
+  numChildren: number;
   specialRequests?: string;
   /**
    * BE nhận `vnpay | sepay | cash` (mặc định `vnpay`) — khớp `booking.validation.ts`.

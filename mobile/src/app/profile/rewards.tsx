@@ -21,7 +21,7 @@ const NEXT_TIER = 'gold';
 const NEXT_THRESHOLD = 5000;
 
 const POINTS_HISTORY = [
-  { id: 'h1', label: 'Stay at SmartStay Hanoi Old Quarter', points: 420, date: '2026-06-18' },
+  { id: 'h1', label: 'Stay at StayHub Hanoi Old Quarter', points: 420, date: '2026-06-18' },
   { id: 'h2', label: 'Stay at Pearl Bay Resort', points: 380, date: '2026-05-22' },
   { id: 'h3', label: 'Welcome bonus', points: 200, date: '2026-04-02' },
   { id: 'h4', label: 'Redeemed for late checkout', points: -100, date: '2026-06-25' },

@@ -1,4 +1,4 @@
-import { Info, TrendingUp, Percent, DollarSign, BarChart3 } from 'lucide-react';
+import { Info, TrendingUp, Percent, CalendarCheck, BarChart3 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import {
   Tooltip,
@@ -66,7 +66,7 @@ export function RevenueKpiCards({ data, isLoading, isError, onRetry }: RevenueKp
       icon: Percent,
       color: 'text-emerald-600',
       bg: 'bg-emerald-50',
-      hint: 'Total platform commission earned from bookings in the period.',
+      hint: 'Platform commission recognised in the period (pending + settled; disputed excluded).',
       compact: formatCompactVnd(kpis.totalCommission.value),
       full: formatVndFull(kpis.totalCommission.value),
       changePct: kpis.totalCommission.changePct,
@@ -82,14 +82,14 @@ export function RevenueKpiCards({ data, isLoading, isError, onRetry }: RevenueKp
       changePct: kpis.avgCommissionRate.changePct,
     },
     {
-      label: 'Avg. Revenue / Partner',
-      icon: DollarSign,
+      label: 'Bookings',
+      icon: CalendarCheck,
       color: 'text-amber-600',
       bg: 'bg-amber-50',
-      hint: 'Average revenue per partner that generated bookings in the period.',
-      compact: formatCompactVnd(kpis.avgRevenuePerPartner.value),
-      full: formatVndFull(kpis.avgRevenuePerPartner.value),
-      changePct: kpis.avgRevenuePerPartner.changePct,
+      hint: 'Number of confirmed / checked-in / checked-out bookings in the period. The API does not return the previous-period count, so no change is shown.',
+      compact: kpis.bookings.value.toLocaleString('vi-VN'),
+      full: null,
+      changePct: kpis.bookings.changePct,
     },
   ];
 

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import {
+  Baby,
   BadgeCheck,
   Clock,
   Columns3,
@@ -62,7 +63,17 @@ export default function HotelDetailPage() {
 
   const checkIn = params.get('checkIn') ?? '';
   const checkOut = params.get('checkOut') ?? '';
-  const guests = params.get('guests') ? Number(params.get('guests')) : 2;
+  /**
+   * Khách tách Người lớn / Trẻ em (khớp thanh tìm kiếm hero + `GuestCounters` ở trang search).
+   * Link CŨ chỉ mang `guests` ⇒ suy `adults = guests`, `children = 0` để không vỡ link đã chia sẻ.
+   * BE nhận cả hai cách và tự cộng `adults + children` khi có `adults`.
+   */
+  const adults = params.get('adults')
+    ? Number(params.get('adults'))
+    : params.get('guests')
+      ? Number(params.get('guests'))
+      : 2;
+  const children = params.get('children') ? Number(params.get('children')) : 0;
 
   // Mở trang chi tiết mà chưa chọn ngày → mặc định hôm nay → mai và ghi vào URL,
   // để thấy ngay số phòng trống + tổng giá và luồng đặt phòng có sẵn ngày hợp lệ.
@@ -74,17 +85,19 @@ export default function HotelDetailPage() {
     const next = new URLSearchParams(params);
     next.set('checkIn', toDateInputValue(today));
     next.set('checkOut', toDateInputValue(tomorrow));
-    if (!params.get('guests')) next.set('guests', String(guests));
+    if (!params.get('adults')) next.set('adults', String(adults));
+    if (!params.get('children')) next.set('children', String(children));
     setParams(next, { replace: true });
-  }, [checkIn, checkOut, guests, params, setParams]);
+  }, [checkIn, checkOut, adults, children, params, setParams]);
 
   const roomParams = useMemo(
     () => ({
       checkIn: checkIn || undefined,
       checkOut: checkOut || undefined,
-      guests,
+      adults,
+      children,
     }),
-    [checkIn, checkOut, guests]
+    [checkIn, checkOut, adults, children]
   );
   const { data: roomTypes, isLoading: roomsLoading } = useRoomTypes(hotelId, roomParams);
 
@@ -93,16 +106,31 @@ export default function HotelDetailPage() {
     const q = new URLSearchParams();
     if (checkIn) q.set('checkIn', checkIn);
     if (checkOut) q.set('checkOut', checkOut);
-    q.set('guests', String(guests));
+    q.set('adults', String(adults));
+    q.set('children', String(children));
     return q.toString();
-  }, [checkIn, checkOut, guests]);
+  }, [checkIn, checkOut, adults, children]);
 
-  // Giá "từ" cho thanh sticky: `GET /hotels/:id` không trả `minPrice` (field đó chỉ có ở
-  // list search), nên suy từ basePrice thấp nhất của các loại phòng đang hiển thị.
-  const fromPrice = useMemo(() => {
-    const prices = (roomTypes ?? []).map(rt => Number(rt.basePrice)).filter(p => p > 0);
-    if (prices.length === 0) return hotel?.minPrice ?? null;
-    return String(Math.min(...prices));
+  /**
+   * Giá cho thanh sticky. ƯU TIÊN báo giá THẬT của kỳ ở (`totalPrice` = subtotal + thuế + phí,
+   * đã áp pricing rule) để trùng khớp con số trên từng thẻ phòng ngay bên dưới.
+   * Trước đây thanh này lấy `basePrice` — giá gốc CHƯA áp rule, CHƯA gồm thuế/phí — nên báo
+   * một mức mà khách không mua được ở đâu (vd "Từ 900.000" trong khi phòng rẻ nhất là 876.200).
+   * Chưa có báo giá (chưa kịp chọn ngày / BE không trả) mới lùi về basePrice và ghi rõ "/đêm".
+   */
+  const fromPrice = useMemo<{ amount: string; nights: number | null } | null>(() => {
+    const quoted = (roomTypes ?? [])
+      .map(rt => ({ amount: rt.totalPrice, nights: rt.numNights ?? null }))
+      .filter((q): q is { amount: string; nights: number | null } =>
+        q.amount != null && Number(q.amount) > 0
+      );
+    if (quoted.length > 0) {
+      return quoted.reduce((min, q) => (Number(q.amount) < Number(min.amount) ? q : min));
+    }
+    const bases = (roomTypes ?? []).map(rt => Number(rt.basePrice)).filter(p => p > 0);
+    if (bases.length > 0) return { amount: String(Math.min(...bases)), nights: null };
+    // `minPrice` của list search đã gồm thuế/phí cho 1 đêm (BE `hotel.service.ts`).
+    return hotel?.minPrice ? { amount: hotel.minPrice, nights: null } : null;
   }, [roomTypes, hotel]);
 
   /** Phòng rẻ nhất → gắn nhãn "Best value" để neo lựa chọn (giảm tê liệt quyết định). */
@@ -176,7 +204,7 @@ export default function HotelDetailPage() {
       return;
     }
     const target = ROUTES.booking;
-    const bookingState = { hotel, roomType, checkIn, checkOut, guests };
+    const bookingState = { hotel, roomType, checkIn, checkOut, adults, children };
     if (!isAuthenticated) {
       navigate(ROUTES.login, { state: { from: { pathname: target }, booking: bookingState } });
       return;
@@ -373,7 +401,26 @@ export default function HotelDetailPage() {
             onChange={range => update({ checkIn: range.checkIn, checkOut: range.checkOut })}
             className="flex-1"
           />
-          <GuestSelector value={guests} onChange={v => update({ guests: String(v) })} className="md:w-40" />
+          {/*
+            Tách Người lớn / Trẻ em thay vì một số gộp: BE kiểm RIÊNG `numAdults` với
+            `roomType.maxAdults` và `numChildren` với `maxChildren` khi tạo booking, nên gộp
+            lại là coi trẻ em như người lớn và có thể bị từ chối oan.
+          */}
+          <GuestSelector
+            value={adults}
+            onChange={v => update({ adults: String(v) })}
+            min={1}
+            label={tc('adults')}
+            className="md:w-36"
+          />
+          <GuestSelector
+            value={children}
+            onChange={v => update({ children: String(v) })}
+            min={0}
+            label={tc('children')}
+            icon={Baby}
+            className="md:w-36"
+          />
         </div>
         {!checkIn || !checkOut ? (
           <p className="mt-2 text-xs text-on-surface-variant">
@@ -450,7 +497,8 @@ export default function HotelDetailPage() {
 
       {/* Mobile: giá + CTA luôn trong tầm ngón tay */}
       <StickyBookingBar
-        minPrice={fromPrice}
+        price={fromPrice?.amount ?? null}
+        nights={fromPrice?.nights ?? null}
         onSelectRoom={() =>
           document.getElementById('stay-picker')?.scrollIntoView({ behavior: 'smooth' })
         }

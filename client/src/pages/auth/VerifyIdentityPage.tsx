@@ -20,8 +20,7 @@ export default function VerifyIdentityPage() {
     isPending: isRegistering,
     error: registerError,
   } = useRegister();
-  const { mutateAsync: sendOtp, isPending: isSendingOtp } =
-    useSendOtp();
+  const { mutateAsync: sendOtp, isPending: isSendingOtp } = useSendOtp();
 
   const { email, name, password } = location.state || {};
 
@@ -209,9 +208,9 @@ export default function VerifyIdentityPage() {
             to="/"
             className="inline-block hover:opacity-90 transition-opacity"
           >
-          <h1 className="font-display-lg text-3xl font-extrabold tracking-widest uppercase text-transparent bg-clip-text bg-linear-to-r from-secondary via-secondary-fixed-dim to-secondary text-glow">
-                  SMART STAY AI
-              </h1>
+            <h1 className="font-display-lg text-3xl font-extrabold tracking-widest uppercase text-transparent bg-clip-text bg-linear-to-r from-secondary via-secondary-fixed-dim to-secondary text-glow">
+              StayHub
+            </h1>
           </Link>
         </div>
 

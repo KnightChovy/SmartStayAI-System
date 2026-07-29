@@ -28,7 +28,7 @@ const FAQS = [
 ];
 
 const CONTACTS = [
-  { icon: 'mail-outline' as const, label: 'support@smartstay.ai', action: () => Linking.openURL('mailto:support@smartstay.ai') },
+  { icon: 'mail-outline' as const, label: 'support@stayhub.ai', action: () => Linking.openURL('mailto:support@stayhub.ai') },
   { icon: 'call-outline' as const, label: '+84 24 1234 5678', action: () => Linking.openURL('tel:+842412345678') },
 ];
 

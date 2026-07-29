@@ -31,7 +31,7 @@ export function ManagerLayout() {
   return (
     <SidebarProvider>
       <CommonSidebar
-        title="SmartStay AI"
+        title="StayHub"
         subtitle="Manager Portal"
         navItems={navItems}
         footerItems={footerItems}

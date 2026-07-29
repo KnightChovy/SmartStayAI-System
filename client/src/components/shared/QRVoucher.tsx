@@ -4,7 +4,7 @@ import { cn } from '@/lib/cn';
 interface QRVoucherProps {
   /**
    * Dữ liệu mã hóa vào QR — PHẢI là `booking.voucher.qrData`
-   * (định dạng `SMARTSTAY|<voucherCode>|<bookingCode>`, staff quét theo voucherCode).
+   * (định dạng `StayHub|<voucherCode>|<bookingCode>`, staff quét theo voucherCode).
    * Không truyền `bookingCode` vào đây: endpoint tra cứu check-in chỉ nhận voucherCode,
    * nên một QR mã hoá bookingCode sẽ luôn "not found" khi quét.
    */
@@ -54,7 +54,12 @@ export default function QRVoucher({
   return (
     <div className={cn('flex flex-col items-center gap-3', className)}>
       <div className="rounded-2xl border border-outline-variant/30 bg-white p-3">
-        <img src={src} alt={`QR voucher ${label ?? ''}`} width={size} height={size} />
+        <img
+          src={src}
+          alt={`QR voucher ${label ?? ''}`}
+          width={size}
+          height={size}
+        />
       </div>
       {label && (
         <p className="font-mono text-sm font-semibold tracking-wider text-on-surface">

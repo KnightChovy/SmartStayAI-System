@@ -58,6 +58,9 @@ interface CheckoutState {
   roomType?: RoomType;
   checkIn?: string;
   checkOut?: string;
+  adults?: number;
+  children?: number;
+  /** Cách CŨ (một số gộp) — chỉ còn để không vỡ state cũ đang nằm trong history. */
   guests?: number;
 }
 
@@ -87,7 +90,11 @@ export default function BookingCheckoutPage() {
   const user = useAuthStore(state => state.user);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const state = (location.state as CheckoutState | null) ?? {};
-  const { hotel: hotelSeed, roomType, checkIn, checkOut, guests = 2 } = state;
+  const { hotel: hotelSeed, roomType, checkIn, checkOut } = state;
+  // State cũ (chỉ có `guests`) vẫn còn trong history của khách → coi toàn bộ là người lớn.
+  const adults = state.adults ?? state.guests ?? 2;
+  const children = state.children ?? 0;
+  const guests = adults + children;
 
   // Router state chỉ mang bản tóm tắt từ trang chi tiết, nên nhiều field trong schema
   // (giờ nhận/trả phòng, cọc, tuổi tối thiểu, chính sách…) không tới được đây. Fetch bản
@@ -250,7 +257,10 @@ export default function BookingCheckoutPage() {
           roomTypeId: roomType.id,
           checkInDate: checkIn,
           checkOutDate: checkOut,
-          numGuests: guests,
+          // Gửi TÁCH: BE đối chiếu riêng `numAdults` với `roomType.maxAdults` và `numChildren`
+          // với `maxChildren`. Gộp hết vào `numGuests` như trước là khai trẻ em thành người lớn.
+          numAdults: adults,
+          numChildren: children,
           // BE giới hạn 1000 ký tự — cắt bớt còn hơn để 400 chặn cả lượt đặt.
           specialRequests: notes.length ? notes.join('\n').slice(0, 1000) : undefined,
           // Phải gửi đúng phương thức khách chọn — trước đây bỏ trống nên BE luôn
@@ -464,7 +474,14 @@ export default function BookingCheckoutPage() {
                   </div>
                   <div>
                     <dt className="text-on-surface-variant">{t('confirm.guests')}</dt>
-                    <dd className="font-medium text-on-surface">{guests}</dd>
+                    <dd className="font-medium text-on-surface">
+                      {[
+                        t('common:adultsCount', { count: adults }),
+                        children > 0 ? t('common:childrenCount', { count: children }) : null,
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </dd>
                   </div>
                   <div>
                     <dt className="text-on-surface-variant">{t('confirm.payment')}</dt>

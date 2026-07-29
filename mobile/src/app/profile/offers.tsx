@@ -31,7 +31,7 @@ const OFFERS = [
   {
     id: 'o3',
     code: 'PLUS50K',
-    title: 'SmartStay Plus bonus',
+    title: 'StayHub Plus bonus',
     description: '50,000đ off your next booking as a Plus member.',
     validUntil: '2026-09-30',
   },

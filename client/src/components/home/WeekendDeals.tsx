@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { Button } from '../ui/button';
-import { useSearchHotels } from '@/hooks/hotels/use-search-hotels';
+import { useHotelsPricedToday } from '@/hooks/home';
 import { ROUTES } from '@/constants/routes';
 import { useMoney } from '@/hooks/currency';
 
@@ -14,10 +14,8 @@ export default function WeekendDeals() {
   const { t } = useTranslation('home');
   const { format } = useMoney();
   const [favorites, setFavorites] = useState<string[]>([]);
-  const { data, isLoading } = useSearchHotels({ limit: 8 });
 
-  // Khách sạn thật đang mở bán — thay cho danh sách deal hardcode (BE chưa có API khuyến mãi public).
-  const hotels = data?.results ?? [];
+  const { results: hotels, isLoading } = useHotelsPricedToday({ limit: 8 });
 
   const toggleFavorite = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();

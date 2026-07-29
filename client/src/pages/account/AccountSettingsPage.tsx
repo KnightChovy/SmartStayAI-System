@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 /** [MOCK] Cài đặt tài khoản: đổi mật khẩu, thiết bị đăng nhập, xóa tài khoản. */
 const MOCK_DEVICES = [
   { id: 'd1', name: 'Chrome · macOS', location: 'Da Nang, VN', current: true, icon: Laptop },
-  { id: 'd2', name: 'SmartStay App · iPhone', location: 'Ha Noi, VN', current: false, icon: Smartphone },
+  { id: 'd2', name: 'StayHub App · iPhone', location: 'Ha Noi, VN', current: false, icon: Smartphone },
 ];
 
 export default function AccountSettingsPage() {

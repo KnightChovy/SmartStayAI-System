@@ -145,7 +145,7 @@ export function AdminLayout() {
       <SidebarProvider>
         <CommonSidebar
           logoChar="A"
-          title="SmartStay AI"
+          title="StayHub"
           subtitle="Admin Portal"
           navItems={adminNavItems}
           footerItems={adminFooterItems}

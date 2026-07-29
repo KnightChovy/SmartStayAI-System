@@ -7,12 +7,14 @@ import { AdminPageHeader } from '@/components/admin/shared/AdminPageHeader';
 const promptTemplates = [
   {
     title: 'Guest Booking Assistant',
-    description: 'Handles room discovery, booking questions, and upsell prompts.',
+    description:
+      'Handles room discovery, booking questions, and upsell prompts.',
     model: 'gemini-3.5-flash-lite',
   },
   {
     title: 'Marketing Content Draft',
-    description: 'Generates campaign copy, social captions, and hotel descriptions.',
+    description:
+      'Generates campaign copy, social captions, and hotel descriptions.',
     model: 'gemini-3.5-flash-lite',
   },
   {
@@ -66,9 +68,20 @@ export function AdminAiSettingsPage() {
           <Sparkles className="size-5 text-blue-300" />
           <h2 className="mt-3 text-lg font-bold">Safety & Escalation</h2>
           <div className="mt-4 space-y-3">
-            {['Human handoff for payment disputes', 'Block unsafe travel advice', 'Log all AI admin edits'].map(item => (
-              <label className="flex items-center gap-2 text-sm font-semibold" key={item}>
-                <input className="size-4 accent-blue-500" defaultChecked type="checkbox" />
+            {[
+              'Human handoff for payment disputes',
+              'Block unsafe travel advice',
+              'Log all AI admin edits',
+            ].map(item => (
+              <label
+                className="flex items-center gap-2 text-sm font-semibold"
+                key={item}
+              >
+                <input
+                  className="size-4 accent-blue-500"
+                  defaultChecked
+                  type="checkbox"
+                />
                 {item}
               </label>
             ))}
@@ -78,7 +91,10 @@ export function AdminAiSettingsPage() {
 
       <section className="grid gap-4">
         {promptTemplates.map(template => (
-          <article className="rounded-2xl border bg-white p-5" key={template.title}>
+          <article
+            className="rounded-2xl border bg-white p-5"
+            key={template.title}
+          >
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <h3 className="text-base font-bold text-slate-950">
@@ -94,7 +110,7 @@ export function AdminAiSettingsPage() {
             </div>
             <textarea
               className="mt-4 min-h-28 w-full resize-none rounded-2xl border border-outline-variant/50 p-4 text-sm outline-none focus:border-blue-500 focus:ring-3 focus:ring-blue-500/20"
-              defaultValue={`System prompt for ${template.title}. Keep responses accurate, concise, and aligned with SmartStay AI policies.`}
+              defaultValue={`System prompt for ${template.title}. Keep responses accurate, concise, and aligned with StayHub policies.`}
             />
           </article>
         ))}

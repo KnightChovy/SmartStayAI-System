@@ -6,7 +6,7 @@ interface AdminSupportModalProps {
   onClose: () => void;
 }
 
-const SUPPORT_EMAIL = 'support@smartstay.ai';
+const SUPPORT_EMAIL = 'support@StayHub.ai';
 
 const channels = [
   {
@@ -59,7 +59,9 @@ export function AdminSupportModal({ onClose }: AdminSupportModalProps) {
           <div>
             <div className="flex items-center gap-2">
               <Headphones className="size-5 text-rose-600" />
-              <h2 className="text-xl font-bold text-slate-950">Support Center</h2>
+              <h2 className="text-xl font-bold text-slate-950">
+                Support Center
+              </h2>
             </div>
             <p className="mt-1 text-xs font-semibold text-muted-foreground">
               No live ticketing system yet — this opens an email draft
@@ -87,8 +89,12 @@ export function AdminSupportModal({ onClose }: AdminSupportModalProps) {
                 <div className="flex size-11 items-center justify-center rounded-2xl bg-white text-rose-600 shadow-sm">
                   <Icon className="size-5" />
                 </div>
-                <h3 className="mt-4 text-sm font-bold text-slate-950">{channel.label}</h3>
-                <p className="mt-1 text-xs text-muted-foreground">{channel.detail}</p>
+                <h3 className="mt-4 text-sm font-bold text-slate-950">
+                  {channel.label}
+                </h3>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {channel.detail}
+                </p>
               </article>
             );
           })}

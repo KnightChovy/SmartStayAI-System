@@ -62,10 +62,10 @@ export default function PressPage() {
         <p className="text-on-surface-variant font-be-vietnam">
           {t('press.inquiries')}
           <a
-            href="mailto:press@smartstay.ai"
+            href="mailto:press@stayhub.ai"
             className="text-primary font-semibold hover:underline"
           >
-            press@smartstay.ai
+            press@stayhub.ai
           </a>
         </p>
       </div>

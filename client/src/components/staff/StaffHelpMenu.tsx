@@ -76,10 +76,10 @@ export function StaffHelpMenu() {
           <p className="text-[11px] text-slate-500">
             Something looks wrong? Contact your hotel manager, or email{' '}
             <a
-              href="mailto:support@smartstay.ai"
+              href="mailto:support@stayhub.ai"
               className="font-medium text-slate-700 underline"
             >
-              support@smartstay.ai
+              support@stayhub.ai
             </a>
             .
           </p>

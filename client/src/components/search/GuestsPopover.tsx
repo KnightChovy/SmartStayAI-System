@@ -68,11 +68,11 @@ function CounterRow({ label, hint, value, min, onChange }: RowProps) {
  * "2 người lớn · 1 phòng", số nhiều đúng ngữ pháp qua i18n plural).
  */
 export default function GuestsPopover({ value, onChange, className }: GuestsPopoverProps) {
-  const { t } = useTranslation('home');
+  const { t } = useTranslation(['home', 'common']);
 
   const summaryParts = [
-    t('hero.adultsCount', { count: value.adults }),
-    ...(value.children > 0 ? [t('hero.childrenCount', { count: value.children })] : []),
+    t('common:adultsCount', { count: value.adults }),
+    ...(value.children > 0 ? [t('common:childrenCount', { count: value.children })] : []),
     t('hero.roomsCount', { count: value.rooms }),
   ];
 
@@ -92,14 +92,14 @@ export default function GuestsPopover({ value, onChange, className }: GuestsPopo
       </PopoverTrigger>
       <PopoverContent align="start" className="w-72 divide-y divide-outline-variant/20 p-4">
         <CounterRow
-          label={t('hero.adults')}
+          label={t('common:adults')}
           value={value.adults}
           min={1}
           onChange={adults => onChange({ ...value, adults })}
         />
         <CounterRow
-          label={t('hero.children')}
-          hint={t('hero.childrenHint')}
+          label={t('common:children')}
+          hint={t('common:childrenHint')}
           value={value.children}
           min={0}
           onChange={children => onChange({ ...value, children })}

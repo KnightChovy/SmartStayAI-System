@@ -16,9 +16,12 @@ export function useRoomType(
   params: RoomTypeDetailParams = {}
 ) {
   const hasStayRange = !!params.checkIn && !!params.checkOut;
+  // Số khách gửi kèm cả khi không có ngày: BE dùng nó để lọc sức chứa, không phụ thuộc kỳ ở.
+  const guestQuery =
+    params.adults != null ? { adults: params.adults, children: params.children ?? 0 } : {};
   const query: RoomTypeDetailParams = hasStayRange
-    ? { checkIn: params.checkIn, checkOut: params.checkOut }
-    : {};
+    ? { checkIn: params.checkIn, checkOut: params.checkOut, ...guestQuery }
+    : guestQuery;
 
   return useQuery({
     queryKey: queryKeys.hotels.roomTypeDetail(hotelId ?? '', roomTypeId ?? '', query),

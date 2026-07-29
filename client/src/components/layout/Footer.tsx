@@ -23,7 +23,7 @@ export default function Footer() {
           {/* Brand Section */}
           <div className="lg:col-span-2">
             <span className="font-be-vietnam text-2xl font-bold tracking-tight text-on-surface block mb-4">
-              Smart Stay AI
+              StayHub
             </span>
             <p className="text-sm text-on-surface-variant leading-relaxed max-w-sm">
               {t('tagline')}
@@ -69,7 +69,7 @@ export default function Footer() {
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-outline-variant/20 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-xs text-on-surface-variant">
-            © {new Date().getFullYear()} Smart Stay AI. {t('rights')}
+            © {new Date().getFullYear()} StayHub. {t('rights')}
           </p>
           <div className="flex gap-8">
             <a

@@ -1,4 +1,4 @@
-# Smart Stay AI - Mobile Development Progress
+# StayHub - Mobile Development Progress
 
 This file tracks the accomplished tasks, resolved user requests, and structural/functional work completed in the mobile (Expo) application.
 
@@ -24,6 +24,17 @@ This file tracks the accomplished tasks, resolved user requests, and structural/
   - Bổ sung Android `softwareKeyboardLayoutMode: "pan"` và `tabBarHideOnKeyboard` cho Staff Tabs. Vì tab bar là custom component, nó còn tự lắng nghe keyboard để ẩn hẳn lúc nhập, đảm bảo không chiếm/chồng vùng composer.
 
 ### July 17, 2026 (continued)
+
+### July 30, 2026
+
+- [x] **Đổi thương hiệu SmartStay AI / Smart Stay → StayHub trên toàn app mobile**:
+  - Đổi ở **13 file**: i18n vi/en (`auth`, `account`, `hotel`), màn `profile/about` (tên app + 3 link `smartstay.ai` → `stayhub.ai`), `profile/help-support` (email hỗ trợ), `profile/offers` ("StayHub Plus bonus"), `profile/rewards` (mock lịch sử điểm), `.env` (`EXPO_PUBLIC_APP_NAME`), và **2 chuỗi xin quyền trong `app.json`** (camera/thư viện ảnh — chữ này hiện trong hộp thoại quyền của hệ điều hành).
+  - **CỐ Ý KHÔNG đổi 3 định danh kỹ thuật** (đổi là hỏng, không phải bỏ sót):
+    - `SMARTSTAY|` trong `app/(staff)/scan.tsx` — **tiền tố QR do BE sinh** (`BookingVoucher.qrData`); web + mobile cùng parse. Đổi một phía là **quét e-voucher hỏng ngay**.
+    - `smartstay-auth` / `smartstay-staff` — khoá AsyncStorage của Zustand persist. Đổi = **mọi người dùng đang đăng nhập bị đá ra**, staff mất khách sạn đang trực.
+    - `com.tanphatphan091.SmartStayAI` (`app.json` → `android.package`) — **applicationId**. Đổi là một app KHÁC: mất dữ liệu người dùng, sai chữ ký, không update đè được bản đã cài.
+  - Còn `smartstayai-system.onrender.com` trong `.env` là **hostname API đang deploy** — đổi khi nào BE đổi domain.
+  - **Verify**: 13 file JSON i18n **parse được + vi/en cân bằng khoá**, `app.json` hợp lệ. ⚠️ `tsc` của mobile đang có **110 lỗi CÓ SẴN** do `node_modules` thiếu `react-i18next` (đã khai trong `package.json` nhưng **chưa `npm install`**) + type mismatch của `components/ui/*` (gluestack) — không liên quan đợt đổi tên này (chỉ sửa chuỗi hiển thị, không đụng cấu trúc code).
 
 - [x] **Đánh giá khách sạn cho guest — bám theo cách client làm; sửa luôn 3 lỗ hổng ở màn chi tiết KS**:
   - **Rà soát trước**: client viết đánh giá qua `ReviewModal` mở từ `BookingDetailPage` khi `status === 'checked_out'`, tra `useMyReviews()` để biết đã đánh giá chưa → create (`POST /reviews`) hay edit (`PATCH /reviews/:id`); trang chi tiết KS render `HotelReviews`. **Mobile trước đây thiếu HẲN phần viết đánh giá** (booking detail chỉ có Modify/Cancel, `useCreateReview` viết ra nhưng **không màn nào gọi**).
@@ -65,7 +76,7 @@ This file tracks the accomplished tasks, resolved user requests, and structural/
   - Tách namespace theo đúng cách client làm: **`common` · `auth` · `home` · `search` · `hotel` · `booking` · `account` · `chat`** (thêm 6 cái mới). Tổng **319 key mỗi ngôn ngữ, en/vi cân bằng tuyệt đối** (common 26 · auth 83 · home 14 · search 17 · hotel 29 · booking 48 · account 93 · chat 9).
   - **Đã chuyển sang `t()`**: tab bar (5 nhãn) · Home · Search (kể cả nhãn bộ lọc + sort) · Bookings · Chatbot · Notifications · Hotel detail · Room detail · Checkout · Success · Booking detail · Profile · **8 màn `profile/*`** · và component dùng chung (`BookingStatusBadge`, `StayPickerSheet`, `PriceSummary`, `ChatEmptyState`, `RoomTypeCard`).
   - **Bẫy "hằng ở module scope" — sửa 4 chỗ**: `BOOKING_STATUS_STYLE`, `notifications.bookingToNotification`, `ChatEmptyState.SUGGESTIONS`, `about.LINKS` đều đang gắn CHỮ vào hằng ngoài component ⇒ chuỗi bị **đóng băng ngôn ngữ lúc import**, bấm đổi ngôn ngữ sẽ không cập nhật. Nay hằng chỉ giữ **key + phần thị giác (icon/màu)**, chữ dịch trong render (`notifications` nhận `t` qua tham số thay vì tự import i18n).
-  - **`i18next.d.ts` type-safe bắt lỗi thật lúc build, không phải chuỗi thô lòi ra UI**: (1) `useTranslation('chat')` rồi gọi `t('chat:replying')` → sai, ns phải nằm trong tuple; (2) key động `` t(`home:propertyTypes.${x}`) `` chỉ hợp lệ khi `x` là **union literal** ⇒ thêm `as const` cho `PROPERTY_TYPES`, đổi `HotelFilter.id` từ `string` sang union `FilterId`; (3) đổi `useTranslation('common')` → `['account','common']` thì defaultNS đổi theo, `t('language')` phải thành `t('common:language')`.
+  - **`i18next.d.ts` type-safe bắt lỗi thật lúc build, không phải chuỗi thô lòi ra UI**: (1) `useTranslation('chat')` rồi gọi `t('chat:replying')` → sai, ns phải nằm trong tuple; (2) key động ``t(`home:propertyTypes.${x}`)`` chỉ hợp lệ khi `x` là **union literal** ⇒ thêm `as const` cho `PROPERTY_TYPES`, đổi `HotelFilter.id` từ `string` sang union `FilterId`; (3) đổi `useTranslation('common')` → `['account','common']` thì defaultNS đổi theo, `t('language')` phải thành `t('common:language')`.
   - Bài học lặp lại từ đợt migrate màu: file **CRLF** làm mọi regex kết thúc `\n` trượt hết ⇒ với `profile.tsx` phải thay **theo nội dung dòng đã trim** thay vì so chuỗi có thụt lề.
   - **Verify**: `tsc` **0 lỗi**, `eslint` **sạch** toàn bộ file guest (2 lỗi `no-unescaped-entities` còn lại nằm ở `(staff)`, pre-existing, ngoài phạm vi). **`npx expo export` build thành công**; grep thẳng bundle Hermes: **8/8 chuỗi EN + 8/8 chuỗi VI** trải khắp các màn (Home/Bookings/Room/Checkout/Favourites/Rewards/Chat/Picker) — VI lưu dạng **UTF-16** nên phải dò đúng encoding mới thấy.
   - **Còn lại**: text trong `(staff)` vẫn tiếng Anh cứng (đúng phạm vi "chỉ guest"); message lỗi từ backend chưa map i18n (giống client — cần mã lỗi riêng); ngày/giờ vẫn format thủ công theo `formatDate*`, chưa theo locale.

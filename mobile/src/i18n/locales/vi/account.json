@@ -9,7 +9,7 @@
   "quick": {
     "bookings": "Đặt phòng",
     "bookingsSub": "Xem lịch sử",
-    "plus": "SmartStay Plus",
+    "plus": "StayHub Plus",
     "plusSub": "Thành viên Bạc"
   },
   "sections": {
@@ -116,7 +116,7 @@
     "error": "Lỗi"
   },
   "rewards": {
-    "title": "SmartStay Plus",
+    "title": "StayHub Plus",
     "history": "Lịch sử điểm",
     "points": "điểm"
   },
@@ -134,7 +134,7 @@
   "paymentMethods": {
     "title": "Phương thức thanh toán",
     "empty": "Chưa lưu phương thức nào",
-    "emptyBody": "SmartStay không lưu thẻ của bạn. Mỗi lần đặt phòng bạn thanh toán an toàn qua VNPay."
+    "emptyBody": "StayHub không lưu thẻ của bạn. Mỗi lần đặt phòng bạn thanh toán an toàn qua VNPay."
   },
   "help": {
     "title": "Trợ giúp & hỗ trợ",
