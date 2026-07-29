@@ -9,6 +9,18 @@ import type {
   SendChatMessageStreamHandlers,
 } from '@/types/chatbot.type';
 
+const CHAT_LOG_PREFIX = '[SmartStay Chat]';
+
+/** Log stream cho Metro trong môi trường dev; tuyệt đối không log access/refresh token. */
+function logChat(event: string, detail?: unknown) {
+  if (!__DEV__) return;
+  if (detail === undefined) {
+    console.info(`${CHAT_LOG_PREFIX} ${event}`);
+    return;
+  }
+  console.info(`${CHAT_LOG_PREFIX} ${event}`, detail);
+}
+
 /** Đọc một SSE frame ("event:" + "data:") thành { event, data }. */
 function parseSseFrame(frame: string): { event: string; data: unknown } | null {
   let event = 'message';
@@ -66,8 +78,20 @@ export const chatbotService = {
         body: JSON.stringify(payload),
       });
 
+    logChat('stream request', {
+      endpoint: '/conversations/messages/stream',
+      hasConversationId: Boolean(payload.conversationId),
+      hasHotelId: Boolean(payload.hotelId),
+      message: payload.message,
+    });
+
     let token = useAuthStore.getState().accessToken;
     let response = await makeRequest(token);
+    logChat('stream response headers', {
+      status: response.status,
+      statusText: response.statusText,
+      contentType: response.headers.get('content-type'),
+    });
 
     // expoFetch bypasses axios interceptors — handle 401 manually with token refresh.
     if (response.status === 401) {
@@ -87,6 +111,11 @@ export const chatbotService = {
         setTokens(newAccess, newRefresh);
         token = newAccess;
         response = await makeRequest(newAccess);
+        logChat('stream response after refresh', {
+          status: response.status,
+          statusText: response.statusText,
+          contentType: response.headers.get('content-type'),
+        });
       } catch {
         clearAuth();
         throw new Error('Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.');
@@ -94,7 +123,9 @@ export const chatbotService = {
     }
 
     if (!response.ok) {
-      throw new Error((await response.text()) || 'Không kết nối được chatbot stream.');
+      const errorBody = await response.text();
+      logChat('stream response error', { status: response.status, body: errorBody });
+      throw new Error(errorBody || 'Không kết nối được chatbot stream.');
     }
     if (!response.body) {
       throw new Error('Chatbot stream không trả về body đọc được.');
@@ -114,6 +145,7 @@ export const chatbotService = {
         const next = readString(parsed.data, 'conversationId');
         if (next) {
           conversationId = next;
+          logChat('stream meta', { conversationId: next });
           handlers.onConversationId?.(next);
         }
         return;
@@ -122,6 +154,7 @@ export const chatbotService = {
         const chunk = readString(parsed.data, 'text');
         if (chunk) {
           reply += chunk;
+          logChat('stream chunk', { chunkLength: chunk.length, replyLength: reply.length });
           handlers.onChunk?.(chunk, reply);
         }
       }
@@ -141,6 +174,8 @@ export const chatbotService = {
       }
     }
 
-    return { conversationId, reply };
+    const result = { conversationId, reply };
+    logChat('stream complete', result);
+    return result;
   },
 };

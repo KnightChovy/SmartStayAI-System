@@ -1,8 +1,38 @@
 {
   "replying": "● Đang trả lời…",
-  "selectHotel": "Chọn khách sạn",
+  "subtitle": "Trợ lý du lịch thông minh của bạn",
+  "greeting": "Chào bạn! Tôi có thể giúp tìm và gợi ý khách sạn phù hợp cho chuyến đi của bạn.",
+  "quick": {
+    "stays": "Tìm chỗ ở cho tôi",
+    "hanoi": "Khách sạn ở Hà Nội",
+    "suggest": "Gợi ý một khách sạn"
+  },
   "inputPlaceholder": "Nhập tin nhắn…",
-  "inputDisabled": "Chọn khách sạn để bắt đầu…",
+  "history": {
+    "title": "Đoạn chat",
+    "open": "Lịch sử trò chuyện",
+    "close": "Đóng",
+    "newChat": "Trò chuyện mới",
+    "untitled": "Trò chuyện mới",
+    "empty": "Chưa có cuộc trò chuyện nào",
+    "emptyHint": "Bắt đầu trò chuyện, các đoạn chat sẽ hiện ở đây.",
+    "actions": "Tuỳ chọn cuộc trò chuyện",
+    "rename": "Đổi tên",
+    "renameTitle": "Đổi tên cuộc trò chuyện",
+    "renamePlaceholder": "Tên cuộc trò chuyện",
+    "delete": "Xoá",
+    "deleteTitle": "Xoá cuộc trò chuyện?",
+    "deleteMessage": "“{{title}}” sẽ bị xoá khỏi máy này. Không thể hoàn tác.",
+    "messages_one": "{{count}} tin nhắn",
+    "messages_other": "{{count}} tin nhắn",
+    "time": {
+      "now": "Vừa xong",
+      "minutes": "{{count}} phút trước",
+      "hours": "{{count}} giờ trước",
+      "yesterday": "Hôm qua",
+      "days": "{{count}} ngày trước"
+    }
+  },
   "empty": {
     "title": "Hỏi tôi bất cứ điều gì",
     "subtitle": "Tôi có thể giúp bạn tìm phòng, so sánh giá và giải đáp thắc mắc về kỳ nghỉ.",
