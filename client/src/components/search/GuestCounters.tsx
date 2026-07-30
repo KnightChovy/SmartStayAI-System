@@ -1,6 +1,14 @@
 import { useTranslation } from 'react-i18next';
 import { Minus, Plus } from 'lucide-react';
-import type { GuestSelection } from './GuestsPopover';
+import {
+  MAX_ADULTS,
+  MAX_CHILDREN,
+  MAX_ROOMS,
+  setAdults,
+  setChildren,
+  setRooms,
+  type GuestSelection,
+} from './guest-limits';
 
 interface GuestCountersProps {
   value: GuestSelection;
@@ -12,10 +20,11 @@ interface RowProps {
   hint?: string;
   value: number;
   min: number;
+  max: number;
   onChange: (v: number) => void;
 }
 
-function CounterRow({ label, hint, value, min, onChange }: RowProps) {
+function CounterRow({ label, hint, value, min, max, onChange }: RowProps) {
   return (
     <div className="flex items-center justify-between py-2.5">
       <div>
@@ -35,8 +44,9 @@ function CounterRow({ label, hint, value, min, onChange }: RowProps) {
         <span className="min-w-6 text-center text-sm font-semibold text-on-surface">{value}</span>
         <button
           type="button"
-          onClick={() => onChange(value + 1)}
-          className="flex size-8 items-center justify-center rounded-full border border-outline-variant/50 text-on-surface-variant hover:border-primary hover:text-primary"
+          onClick={() => onChange(Math.min(max, value + 1))}
+          disabled={value >= max}
+          className="flex size-8 items-center justify-center rounded-full border border-outline-variant/50 text-on-surface-variant hover:border-primary hover:text-primary disabled:opacity-30"
           aria-label={`${label} +`}
         >
           <Plus className="size-4" />
@@ -61,20 +71,24 @@ export default function GuestCounters({ value, onChange }: GuestCountersProps) {
           label={t('common:adults')}
           value={value.adults}
           min={1}
-          onChange={adults => onChange({ ...value, adults })}
+          max={MAX_ADULTS}
+          onChange={adults => onChange(setAdults(value, adults))}
         />
         <CounterRow
           label={t('common:children')}
           hint={t('common:childrenHint')}
           value={value.children}
           min={0}
-          onChange={children => onChange({ ...value, children })}
+          max={MAX_CHILDREN}
+          onChange={children => onChange(setChildren(value, children))}
         />
         <CounterRow
           label={t('hero.rooms')}
+          hint={t('hero.roomsHint')}
           value={value.rooms}
           min={1}
-          onChange={rooms => onChange({ ...value, rooms })}
+          max={MAX_ROOMS}
+          onChange={rooms => onChange(setRooms(value, rooms))}
         />
       </div>
     </div>

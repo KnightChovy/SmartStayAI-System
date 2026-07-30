@@ -9,7 +9,10 @@ import EmptyState from '@/components/shared/EmptyState';
 import Paginator from '@/components/shared/Paginator';
 import DateRangePicker from '@/components/shared/DateRangePicker';
 import GuestCounters from '@/components/search/GuestCounters';
-import type { GuestSelection } from '@/components/search/GuestsPopover';
+import {
+  clampGuestSelection,
+  type GuestSelection,
+} from '@/components/search/guest-limits';
 import SortDropdown from '@/components/search/SortDropdown';
 import PriceRangeSlider from '@/components/search/filters/PriceRangeSlider';
 import StarRatingFilter from '@/components/search/filters/StarRatingFilter';
@@ -64,7 +67,9 @@ export default function SearchResultsPage() {
 
   // Khách: tách Người lớn / Trẻ em / Số phòng (khớp thanh tìm kiếm hero). Không có `adults`
   // (link cũ chỉ mang `guests`) thì suy `adults = guests`, `children = 0`.
-  const guestSel: GuestSelection = {
+  // Kẹp về vùng hợp lệ: URL là dữ liệu người dùng sửa được (`?rooms=999`) — không kẹp thì con số
+  // vô lý đi thẳng vào request và BE trả rỗng mà khách không hiểu vì sao.
+  const guestSel: GuestSelection = clampGuestSelection({
     adults: params.get('adults')
       ? Number(params.get('adults'))
       : params.get('guests')
@@ -72,7 +77,12 @@ export default function SearchResultsPage() {
         : 2,
     children: params.get('children') ? Number(params.get('children')) : 0,
     rooms: params.get('rooms') ? Number(params.get('rooms')) : 1,
-  };
+  });
+
+  const roomsWanted = guestSel.rooms;
+  // BE chỉ lọc được theo số phòng khi có đủ cặp ngày (mới biết tồn kho từng đêm).
+  const roomsFilterApplied =
+    roomsWanted > 1 && !!params.get('checkIn') && !!params.get('checkOut');
 
   const filters: HotelSearchParams = useMemo(
     () => ({
@@ -80,6 +90,9 @@ export default function SearchResultsPage() {
       checkIn: params.get('checkIn') ?? undefined,
       checkOut: params.get('checkOut') ?? undefined,
       guests: params.get('guests') ? Number(params.get('guests')) : undefined,
+      // Gửi số phòng lên BE — BE loại khách sạn không còn đủ ngần đó phòng trống cho kỳ ở.
+      // Chỉ có tác dụng khi đã chọn ngày (không có ngày thì chưa tính được tồn kho).
+      rooms: roomsWanted > 1 ? roomsWanted : undefined,
       sortBy,
       page: params.get('page') ? Number(params.get('page')) : 1,
       priceMin,
@@ -88,7 +101,7 @@ export default function SearchResultsPage() {
       amenities: params.get('amenities') ?? undefined,
       reviewScore,
     }),
-    [params, sortBy, priceMin, priceMax, reviewScore]
+    [params, roomsWanted, sortBy, priceMin, priceMax, reviewScore]
   );
 
   const { data, isLoading, isError } = useSearchHotels(filters);
@@ -224,6 +237,11 @@ export default function SearchResultsPage() {
       />
 
       <GuestCounters value={guestSel} onChange={updateGuests} />
+      {/* Thiếu ngày thì BE không tính được tồn kho ⇒ bộ lọc số phòng bị bỏ qua. Nói rõ thay vì
+          để khách tăng số phòng mà kết quả không đổi. */}
+      {roomsWanted > 1 && !roomsFilterApplied && (
+        <p className="text-xs text-on-surface-variant">{t('roomsNeedDates')}</p>
+      )}
 
       <SortDropdown
         value={sortBy}
@@ -317,11 +335,21 @@ export default function SearchResultsPage() {
                 description={t('errorDesc')}
               />
             ) : results.length === 0 ? (
-              <EmptyState
-                icon={Search}
-                title={t('emptyTitle')}
-                description={t('emptyDesc')}
-              />
+              // Lọc theo số phòng là lý do "0 kết quả" dễ gây khó hiểu nhất (khách vẫn thấy khách
+              // sạn đó ở lượt tìm trước) — nói thẳng thay vì để chung một câu chung chung.
+              roomsFilterApplied ? (
+                <EmptyState
+                  icon={Search}
+                  title={t('emptyRoomsTitle', { count: roomsWanted })}
+                  description={t('emptyRoomsDesc', { count: roomsWanted })}
+                />
+              ) : (
+                <EmptyState
+                  icon={Search}
+                  title={t('emptyTitle')}
+                  description={t('emptyDesc')}
+                />
+              )
             ) : (
               <div className="space-y-4">
                 {results.map(hotel => (
