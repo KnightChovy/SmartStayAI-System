@@ -6,7 +6,7 @@ import prisma from '../config/prisma';
 import ApiError from '../utils/ApiError';
 import { roleRights } from '../config/roles';
 import { toUtcDate, eachNightOfStay } from '../utils/dates';
-import { availabilityService } from './availability.service';
+import { availabilityService, SELLABLE_ROOM_WHERE } from './availability.service';
 import { hotelService, readCancellationPolicy } from './hotel.service';
 import type { CancellationPolicy } from './hotel.service';
 import type {
@@ -228,17 +228,19 @@ export class BookingService {
     const taxFeeCharges = (await availabilityService.getTaxFeeCharges([roomType.hotelId])).get(roomType.hotelId) ?? [];
 
     return prisma.$transaction(async (tx) => {
-      const physicalRooms = await tx.room.count({ where: { roomTypeId: roomType.id } });
-      if (physicalRooms === 0) {
+      // Đếm bằng ĐÚNG điều kiện lúc khách tìm phòng (bỏ phòng bảo trì), nếu không thì đêm chưa có
+      // dòng tồn kho sẽ được tạo với totalRooms thừa và khách đặt được cả phòng đang sửa.
+      const sellableRooms = await tx.room.count({ where: { roomTypeId: roomType.id, ...SELLABLE_ROOM_WHERE } });
+      if (sellableRooms === 0) {
         throw new ApiError(httpStatus.BAD_REQUEST, 'Loại phòng này chưa mở bán');
       }
 
       let subtotal = new Prisma.Decimal(0);
       for (const night of nights) {
-        // Đêm chưa có dòng tồn kho ⇒ tạo với totalRooms = số phòng vật lý (upsert là atomic nhờ unique constraint)
+        // Đêm chưa có dòng tồn kho ⇒ tạo với totalRooms = số phòng bán được (upsert là atomic nhờ unique constraint)
         const row = await tx.roomAvailability.upsert({
           where: { roomTypeId_date: { roomTypeId: roomType.id, date: night } },
-          create: { roomTypeId: roomType.id, hotelId: roomType.hotelId, date: night, totalRooms: physicalRooms },
+          create: { roomTypeId: roomType.id, hotelId: roomType.hotelId, date: night, totalRooms: sellableRooms },
           update: {},
         });
 

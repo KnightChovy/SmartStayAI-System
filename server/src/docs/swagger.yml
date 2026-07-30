@@ -3906,6 +3906,9 @@ paths:
       description: >
         Assigned staff (or owner/manager) quickly changes a room's operational status
         (available / occupied / maintenance / cleaning) — used by the room map and housekeeping.
+        Switching into maintenance takes the room out of sellable inventory (future
+        room_availability.totalRooms is decremented); switching back out adds it again.
+        Moves between available/occupied/cleaning do not touch inventory.
       tags: [HotelManagement]
       security:
         - bearerAuth: []
@@ -3940,6 +3943,7 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Room' }
+        '409': { description: Someone else changed the room status first — retry }
         '400':
           description: Invalid status
         '401':
@@ -5251,7 +5255,8 @@ paths:
       summary: Create a physical room
       description: >
         Room number must be unique within the hotel. Future room_availability rows of the
-        room type get totalRooms incremented so already-priced nights sell the new room too.
+        room type get totalRooms incremented so already-priced nights sell the new room too —
+        unless the room is created with status=maintenance, which is not sellable yet.
       tags: [HotelManagement]
       security:
         - bearerAuth: []
@@ -5321,6 +5326,9 @@ paths:
   /hotels/{hotelId}/rooms/{roomId}:
     put:
       summary: Update a room (status, number, floor, notes)
+      description: >
+        Hotel owner or manageHotels. Changing status into/out of maintenance also syncs future
+        sellable inventory (room_availability.totalRooms), same as the staff status endpoint.
       tags: [HotelManagement]
       security:
         - bearerAuth: []
@@ -5357,11 +5365,13 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
+        '409': { description: Someone else changed the room status first — retry }
     delete:
       summary: Delete a room (only if never booked)
       description: >
         Hotel owner or manageHotels. Allowed only when the room has no booking history; otherwise 400 —
-        set status=maintenance instead. Future inventory (room_availability.totalRooms) is decremented.
+        set status=maintenance instead. Future inventory (room_availability.totalRooms) is decremented,
+        except for a room already in maintenance (it was removed from inventory back then).
       tags: [HotelManagement]
       security:
         - bearerAuth: []

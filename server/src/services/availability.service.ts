@@ -31,6 +31,18 @@ export interface NightInventory {
   priceOverride: Prisma.Decimal | null;
 }
 
+/**
+ * Điều kiện "phòng bán được": phòng ĐANG BẢO TRÌ bị loại khỏi tồn kho, vì staff bật maintenance
+ * chính là để ngừng bán phòng đó.
+ *
+ * Các trạng thái còn lại KHÔNG trừ: occupied/cleaning chỉ là tình trạng tức thời của hôm nay —
+ * phòng đang có khách vẫn bán được cho những đêm sau, và lượt khách đó đã được đếm ở bookedRooms
+ * rồi (trừ thêm là trừ hai lần).
+ *
+ * Dùng chung cho MỌI chỗ đếm phòng vật lý (tìm phòng + đặt phòng) để hai đầu không thể lệch nhau.
+ */
+export const SELLABLE_ROOM_WHERE: Prisma.RoomWhereInput = { status: { not: 'maintenance' } };
+
 /** Kết quả tồn kho + giá cho một khoảng ngày ở của một loại phòng. */
 export interface StayQuote {
   /** Số phòng còn trống thấp nhất trong suốt các đêm (đặt được tối đa bấy nhiêu phòng) */
@@ -44,8 +56,9 @@ export interface StayQuote {
  * NHẤT quyết định giá, để số báo cho khách lúc tìm phòng và số bị tính lúc đặt không thể lệch nhau.
  *
  * Tồn kho: bảng room_availability (mỗi dòng = 1 loại phòng × 1 đêm). Đêm chưa có dòng nghĩa là
- * chưa ai đặt ⇒ còn nguyên số phòng vật lý (đếm bảng rooms). Cột available_rooms không dùng
- * (luôn suy từ totalRooms - bookedRooms để khỏi lệch dữ liệu).
+ * chưa ai đặt ⇒ còn nguyên số phòng BÁN ĐƯỢC (đếm bảng rooms, bỏ phòng bảo trì — xem
+ * SELLABLE_ROOM_WHERE). Cột available_rooms không dùng (luôn suy từ totalRooms - bookedRooms
+ * để khỏi lệch dữ liệu).
  *
  * Giá một đêm: (priceOverride của đêm đó ?? basePrice) rồi áp pricing rule (xem priceForNight).
  * Thuế/phí tính trên tiền phòng cả kỳ ở (xem computeTaxAndFees).
@@ -195,7 +208,7 @@ export class AvailabilityService {
 
   /**
    * Báo giá + số phòng trống cho nhiều loại phòng trong khoảng [checkIn, checkOut).
-   * @returns Map theo roomTypeId; loại phòng không có phòng vật lý sẽ có availableRooms = 0
+   * @returns Map theo roomTypeId; loại phòng không còn phòng bán được sẽ có availableRooms = 0
    */
   getStayQuotes = async (
     roomTypes: RoomTypePriceInput[],
@@ -212,7 +225,7 @@ export class AvailabilityService {
     const [roomGroups, availabilityRows, pricingRules] = await Promise.all([
       prisma.room.groupBy({
         by: ['roomTypeId'],
-        where: { roomTypeId: { in: roomTypeIds } },
+        where: { roomTypeId: { in: roomTypeIds }, ...SELLABLE_ROOM_WHERE },
         _count: { _all: true },
       }),
       prisma.roomAvailability.findMany({

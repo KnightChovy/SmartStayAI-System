@@ -1,10 +1,15 @@
 import httpStatus from 'http-status';
-import type { Prisma, User, RoomStatus } from '@prisma/client';
+import type { Prisma, User, Room, RoomStatus } from '@prisma/client';
 import prisma from '../config/prisma';
 import ApiError from '../utils/ApiError';
 import { toUtcDate } from '../utils/dates';
 import { hotelService } from './hotel.service';
 import type { CreateRoomDto, UpdateRoomDto, RoomFilter, RoomQueryOptions } from '../dto/room.dto';
+
+/** Phòng đang bảo trì không được tính vào tồn kho bán (xem SELLABLE_ROOM_WHERE ở availability.service). */
+const isSellable = (status: RoomStatus) => status !== 'maintenance';
+
+const roomTypeInclude = { roomType: { select: { id: true, name: true } } };
 
 export class RoomService {
   /** Số phòng (room_number) phải duy nhất trong một khách sạn — schema chưa có unique nên check tay. */
@@ -18,8 +23,40 @@ export class RoomService {
   };
 
   /**
+   * Cộng/trừ 1 phòng vào tồn kho các đêm TƯƠNG LAI đã có dòng room_availability. Đêm chưa có dòng
+   * không cần đụng tới: lúc tạo dòng đó, tồn kho được đếm lại từ bảng rooms.
+   */
+  private shiftFutureInventory = async (tx: Prisma.TransactionClient, roomTypeId: string, delta: 1 | -1) => {
+    const today = toUtcDate(new Date());
+    await tx.roomAvailability.updateMany({
+      where: { roomTypeId, date: { gte: today }, ...(delta === -1 && { totalRooms: { gt: 0 } }) },
+      data: { totalRooms: delta === 1 ? { increment: 1 } : { decrement: 1 } },
+    });
+  };
+
+  /**
+   * Đồng bộ tồn kho khi trạng thái phòng đổi VÀO / RA khỏi 'maintenance'. Thiếu bước này thì bật
+   * bảo trì chỉ đổi mỗi bảng rooms, còn khách vẫn tìm và đặt được phòng đang sửa — vỡ ra lúc lễ tân
+   * bàn giao phòng (booking.service không tìm nổi phòng 'available' để gán).
+   *
+   * Đổi qua lại giữa available/occupied/cleaning thì không làm gì: cả ba đều thuộc tồn kho bán.
+   */
+  private syncInventoryOnStatusChange = async (
+    tx: Prisma.TransactionClient,
+    roomTypeId: string,
+    oldStatus: RoomStatus,
+    newStatus: RoomStatus
+  ) => {
+    if (isSellable(oldStatus) === isSellable(newStatus)) {
+      return;
+    }
+    await this.shiftFutureInventory(tx, roomTypeId, isSellable(newStatus) ? 1 : -1);
+  };
+
+  /**
    * Thêm phòng vật lý. Các đêm tương lai đã có dòng tồn kho (room_availability) được tăng
    * totalRooms theo — nếu không, đêm đó vẫn bán theo số phòng cũ dù đã thêm phòng mới.
+   * Phòng tạo ra đã ở trạng thái bảo trì thì chưa bán được nên không cộng tồn kho.
    */
   createRoom = async (hotelId: string, currentUser: User, payload: CreateRoomDto) => {
     await hotelService.getManagedHotel(hotelId, currentUser);
@@ -29,7 +66,7 @@ export class RoomService {
     }
     await this.assertRoomNumberFree(hotelId, payload.roomNumber);
 
-    const today = toUtcDate(new Date());
+    const status = payload.status ?? 'available';
     return prisma.$transaction(async (tx) => {
       const room = await tx.room.create({
         data: {
@@ -37,16 +74,36 @@ export class RoomService {
           roomTypeId: payload.roomTypeId,
           roomNumber: payload.roomNumber,
           floor: payload.floor ?? null,
-          status: payload.status ?? 'available',
+          status,
           notes: payload.notes ?? null,
         },
-        include: { roomType: { select: { id: true, name: true } } },
+        include: roomTypeInclude,
       });
-      await tx.roomAvailability.updateMany({
-        where: { roomTypeId: payload.roomTypeId, date: { gte: today } },
-        data: { totalRooms: { increment: 1 } },
-      });
+      if (isSellable(status)) {
+        await this.shiftFutureInventory(tx, payload.roomTypeId, 1);
+      }
       return room;
+    });
+  };
+
+  /**
+   * Đổi trạng thái phòng KÈM đồng bộ tồn kho, trong cùng một transaction. Dùng chung cho manager
+   * (updateRoom) và staff (updateRoomStatus) để hai lối vào không thể xử lý lệch nhau.
+   *
+   * Ghi có điều kiện trên trạng thái cũ (giống lúc giành phòng ở booking.service): hai người cùng
+   * bấm thì chỉ một người thắng, nhờ vậy tồn kho không bị cộng/trừ hai lần cho một lần chuyển.
+   */
+  private changeStatus = async (room: Room, newStatus: RoomStatus, otherFields: Prisma.RoomUpdateManyMutationInput) => {
+    return prisma.$transaction(async (tx) => {
+      const changed = await tx.room.updateMany({
+        where: { id: room.id, status: room.status },
+        data: { ...otherFields, status: newStatus },
+      });
+      if (changed.count === 0) {
+        throw new ApiError(httpStatus.CONFLICT, 'Trạng thái phòng vừa được người khác thay đổi, vui lòng thử lại');
+      }
+      await this.syncInventoryOnStatusChange(tx, room.roomTypeId, room.status, newStatus);
+      return tx.room.findUniqueOrThrow({ where: { id: room.id }, include: roomTypeInclude });
     });
   };
 
@@ -60,11 +117,12 @@ export class RoomService {
     if (payload.roomNumber && payload.roomNumber !== room.roomNumber) {
       await this.assertRoomNumberFree(hotelId, payload.roomNumber, roomId);
     }
-    return prisma.room.update({
-      where: { id: roomId },
-      data: payload,
-      include: { roomType: { select: { id: true, name: true } } },
-    });
+
+    const { status, ...otherFields } = payload;
+    if (status !== undefined && status !== room.status) {
+      return this.changeStatus(room, status, otherFields);
+    }
+    return prisma.room.update({ where: { id: roomId }, data: otherFields, include: roomTypeInclude });
   };
 
   /**
@@ -77,11 +135,10 @@ export class RoomService {
     if (!room) {
       throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy phòng trong khách sạn này');
     }
-    return prisma.room.update({
-      where: { id: roomId },
-      data: { status },
-      include: { roomType: { select: { id: true, name: true } } },
-    });
+    if (status === room.status) {
+      return prisma.room.findUniqueOrThrow({ where: { id: roomId }, include: roomTypeInclude });
+    }
+    return this.changeStatus(room, status, {});
   };
 
   /**
@@ -103,13 +160,12 @@ export class RoomService {
       );
     }
 
-    const today = toUtcDate(new Date());
     await prisma.$transaction(async (tx) => {
       await tx.room.delete({ where: { id: roomId } });
-      await tx.roomAvailability.updateMany({
-        where: { roomTypeId: room.roomTypeId, date: { gte: today }, totalRooms: { gt: 0 } },
-        data: { totalRooms: { decrement: 1 } },
-      });
+      // Phòng đang bảo trì đã bị trừ khỏi tồn kho lúc bật maintenance ⇒ xoá đi không trừ nữa
+      if (isSellable(room.status)) {
+        await this.shiftFutureInventory(tx, room.roomTypeId, -1);
+      }
     });
   };
 
