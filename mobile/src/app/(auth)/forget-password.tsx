@@ -10,6 +10,7 @@ import { LuxButton, LuxField } from '@/components/guest';
 import { useForgotPassword } from '@/hooks/auth';
 import { AUTH_IMAGES, GUEST_COLORS } from '@/constants/guestTheme';
 import { errorMessage } from '@/utils/errorMessage';
+import { emailError } from '@/validations/auth.validation';
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
@@ -18,10 +19,12 @@ export default function ForgotPasswordScreen() {
 
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const validation = emailError(email);
 
   function handleSend() {
-    if (!email.trim()) {
-      Alert.alert(t('forgotPassword.missingTitle'), t('forgotPassword.missingBody'));
+    setSubmitted(true);
+    if (validation) {
       return;
     }
     forgotPassword(
@@ -80,6 +83,7 @@ export default function ForgotPasswordScreen() {
             autoCapitalize="none"
             autoCorrect={false}
             containerClassName="mb-6"
+            error={submitted ? validation ?? undefined : undefined}
           />
 
           <LuxButton label={t('forgotPassword.submit')} onPress={handleSend} loading={isPending} />

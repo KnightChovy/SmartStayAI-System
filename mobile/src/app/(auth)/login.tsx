@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, Pressable, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Text } from '@/components/ui/text';
@@ -10,6 +10,7 @@ import { useLogin } from '@/hooks/auth';
 import { homeRouteForRole } from '@/constants/roles';
 import { AUTH_IMAGES } from '@/constants/guestTheme';
 import { errorMessage } from '@/utils/errorMessage';
+import { emailError } from '@/validations/auth.validation';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -19,10 +20,14 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  const emailValidation = emailError(email);
+  const passwordValidation = !password ? 'Mật khẩu là bắt buộc.' : null;
 
   function handleLogin() {
-    if (!email.trim() || !password.trim()) {
-      Alert.alert(t('login.missingTitle'), t('login.missingBody'));
+    setSubmitted(true);
+    if (emailValidation || passwordValidation) {
       return;
     }
     login(
@@ -52,6 +57,7 @@ export default function LoginScreen() {
         keyboardType="email-address"
         autoCapitalize="none"
         autoCorrect={false}
+        error={submitted ? emailValidation ?? undefined : undefined}
       />
 
       <LuxField
@@ -65,6 +71,7 @@ export default function LoginScreen() {
         onToggleSecure={() => setShowPassword(v => !v)}
         secureVisible={showPassword}
         containerClassName="mb-2"
+        error={submitted ? passwordValidation ?? undefined : undefined}
       />
 
       <Pressable onPress={() => router.push('/(auth)/forget-password')} className="mb-6 self-end py-2" hitSlop={4}>
