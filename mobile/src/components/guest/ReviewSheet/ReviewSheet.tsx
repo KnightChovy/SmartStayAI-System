@@ -104,8 +104,23 @@ export function ReviewSheet({
   function addImage() {
     const url = imageDraft.trim();
     if (!url) return;
+    try {
+      const parsed = new URL(url);
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') throw new Error('unsupported protocol');
+    } catch {
+      setError('URL ảnh phải bắt đầu bằng http:// hoặc https://.');
+      return;
+    }
     // BE chặn tối đa 10 ảnh — chặn sẵn ở đây thay vì để 400 dội về.
-    if (form.images.length >= 10) return;
+    if (form.images.length >= 10) {
+      setError('Bạn chỉ có thể thêm tối đa 10 ảnh.');
+      return;
+    }
+    if (form.images.includes(url)) {
+      setError('Ảnh này đã được thêm.');
+      return;
+    }
+    setError(null);
     setForm(f => ({ ...f, images: [...f.images, url] }));
     setImageDraft('');
   }

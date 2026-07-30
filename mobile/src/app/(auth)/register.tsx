@@ -10,6 +10,7 @@ import { LuxButton, LuxField } from '@/components/guest';
 import { useRegister, useSendOtp } from '@/hooks/auth';
 import { AUTH_IMAGES, GUEST_COLORS } from '@/constants/guestTheme';
 import { errorMessage } from '@/utils/errorMessage';
+import { emailError, fullNameError, otpError, passwordError } from '@/validations/auth.validation';
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -26,12 +27,17 @@ export default function RegisterScreen() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   const passwordMismatch = confirmPassword.length > 0 && password !== confirmPassword;
+  const nameValidation = fullNameError(name);
+  const emailValidation = emailError(email);
+  const passwordValidation = passwordError(password);
+  const otpValidation = otpError(otp);
 
   function handleSendOtp() {
-    if (!email.trim()) {
-      Alert.alert(t('register.missingTitle'), t('fields.emailPlaceholder'));
+    if (emailValidation) {
+      setSubmitted(true);
       return;
     }
     sendOtp(
@@ -47,8 +53,8 @@ export default function RegisterScreen() {
   }
 
   function handleRegister() {
-    if (!name.trim() || !email.trim() || !password || !confirmPassword || !otp.trim()) {
-      Alert.alert(t('register.missingTitle'), t('register.missingBody'));
+    setSubmitted(true);
+    if (nameValidation || emailValidation || passwordValidation || otpValidation) {
       return;
     }
     if (password !== confirmPassword) {
@@ -89,6 +95,7 @@ export default function RegisterScreen() {
         placeholder={t('fields.fullNamePlaceholder')}
         value={name}
         onChangeText={setName}
+        error={submitted ? nameValidation ?? undefined : undefined}
       />
 
       {/* Email + gửi OTP: nút nằm ngay cạnh ô vì OTP gửi tới chính email này. */}
@@ -102,6 +109,7 @@ export default function RegisterScreen() {
           keyboardType="email-address"
           autoCapitalize="none"
           autoCorrect={false}
+          error={submitted ? emailValidation ?? undefined : undefined}
           containerClassName="mb-0 flex-1"
         />
         <Pressable
@@ -127,6 +135,7 @@ export default function RegisterScreen() {
         keyboardType="number-pad"
         maxLength={6}
         containerClassName={otpSent ? '' : 'opacity-60'}
+        error={submitted ? otpValidation ?? undefined : undefined}
       />
 
       <LuxField
@@ -139,6 +148,7 @@ export default function RegisterScreen() {
         autoCapitalize="none"
         onToggleSecure={() => setShowPassword(v => !v)}
         secureVisible={showPassword}
+        error={submitted ? passwordValidation ?? undefined : undefined}
       />
 
       <LuxField
