@@ -31,6 +31,12 @@ import { ROUTES } from '@/constants/routes';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { formatDate, toUtcDateKey, todayUtcKey } from '@/utils/formatDate';
 import { errorMessage } from '@/utils/errorMessage';
+import {
+  LATE_CHECKOUT_REASON_MAX,
+  VOUCHER_CODE_MAX,
+  lateCheckoutReasonSchema,
+  optionalVoucherCodeSchema,
+} from '@/validations/staff-booking.validation';
 
 interface CheckInNavState {
   autoCheckIn?: boolean;
@@ -256,9 +262,12 @@ export default function BookingDetailPage() {
                   <Label htmlFor="voucher" className="text-xs text-slate-500">
                     Voucher code (optional)
                   </Label>
+                  {/* Trần 50 khớp Joi `checkInBooking` của BE — chặn ngay tại ô nhập thay vì để
+                      lễ tân bấm Check-in trước mặt khách rồi mới nhận 400. */}
                   <Input
                     id="voucher"
                     value={voucherCode}
+                    maxLength={VOUCHER_CODE_MAX}
                     onChange={e => setVoucherCode(e.target.value)}
                     placeholder="VC…"
                   />
@@ -272,20 +281,25 @@ export default function BookingDetailPage() {
                       ? `Check-in opens at ${checkInTime} on ${formatDate(booking.checkInDate)}`
                       : undefined
                   }
-                  onClick={() =>
-                    run(
+                  onClick={() => {
+                    const parsed = optionalVoucherCodeSchema.safeParse(voucherCode);
+                    if (!parsed.success) {
+                      toast.error(parsed.error.issues[0].message);
+                      return;
+                    }
+                    void run(
                       () =>
                         checkIn.mutateAsync({
                           bookingId: booking.id,
                           payload: {
                             ...(roomId ? { roomId } : {}),
-                            ...(voucherCode ? { voucherCode } : {}),
+                            ...(parsed.data ? { voucherCode: parsed.data } : {}),
                           },
                         }),
                       'Guest checked in successfully.',
                       'Check-in failed.'
-                    )
-                  }
+                    );
+                  }}
                 >
                   {checkIn.isPending ? (
                     <Loader2 className="size-4 animate-spin" />
@@ -318,6 +332,7 @@ export default function BookingDetailPage() {
                     <Input
                       id="late-checkout-reason"
                       value={lateCheckoutReason}
+                      maxLength={LATE_CHECKOUT_REASON_MAX}
                       onChange={e => setLateCheckoutReason(e.target.value)}
                       placeholder="e.g. Guest requested a late departure"
                     />
@@ -331,8 +346,9 @@ export default function BookingDetailPage() {
                       completeCheckOut();
                       return;
                     }
-                    if (!lateCheckoutReason.trim()) {
-                      toast.error('Enter a reason for the late check-out.');
+                    const parsed = lateCheckoutReasonSchema.safeParse(lateCheckoutReason);
+                    if (!parsed.success) {
+                      toast.error(parsed.error.issues[0].message);
                       return;
                     }
                     setConfirmLateCheckout(true);
