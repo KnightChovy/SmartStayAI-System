@@ -237,9 +237,9 @@ export default function FrontDeskPage() {
         hotelId={hotel?.id}
         onFound={(bookingId, voucherCode) => {
           setScanOpen(false);
-          navigate(ROUTES.staffBookingDetail(bookingId), {
-            state: { autoCheckIn: true, voucherCode },
-          });
+          // Chỉ MỞ booking ra cho lễ tân đối chiếu khách — check-in là thao tác riêng,
+          // do lễ tân chủ động bấm ở trang chi tiết.
+          navigate(ROUTES.staffBookingDetail(bookingId), { state: { voucherCode } });
         }}
       />
 

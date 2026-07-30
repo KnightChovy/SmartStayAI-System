@@ -1,4 +1,5 @@
-import { CalendarClock, LogIn, Loader2, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { CalendarClock, LogIn, Loader2, X, BedDouble } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/utils/formatDate';
 
@@ -12,6 +13,8 @@ interface CheckInConfirmModalProps {
   guestName: string;
   bookingCode: string;
   roomTypeName: string;
+  /** Phòng lễ tân đã chọn (bỏ trống = để BE tự gán phòng trống). */
+  roomLabel?: string | null;
   checkInDate: string;
   checkOutDate: string;
   numNights: number;
@@ -21,11 +24,28 @@ interface CheckInConfirmModalProps {
 }
 
 /**
- * Modal xác nhận check-in — bật tự động sau khi quét QR ở quầy lễ tân.
- * Hiển thị tóm tắt booking; bấm "Confirm check-in" thì gọi check-in (BE tự gán phòng trống).
+ * Check-in là thao tác KHÔNG hoàn tác được từ quầy, nên nút xác nhận chỉ bật sau một
+ * khoảng ngắn kể từ lúc modal hiện ra: cú click theo quán tính từ thao tác trước đó
+ * (vd double-click nút "Tra cứu booking" ở modal quét) sẽ rơi vào nút đang disabled
+ * thay vì check-in luôn cho khách.
  */
-export function CheckInConfirmModal({
-  open,
+const CONFIRM_ARM_DELAY_MS = 400;
+
+/**
+ * Modal xác nhận check-in — lễ tân bấm "Check-in" ở panel thao tác mới mở modal này.
+ * Hiển thị tóm tắt booking; bấm "Confirm check-in" thì mới thực sự gọi API check-in.
+ *
+ * Phần thân tách ra `ConfirmDialog` để mỗi lần mở là một lần mount mới: `armed` tự khởi
+ * tạo lại `false`, không phải reset bằng setState trong effect.
+ */
+export function CheckInConfirmModal({ open, ...props }: CheckInConfirmModalProps) {
+  if (!open) return null;
+  return <ConfirmDialog {...props} />;
+}
+
+type ConfirmDialogProps = Omit<CheckInConfirmModalProps, 'open'>;
+
+function ConfirmDialog({
   onClose,
   onConfirm,
   isPending,
@@ -33,19 +53,40 @@ export function CheckInConfirmModal({
   guestName,
   bookingCode,
   roomTypeName,
+  roomLabel,
   checkInDate,
   checkOutDate,
   numNights,
   voucherCode,
   warning,
-}: CheckInConfirmModalProps) {
-  if (!open) return null;
+}: ConfirmDialogProps) {
+  // Chỉ đóng khi cả nhấn lẫn thả đều ở trên nền: nhấn trong hộp thoại rồi thả ra ngoài
+  // (kéo chọn chữ) không được tính là muốn đóng.
+  const pressedBackdropRef = useRef(false);
+  const [armed, setArmed] = useState(false);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setArmed(true), CONFIRM_ARM_DELAY_MS);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [onClose]);
 
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
       onMouseDown={e => {
-        if (e.target === e.currentTarget) onClose();
+        pressedBackdropRef.current = e.target === e.currentTarget;
+      }}
+      onClick={e => {
+        if (pressedBackdropRef.current && e.target === e.currentTarget) onClose();
+        pressedBackdropRef.current = false;
       }}
     >
       <div className="w-full max-w-sm rounded-2xl bg-white shadow-2xl" role="dialog" aria-modal="true">
@@ -76,11 +117,13 @@ export function CheckInConfirmModal({
               label="Stay"
               value={`${formatDate(checkInDate)} → ${formatDate(checkOutDate)} (${numNights} night${numNights === 1 ? '' : 's'})`}
             />
+            {roomLabel && <Row label="Room" value={roomLabel} />}
             {voucherCode && <Row label="Voucher" value={voucherCode} mono />}
           </dl>
 
-          {!disabled && (
-            <p className="text-xs text-slate-500">
+          {!disabled && !roomLabel && (
+            <p className="flex items-start gap-2 text-xs text-slate-500">
+              <BedDouble className="mt-0.5 size-3.5 shrink-0" />
               An available room of this type will be assigned automatically.
             </p>
           )}
@@ -97,7 +140,12 @@ export function CheckInConfirmModal({
           <Button type="button" variant="outline" onClick={onClose} disabled={isPending}>
             Cancel
           </Button>
-          <Button type="button" onClick={onConfirm} disabled={isPending || disabled}>
+          <Button
+            type="button"
+            className="bg-emerald-600 text-white hover:bg-emerald-700"
+            onClick={onConfirm}
+            disabled={isPending || disabled || !armed}
+          >
             {isPending ? (
               <>
                 <Loader2 className="size-4 animate-spin" /> Checking in…

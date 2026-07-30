@@ -39,7 +39,6 @@ import {
 } from '@/validations/staff-booking.validation';
 
 interface CheckInNavState {
-  autoCheckIn?: boolean;
   voucherCode?: string;
 }
 
@@ -47,8 +46,9 @@ export default function BookingDetailPage() {
   const { bookingId } = useParams<{ bookingId: string }>();
   const location = useLocation();
   const navState = (location.state as CheckInNavState | null) ?? {};
-  // Đến từ luồng quét QR → tự mở modal xác nhận check-in.
-  const [showCheckInConfirm, setShowCheckInConfirm] = useState(!!navState.autoCheckIn);
+  // Đến từ luồng quét QR: chỉ điền sẵn mã đã quét, KHÔNG tự mở modal xác nhận —
+  // modal tự bật lên trước mặt lễ tân là cách dễ nhất để check-in nhầm cho khách.
+  const [showCheckInConfirm, setShowCheckInConfirm] = useState(false);
   const scanVoucher = navState.voucherCode ?? '';
   const hotel = useStaffHotelStore(state => state.hotel);
   const { data: booking, isLoading, isError } = useHotelBooking(hotel?.id, bookingId);
@@ -60,7 +60,7 @@ export default function BookingDetailPage() {
   const noShow = useMarkNoShow(hotel?.id);
 
   const [roomId, setRoomId] = useState('');
-  const [voucherCode, setVoucherCode] = useState('');
+  const [voucherCode, setVoucherCode] = useState(scanVoucher);
   const [lateCheckoutReason, setLateCheckoutReason] = useState('');
   const [confirmNoShow, setConfirmNoShow] = useState(false);
   const [confirmLateCheckout, setConfirmLateCheckout] = useState(false);
@@ -99,13 +99,19 @@ export default function BookingDetailPage() {
     .map(r => r.room?.roomNumber ?? r.roomId.slice(0, 6))
     .join(', ');
 
-  /** Runs a front-desk action and reports the outcome. BE messages surface verbatim on failure. */
+  /**
+   * Runs a front-desk action and reports the outcome. BE messages surface verbatim on failure.
+   * Returns whether it succeeded, so callers only dismiss their dialog on success — a failed
+   * action must keep the receptionist where they were, with the inputs they typed.
+   */
   const run = async (action: () => Promise<unknown>, okMsg: string, fallbackErr: string) => {
     try {
       await action();
       toast.success(okMsg);
+      return true;
     } catch (err) {
       toast.error(errorMessage(err, fallbackErr));
+      return false;
     }
   };
 
@@ -123,18 +129,27 @@ export default function BookingDetailPage() {
       'Check-out failed.'
     );
 
-  // Xác nhận check-in từ modal (quét QR): BE tự gán phòng trống, redeem voucher đã quét.
+  const selectedRoom = availableRooms.find(r => r.id === roomId);
+  const trimmedVoucher = voucherCode.trim();
+
+  /**
+   * ĐIỂM DUY NHẤT gọi check-in. Gửi đúng những gì lễ tân đã chọn trên panel
+   * (bỏ trống phòng = để BE tự gán phòng trống cùng loại).
+   */
   const handleConfirmCheckIn = async () => {
-    await run(
+    const ok = await run(
       () =>
         checkIn.mutateAsync({
           bookingId: booking.id,
-          payload: { ...(scanVoucher ? { voucherCode: scanVoucher } : {}) },
+          payload: {
+            ...(roomId ? { roomId } : {}),
+            ...(trimmedVoucher ? { voucherCode: trimmedVoucher } : {}),
+          },
         }),
       'Guest checked in successfully.',
       'Check-in failed.'
     );
-    setShowCheckInConfirm(false);
+    if (ok) setShowCheckInConfirm(false);
   };
 
   return (
@@ -216,6 +231,15 @@ export default function BookingDetailPage() {
 
             {booking.status === 'confirmed' && (
               <div className="mb-3 space-y-3">
+                {scanVoucher && (
+                  <div className="flex items-start gap-2 rounded-lg bg-emerald-50 p-2.5 text-xs text-emerald-700">
+                    <Ticket className="mt-0.5 size-3.5 shrink-0" />
+                    <span>
+                      Scanned e-voucher <span className="font-mono">{scanVoucher}</span> — check the
+                      guest details, then press Check-in.
+                    </span>
+                  </div>
+                )}
                 {checkInLocked && (
                   <div className="flex items-start gap-2 rounded-lg bg-amber-50 p-2.5 text-xs text-amber-700">
                     <CalendarClock className="mt-0.5 size-3.5 shrink-0" />
@@ -281,24 +305,15 @@ export default function BookingDetailPage() {
                       ? `Check-in opens at ${checkInTime} on ${formatDate(booking.checkInDate)}`
                       : undefined
                   }
+                  // Không gọi API ở đây: check-in không hoàn tác được từ quầy nên phải
+                  // đi qua modal xác nhận.
                   onClick={() => {
                     const parsed = optionalVoucherCodeSchema.safeParse(voucherCode);
                     if (!parsed.success) {
                       toast.error(parsed.error.issues[0].message);
                       return;
                     }
-                    void run(
-                      () =>
-                        checkIn.mutateAsync({
-                          bookingId: booking.id,
-                          payload: {
-                            ...(roomId ? { roomId } : {}),
-                            ...(parsed.data ? { voucherCode: parsed.data } : {}),
-                          },
-                        }),
-                      'Guest checked in successfully.',
-                      'Check-in failed.'
-                    );
+                    setShowCheckInConfirm(true);
                   }}
                 >
                   {checkIn.isPending ? (
@@ -410,12 +425,12 @@ export default function BookingDetailPage() {
         open={confirmNoShow}
         onClose={() => setConfirmNoShow(false)}
         onConfirm={async () => {
-          await run(
+          const ok = await run(
             () => noShow.mutateAsync({ bookingId: booking.id }),
             'Marked as no-show.',
             'Failed to mark as no-show.'
           );
-          setConfirmNoShow(false);
+          if (ok) setConfirmNoShow(false);
         }}
         loading={noShow.isPending}
         destructive
@@ -428,8 +443,7 @@ export default function BookingDetailPage() {
         open={confirmLateCheckout}
         onClose={() => setConfirmLateCheckout(false)}
         onConfirm={async () => {
-          await completeCheckOut();
-          setConfirmLateCheckout(false);
+          if (await completeCheckOut()) setConfirmLateCheckout(false);
         }}
         loading={checkOut.isPending}
         title="Confirm late check-out?"
@@ -447,10 +461,11 @@ export default function BookingDetailPage() {
           guestName={booking.customer.fullName}
           bookingCode={booking.bookingCode}
           roomTypeName={booking.roomType.name}
+          roomLabel={selectedRoom ? `Room ${selectedRoom.roomNumber}` : null}
           checkInDate={booking.checkInDate}
           checkOutDate={booking.checkOutDate}
           numNights={booking.numNights}
-          voucherCode={scanVoucher || booking.voucher?.voucherCode}
+          voucherCode={trimmedVoucher || booking.voucher?.voucherCode}
           warning={
             checkInLocked
               ? `Check-in opens at ${checkInTime} on ${formatDate(booking.checkInDate)}.`

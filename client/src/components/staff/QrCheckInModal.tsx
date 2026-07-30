@@ -43,6 +43,9 @@ export function QrCheckInModal({
   const lookup = useLookupBooking(hotelId);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const busyRef = useRef(false);
+  // Chỉ đóng khi cả nhấn lẫn thả đều ở trên nền — nhấn trong hộp thoại rồi thả ra ngoài
+  // không được tính là muốn đóng.
+  const pressedBackdropRef = useRef(false);
 
   function runLookup(voucherCode: string) {
     if (!voucherCode || busyRef.current) return;
@@ -56,8 +59,10 @@ export function QrCheckInModal({
     busyRef.current = true;
     lookup.mutate(voucherCode, {
       onSuccess: booking => {
-        busyRef.current = false;
+        // GIỮ khoá: camera bắn callback ~10 lần/giây, nhả khoá ở đây thì các khung giải mã
+        // được trong lúc điều hướng sẽ tra cứu (và điều hướng) thêm lần nữa.
         setCode('');
+        scannerRef.current?.pause(true);
         onFound(booking.id, voucherCode);
       },
       onError: () => {
@@ -69,6 +74,9 @@ export function QrCheckInModal({
   // Camera lifecycle: start when the modal opens, always stop/clear on close/unmount.
   useEffect(() => {
     if (!open) return;
+    // Mở lại sau một lần tra cứu thành công (component không unmount khi `open=false`)
+    // thì phải nhả khoá, không thì scanner nằm im.
+    busyRef.current = false;
     const scanner = new Html5Qrcode(SCANNER_ELEMENT_ID);
     scannerRef.current = scanner;
     let cameraStarted = false;
@@ -102,13 +110,26 @@ export function QrCheckInModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, hotelId]);
 
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [open, onClose]);
+
   if (!open) return null;
 
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
       onMouseDown={e => {
-        if (e.target === e.currentTarget) onClose();
+        pressedBackdropRef.current = e.target === e.currentTarget;
+      }}
+      onClick={e => {
+        if (pressedBackdropRef.current && e.target === e.currentTarget) onClose();
+        pressedBackdropRef.current = false;
       }}
     >
       <div
