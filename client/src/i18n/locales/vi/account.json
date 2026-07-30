@@ -150,7 +150,17 @@
     "preferredCurrency": "Tiền tệ ưa thích",
     "marketingOptIn": "Gửi cho tôi ưu đãi và gợi ý cá nhân hoá",
     "saveChanges": "Lưu thay đổi",
-    "saved": "Đã lưu!"
+    "saved": "Đã lưu!",
+    "errors": {
+      "nameRequired": "Vui lòng nhập họ và tên.",
+      "nameTooLong": "Họ và tên tối đa 255 ký tự.",
+      "phoneInvalid": "Số điện thoại phải gồm 6–20 chữ số (cho phép + - ( ) và khoảng trắng).",
+      "nationalityTooLong": "Quốc tịch tối đa 100 ký tự.",
+      "idCardTooLong": "Số CCCD/CMND tối đa 50 ký tự.",
+      "passportTooLong": "Số hộ chiếu tối đa 50 ký tự.",
+      "dobInvalid": "Ngày sinh không hợp lệ."
+    },
+    "saveError": "Không lưu được hồ sơ. Vui lòng thử lại."
   },
   "welcome": {
     "title": "Chào mừng đến với StayHub! 🎉",
@@ -187,7 +197,11 @@
     "publish": "Đăng đánh giá",
     "updated": "Đánh giá của bạn đã được cập nhật.",
     "published": "Cảm ơn bạn! Đánh giá của bạn đã được đăng.",
-    "submitError": "Không thể gửi đánh giá. Vui lòng thử lại."
+    "submitError": "Không thể gửi đánh giá. Vui lòng thử lại.",
+    "errors": {
+      "imageUrlInvalid": "Đường dẫn ảnh phải bắt đầu bằng http:// hoặc https://",
+      "imageLimit": "Tối đa {{max}} ảnh mỗi đánh giá."
+    }
   },
   "messages": {
     "empty": "Bạn chưa nhắn với khách sạn nào. Chọn một khách sạn để bắt đầu trao đổi với lễ tân.",

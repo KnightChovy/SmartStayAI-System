@@ -7,6 +7,12 @@ import StarRating from '@/components/shared/StarRating';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  ACCOUNT_ERROR_KEYS,
+  REVIEW_IMAGE_LIMIT,
+  reviewImageUrlSchema,
+  type AccountErrorCode,
+} from '@/validations/account.validation';
 import type { ReviewItem } from '@/types/account.types';
 
 interface ReviewModalProps {
@@ -69,6 +75,7 @@ export default function ReviewModal({
   const isEdit = !!existingReview;
   const [form, setForm] = useState(EMPTY);
   const [imageUrl, setImageUrl] = useState('');
+  const [imageError, setImageError] = useState<AccountErrorCode | null>(null);
 
   // Mở lại / đổi review → nạp lại form. Chỉnh trong render (không dùng effect) để tránh cascading
   // render; khoá theo id review nên không clobber khi khách đang gõ (open + cùng review = không reset).
@@ -91,6 +98,7 @@ export default function ReviewModal({
           : EMPTY
       );
       setImageUrl('');
+      setImageError(null);
     }
   }
 
@@ -112,11 +120,25 @@ export default function ReviewModal({
     (form.cleanlinessRating + form.serviceRating + form.locationRating + form.valueRating) / 4;
   const overallRating = Math.round(avgRating);
 
+  /**
+   * BE bắt `Joi.string().uri()` và tối đa 10 ảnh — trước đây ô này nhận chuỗi bất kỳ nên khách
+   * gõ "abc" xong viết cả bài đánh giá rồi mới ăn 400 lúc bấm Đăng. Chặn ngay tại chỗ thêm ảnh.
+   */
   const addImage = () => {
-    if (imageUrl.trim()) {
-      set('images', [...form.images, imageUrl.trim()]);
-      setImageUrl('');
+    const raw = imageUrl.trim();
+    if (!raw) return;
+    if (form.images.length >= REVIEW_IMAGE_LIMIT) {
+      setImageError('imageLimit');
+      return;
     }
+    const parsed = reviewImageUrlSchema.safeParse(raw);
+    if (!parsed.success) {
+      setImageError('imageUrlInvalid');
+      return;
+    }
+    set('images', [...form.images, parsed.data]);
+    setImageUrl('');
+    setImageError(null);
   };
 
   const isPending = createReview.isPending || updateReview.isPending;
@@ -276,7 +298,11 @@ export default function ReviewModal({
             <div className="flex gap-2">
               <Input
                 value={imageUrl}
-                onChange={e => setImageUrl(e.target.value)}
+                onChange={e => {
+                  setImageUrl(e.target.value);
+                  setImageError(null);
+                }}
+                aria-invalid={!!imageError}
                 placeholder={t('review.photoPlaceholder')}
                 onKeyDown={e => {
                   if (e.key === 'Enter') {
@@ -285,10 +311,20 @@ export default function ReviewModal({
                   }
                 }}
               />
-              <Button type="button" variant="outline" onClick={addImage}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={addImage}
+                disabled={form.images.length >= REVIEW_IMAGE_LIMIT}
+              >
                 <ImagePlus className="size-4" /> {t('review.add')}
               </Button>
             </div>
+            {imageError && (
+              <p className="mt-1 text-xs text-error">
+                {t(ACCOUNT_ERROR_KEYS[imageError], { max: REVIEW_IMAGE_LIMIT })}
+              </p>
+            )}
             {form.images.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-2">
                 {form.images.map((url, i) => (

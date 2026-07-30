@@ -150,7 +150,17 @@
     "preferredCurrency": "Preferred currency",
     "marketingOptIn": "Send me deals and personalized recommendations",
     "saveChanges": "Save changes",
-    "saved": "Saved!"
+    "saved": "Saved!",
+    "errors": {
+      "nameRequired": "Please enter your full name.",
+      "nameTooLong": "Full name is limited to 255 characters.",
+      "phoneInvalid": "Phone must be 6–20 digits (+ - ( ) and spaces allowed).",
+      "nationalityTooLong": "Nationality is limited to 100 characters.",
+      "idCardTooLong": "ID card number is limited to 50 characters.",
+      "passportTooLong": "Passport number is limited to 50 characters.",
+      "dobInvalid": "That date of birth is not valid."
+    },
+    "saveError": "Could not save your profile. Please try again."
   },
   "welcome": {
     "title": "Welcome to StayHub! 🎉",
@@ -187,7 +197,11 @@
     "publish": "Publish review",
     "updated": "Your review has been updated.",
     "published": "Thank you! Your review has been published.",
-    "submitError": "Could not submit your review. Please try again."
+    "submitError": "Could not submit your review. Please try again.",
+    "errors": {
+      "imageUrlInvalid": "Image link must start with http:// or https://",
+      "imageLimit": "Up to {{max}} photos per review."
+    }
   },
   "messages": {
     "empty": "You haven't messaged any hotel yet. Pick a hotel to start chatting with its front desk.",

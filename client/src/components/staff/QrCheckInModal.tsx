@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/cn';
 import { useLookupBooking } from '@/hooks/staff';
 import { errorMessage } from '@/utils/errorMessage';
+import { VOUCHER_CODE_MAX } from '@/validations/staff-booking.validation';
 
 interface QrCheckInModalProps {
   open: boolean;
@@ -38,12 +39,20 @@ export function QrCheckInModal({
 }: QrCheckInModalProps) {
   const [code, setCode] = useState('');
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [codeError, setCodeError] = useState<string | null>(null);
   const lookup = useLookupBooking(hotelId);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const busyRef = useRef(false);
 
   function runLookup(voucherCode: string) {
     if (!voucherCode || busyRef.current) return;
+    // Trần 50 khớp Joi `lookupBookingByVoucher` của BE. `maxLength` trên ô nhập chỉ chặn được
+    // đường gõ tay — mã đến từ QR quét được cũng đi qua đây nên phải kiểm ở cả hai đường.
+    if (voucherCode.length > VOUCHER_CODE_MAX) {
+      setCodeError(`Mã e-voucher tối đa ${VOUCHER_CODE_MAX} ký tự.`);
+      return;
+    }
+    setCodeError(null);
     busyRef.current = true;
     lookup.mutate(voucherCode, {
       onSuccess: booking => {
@@ -157,7 +166,12 @@ export function QrCheckInModal({
               <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
               <Input
                 value={code}
-                onChange={e => setCode(e.target.value)}
+                maxLength={VOUCHER_CODE_MAX}
+                aria-invalid={!!codeError}
+                onChange={e => {
+                  setCode(e.target.value);
+                  setCodeError(null);
+                }}
                 onKeyDown={e => {
                   if (e.key === 'Enter') runLookup(code.trim());
                 }}
@@ -166,6 +180,7 @@ export function QrCheckInModal({
                 autoCapitalize="characters"
               />
             </div>
+            {codeError && <p className="mt-1.5 text-xs text-rose-600">{codeError}</p>}
             <button
               type="button"
               onClick={() => runLookup(code.trim())}

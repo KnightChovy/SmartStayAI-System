@@ -34,6 +34,7 @@ import type {
 } from '@/types/chat.types';
 import { errorMessage } from '@/utils/errorMessage';
 import { hotelInitials } from '@/utils/hotelInitials';
+import { CHAT_MESSAGE_MAX, chatSchema } from '@/validations/chat.validation';
 
 /**
  * Dòng hội thoại có gắn khách sạn. Hội thoại TOÀN SÀN (khung chat nổi) cũng về đây nhưng với
@@ -159,8 +160,11 @@ export default function MessagesPage() {
   const isHandoff = conversation?.handoff ?? false;
 
   const handleSend = async () => {
-    const text = draft.trim();
-    if (!text || !activeHotelId || sendingRef.current) return;
+    // Dùng chính `chatSchema` mà widget chat nổi và ChatComposer của staff đang dùng — trần 2000
+    // khớp Joi `sendMessage` ở BE. Trước đây ô này chỉ chặn rỗng nên tin dài hơn là 400.
+    const parsed = chatSchema.safeParse({ message: draft });
+    if (!parsed.success || !activeHotelId || sendingRef.current) return;
+    const text = parsed.data.message;
     sendingRef.current = true;
     setDraft('');
     try {
@@ -466,6 +470,7 @@ export default function MessagesPage() {
                   <textarea
                     rows={1}
                     value={draft}
+                    maxLength={CHAT_MESSAGE_MAX}
                     onChange={event => setDraft(event.target.value)}
                     onKeyDown={event => {
                       // Bộ gõ tiếng Việt: Enter khi đang ghép chữ là để chốt chữ, không phải để gửi.

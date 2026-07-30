@@ -22,6 +22,7 @@ import DateRangePicker from '@/components/shared/DateRangePicker';
 import GuestSelector from '@/components/shared/GuestSelector';
 import ReviewModal from '@/components/account/ReviewModal';
 import RefundStatusCard from '@/components/account/RefundStatusCard';
+import { CANCEL_REASON_MAX } from '@/validations/account.validation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { formatDateShort } from '@/utils/formatDate';
@@ -252,13 +253,19 @@ export default function BookingDetailPage() {
               <p className="mt-1 text-sm text-on-surface-variant">
                 {t('detail.cancelDesc')}
               </p>
+              {/* Trần 500 khớp `cancelBooking` của BE (`reason: Joi.string().max(500)`) — cắt tại
+                  chỗ gõ thay vì để khách viết dài rồi mới ăn 400 lúc bấm Xác nhận huỷ. */}
               <textarea
                 rows={3}
                 value={reason}
+                maxLength={CANCEL_REASON_MAX}
                 onChange={e => setReason(e.target.value)}
                 placeholder={t('detail.cancelReasonPlaceholder')}
                 className="mt-3 w-full rounded-xl border border-outline-variant/40 bg-surface px-3 py-2 text-sm outline-none focus:border-primary"
               />
+              <p className="mt-1 text-right text-xs text-on-surface-variant">
+                {reason.length}/{CANCEL_REASON_MAX}
+              </p>
               {cancelBooking.isError && (
                 <p className="mt-2 text-sm text-error">
                   {t('detail.cancelError')}
