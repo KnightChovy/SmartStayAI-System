@@ -365,6 +365,11 @@ export interface HotelSearchParams {
   /** Người lớn (≥ 1). Có field này thì BE ưu tiên `adults + children` làm tổng khách. */
   adults?: number;
   children?: number;
+  /**
+   * Số phòng khách cần. BE chỉ áp được khi có `checkIn`/`checkOut` (phải biết tồn kho): loại
+   * thẳng khách sạn có TỔNG phòng trống trong kỳ ở < `rooms`.
+   */
+  rooms?: number;
   sortBy?: HotelSortBy;
   page?: number;
   limit?: number;
