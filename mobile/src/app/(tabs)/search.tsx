@@ -11,7 +11,7 @@ import { useDebounce } from '@/hooks/ui/use-debounce';
 import { useGetHotels } from '@/hooks/hotels';
 import { getPrimaryImageUrl, getHotelLocation } from '@/utils/hotel';
 import { formatVnd } from '@/utils/formatCurrency';
-import { formatDateShort } from '@/utils/formatDate';
+import { addDays, formatDateShort, todayKey, toDateKey } from '@/utils/formatDate';
 import { StayPickerSheet } from '@/components/shared/StayPickerSheet';
 import type { HotelSearchResult } from '@/types/hotels.type';
 import { GUEST_COLORS } from '@/constants/guestTheme';
@@ -60,21 +60,18 @@ export default function SearchScreen() {
   const [query, setQuery] = useState('');
   const debouncedQuery = useDebounce(query, 400);
 
-  // Ngày/khách chọn NGAY TRÊN màn search (như web) — mặc định TRỐNG để hiện MỌI khách sạn (không lọc
-  // theo tồn kho đêm nay). Khi khách chọn ngày, giá "từ" áp đúng pricing rule + thuế/phí = số ở bước
-  // chọn phòng, và ngày được mang sang trang chi tiết để hai bên khớp nhau.
-  const [stayCheckIn, setStayCheckIn] = useState<string | undefined>(checkIn);
-  const [stayCheckOut, setStayCheckOut] = useState<string | undefined>(checkOut);
+  // Luôn có kỳ ở mặc định hôm nay → mai, giống dashboard. Nhờ vậy giá "từ" chạy
+  // pricing rule/deal, kiểm tra tồn kho và khớp với Room Detail ngay cả khi mở tab Search trực tiếp.
+  const [stayCheckIn, setStayCheckIn] = useState(checkIn ?? todayKey());
+  const [stayCheckOut, setStayCheckOut] = useState(checkOut ?? toDateKey(addDays(todayKey(), 1)));
   const [stayGuests, setStayGuests] = useState<number>(guests ? Number(guests) : 2);
   const [pickerOpen, setPickerOpen] = useState(false);
-  const hasDates = Boolean(stayCheckIn && stayCheckOut);
 
   const { data, isLoading, isError, refetch, isRefetching } = useGetHotels({
     city,
     checkIn: stayCheckIn,
     checkOut: stayCheckOut,
-    // Chỉ lọc theo số khách khi đã có ngày — không có ngày = chế độ duyệt, hiện mọi KS.
-    guests: hasDates ? stayGuests : undefined,
+    guests: stayGuests,
   });
   const results = data?.results ?? [];
 
@@ -82,8 +79,8 @@ export default function SearchScreen() {
   // giá "từ" ngoài này; luôn kèm guests để chi tiết dùng đúng số khách.
   const detailParams = (id: string) => ({
     id,
-    ...(stayCheckIn ? { checkIn: stayCheckIn } : {}),
-    ...(stayCheckOut ? { checkOut: stayCheckOut } : {}),
+    checkIn: stayCheckIn,
+    checkOut: stayCheckOut,
     guests: String(stayGuests),
   });
 
@@ -169,7 +166,7 @@ export default function SearchScreen() {
           ))}
         </View>
 
-        {/* Date & guests selector (chọn ngay trên màn search như web). Trống = hiện mọi KS. */}
+        {/* Date & guests selector: luôn có kỳ ở để giá search là giá khách thực sự có thể đặt. */}
         <View className="px-4 pb-2.5 flex-row items-center gap-2">
           <Pressable
             onPress={() => setPickerOpen(true)}
@@ -177,27 +174,12 @@ export default function SearchScreen() {
           >
             <Ionicons name="calendar-outline" size={16} color={GUEST_COLORS.white} />
             <Text size="sm" bold className="font-bevi-bold text-white flex-1" numberOfLines={1}>
-              {hasDates
-                ? `${formatDateShort(stayCheckIn!)} → ${formatDateShort(stayCheckOut!)}`
-                : t('search:addDates')}
+              {`${formatDateShort(stayCheckIn)} → ${formatDateShort(stayCheckOut)}`}
             </Text>
             <View className="w-px h-4 bg-white/25" />
             <Ionicons name="people-outline" size={16} color={GUEST_COLORS.white} />
             <Text size="sm" bold className="font-bevi-bold text-white">{t('search:stayGuests', { count: stayGuests })}</Text>
           </Pressable>
-          {hasDates && (
-            <Pressable
-              onPress={() => {
-                setStayCheckIn(undefined);
-                setStayCheckOut(undefined);
-              }}
-              hitSlop={8}
-              className="w-9 h-9 rounded-field bg-surface/15 items-center justify-center"
-              accessibilityLabel={t('search:clearDates')}
-            >
-              <Ionicons name="close" size={16} color={GUEST_COLORS.white} />
-            </Pressable>
-          )}
         </View>
       </SafeAreaView>
 
