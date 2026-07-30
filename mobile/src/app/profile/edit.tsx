@@ -14,6 +14,7 @@ import { useUploadImage } from '@/hooks/uploads';
 import { getInitials } from '@/utils/hotel';
 import type { MyProfile, UpdateMyProfilePayload } from '@/types/users.type';
 import { GUEST_COLORS } from '@/constants/guestTheme';
+import { fullNameError, phoneError } from '@/validations/auth.validation';
 
 /** Ngày sinh hợp lệ: đúng định dạng YYYY-MM-DD, là ngày thật, không ở tương lai. */
 function isValidDob(value: string): boolean {
@@ -57,9 +58,13 @@ export default function EditProfileScreen() {
     setForm((prev) => (prev ? { ...prev, [key]: value } : prev));
   };
 
-  const nameError = form && !form.fullName.trim() ? t('account:edit.nameRequired', 'Name is required') : '';
+  const nameError = form ? fullNameError(form.fullName) ?? '' : '';
+  const phoneValidation = form ? phoneError(form.phone ?? '') ?? '' : '';
   const dobError = form && !isValidDob(form.dateOfBirth ?? '') ? t('account:edit.dobInvalid') : '';
-  const valid = !nameError && !dobError;
+  const nationalityError = form && (form.nationality?.trim().length ?? 0) > 100 ? 'Quốc tịch không quá 100 ký tự.' : '';
+  const idCardError = form && (form.idCardNumber?.trim().length ?? 0) > 50 ? 'CCCD/CMND không quá 50 ký tự.' : '';
+  const passportError = form && (form.passportNumber?.trim().length ?? 0) > 50 ? 'Hộ chiếu không quá 50 ký tự.' : '';
+  const valid = !nameError && !phoneValidation && !dobError && !nationalityError && !idCardError && !passportError;
 
   async function pickAvatar() {
     setFormError('');
@@ -179,6 +184,7 @@ export default function EditProfileScreen() {
                   onChangeText={(v) => set('phone', v)}
                   placeholder={t('account:edit.phonePlaceholder')}
                   keyboardType="phone-pad"
+                  error={touched ? phoneValidation : ''}
                 />
               </View>
 
@@ -217,6 +223,7 @@ export default function EditProfileScreen() {
                   onChangeText={(v) => set('nationality', v)}
                   placeholder={t('account:edit.nationalityPlaceholder')}
                   autoCapitalize="words"
+                  error={touched ? nationalityError : ''}
                 />
               </View>
 
@@ -229,6 +236,7 @@ export default function EditProfileScreen() {
                   placeholder={t('account:edit.idCardPlaceholder')}
                   keyboardType="number-pad"
                   autoCapitalize="none"
+                  error={touched ? idCardError : ''}
                 />
                 <Field
                   className="flex-1"
@@ -237,6 +245,7 @@ export default function EditProfileScreen() {
                   onChangeText={(v) => set('passportNumber', v)}
                   placeholder={t('account:edit.passportPlaceholder')}
                   autoCapitalize="characters"
+                  error={touched ? passportError : ''}
                 />
               </View>
 

@@ -14,6 +14,7 @@
     "hotelCount_one": "{{count}} KS",
     "hotelCount_other": "{{count}} KS",
     "rooms": "Phòng",
+    "roomsHint": "Mỗi phòng cần ít nhất 1 người lớn",
     "roomsCount_one": "{{count}} phòng",
     "roomsCount_other": "{{count}} phòng",
     "addDate": "Thêm ngày"

@@ -13,8 +13,8 @@ import { useAuthStore } from '@/stores/authStore';
 import { formatVnd } from '@/utils/formatCurrency';
 import { formatDateShort, nightsBetween } from '@/utils/formatDate';
 import { GUEST_COLORS } from '@/constants/guestTheme';
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+import { emailError, fullNameError, phoneError } from '@/validations/auth.validation';
+import { bookingInputError } from '@/validations/bookings.validation';
 
 /** Lấy message lỗi từ axios error mà không dùng `any`. */
 function errorMessage(err: unknown, fallback: string): string {
@@ -44,6 +44,7 @@ export default function BookingCheckoutScreen() {
   const [phone, setPhone] = useState(user?.phone ?? '');
   const [specialRequests, setSpecialRequests] = useState('');
   const [touched, setTouched] = useState(false);
+  const [submissionError, setSubmissionError] = useState('');
 
   const guests = Number(params.guests ?? 2);
   const nights = nightsBetween(params.checkIn, params.checkOut);
@@ -52,10 +53,17 @@ export default function BookingCheckoutScreen() {
     return Number(params.basePrice ?? 0) * nights;
   }, [params.totalPrice, params.basePrice, nights]);
 
-  const nameError = !fullName.trim() ? 'Full name is required' : '';
-  const emailError = !EMAIL_RE.test(email.trim()) ? 'Enter a valid email' : '';
-  const phoneError = phone.trim().length < 8 ? 'Enter a valid phone number' : '';
-  const formValid = !nameError && !emailError && !phoneError;
+  const nameValidation = fullNameError(fullName);
+  const emailValidation = emailError(email);
+  const phoneValidation = !phone.trim() ? 'Số điện thoại là bắt buộc.' : phoneError(phone);
+  const formValid = !nameValidation && !emailValidation && !phoneValidation;
+  const bookingValidation = bookingInputError({
+    hotelId: params.hotelId,
+    roomTypeId: params.roomTypeId,
+    checkIn: params.checkIn,
+    checkOut: params.checkOut,
+    guests,
+  });
 
   function goReview() {
     setTouched(true);
@@ -63,6 +71,11 @@ export default function BookingCheckoutScreen() {
   }
 
   async function handleConfirm() {
+    setSubmissionError('');
+    if (bookingValidation) {
+      setSubmissionError(bookingValidation);
+      return;
+    }
     try {
       const booking = await createBooking.mutateAsync({
         hotelId: params.hotelId,
@@ -137,16 +150,16 @@ export default function BookingCheckoutScreen() {
               <View className="bg-surface rounded-card p-4 gap-3.5">
                 <Field
                   label="Full name" value={fullName} onChangeText={setFullName}
-                  placeholder={t('booking:checkout.fullNamePlaceholder')} error={touched ? nameError : ''} autoCapitalize="words"
+                  placeholder={t('booking:checkout.fullNamePlaceholder')} error={touched ? nameValidation ?? '' : ''} autoCapitalize="words"
                 />
                 <Field
                   label="Email" value={email} onChangeText={setEmail}
-                  placeholder={t('booking:checkout.emailPlaceholder')} error={touched ? emailError : ''}
+                  placeholder={t('booking:checkout.emailPlaceholder')} error={touched ? emailValidation ?? '' : ''}
                   keyboardType="email-address" autoCapitalize="none"
                 />
                 <Field
                   label="Phone" value={phone} onChangeText={setPhone}
-                  placeholder={t('booking:checkout.phonePlaceholder')} error={touched ? phoneError : ''}
+                  placeholder={t('booking:checkout.phonePlaceholder')} error={touched ? phoneValidation ?? '' : ''}
                   keyboardType="phone-pad"
                 />
                 <View>
@@ -181,11 +194,11 @@ export default function BookingCheckoutScreen() {
                 />
               </View>
 
-              {createBooking.isError && (
+              {(submissionError || createBooking.isError) && (
                 <View className="bg-red-50 rounded-field px-3 py-2.5 mb-2 flex-row items-start gap-2">
                   <Ionicons name="alert-circle" size={18} color="#DC2626" />
                   <Text size="sm" className="font-bevi text-red-600 flex-1">
-                    {errorMessage(createBooking.error, 'Could not create booking. The room may no longer be available for these dates.')}
+                    {submissionError || errorMessage(createBooking.error, 'Could not create booking. The room may no longer be available for these dates.')}
                   </Text>
                 </View>
               )}
