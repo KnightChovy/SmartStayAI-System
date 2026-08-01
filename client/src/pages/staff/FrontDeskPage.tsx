@@ -30,6 +30,7 @@ import { ROUTES } from '@/constants/routes';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { formatDate, toUtcDateKey, todayUtcKey } from '@/utils/formatDate';
 import { errorMessage } from '@/utils/errorMessage';
+import { bookingMoment, canCheckIn } from '@/utils/checkInWindow';
 
 const BUCKETS = [
   'all',
@@ -49,21 +50,6 @@ type SortKey = 'createdAt' | 'checkInDate' | 'totalAmount' | 'status';
 type SortDir = 'asc' | 'desc';
 
 const PAGE_SIZE = 10;
-
-/** Local instant for a booking's stored UTC date and the hotel's HH:mm operating rule. */
-function bookingMoment(date: string, time: string): Date {
-  return new Date(`${toUtcDateKey(date)}T${time}:00`);
-}
-
-/** Booking within the actual check-in window, including the hotel's check-in opening time. */
-function canCheckIn(b: HotelBooking, today: string, checkInTime: string): boolean {
-  return (
-    b.status === 'confirmed' &&
-    toUtcDateKey(b.checkInDate) <= today &&
-    today < toUtcDateKey(b.checkOutDate) &&
-    new Date() >= bookingMoment(b.checkInDate, checkInTime)
-  );
-}
 
 function isCheckoutOverdue(b: HotelBooking, checkOutTime: string): boolean {
   return new Date() > bookingMoment(b.checkOutDate, checkOutTime);
@@ -107,7 +93,7 @@ export default function FrontDeskPage() {
 
   const counts = useMemo(
     () => ({
-      checkin: all.filter(b => canCheckIn(b, today, checkInTime)).length,
+      checkin: all.filter(b => canCheckIn(b, checkInTime)).length,
       confirmed: all.filter(b => b.status === 'confirmed').length,
       departure: all.filter(
         b => b.status === 'checked_in' && toUtcDateKey(b.checkOutDate) === today
@@ -129,7 +115,7 @@ export default function FrontDeskPage() {
     const inBucket = (b: HotelBooking) => {
       switch (bucket) {
         case 'checkin':
-          return canCheckIn(b, today, checkInTime);
+          return canCheckIn(b, checkInTime);
         case 'confirmed':
           return b.status === 'confirmed';
         case 'departure':
@@ -235,11 +221,17 @@ export default function FrontDeskPage() {
         open={scanOpen}
         onClose={() => setScanOpen(false)}
         hotelId={hotel?.id}
+        checkInTime={checkInTime}
         onFound={(bookingId, voucherCode) => {
           setScanOpen(false);
           navigate(ROUTES.staffBookingDetail(bookingId), {
             state: { autoCheckIn: true, voucherCode },
           });
+        }}
+        onOpenBooking={bookingId => {
+          setScanOpen(false);
+          // Không kèm `autoCheckIn`: booking này đang bị chặn, mở ra để xử lý no-show/thu tiền.
+          navigate(ROUTES.staffBookingDetail(bookingId));
         }}
       />
 
@@ -399,7 +391,7 @@ export default function FrontDeskPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-2">
-                        {canCheckIn(b, today, checkInTime) && (
+                        {canCheckIn(b, checkInTime) && (
                           <QuickButton
                             busy={rowBusy}
                             onClick={() => setConfirmTarget(b)}
