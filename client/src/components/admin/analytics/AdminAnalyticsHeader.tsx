@@ -1,4 +1,4 @@
-import { Download, Loader2 } from 'lucide-react';
+import { BarChart3, Download, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AdminPageHeader } from '@/components/admin/shared/AdminPageHeader';
 import type { AdminAnalyticsHeaderProps } from '@/types/admin.types';
@@ -11,11 +11,12 @@ export function AdminAnalyticsHeader({
 }: AdminAnalyticsHeaderProps) {
   return (
     <AdminPageHeader
+      icon={BarChart3}
       title={title}
       description={description}
       actions={
         <Button
-          className="h-12 rounded-full bg-black px-6 text-white"
+          className="rounded-lg bg-role-admin-primary px-4 text-white hover:bg-role-admin-secondary"
           disabled={!onExport || isExporting}
           onClick={onExport}
           type="button"

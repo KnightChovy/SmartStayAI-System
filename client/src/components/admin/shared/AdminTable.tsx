@@ -12,7 +12,7 @@ function getStatusClasses(value: string): string {
     normalized.includes('review') ||
     normalized.includes('unpaid')
   ) {
-    return 'border-amber-200 bg-amber-50 text-amber-700';
+    return 'bg-amber-100 text-amber-700';
   }
 
   if (
@@ -22,7 +22,7 @@ function getStatusClasses(value: string): string {
     normalized.includes('suspended') ||
     normalized.includes('cancelled')
   ) {
-    return 'border-rose-200 bg-rose-50 text-rose-700';
+    return 'bg-red-100 text-red-700';
   }
   if (
     normalized.includes('active') ||
@@ -33,10 +33,10 @@ function getStatusClasses(value: string): string {
     normalized.includes('confirmed') ||
     normalized.includes('checked_out')
   ) {
-    return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+    return 'bg-emerald-100 text-emerald-700';
   }
 
-  return 'border-slate-200 bg-slate-50 text-slate-600';
+  return 'bg-slate-100 text-slate-600';
 }
 
 function getStatusIcon(value: string) {
@@ -85,14 +85,15 @@ function renderCell(
     const StatusIcon = getStatusIcon(cell);
 
     return (
+      // Cùng hình dạng với `Pill` của partner/manager: pill tròn, text-[11px], không viền.
       <span
         className={cn(
-          'inline-flex max-w-52 items-center rounded-lg border px-2.5 py-1 text-xs font-semibold',
+          'inline-flex max-w-52 items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold',
           getStatusClasses(cell)
         )}
       >
         {showStatusIcons ? (
-          <StatusIcon aria-hidden="true" className="mr-1.5 size-3.5 shrink-0" />
+          <StatusIcon aria-hidden="true" className="size-3 shrink-0" />
         ) : null}
         {cell}
       </span>
@@ -103,7 +104,7 @@ function renderCell(
     <span
       className={cn(
         'block',
-        columnIndex === 0 ? 'font-semibold text-slate-950' : 'text-slate-600'
+        columnIndex === 0 ? 'font-medium text-slate-800' : 'text-slate-600'
       )}
     >
       {cell}
@@ -111,6 +112,17 @@ function renderCell(
   );
 }
 
+/**
+ * Bảng của cổng Admin.
+ *
+ * Khung/typography/spacing bám đúng `DataTable` mà partner & manager dùng, để ba cổng đọc như một
+ * hệ. Trước đây admin lệch ở: bo góc `rounded-xl` + shadow nặng, header `text-[11px]` tracking rộng
+ * hơn, ô `py-3.5`, có đường kẻ dọc `border-l` giữa mọi cột, và hover dòng `bg-indigo-50/35` —
+ * indigo lại đúng là màu của cổng partner.
+ *
+ * Khác biệt CỐ Ý giữ lại so với `DataTable`: bảng này nhận `string[][]` (không generic) nên vẫn cần
+ * tự suy badge trạng thái từ nội dung ô.
+ */
 export function AdminTable({
   headers,
   rows,
@@ -119,17 +131,16 @@ export function AdminTable({
   showStatusIcons = false,
 }: AdminTableProps) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_12px_32px_-28px_rgba(15,23,42,0.55)] lg:rounded-3xl">
+    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
       <div className="overflow-x-auto">
-        <table className="min-w-190 w-full text-left">
-          <thead className="border-b border-slate-200 bg-slate-50/90 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
-            <tr>
+        <table className="w-full min-w-160 text-left text-sm">
+          <thead>
+            <tr className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
               {headers.map((header, index) => (
                 <th
                   key={header}
                   className={cn(
-                    'whitespace-nowrap px-4 py-4 first:pl-5 last:pr-5',
-                    index > 0 && 'border-l border-slate-200/80',
+                    'whitespace-nowrap px-4 py-3',
                     index === headers.length - 1 &&
                       renderLastColumn &&
                       'text-right'
@@ -144,7 +155,7 @@ export function AdminTable({
             {rows.length === 0 ? (
               <tr>
                 <td
-                  className="px-5 py-12 text-center text-sm text-slate-500"
+                  className="px-4 py-12 text-center text-sm text-slate-400"
                   colSpan={headers.length}
                 >
                   No records found.
@@ -154,7 +165,7 @@ export function AdminTable({
               rows.map((row, rowIdx) => (
                 <tr
                   key={`${row[0]}-${rowIdx}`}
-                  className="group transition-colors duration-200 hover:bg-indigo-50/35"
+                  className="group transition-colors hover:bg-slate-50/60"
                 >
                   {row.map((cell, idx) => {
                     const isLast = idx === row.length - 1;
@@ -162,10 +173,7 @@ export function AdminTable({
                       return (
                         <td
                           key={`${row[0]}-${rowIdx}-${idx}`}
-                          className={cn(
-                            'px-4 py-3.5 text-right first:pl-5 last:pr-5',
-                            idx > 0 && 'border-l border-slate-200/80'
-                          )}
+                          className="px-4 py-3 text-right align-middle"
                         >
                           {renderLastColumn(row)}
                         </td>
@@ -174,11 +182,8 @@ export function AdminTable({
 
                     return (
                       <td
-                          key={`${row[0]}-${rowIdx}-${idx}`}
-                          className={cn(
-                            'whitespace-nowrap px-4 py-3.5 text-sm first:pl-5 last:pr-5',
-                            idx > 0 && 'border-l border-slate-200/80'
-                          )}
+                        key={`${row[0]}-${rowIdx}-${idx}`}
+                        className="whitespace-nowrap px-4 py-3 align-middle"
                       >
                         {renderCell(
                           headers[idx] ?? '',
@@ -196,9 +201,7 @@ export function AdminTable({
         </table>
       </div>
       {footer ? (
-        <div className="border-t border-slate-200 bg-slate-50/45 px-4 py-3">
-          {footer}
-        </div>
+        <div className="border-t border-slate-100 px-4 py-3">{footer}</div>
       ) : null}
     </div>
   );

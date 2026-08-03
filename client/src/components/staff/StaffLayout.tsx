@@ -46,7 +46,7 @@ export function StaffLayout() {
   return (
     <SidebarProvider>
       <CommonSidebar
-        logoChar="S"
+        role="staff"
         title="StayHub"
         subtitle="Staff Portal"
         navItems={navItems}
@@ -55,6 +55,7 @@ export function StaffLayout() {
       />
       <SidebarInset>
         <CommonNavbar
+          role="staff"
           userName={userName}
           searchSlot={<StaffGlobalSearch />}
           bellSlot={<StaffNotifications />}

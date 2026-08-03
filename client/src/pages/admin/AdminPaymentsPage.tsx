@@ -1,7 +1,22 @@
 import { useState } from 'react';
-import { CheckCircle2, ChevronLeft, ChevronRight, CreditCard, RefreshCw, ShieldCheck } from 'lucide-react';
+import {
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  CreditCard,
+  RefreshCw,
+  ShieldCheck,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { ROLE_THEME } from '@/constants/roleTheme';
+import { cn } from '@/lib/cn';
 import { AdminPageHeader } from '@/components/admin/shared/AdminPageHeader';
 import { AdminTable } from '@/components/admin/shared/AdminTable';
 import {
@@ -16,7 +31,9 @@ import { formatCurrency } from '@/utils/formatCurrency';
 import { formatDateShort } from '@/utils/formatDate';
 
 function formatPaymentMethod(method: string): string {
-  return method === 'vnpay' ? 'VNPay' : method.charAt(0).toUpperCase() + method.slice(1);
+  return method === 'vnpay'
+    ? 'VNPay'
+    : method.charAt(0).toUpperCase() + method.slice(1);
 }
 
 const paymentStatusOptions: Array<{
@@ -100,11 +117,12 @@ export function AdminPaymentsPage() {
   return (
     <div className="space-y-6">
       <AdminPageHeader
+        icon={CreditCard}
         title="Payments"
         description="Monitor platform transactions, commissions, and payout status."
         actions={
           <Button
-            className="h-12 rounded-full bg-black px-6 text-white"
+            className="rounded-lg bg-role-admin-primary px-4 text-white hover:bg-role-admin-secondary"
             onClick={() => void refetchPayments()}
           >
             <RefreshCw className="mr-2 size-4" />
@@ -118,10 +136,23 @@ export function AdminPaymentsPage() {
           const Icon = item.icon;
 
           return (
-            <div className="rounded-2xl border bg-white p-5" key={item.label}>
-              <Icon className="size-5 text-blue-600" />
-              <p className="mt-4 text-sm text-muted-foreground">{item.label}</p>
-              <p className="text-2xl font-bold text-slate-950">{item.value}</p>
+            <div
+              className="rounded-xl border border-slate-200 bg-white p-5"
+              key={item.label}
+            >
+              {/* Ô icon cùng khuôn với AdminDashboardStatCard / KPI card của manager */}
+              <div
+                className={cn(
+                  'flex size-9 items-center justify-center rounded-lg',
+                  ROLE_THEME.admin.accentSoft
+                )}
+              >
+                <Icon className="size-4.5" />
+              </div>
+              <p className="mt-3 text-2xl font-bold text-slate-900">
+                {item.value}
+              </p>
+              <p className="mt-1 text-sm text-slate-500">{item.label}</p>
             </div>
           );
         })}
@@ -130,34 +161,39 @@ export function AdminPaymentsPage() {
       <section className="space-y-3">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 className="text-lg font-bold text-slate-950">Recent Transactions</h2>
+            <h2 className="text-lg font-bold text-slate-950">
+              Recent Transactions
+            </h2>
             <p className="text-xs text-muted-foreground">
               Every booking's payment status, including ones never paid.
             </p>
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="admin-payment-status-filter" className="mr-1.5">Status</Label>
-            <select
-              className="h-9 w-44 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-ring focus:ring-3 focus:ring-ring/50"
-              id="admin-payment-status-filter"
-              onChange={event => {
-                setPaymentPage(1);
-                setPaymentStatus(
-                  event.target.value as NonNullable<AdminPaymentsParams['status']> | 'all'
-                );
-              }}
-              value={paymentStatus}
-            >
+          {/* shadcn Select như manager/partner, thay cho <select> thô (khác chiều cao + focus ring) */}
+          <Select
+            value={paymentStatus}
+            onValueChange={value => {
+              setPaymentPage(1);
+              setPaymentStatus(
+                value as NonNullable<AdminPaymentsParams['status']> | 'all'
+              );
+            }}
+          >
+            <SelectTrigger className="w-45">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
               {paymentStatusOptions.map(option => (
-                <option key={option.value} value={option.value}>
+                <SelectItem key={option.value} value={option.value}>
                   {option.label}
-                </option>
+                </SelectItem>
               ))}
-            </select>
-          </div>
+            </SelectContent>
+          </Select>
         </div>
         {isPaymentsLoading && (
-          <p className="text-sm text-muted-foreground">Loading transactions...</p>
+          <p className="text-sm text-muted-foreground">
+            Loading transactions...
+          </p>
         )}
         {isPaymentsError && (
           <p className="text-sm font-medium text-destructive">
@@ -183,7 +219,10 @@ export function AdminPaymentsPage() {
                     Showing{' '}
                     <span className="font-semibold text-slate-700">
                       {(paymentsData.page - 1) * paymentsData.limit + 1}–
-                      {Math.min(paymentsData.page * paymentsData.limit, paymentsData.totalResults)}
+                      {Math.min(
+                        paymentsData.page * paymentsData.limit,
+                        paymentsData.totalResults
+                      )}
                     </span>{' '}
                     of{' '}
                     <span className="font-semibold text-slate-700">
@@ -195,7 +234,9 @@ export function AdminPaymentsPage() {
                     <Button
                       className="h-9 rounded-xl px-3"
                       disabled={paymentsData.page <= 1}
-                      onClick={() => setPaymentPage(current => Math.max(1, current - 1))}
+                      onClick={() =>
+                        setPaymentPage(current => Math.max(1, current - 1))
+                      }
                       type="button"
                       variant="outline"
                     >
@@ -203,13 +244,16 @@ export function AdminPaymentsPage() {
                       Previous
                     </Button>
                     <span className="min-w-20 text-center text-sm font-medium text-slate-600">
-                      {paymentsData.page} / {Math.max(paymentsData.totalPages, 1)}
+                      {paymentsData.page} /{' '}
+                      {Math.max(paymentsData.totalPages, 1)}
                     </span>
                     <Button
                       className="h-9 rounded-xl px-3"
                       disabled={paymentsData.page >= paymentsData.totalPages}
                       onClick={() =>
-                        setPaymentPage(current => Math.min(paymentsData.totalPages, current + 1))
+                        setPaymentPage(current =>
+                          Math.min(paymentsData.totalPages, current + 1)
+                        )
                       }
                       type="button"
                       variant="outline"
@@ -226,9 +270,13 @@ export function AdminPaymentsPage() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-bold text-slate-950">Commission Settlement</h2>
+        <h2 className="text-lg font-bold text-slate-950">
+          Commission Settlement
+        </h2>
         {isCommissionsLoading && (
-          <p className="text-sm text-muted-foreground">Loading commissions...</p>
+          <p className="text-sm text-muted-foreground">
+            Loading commissions...
+          </p>
         )}
         {isCommissionsError && (
           <p className="text-sm font-medium text-destructive">
@@ -269,7 +317,9 @@ export function AdminPaymentsPage() {
                     <Button
                       className="h-9 rounded-xl px-3"
                       disabled={commissionsData.page <= 1}
-                      onClick={() => setCommissionPage(current => Math.max(1, current - 1))}
+                      onClick={() =>
+                        setCommissionPage(current => Math.max(1, current - 1))
+                      }
                       type="button"
                       variant="outline"
                     >
@@ -277,13 +327,18 @@ export function AdminPaymentsPage() {
                       Previous
                     </Button>
                     <span className="min-w-20 text-center text-sm font-medium text-slate-600">
-                      {commissionsData.page} / {Math.max(commissionsData.totalPages, 1)}
+                      {commissionsData.page} /{' '}
+                      {Math.max(commissionsData.totalPages, 1)}
                     </span>
                     <Button
                       className="h-9 rounded-xl px-3"
-                      disabled={commissionsData.page >= commissionsData.totalPages}
+                      disabled={
+                        commissionsData.page >= commissionsData.totalPages
+                      }
                       onClick={() =>
-                        setCommissionPage(current => Math.min(commissionsData.totalPages, current + 1))
+                        setCommissionPage(current =>
+                          Math.min(commissionsData.totalPages, current + 1)
+                        )
                       }
                       type="button"
                       variant="outline"
@@ -309,7 +364,10 @@ export function AdminPaymentsPage() {
         )}
         {settleCommission.isError && (
           <p className="text-sm font-medium text-destructive">
-            {errorMessage(settleCommission.error, 'Could not settle commission.')}
+            {errorMessage(
+              settleCommission.error,
+              'Could not settle commission.'
+            )}
           </p>
         )}
       </section>

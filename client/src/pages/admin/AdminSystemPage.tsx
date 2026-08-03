@@ -25,24 +25,25 @@ export function AdminSystemPage() {
   return (
     <div className="space-y-6">
       <AdminPageHeader
+        icon={ShieldAlert}
         title="System Monitor"
         description="Monitor system logs, audit trails, and security events across StayHub."
       />
 
       <section className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-2xl border bg-white p-5">
+        <div className="rounded-xl border bg-white p-5">
           <ShieldCheck className="size-5 text-emerald-600" />
           <p className="mt-4 text-sm text-muted-foreground">Security posture</p>
           <p className="text-2xl font-bold">Healthy</p>
         </div>
-        <div className="rounded-2xl border bg-white p-5">
+        <div className="rounded-xl border bg-white p-5">
           <AlertTriangle className="size-5 text-amber-600" />
           <p className="mt-4 text-sm text-muted-foreground">Tracked modules</p>
           <p className="text-2xl font-bold">
             {new Set(data?.results.map(log => log.entityType)).size}
           </p>
         </div>
-        <div className="rounded-2xl border bg-white p-5">
+        <div className="rounded-xl border bg-white p-5">
           <FileClock className="size-5 text-blue-600" />
           <p className="mt-4 text-sm text-muted-foreground">Audit events</p>
           <p className="text-2xl font-bold">

@@ -45,14 +45,7 @@ export function AdminPropertiesPage() {
       )}
       {!isLoading && !isError && (
         <AdminTable
-          headers={[
-            'Property',
-            'Location',
-            'Partner',
-            'Status',
-            'Created',
-            '',
-          ]}
+          headers={['Property', 'Location', 'Partner', 'Status', 'Created', '']}
           rows={rows}
           showStatusIcons
           renderLastColumn={row => {

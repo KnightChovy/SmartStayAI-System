@@ -31,6 +31,7 @@ export function ManagerLayout() {
   return (
     <SidebarProvider>
       <CommonSidebar
+        role="manager"
         title="StayHub"
         subtitle="Manager Portal"
         navItems={navItems}
@@ -39,7 +40,7 @@ export function ManagerLayout() {
         isLoggingOut={isLoggingOut}
       />
       <SidebarInset>
-        <CommonNavbar />
+        <CommonNavbar role="manager" />
         <main className="flex-1 min-w-0 p-4 md:p-6 overflow-y-auto bg-gray-50">
           <div className="mx-auto w-full max-w-7xl">
             <Outlet />

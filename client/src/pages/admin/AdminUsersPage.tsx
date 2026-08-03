@@ -1,13 +1,11 @@
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
+import AppFilter from '@/common/filter/AppFilter';
+import AppPagination from '@/common/pagination/AppPagination';
 import { AdminConfirmDialog } from '@/components/admin/shared/AdminConfirmDialog';
 import { AdminUserDetailModal } from '@/components/admin/models/user/AdminUserDetailModal';
 import { AdminUsersHeader } from '@/components/admin/users/AdminUsersHeader';
 import { AdminUsersTable } from '@/components/admin/users/AdminUsersTable';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { useAdminModal } from '@/components/admin/models/AdminModalContext';
 import { UserRole } from '@/constants/roles';
 import { useAdminUsers, useDeleteAdminUser } from '@/hooks/admin';
@@ -96,79 +94,45 @@ export function AdminUsersPage() {
         onToggleFilters={() => setIsFiltersOpen(open => !open)}
       />
       {isFiltersOpen ? (
-        <div className="grid gap-3 rounded-2xl border bg-white p-4 shadow-sm md:grid-cols-[minmax(0,1.4fr)_minmax(180px,0.8fr)_minmax(180px,0.8fr)_auto] md:items-end">
-          <div className="space-y-2">
-            <Label htmlFor="admin-user-filter-name">Name</Label>
-            <Input
-              id="admin-user-filter-name"
-              onChange={event => {
-                setPage(1);
-                setFilters(current => ({
-                  ...current,
-                  name: event.target.value,
-                }));
-              }}
-              placeholder="Search full name"
-              value={filters.name}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="admin-user-filter-role">Role</Label>
-            <select
-              className="h-9 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-ring focus:ring-3 focus:ring-ring/50"
-              id="admin-user-filter-role"
-              onChange={event => {
-                setPage(1);
-                setFilters(current => ({
-                  ...current,
-                  role: event.target.value as UserFilterState['role'],
-                }));
-              }}
-              value={filters.role}
-            >
-              {roleOptions.map(option => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="admin-user-filter-status">Status</Label>
-            <select
-              className="h-9 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-ring focus:ring-3 focus:ring-ring/50"
-              id="admin-user-filter-status"
-              onChange={event => {
-                setPage(1);
-                setFilters(current => ({
-                  ...current,
-                  status: event.target.value as UserFilterState['status'],
-                }));
-              }}
-              value={filters.status}
-            >
-              {statusOptions.map(option => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <Button
-            className="h-9 rounded-full px-4"
-            disabled={!filterCount}
-            onClick={() => {
+        <div className="rounded-xl border border-slate-200 bg-white p-4">
+          {/*
+            Dùng AppFilter dùng chung (partner/manager đang dùng) thay cho <select> thô + Label
+            riêng: cùng chiều cao ô, cùng shadcn Select, cùng nút Reset. Ô lọc "category" ở đây
+            mang nghĩa Role — đó là lý do AppFilter nhận placeholder tuỳ biến.
+          */}
+          <AppFilter
+            search={filters.name}
+            searchPlaceholder="Search full name"
+            onSearchChange={value => {
+              setPage(1);
+              setFilters(current => ({ ...current, name: value }));
+            }}
+            category={filters.role}
+            categoryPlaceholder="Role"
+            categoryOptions={roleOptions}
+            onCategoryChange={value => {
+              setPage(1);
+              setFilters(current => ({
+                ...current,
+                role: value as UserFilterState['role'],
+              }));
+            }}
+            status={filters.status}
+            statusPlaceholder="Status"
+            statusOptions={statusOptions}
+            onStatusChange={value => {
+              setPage(1);
+              setFilters(current => ({
+                ...current,
+                status: value as UserFilterState['status'],
+              }));
+            }}
+            resetDisabled={!filterCount}
+            onReset={() => {
               setPage(1);
               setFilters({ name: '', role: 'all', status: 'all' });
             }}
-            type="button"
-            variant="outline"
-          >
-            Reset
-          </Button>
+          />
         </div>
       ) : null}
       {isLoading && (
@@ -201,33 +165,11 @@ export function AdminUsersPage() {
                   users
                 </p>
 
-                <div className="flex items-center justify-between gap-2 sm:justify-end">
-                  <Button
-                    className="h-9 rounded-xl px-3"
-                    disabled={data.page <= 1}
-                    onClick={() => setPage(current => Math.max(1, current - 1))}
-                    type="button"
-                    variant="outline"
-                  >
-                    <ChevronLeft className="size-4" />
-                    Previous
-                  </Button>
-                  <span className="min-w-20 text-center text-sm font-medium text-slate-600">
-                    {data.page} / {Math.max(data.totalPages, 1)}
-                  </span>
-                  <Button
-                    className="h-9 rounded-xl px-3"
-                    disabled={data.page >= data.totalPages}
-                    onClick={() =>
-                      setPage(current => Math.min(data.totalPages, current + 1))
-                    }
-                    type="button"
-                    variant="outline"
-                  >
-                    Next
-                    <ChevronRight className="size-4" />
-                  </Button>
-                </div>
+                <AppPagination
+                  currentPage={data.page}
+                  totalPages={Math.max(data.totalPages, 1)}
+                  onPageChange={setPage}
+                />
               </div>
             ) : undefined
           }

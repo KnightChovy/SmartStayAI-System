@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ElementType, ReactNode } from 'react';
 import type { UserRole } from '@/constants/roles';
 import type { Paginated } from '@/types/api.types';
 import type { HotelImage } from '@/types/hotel.types';
@@ -37,6 +37,8 @@ export interface AdminDashboardStatCardProps {
   label: string;
   value: string;
   trend: string;
+  /** Icon lucide trong ô màu, khớp KPI card của manager. */
+  icon?: ElementType;
 }
 
 export interface AdminPropertiesTableProps {
@@ -56,6 +58,8 @@ export interface AdminPageHeaderProps {
   title: string;
   description: string;
   actions?: ReactNode;
+  /** Icon lucide hiển thị trong ô màu bên trái, khớp cách manager/partner làm header. */
+  icon?: ElementType;
 }
 
 export interface AdminTableProps {

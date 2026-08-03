@@ -1,4 +1,4 @@
-import { Filter, UserPlus } from 'lucide-react';
+import { Filter, UserPlus, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AdminPageHeader } from '@/components/admin/shared/AdminPageHeader';
 
@@ -17,13 +17,14 @@ export function AdminUsersHeader({
 }: AdminUsersHeaderProps) {
   return (
     <AdminPageHeader
+      icon={Users}
       title="User Moderation"
       description="Monitor and manage the StayHub community."
       actions={
         <>
           <Button
             aria-expanded={isFiltersOpen}
-            className="h-12 rounded-full px-6"
+            className="rounded-lg px-4"
             onClick={onToggleFilters}
             type="button"
             variant="outline"
@@ -32,7 +33,7 @@ export function AdminUsersHeader({
             {filterCount ? `Filters (${filterCount})` : 'Filters'}
           </Button>
           <Button
-            className="h-12 rounded-full bg-black px-6 text-white"
+            className="rounded-lg bg-role-admin-primary px-4 text-white hover:bg-role-admin-secondary"
             onClick={onAddUser}
             type="button"
           >

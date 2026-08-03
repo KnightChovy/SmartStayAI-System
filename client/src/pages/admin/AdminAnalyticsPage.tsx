@@ -11,13 +11,18 @@ import { formatCurrency } from '@/utils/formatCurrency';
 
 export function AdminAnalyticsPage() {
   const [isExporting, setIsExporting] = useState(false);
-  const { data: overview, isLoading: isOverviewLoading, isError, error } =
-    useAdminOverview();
-  const { data: analytics, isLoading: isAnalyticsLoading } = usePlatformAnalytics({
-    period: 'month',
-    range: 8,
-    topLimit: 5,
-  });
+  const {
+    data: overview,
+    isLoading: isOverviewLoading,
+    isError,
+    error,
+  } = useAdminOverview();
+  const { data: analytics, isLoading: isAnalyticsLoading } =
+    usePlatformAnalytics({
+      period: 'month',
+      range: 8,
+      topLimit: 5,
+    });
 
   const isLoading = isOverviewLoading || isAnalyticsLoading;
 
@@ -88,7 +93,11 @@ export function AdminAnalyticsPage() {
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {kpis.map(kpi => (
-          <AdminAnalyticsKpiCard key={kpi.label} {...kpi} value={isLoading ? '—' : kpi.value} />
+          <AdminAnalyticsKpiCard
+            key={kpi.label}
+            {...kpi}
+            value={isLoading ? '—' : kpi.value}
+          />
         ))}
       </section>
 

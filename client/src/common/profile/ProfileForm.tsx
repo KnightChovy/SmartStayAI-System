@@ -119,7 +119,9 @@ export function ProfileForm({ initial }: { initial: UserProfile }) {
     toast.success(t('profile.saved'));
   });
 
-  const initials = (watchedName || initial.email || 'US').slice(0, 1).toUpperCase();
+  const initials = (watchedName || initial.email || 'US')
+    .slice(0, 1)
+    .toUpperCase();
 
   return (
     <form onSubmit={onSubmit} className="mt-6 space-y-6" noValidate>
@@ -163,7 +165,9 @@ export function ProfileForm({ initial }: { initial: UserProfile }) {
               <Button
                 type="button"
                 variant="ghost"
-                onClick={() => setValue('avatarUrl', null, { shouldDirty: true })}
+                onClick={() =>
+                  setValue('avatarUrl', null, { shouldDirty: true })
+                }
               >
                 {t('profile.remove')}
               </Button>
@@ -174,7 +178,10 @@ export function ProfileForm({ initial }: { initial: UserProfile }) {
 
       {/* Basic info */}
       <div className="grid gap-4 rounded-2xl border border-outline-variant/30 bg-surface p-5 sm:grid-cols-2">
-        <Field label={t('profile.fullName')} error={fieldError(errors.fullName?.message)}>
+        <Field
+          label={t('profile.fullName')}
+          error={fieldError(errors.fullName?.message)}
+        >
           <Input
             {...register('fullName')}
             maxLength={255}
@@ -182,7 +189,10 @@ export function ProfileForm({ initial }: { initial: UserProfile }) {
             aria-required="true"
           />
         </Field>
-        <Field label={t('profile.phone')} error={fieldError(errors.phone?.message)}>
+        <Field
+          label={t('profile.phone')}
+          error={fieldError(errors.phone?.message)}
+        >
           <Input
             {...register('phone')}
             type="tel"
@@ -204,7 +214,10 @@ export function ProfileForm({ initial }: { initial: UserProfile }) {
             )}
           </div>
         </Field>
-        <Field label={t('profile.dob')} error={fieldError(errors.dateOfBirth?.message)}>
+        <Field
+          label={t('profile.dob')}
+          error={fieldError(errors.dateOfBirth?.message)}
+        >
           <Controller
             control={control}
             name="dateOfBirth"
@@ -220,21 +233,30 @@ export function ProfileForm({ initial }: { initial: UserProfile }) {
             )}
           />
         </Field>
-        <Field label={t('profile.nationality')} error={fieldError(errors.nationality?.message)}>
+        <Field
+          label={t('profile.nationality')}
+          error={fieldError(errors.nationality?.message)}
+        >
           <Input
             {...register('nationality')}
             maxLength={100}
             aria-invalid={!!errors.nationality}
           />
         </Field>
-        <Field label={t('profile.idCard')} error={fieldError(errors.idCardNumber?.message)}>
+        <Field
+          label={t('profile.idCard')}
+          error={fieldError(errors.idCardNumber?.message)}
+        >
           <Input
             {...register('idCardNumber')}
             maxLength={50}
             aria-invalid={!!errors.idCardNumber}
           />
         </Field>
-        <Field label={t('profile.passport')} error={fieldError(errors.passportNumber?.message)}>
+        <Field
+          label={t('profile.passport')}
+          error={fieldError(errors.passportNumber?.message)}
+        >
           <Input
             {...register('passportNumber')}
             maxLength={50}
@@ -288,7 +310,9 @@ export function ProfileForm({ initial }: { initial: UserProfile }) {
           {t('profile.saveChanges')}
         </Button>
         {isSubmitSuccessful && !isDirty && !updateProfile.isError && (
-          <span className="text-sm font-medium text-emerald-600">{t('profile.saved')}</span>
+          <span className="text-sm font-medium text-emerald-600">
+            {t('profile.saved')}
+          </span>
         )}
       </div>
     </form>

@@ -1,3 +1,4 @@
+import { DollarSign } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { AdminPageHeader } from '@/components/admin/shared/AdminPageHeader';
@@ -18,7 +19,8 @@ function defaultRange() {
 
 export function AdminRevenuePage() {
   const [range, setRange] = useState(defaultRange);
-  const [groupBy, setGroupBy] = useState<NonNullable<AdminRevenueParams['groupBy']>>('day');
+  const [groupBy, setGroupBy] =
+    useState<NonNullable<AdminRevenueParams['groupBy']>>('day');
   const [isExporting, setIsExporting] = useState(false);
 
   const { data, isLoading, isError, error } = useAdminRevenue({
@@ -42,7 +44,10 @@ export function AdminRevenuePage() {
           { header: 'Period', value: row => row.period },
           { header: 'GMV', value: row => row.gmv },
           { header: 'Commission', value: row => row.commission },
-          { header: 'Net Platform Revenue', value: row => row.netPlatformRevenue },
+          {
+            header: 'Net Platform Revenue',
+            value: row => row.netPlatformRevenue,
+          },
           { header: 'Bookings', value: row => row.bookingCount },
         ],
         series
@@ -58,6 +63,7 @@ export function AdminRevenuePage() {
   return (
     <div className="space-y-6">
       <AdminPageHeader
+        icon={DollarSign}
         description="Platform GMV, commission, and net revenue across all listed hotels"
         title="Revenue"
       />

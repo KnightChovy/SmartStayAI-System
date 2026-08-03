@@ -43,7 +43,7 @@ export function AdminDashboardAppPanel() {
 
   const items = [
     {
-      accent: 'bg-blue-50 text-blue-600',
+      accent: 'bg-role-admin-light text-role-admin-primary',
       icon: CalendarDays,
       label: 'Calendar',
       status: upcomingEvents > 0 ? `${upcomingEvents} upcoming` : 'No events',
@@ -72,14 +72,20 @@ export function AdminDashboardAppPanel() {
       accent: 'bg-slate-100 text-slate-700',
       icon: FileText,
       label: 'File Manager',
-      status: files.length > 0 ? `${files.length} file${files.length === 1 ? '' : 's'}` : 'No files',
+      status:
+        files.length > 0
+          ? `${files.length} file${files.length === 1 ? '' : 's'}`
+          : 'No files',
       onClick: openFileManager,
     },
     {
       accent: 'bg-purple-50 text-purple-600',
       icon: NotebookText,
       label: 'Notes',
-      status: notes.length > 0 ? `${notes.length} note${notes.length === 1 ? '' : 's'}` : 'No notes',
+      status:
+        notes.length > 0
+          ? `${notes.length} note${notes.length === 1 ? '' : 's'}`
+          : 'No notes',
       onClick: openNotes,
     },
     {
@@ -92,7 +98,7 @@ export function AdminDashboardAppPanel() {
   ];
 
   return (
-    <section className="rounded-[24px] border border-outline-variant/40 bg-white p-4 shadow-sm">
+    <section className="rounded-xl border border-outline-variant/40 bg-white p-4 shadow-sm">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
           <h3 className="text-lg font-bold text-slate-950">Apps</h3>
@@ -111,14 +117,14 @@ export function AdminDashboardAppPanel() {
 
           return (
             <button
-              className="group flex w-full items-center gap-3 rounded-2xl border border-transparent bg-surface-container-low px-3 py-3 text-left transition-all hover:border-blue-100 hover:bg-blue-50/60 hover:shadow-sm"
+              className="group flex w-full items-center gap-3 rounded-xl border border-transparent bg-surface-container-low px-3 py-3 text-left transition-all hover:border-role-admin-primary/20 hover:bg-role-admin-light hover:shadow-sm"
               key={item.label}
               onClick={item.onClick}
               type="button"
             >
               <span
                 className={cn(
-                  'flex size-10 shrink-0 items-center justify-center rounded-2xl',
+                  'flex size-10 shrink-0 items-center justify-center rounded-xl',
                   item.accent
                 )}
               >
@@ -132,7 +138,7 @@ export function AdminDashboardAppPanel() {
                   {item.status}
                 </span>
               </span>
-              <span className="text-sm font-bold text-slate-300 transition-colors group-hover:text-blue-600">
+              <span className="text-sm font-bold text-slate-300 transition-colors group-hover:text-role-admin-primary">
                 →
               </span>
             </button>
