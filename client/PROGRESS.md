@@ -1179,7 +1179,14 @@ This file tracks the accomplished tasks, resolved user requests, and visual/func
 
 ---
 
-_Last Updated: 2026-06-01_
+_Last Updated: 2026-08-03_
+
+- [x] **Admin Dashboard Recent Activity Log uses real audit data**:
+  - Replaced the hard-coded activity rows with `GET /admin/audit-logs?limit=6` through the existing admin service and TanStack Query hook.
+  - Rendered the audit actor, action, entity, timestamp, and explicit loading, empty, and error states.
+  - Connected “View All” to the existing full recent-activity modal, which reads the same platform audit-log endpoint.
+
+_Previous updates_
 
 - [x] **Admin Multi-Page Refactor (Based on New Mockups)**:
   - Reworked admin routing to nested pages under /admin/\* with shared shell layout.
