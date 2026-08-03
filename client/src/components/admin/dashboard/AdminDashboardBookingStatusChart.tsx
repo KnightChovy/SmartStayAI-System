@@ -91,7 +91,10 @@ export function AdminDashboardBookingStatusChart({
 
           <ul className="mt-4 space-y-1.5 text-xs">
             {data.map(item => (
-              <li className="flex items-center justify-between gap-3" key={item.label}>
+              <li
+                className="flex items-center justify-between gap-3"
+                key={item.label}
+              >
                 <span className="flex items-center gap-2">
                   <span
                     className="size-2.5 rounded-full"

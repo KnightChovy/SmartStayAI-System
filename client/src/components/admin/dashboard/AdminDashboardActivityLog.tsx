@@ -7,7 +7,7 @@ const rows = [
 
 export function AdminDashboardActivityLog() {
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_12px_32px_-28px_rgba(15,23,42,0.55)] lg:rounded-3xl">
+    <div className="overflow-hidden rounded-xl border border-slate-200/90 bg-white ">
       <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
         <h3 className="text-base font-semibold text-slate-950">
           Recent Activity Log

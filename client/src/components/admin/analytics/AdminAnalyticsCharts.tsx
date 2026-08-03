@@ -48,21 +48,29 @@ export function AdminAnalyticsCharts({
   const activeBooking =
     activeBookingIndex === null ? null : bookingData[activeBookingIndex];
 
-  const totalBookings = bookingData.reduce((sum, item) => sum + item.bookings, 0);
+  const totalBookings = bookingData.reduce(
+    (sum, item) => sum + item.bookings,
+    0
+  );
   const latestBookings = bookingData[bookingData.length - 1]?.bookings ?? 0;
 
-  const totalCityBookings = topCities.reduce((sum, item) => sum + item.bookings, 0);
+  const totalCityBookings = topCities.reduce(
+    (sum, item) => sum + item.bookings,
+    0
+  );
   const cityData = topCities.map((item, index) => ({
     name: item.city,
     value: item.bookings,
     color: CITY_COLORS[index % CITY_COLORS.length],
-    share: totalCityBookings > 0 ? (item.bookings / totalCityBookings) * 100 : 0,
+    share:
+      totalCityBookings > 0 ? (item.bookings / totalCityBookings) * 100 : 0,
   }));
-  const activeCity = activeCityIndex === null ? null : cityData[activeCityIndex];
+  const activeCity =
+    activeCityIndex === null ? null : cityData[activeCityIndex];
 
   return (
     <section className="grid gap-5 lg:gap-6 xl:grid-cols-[1.6fr_1fr]">
-      <div className="rounded-2xl border bg-white p-4 sm:p-6">
+      <div className="rounded-xl border bg-white p-4 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h2 className="text-xl font-bold sm:text-2xl">Bookings Growth</h2>
@@ -101,7 +109,7 @@ export function AdminAnalyticsCharts({
           ) : (
             <>
               {activeBooking ? (
-                <div className="mb-2 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-blue-100 bg-white px-3 py-2 shadow-sm">
+                <div className="mb-2 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-blue-100 bg-white px-3 py-2 shadow-sm">
                   <p className="text-xs font-bold text-slate-950">
                     {activeBooking.month} bookings
                   </p>
@@ -174,11 +182,13 @@ export function AdminAnalyticsCharts({
           )}
         </div>
       </div>
-      <div className="rounded-2xl border bg-white p-4 sm:p-6">
+      <div className="rounded-xl border bg-white p-4 sm:p-6">
         <div className="flex items-start justify-between gap-3">
           <div>
             <h2 className="text-xl font-bold sm:text-2xl">Top Cities</h2>
-            <p className="text-sm text-muted-foreground">Booking share by city</p>
+            <p className="text-sm text-muted-foreground">
+              Booking share by city
+            </p>
           </div>
           <div className="text-right">
             <p className="text-xs font-semibold uppercase text-muted-foreground">
@@ -235,7 +245,9 @@ export function AdminAnalyticsCharts({
                     data={cityData}
                     dataKey="value"
                     innerRadius="58%"
-                    onMouseEnter={(_, index: number) => setActiveCityIndex(index)}
+                    onMouseEnter={(_, index: number) =>
+                      setActiveCityIndex(index)
+                    }
                     onMouseLeave={() => setActiveCityIndex(null)}
                     outerRadius="82%"
                     paddingAngle={2}

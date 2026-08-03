@@ -25,9 +25,11 @@ export function AdminRevenueFilters({
   isExporting,
 }: AdminRevenueFiltersProps) {
   return (
-    <div className="flex flex-wrap items-end gap-3 rounded-2xl border bg-white p-4 sm:p-5">
+    <div className="flex flex-wrap items-end gap-3 rounded-xl border bg-white p-4 sm:p-5">
       <label className="flex flex-col gap-1">
-        <span className="text-xs font-semibold text-muted-foreground">From</span>
+        <span className="text-xs font-semibold text-muted-foreground">
+          From
+        </span>
         <input
           className="h-9 rounded-lg border px-2 text-sm outline-none focus:border-black"
           max={to || undefined}
@@ -53,7 +55,7 @@ export function AdminRevenueFilters({
             className={cn(
               'rounded-full px-3 py-1.5 text-xs font-semibold transition-colors',
               groupBy === option
-                ? 'bg-black text-white'
+                ? 'bg-role-admin-primary text-white'
                 : 'text-muted-foreground hover:bg-slate-100'
             )}
             key={option}
@@ -66,7 +68,7 @@ export function AdminRevenueFilters({
       </div>
 
       <Button
-        className="ml-auto h-9 rounded-full bg-black px-5 text-white"
+        className="ml-auto h-9 rounded-lg bg-role-admin-primary px-4 text-white hover:bg-role-admin-secondary"
         disabled={isExporting}
         onClick={onExport}
         type="button"

@@ -9,7 +9,10 @@ interface AdminNotesModalProps {
   onClose: () => void;
 }
 
-export function AdminNotesModal({ currentTime, onClose }: AdminNotesModalProps) {
+export function AdminNotesModal({
+  currentTime,
+  onClose,
+}: AdminNotesModalProps) {
   const { notes, addNote, togglePin, removeNote } = useAdminNotes();
   const [search, setSearch] = useState('');
   const [title, setTitle] = useState('');
@@ -24,7 +27,9 @@ export function AdminNotesModal({ currentTime, onClose }: AdminNotesModalProps) 
   }, [onClose]);
 
   const filteredNotes = notes.filter(note =>
-    `${note.title} ${note.body}`.toLowerCase().includes(search.trim().toLowerCase())
+    `${note.title} ${note.body}`
+      .toLowerCase()
+      .includes(search.trim().toLowerCase())
   );
 
   const handleAddNote = () => {
@@ -47,7 +52,7 @@ export function AdminNotesModal({ currentTime, onClose }: AdminNotesModalProps) 
         type="button"
       />
 
-      <section className="relative z-10 w-full max-w-3xl overflow-hidden rounded-[28px] bg-white shadow-2xl">
+      <section className="relative z-10 w-full max-w-3xl overflow-hidden rounded-xl bg-white shadow-2xl">
         <header className="flex items-start justify-between gap-4 border-b border-outline-variant/40 px-4 py-4 sm:px-6">
           <div>
             <div className="flex items-center gap-2">
@@ -55,7 +60,8 @@ export function AdminNotesModal({ currentTime, onClose }: AdminNotesModalProps) 
               <h2 className="text-xl font-bold text-slate-950">Notes</h2>
             </div>
             <p className="mt-1 text-xs font-semibold text-muted-foreground">
-              {notes.length} note{notes.length === 1 ? '' : 's'} · saved on this device
+              {notes.length} note{notes.length === 1 ? '' : 's'} · saved on this
+              device
             </p>
           </div>
           <button
@@ -83,16 +89,20 @@ export function AdminNotesModal({ currentTime, onClose }: AdminNotesModalProps) 
             <div className="mt-4 grid max-h-100 gap-3 overflow-y-auto">
               {filteredNotes.length === 0 && (
                 <p className="py-6 text-center text-sm text-muted-foreground">
-                  {notes.length === 0 ? 'No notes yet.' : 'No notes match your search.'}
+                  {notes.length === 0
+                    ? 'No notes yet.'
+                    : 'No notes match your search.'}
                 </p>
               )}
               {filteredNotes.map(note => (
                 <article
-                  className="rounded-[22px] border border-outline-variant/40 bg-slate-50 p-4"
+                  className="rounded-lg border border-outline-variant/40 bg-slate-50 p-4"
                   key={note.id}
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <h3 className="text-sm font-bold text-slate-950">{note.title}</h3>
+                    <h3 className="text-sm font-bold text-slate-950">
+                      {note.title}
+                    </h3>
                     <div className="flex shrink-0 items-center gap-1">
                       <button
                         aria-label={note.pinned ? 'Unpin note' : 'Pin note'}
@@ -124,7 +134,7 @@ export function AdminNotesModal({ currentTime, onClose }: AdminNotesModalProps) 
             </div>
           </div>
 
-          <aside className="rounded-[24px] bg-slate-950 p-4 text-white">
+          <aside className="rounded-xl bg-slate-950 p-4 text-white">
             <p className="text-xs font-bold uppercase tracking-wide text-white/60">
               Quick Note
             </p>
@@ -138,7 +148,7 @@ export function AdminNotesModal({ currentTime, onClose }: AdminNotesModalProps) 
               value={title}
             />
             <textarea
-              className="mt-2 min-h-32 w-full resize-none rounded-2xl border border-white/10 bg-white/10 p-3 text-sm text-white outline-none placeholder:text-white/45"
+              className="mt-2 min-h-32 w-full resize-none rounded-xl border border-white/10 bg-white/10 p-3 text-sm text-white outline-none placeholder:text-white/45"
               onChange={event => setBody(event.target.value)}
               placeholder="Write an admin note..."
               value={body}

@@ -61,7 +61,7 @@ export function AdminTasksModal({
         type="button"
       />
 
-      <section className="relative z-10 w-full max-w-3xl overflow-hidden rounded-[22px] bg-white shadow-2xl">
+      <section className="relative z-10 w-full max-w-3xl overflow-hidden rounded-lg bg-white shadow-2xl">
         <header className="flex items-start justify-between gap-4 border-b border-outline-variant/40 px-4 py-4 sm:px-5">
           <div>
             <div className="flex items-center gap-2">
@@ -143,7 +143,7 @@ export function AdminTasksModal({
           </button>
         </div>
 
-        <div className="m-4 overflow-hidden rounded-2xl border border-slate-200 sm:m-5">
+        <div className="m-4 overflow-hidden rounded-xl border border-slate-200 sm:m-5">
           <div className="overflow-x-auto">
             {tasks.length === 0 ? (
               <p className="py-8 text-center text-sm text-muted-foreground">

@@ -178,14 +178,14 @@ export function AdminFileManagerModal({ onClose }: AdminFileManagerModalProps) {
         type="file"
       />
 
-      <section className="relative z-10 grid h-[min(82vh,640px)] w-full max-w-5xl overflow-hidden rounded-[28px] bg-white shadow-2xl md:grid-cols-[220px_1fr]">
+      <section className="relative z-10 grid h-[min(82vh,640px)] w-full max-w-5xl overflow-hidden rounded-xl bg-white shadow-2xl md:grid-cols-[220px_1fr]">
         <aside className="hidden border-r border-outline-variant/40 bg-slate-50/80 p-4 md:block">
           <nav className="space-y-2">
             <button
               className={cn(
-                'flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm font-bold transition-colors',
+                'flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-bold transition-colors',
                 activeCategory === ALL_CATEGORY
-                  ? 'bg-blue-600 text-white shadow-sm'
+                  ? 'bg-role-admin-primary text-white shadow-sm'
                   : 'text-slate-700 hover:bg-white'
               )}
               onClick={() => setActiveCategory(ALL_CATEGORY)}
@@ -200,9 +200,9 @@ export function AdminFileManagerModal({ onClose }: AdminFileManagerModalProps) {
               return (
                 <button
                   className={cn(
-                    'flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm font-bold transition-colors',
+                    'flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-bold transition-colors',
                     activeCategory === category.id
-                      ? 'bg-blue-600 text-white shadow-sm'
+                      ? 'bg-role-admin-primary text-white shadow-sm'
                       : 'text-slate-700 hover:bg-white'
                   )}
                   key={category.id}
@@ -251,7 +251,7 @@ export function AdminFileManagerModal({ onClose }: AdminFileManagerModalProps) {
                 New Folder
               </button>
               <button
-                className="inline-flex h-9 items-center gap-2 rounded-full bg-blue-600 px-3 text-xs font-bold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex h-9 items-center gap-2 rounded-full bg-role-admin-primary px-3 text-xs font-bold text-white hover:bg-role-admin-secondary disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={upload.isPending}
                 onClick={handleUploadClick}
                 type="button"
@@ -276,7 +276,7 @@ export function AdminFileManagerModal({ onClose }: AdminFileManagerModalProps) {
 
           <div className="flex-1 overflow-y-auto p-4 sm:p-6">
             {isCreatingFolder && (
-              <div className="mb-4 flex items-center gap-2 rounded-2xl border border-outline-variant/40 bg-slate-50 p-3">
+              <div className="mb-4 flex items-center gap-2 rounded-xl border border-outline-variant/40 bg-slate-50 p-3">
                 <Input
                   autoFocus
                   className="h-9 flex-1 bg-white"
@@ -318,7 +318,7 @@ export function AdminFileManagerModal({ onClose }: AdminFileManagerModalProps) {
                 return (
                   <button
                     className={cn(
-                      'rounded-[28px] border p-4 text-left transition-colors hover:border-blue-100 hover:bg-blue-50/50',
+                      'rounded-xl border p-4 text-left transition-colors hover:border-role-admin-primary/20 hover:bg-role-admin-light',
                       activeCategory === category.id
                         ? 'border-blue-200 bg-blue-50/60'
                         : 'border-outline-variant/40 bg-white'
@@ -353,15 +353,21 @@ export function AdminFileManagerModal({ onClose }: AdminFileManagerModalProps) {
                     : 'No files match this view.'}
                 </p>
               ) : (
-                <div className="mt-3 overflow-hidden rounded-2xl border border-slate-200">
+                <div className="mt-3 overflow-hidden rounded-xl border border-slate-200">
                   <div className="overflow-x-auto">
                     <table className="w-full min-w-140 text-left">
                       <thead className="bg-slate-50/90">
                         <tr className="border-b border-slate-200 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
                           <th className="py-3.5 pl-4 pr-4">Name</th>
-                          <th className="border-l border-slate-200/80 px-4 py-3">Size</th>
-                          <th className="border-l border-slate-200/80 px-4 py-3">Uploaded</th>
-                          <th className="border-l border-slate-200/80 py-3 pl-4 pr-4 text-right"> </th>
+                          <th className="border-l border-slate-200/80 px-4 py-3">
+                            Size
+                          </th>
+                          <th className="border-l border-slate-200/80 px-4 py-3">
+                            Uploaded
+                          </th>
+                          <th className="border-l border-slate-200/80 py-3 pl-4 pr-4 text-right">
+                            {' '}
+                          </th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">

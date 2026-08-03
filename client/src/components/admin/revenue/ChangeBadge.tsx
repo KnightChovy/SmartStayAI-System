@@ -9,7 +9,9 @@ interface ChangeBadgeProps {
 
 export function ChangeBadge({ value, className }: ChangeBadgeProps) {
   if (value === null) {
-    return <span className={cn('text-xs text-muted-foreground', className)}>—</span>;
+    return (
+      <span className={cn('text-xs text-muted-foreground', className)}>—</span>
+    );
   }
 
   const isZero = value === 0;

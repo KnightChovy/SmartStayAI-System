@@ -28,10 +28,11 @@ export function AdminAiSettingsPage() {
   return (
     <div className="space-y-6">
       <AdminPageHeader
+        icon={Bot}
         title="AI Settings"
         description="Configure AI prompt templates, model behavior, safety limits, and service settings."
         actions={
-          <Button className="h-12 rounded-full bg-black px-6 text-white">
+          <Button className="rounded-lg bg-role-admin-primary px-4 text-white hover:bg-role-admin-secondary">
             <Save className="mr-2 size-4" />
             Save AI Settings
           </Button>
@@ -39,7 +40,7 @@ export function AdminAiSettingsPage() {
       />
 
       <section className="grid gap-4 lg:grid-cols-[1fr_1fr]">
-        <div className="rounded-2xl border bg-white p-5">
+        <div className="rounded-xl border bg-white p-5">
           <div className="flex items-center gap-3">
             <Bot className="size-5 text-blue-600" />
             <h2 className="text-lg font-bold">AI Service Controls</h2>
@@ -64,7 +65,7 @@ export function AdminAiSettingsPage() {
           </div>
         </div>
 
-        <div className="rounded-2xl border bg-slate-950 p-5 text-white">
+        <div className="rounded-xl border bg-slate-950 p-5 text-white">
           <Sparkles className="size-5 text-blue-300" />
           <h2 className="mt-3 text-lg font-bold">Safety & Escalation</h2>
           <div className="mt-4 space-y-3">
@@ -92,7 +93,7 @@ export function AdminAiSettingsPage() {
       <section className="grid gap-4">
         {promptTemplates.map(template => (
           <article
-            className="rounded-2xl border bg-white p-5"
+            className="rounded-xl border bg-white p-5"
             key={template.title}
           >
             <div className="flex flex-wrap items-start justify-between gap-3">
@@ -109,7 +110,7 @@ export function AdminAiSettingsPage() {
               </span>
             </div>
             <textarea
-              className="mt-4 min-h-28 w-full resize-none rounded-2xl border border-outline-variant/50 p-4 text-sm outline-none focus:border-blue-500 focus:ring-3 focus:ring-blue-500/20"
+              className="mt-4 min-h-28 w-full resize-none rounded-xl border border-outline-variant/50 p-4 text-sm outline-none focus:border-role-admin-primary focus:ring-3 focus:ring-role-admin-primary/20"
               defaultValue={`System prompt for ${template.title}. Keep responses accurate, concise, and aligned with StayHub policies.`}
             />
           </article>

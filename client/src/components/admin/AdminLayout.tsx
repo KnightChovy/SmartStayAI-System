@@ -16,7 +16,6 @@ import {
 } from 'lucide-react';
 import CommonNavbar from '@/common/navbar/Navbar';
 import CommonSidebar from '@/common/sidebar/Sidebar';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { AdminActivityModal } from './models/activity/AdminActivityModal';
 import { AdminCalendarModal } from './models/calendar/AdminCalendarModal';
@@ -44,6 +43,29 @@ const adminNavItems = [
 const adminFooterItems = [
   { name: 'Settings', href: '/admin/settings', icon: Settings },
 ];
+
+/** Nút tròn trên navbar — cùng kích thước/viền với bellSlot & helpSlot mặc định của CommonNavbar. */
+function NavbarIconButton({
+  label,
+  onClick,
+  children,
+}: {
+  label: string;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      aria-label={label}
+      className="inline-flex size-8 items-center justify-center rounded-full border border-outline-variant/40 transition-colors hover:bg-surface-container-low"
+      onClick={onClick}
+      title={label}
+      type="button"
+    >
+      {children}
+    </button>
+  );
+}
 
 export function AdminLayout() {
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
@@ -144,7 +166,7 @@ export function AdminLayout() {
     >
       <SidebarProvider>
         <CommonSidebar
-          logoChar="A"
+          role="admin"
           title="StayHub"
           subtitle="Admin Portal"
           navItems={adminNavItems}
@@ -152,7 +174,7 @@ export function AdminLayout() {
           onLogout={handleLogout}
           isLoggingOut={isLoggingOut}
         />
-        <SidebarInset className="bg-[#f7f4f3] text-on-surface">
+        <SidebarInset>
           {isCalendarOpen ? (
             <AdminCalendarModal
               currentTime={currentTime}
@@ -216,50 +238,45 @@ export function AdminLayout() {
             />
           ) : null}
 
+          {/*
+            Dùng leadingActions/bellSlot/helpSlot thay cho rightContent: rightContent THAY THẾ cả
+            khối mặc định, khiến admin mất dropdown avatar (Profile / Back to Home) mà các cổng
+            khác đều có, và phải hardcode tên "Admin" thay vì đọc từ authStore. Các slot này chỉ
+            chèn thêm nên phần chung được giữ nguyên.
+          */}
           <CommonNavbar
+            role="admin"
             currentTime={currentTime}
             onDateClick={handleOpenCalendar}
             searchPlaceholder="Search data, reports, users..."
-            userName="Admin"
-            rightContent={
-              <>
-                <button
-                  aria-label="Open calendar"
-                  className="inline-flex size-8 items-center justify-center rounded-full border border-outline-variant/40"
-                  onClick={handleOpenCalendar}
-                  type="button"
-                >
-                  <CalendarDays className="size-3.5" />
-                </button>
-                <button
-                  aria-label="Open recent activity"
-                  className="inline-flex size-8 items-center justify-center rounded-full border border-outline-variant/40"
-                  onClick={handleOpenMessages}
-                  type="button"
-                >
-                  <Bell className="size-3.5" />
-                </button>
-                <button
-                  aria-label="Open support"
-                  className="inline-flex size-8 items-center justify-center rounded-full border border-outline-variant/40"
-                  onClick={handleOpenSupport}
-                  type="button"
-                >
-                  <HelpCircle className="size-3.5" />
-                </button>
-                <div className="hidden h-6 w-px bg-outline-variant/40 sm:block" />
-                <div className="hidden items-center gap-2 sm:flex">
-                  <Avatar className="size-8 rounded-full bg-surface-container">
-                    <AvatarFallback>A</AvatarFallback>
-                  </Avatar>
-                  <p className="text-sm font-semibold">Admin</p>
-                </div>
-              </>
+            leadingActions={
+              <NavbarIconButton
+                label="Open calendar"
+                onClick={handleOpenCalendar}
+              >
+                <CalendarDays className="size-3.5" />
+              </NavbarIconButton>
+            }
+            bellSlot={
+              <NavbarIconButton
+                label="Open recent activity"
+                onClick={handleOpenMessages}
+              >
+                <Bell className="size-3.5" />
+              </NavbarIconButton>
+            }
+            helpSlot={
+              <NavbarIconButton
+                label="Open support"
+                onClick={handleOpenSupport}
+              >
+                <HelpCircle className="size-3.5" />
+              </NavbarIconButton>
             }
           />
 
-          <main className="flex-1 min-w-0 px-4 py-4 sm:px-5 sm:py-5 lg:px-6 lg:py-6">
-            <div className="mx-auto w-full max-w-280">
+          <main className="flex-1 min-w-0 p-4 md:p-6 overflow-y-auto bg-gray-50">
+            <div className="mx-auto w-full max-w-7xl">
               <Outlet />
             </div>
           </main>

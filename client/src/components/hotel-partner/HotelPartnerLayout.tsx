@@ -60,6 +60,7 @@ export function HotelPartnerLayout() {
   return (
     <SidebarProvider>
       <CommonSidebar
+        role="partner"
         title="StayHub"
         subtitle="Partner Portal"
         navItems={navItems}
@@ -68,7 +69,7 @@ export function HotelPartnerLayout() {
         isLoggingOut={isLoggingOut}
       />
       <SidebarInset>
-        <CommonNavbar />
+        <CommonNavbar role="partner" />
         <main className="flex-1 min-w-0 p-4 md:p-6 overflow-y-auto bg-gray-50">
           <div className="mx-auto w-full max-w-7xl">
             {resolving ? (

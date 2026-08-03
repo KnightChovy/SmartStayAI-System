@@ -51,7 +51,7 @@ export function AdminConfirmDialog({
         type="button"
       />
 
-      <section className="relative z-10 w-full max-w-sm overflow-hidden rounded-3xl bg-white shadow-2xl">
+      <section className="relative z-10 w-full max-w-sm overflow-hidden rounded-xl bg-white shadow-2xl">
         <header className="flex items-start justify-between gap-4 border-b border-outline-variant/40 px-5 py-4">
           <div className="flex items-center gap-2">
             <AlertTriangle className="size-5 text-amber-500" />
@@ -83,7 +83,7 @@ export function AdminConfirmDialog({
               className={`inline-flex h-9 items-center justify-center gap-1.5 rounded-full px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60 ${
                 destructive
                   ? 'bg-red-600 hover:bg-red-700'
-                  : 'bg-blue-600 hover:bg-blue-700'
+                  : 'bg-role-admin-primary hover:bg-role-admin-secondary'
               }`}
               disabled={loading}
               onClick={onConfirm}

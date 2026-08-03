@@ -76,7 +76,11 @@ export function AdminDashboardGrowthChart({
                   <stop offset="95%" stopColor="#2563eb" stopOpacity={0.02} />
                 </linearGradient>
               </defs>
-              <CartesianGrid stroke="#e2e8f0" strokeDasharray="4 4" vertical={false} />
+              <CartesianGrid
+                stroke="#e2e8f0"
+                strokeDasharray="4 4"
+                vertical={false}
+              />
               <XAxis
                 axisLine={false}
                 dataKey="month"
@@ -101,7 +105,12 @@ export function AdminDashboardGrowthChart({
                 labelStyle={{ color: '#0f172a', fontWeight: 700 }}
               />
               <Area
-                activeDot={{ fill: '#2563eb', r: 5, stroke: '#ffffff', strokeWidth: 2 }}
+                activeDot={{
+                  fill: '#2563eb',
+                  r: 5,
+                  stroke: '#ffffff',
+                  strokeWidth: 2,
+                }}
                 dataKey="users"
                 fill="url(#userGrowthFill)"
                 stroke="#2563eb"
