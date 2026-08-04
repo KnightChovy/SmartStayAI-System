@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import {
+  AlertTriangle,
   CalendarDays,
   CheckCircle2,
   Download,
@@ -11,7 +12,7 @@ import {
   Users,
   XCircle,
 } from 'lucide-react';
-import { useBooking, useCancelBooking } from '@/hooks/bookings';
+import { useBooking, useCancelBooking, usePaymentHold } from '@/hooks/bookings';
 import { useMyReviews } from '@/hooks/account';
 import { ROUTES } from '@/constants/routes';
 import BackLink from '@/components/shared/BackLink';
@@ -22,6 +23,7 @@ import DateRangePicker from '@/components/shared/DateRangePicker';
 import GuestSelector from '@/components/shared/GuestSelector';
 import ReviewModal from '@/components/account/ReviewModal';
 import RefundStatusCard from '@/components/account/RefundStatusCard';
+import PayNowAction from '@/components/booking/PayNowAction';
 import { CANCEL_REASON_MAX } from '@/validations/account.validation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -31,11 +33,14 @@ import { formatDateShort } from '@/utils/formatDate';
 const CANCELLABLE = new Set(['pending', 'confirmed']);
 
 export default function BookingDetailPage() {
-  const { t } = useTranslation(['account', 'common']);
+  const { t } = useTranslation(['account', 'common', 'booking']);
   const { bookingId = '' } = useParams();
   const navigate = useNavigate();
   const { data: booking, isLoading } = useBooking(bookingId);
   const cancelBooking = useCancelBooking();
+  // Đơn tạo xong nhưng chưa trả tiền (huỷ giữa chừng ở cổng / đóng tab) vẫn còn hạn giữ chỗ
+  // → phải nói rõ và cho đường trả tiền lại, nếu không khách kẹt cho tới lúc cron huỷ đơn.
+  const hold = usePaymentHold(booking);
   // Review đã có cho booking này (nếu có) → cho phép sửa thay vì tạo mới.
   const { data: myReviews } = useMyReviews();
   const existingReview = myReviews?.find(r => r.bookingId === bookingId) ?? null;
@@ -154,8 +159,24 @@ export default function BookingDetailPage() {
             )}
           </div>
 
+          {/* Chưa thanh toán — nói rõ hạn giữ chỗ trước, vì quá hạn là đơn tự huỷ và mất phòng */}
+          {hold.awaitingPayment && hold.deadlineLabel && (
+            <div className="flex gap-3 rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4">
+              <AlertTriangle className="mt-0.5 size-5 shrink-0 text-amber-700" />
+              <div>
+                <p className="font-semibold text-on-surface">{t('booking:payment.unpaidTitle')}</p>
+                <p className="mt-0.5 text-sm text-on-surface-variant">
+                  {t('booking:payment.unpaidBody', { time: hold.deadlineLabel })}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Actions */}
           <div className="flex flex-wrap gap-3">
+            {/* Đứng đầu hàng: với đơn chưa trả tiền thì đây là việc gấp nhất của khách.
+                Banner ngay trên đã nói hạn giữ chỗ nên nút không lặp lại đồng hồ. */}
+            <PayNowAction booking={booking} showCountdown={false} />
             {canModify && (
               <Button variant="outline" size="lg" onClick={openModify}>
                 <PencilLine className="size-4" /> {t('detail.modify')}

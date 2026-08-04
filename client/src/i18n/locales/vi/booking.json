@@ -26,7 +26,14 @@
     "secureNote": "Bạn sẽ được chuyển an toàn tới VNPay để hoàn tất thanh toán.",
     "review": "Xem lại đặt phòng",
     "notCharged": "Bạn chưa bị trừ tiền cho tới khi hoàn tất thanh toán tại cổng.",
-    "sepayNote": "Bạn sẽ nhận mã QR để chuyển khoản — hệ thống tự đối soát và xác nhận đơn."
+    "sepayNote": "Bạn sẽ nhận mã QR để chuyển khoản — hệ thống tự đối soát và xác nhận đơn.",
+    "payNow": "Thanh toán ngay",
+    "payWithVnpay": "Thanh toán qua VNPay",
+    "payWithSepay": "Chuyển khoản QR (SePay)",
+    "holdCountdown": "Giữ chỗ còn {{time}}",
+    "unpaidTitle": "Đơn này chưa được thanh toán",
+    "unpaidBody": "Phòng chỉ được giữ tới {{time}}. Quá hạn, đơn sẽ tự huỷ và bạn phải đặt lại.",
+    "payError": "Không thể bắt đầu thanh toán. Vui lòng thử lại."
   },
   "trust": {
     "cancellation": "Chính sách hủy",
