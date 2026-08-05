@@ -1,8 +1,18 @@
 import express from 'express';
 import auth from '../../middlewares/auth';
 import validate from '../../middlewares/validate';
-import { platformManagerValidation, bookingValidation, refundValidation } from '../../validations';
-import { platformManagerController, bookingController, refundController } from '../../controllers';
+import {
+  platformManagerValidation,
+  bookingValidation,
+  refundValidation,
+  commissionRateValidation,
+} from '../../validations';
+import {
+  platformManagerController,
+  bookingController,
+  refundController,
+  commissionRateController,
+} from '../../controllers';
 
 const router = express.Router();
 
@@ -14,6 +24,15 @@ router.get(
   auth('viewPlatformStats'),
   validate(platformManagerValidation.listPartners),
   platformManagerController.listPartners
+);
+
+// Đình chỉ / khôi phục đối tác — biện pháp xử lý vi phạm, KHÔNG dùng để can thiệp mức hoa hồng
+// đã cam kết (thoả thuận còn hiệu lực là bất khả xâm phạm).
+router.patch(
+  '/partners/:partnerId/status',
+  auth('manageHotels'),
+  validate(platformManagerValidation.setPartnerStatus),
+  platformManagerController.setPartnerStatus
 );
 
 // Toàn bộ booking toàn sàn (lọc theo KS/đối tác/trạng thái/ngày + tìm kiếm)
@@ -64,5 +83,25 @@ router.patch(
   validate(refundValidation.processRefund),
   refundController.processRefund
 );
+
+// ===== Mức hoa hồng (manageCommissions) =====
+// Đối tác nộp đơn xin giảm cho từng khách sạn (POST /hotels/:hotelId/commission-requests);
+// Platform Manager duyệt tại đây, và là bên duy nhất đặt được mức hoa hồng nền cho toàn sàn.
+router.get(
+  '/commission-requests',
+  auth('manageCommissions'),
+  validate(commissionRateValidation.listRequests),
+  commissionRateController.listRequests
+);
+router.patch(
+  '/commission-requests/:requestId/review',
+  auth('manageCommissions'),
+  validate(commissionRateValidation.reviewRequest),
+  commissionRateController.reviewRequest
+);
+router
+  .route('/commission-rate')
+  .get(auth('manageCommissions'), commissionRateController.getBaseRate)
+  .put(auth('manageCommissions'), validate(commissionRateValidation.setBaseRate), commissionRateController.setBaseRate);
 
 export default router;

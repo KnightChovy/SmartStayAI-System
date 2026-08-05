@@ -4,6 +4,7 @@ import logger from './logger';
 import { bookingService } from '../services/booking.service';
 import { adminService } from '../services/admin.service';
 import { refundService } from '../services/refund.service';
+import { commissionRateService } from '../services/commission-rate.service';
 
 // Giờ Việt Nam để lịch chạy khớp với nghiệp vụ (Render chạy UTC).
 const TIMEZONE = 'Asia/Ho_Chi_Minh';
@@ -73,8 +74,16 @@ export const startScheduler = (): void => {
     timezone: TIMEZONE,
   });
 
+  // Nhắc đối tác trước khi ưu đãi hoa hồng hết hạn (mốc 30 / 14 / 7 ngày) — 08:00 hằng ngày, giờ
+  // hành chính để thông báo tới lúc người ta đang làm việc. Hết hạn KHÔNG cần job xử lý: mức áp
+  // được suy theo ngày ngay lúc tính hoa hồng, nên cron có lỡ nhịp cũng không ai bị tính sai tiền.
+  cron.schedule('0 8 * * *', () => runJob('remind-commission-expiry', () => commissionRateService.remindExpiringAgreements()), {
+    timezone: TIMEZONE,
+  });
+
   logger.info(
     `[Cron] Đã bật scheduler (${TIMEZONE}): release-holds mỗi 5', sweep-no-shows 02:00, ` +
-      `settle-commissions 03:00, auto-approve-refunds 04:00, credit-wallet-refunds 04:10`
+      `settle-commissions 03:00, auto-approve-refunds 04:00, credit-wallet-refunds 04:10, ` +
+      `remind-commission-expiry 08:00`
   );
 };

@@ -1,8 +1,9 @@
 import httpStatus from 'http-status';
-import type { BookingStatus, PartnerStatus, Prisma } from '@prisma/client';
+import type { BookingStatus, PartnerStatus, Prisma, User } from '@prisma/client';
 import prisma from '../config/prisma';
 import ApiError from '../utils/ApiError';
-import type { AnalyticsQuery, PerformanceQuery } from '../dto/platform-manager.dto';
+import { auditService } from './audit.service';
+import type { AnalyticsQuery, PerformanceQuery, SetPartnerStatusDto } from '../dto/platform-manager.dto';
 
 // Booking được coi là "đã chốt" (đã thanh toán / đã đến): dùng cho conversion rate & GMV
 const CONFIRMED_STATUSES: BookingStatus[] = ['confirmed', 'checked_in', 'checked_out'];
@@ -102,6 +103,89 @@ export class PlatformManagerService {
     // Đổi tên quan hệ ownerUser -> owner cho FE dễ đọc
     const results = rows.map(({ ownerUser, ...partner }) => ({ ...partner, owner: ownerUser }));
     return { results, page, limit, totalPages: Math.ceil(totalResults / limit), totalResults };
+  };
+
+  /**
+   * [Platform Manager] Đình chỉ hoặc khôi phục một đối tác.
+   *
+   * Đây là biện pháp xử lý vi phạm nghiêm trọng — KHÔNG dùng để can thiệp vào mức hoa hồng đã cam
+   * kết. Thoả thuận hoa hồng còn hiệu lực vẫn bất khả xâm phạm; nếu đối tác gian lận thì dừng hẳn
+   * hoạt động của họ, chứ không sửa rate giữa kỳ.
+   *
+   * Đình chỉ ⇒ gỡ niêm yết TẤT CẢ khách sạn của đối tác (ngừng bán ngay) và chặn mọi thao tác quản
+   * lý của họ qua getManagedHotel. Booking đã đặt KHÔNG bị huỷ — khách vẫn được ở, và đối tác vẫn
+   * phải phục vụ; đó là việc của luồng vận hành (getOperableHotel), không phải luồng quản lý.
+   *
+   * Khôi phục ⇒ trả về approved nhưng CỐ Ý không tự bật lại niêm yết: đối tác tự publish lại từng
+   * khách sạn sau khi rà soát, an toàn hơn là bật hàng loạt.
+   */
+  setPartnerStatus = async (partnerId: string, currentUser: User, payload: SetPartnerStatusDto) => {
+    const partner = await prisma.hotelPartner.findFirst({
+      where: { id: partnerId, deletedAt: null },
+      select: { id: true, businessName: true, status: true, ownerId: true },
+    });
+    if (!partner) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy đối tác');
+    }
+
+    const suspending = payload.action === 'suspend';
+    if (suspending && partner.status !== 'approved') {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Chỉ đình chỉ được đối tác đang hoạt động');
+    }
+    if (!suspending && partner.status !== 'suspended') {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Đối tác này không ở trạng thái bị đình chỉ');
+    }
+
+    const now = new Date();
+    const updated = await prisma.$transaction(async (tx) => {
+      const row = await tx.hotelPartner.update({
+        where: { id: partnerId },
+        data: suspending
+          ? { status: 'suspended', rejectionReason: payload.reason ?? null }
+          : { status: 'approved', rejectionReason: null },
+      });
+
+      let unlisted = 0;
+      if (suspending) {
+        const result = await tx.hotel.updateMany({
+          where: { partnerId, isListed: true, deletedAt: null },
+          data: { isListed: false },
+        });
+        unlisted = result.count;
+      }
+
+      await tx.notification.create({
+        data: {
+          userId: partner.ownerId,
+          type: 'alert',
+          title: suspending ? 'Tài khoản đối tác bị đình chỉ' : 'Tài khoản đối tác đã được khôi phục',
+          body: suspending
+            ? `${partner.businessName} đã bị tạm dừng hoạt động. Lý do: ${payload.reason ?? 'không nêu'}. ` +
+              `${unlisted} khách sạn đã được gỡ khỏi trang bán.`
+            : `${partner.businessName} đã được khôi phục. Bạn cần tự mở bán lại từng khách sạn trong phần quản lý.`,
+          data: { partnerId, action: payload.action },
+          channel: 'in_app',
+          status: 'sent',
+          sentAt: now,
+        },
+      });
+      return { row, unlisted };
+    });
+
+    await auditService.log({
+      userId: currentUser.id,
+      action: suspending ? 'partner.suspend' : 'partner.reactivate',
+      entityType: 'hotel_partner',
+      entityId: partnerId,
+      oldValue: { status: partner.status },
+      newValue: {
+        status: updated.row.status,
+        reason: payload.reason ?? null,
+        unlistedHotels: updated.unlisted,
+      },
+    });
+
+    return { partner: updated.row, unlistedHotels: updated.unlisted };
   };
 
   /**

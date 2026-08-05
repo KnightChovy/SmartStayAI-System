@@ -25,3 +25,4 @@ export { notificationService } from './notification.service';
 export { promotionService } from './promotion.service';
 export { statsService } from './stats.service';
 export { destinationService } from './destination.service';
+export { commissionRateService } from './commission-rate.service';

@@ -146,6 +146,18 @@ enum CommissionStatus {
   disputed
 }
 
+// Nguồn của một mức hoa hồng đang hiệu lực
+enum CommissionRateSource {
+  platform_base   // mức nền toàn sàn, Platform Manager đặt
+  hotel_agreement // ưu đãi riêng của một khách sạn, sinh từ đơn được duyệt
+}
+
+enum CommissionRequestStatus {
+  pending
+  approved
+  rejected
+}
+
 enum WalletTransactionType {
   earning     // [ví KS] nhận tiền (net) khi booking thanh toán thành công
   commission  // [ví KS] phần hoa hồng platform cắt
@@ -457,6 +469,9 @@ model User {
   auditLogs                     AuditLog[]
   reviewedVerificationRequests  HotelVerificationRequest[]  @relation("verificationReviewer")
   reviewedVerificationDocuments HotelVerificationDocument[] @relation("documentReviewer")
+  commissionRateRequests        CommissionRateRequest[]     @relation("commissionRequester")
+  reviewedCommissionRequests    CommissionRateRequest[]     @relation("commissionReviewer")
+  createdCommissionRates        CommissionRate[]            @relation("commissionRateCreator")
 
   @@map("users")
 }
@@ -616,6 +631,8 @@ model Hotel {
   nearbyPlaces          HotelNearbyPlace[]
   payouts               Payout[]
   wallet                Wallet?
+  commissionRates       CommissionRate[]
+  commissionRequests    CommissionRateRequest[]
 
   @@map("hotels")
 }
@@ -971,6 +988,66 @@ model PlatformCommission {
   updatedAt        DateTime         @default(now()) @updatedAt @map("updated_at")
 
   @@map("platform_commissions")
+}
+
+// Mức hoa hồng ĐANG/ĐÃ có hiệu lực. Bảng sự thật cho mọi phép tính hoa hồng — chỉ ghi thêm, không
+// sửa bản ghi cũ, để luôn tra được "ngày X thì mức là bao nhiêu".
+//
+// hotelId = null  ⇒ MỨC NỀN toàn sàn do Platform Manager đặt (mọi khách sạn chưa có thoả thuận riêng)
+// hotelId có giá trị ⇒ ưu đãi riêng của khách sạn đó, sinh ra khi một đơn xin giảm được duyệt
+//
+// Không có hai bản ghi cùng phạm vi mà khoảng hiệu lực chồng nhau: khi đặt mức nền mới, mức nền
+// đang chạy được đóng lại bằng effectiveTo = ngày trước đó.
+model CommissionRate {
+  id            String               @id @default(uuid()) @db.Uuid
+  hotelId       String?              @map("hotel_id") @db.Uuid
+  hotel         Hotel?               @relation(fields: [hotelId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  rate          Decimal              @db.Decimal(5, 2)
+  effectiveFrom DateTime             @map("effective_from") @db.Date
+  // null = chưa có ngày kết thúc (chỉ dùng cho mức nền đang chạy); ưu đãi luôn có hạn
+  effectiveTo   DateTime?            @map("effective_to") @db.Date
+  source        CommissionRateSource
+  // Đơn sinh ra bản ghi này (chỉ có với ưu đãi riêng)
+  requestId     String?              @unique @map("request_id") @db.Uuid
+  request       CommissionRateRequest? @relation(fields: [requestId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  createdBy     String               @map("created_by") @db.Uuid
+  createdByUser User                 @relation("commissionRateCreator", fields: [createdBy], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  // Mốc nhắc hết hạn gần nhất ĐÃ gửi (30 / 14 / 7 ngày). Cron chạy hằng ngày nên nếu không ghi lại
+  // thì một ưu đãi sắp hết hạn sẽ bị bắn thông báo mỗi ngày.
+  lastReminderDaysBefore Int?        @map("last_reminder_days_before") @db.SmallInt
+  createdAt     DateTime             @default(now()) @map("created_at")
+
+  @@index([hotelId, effectiveFrom])
+  @@map("commission_rates")
+}
+
+// Đơn của đối tác xin giảm hoa hồng cho MỘT khách sạn. Platform Manager duyệt hoặc từ chối;
+// duyệt thì sinh ra một bản ghi CommissionRate có thời hạn.
+model CommissionRateRequest {
+  id                String                  @id @default(uuid()) @db.Uuid
+  hotelId           String                  @map("hotel_id") @db.Uuid
+  hotel             Hotel                   @relation(fields: [hotelId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  requestedBy       String                  @map("requested_by") @db.Uuid
+  requestedByUser   User                    @relation("commissionRequester", fields: [requestedBy], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  requestedRate     Decimal                 @map("requested_rate") @db.Decimal(5, 2)
+  // Mức khách sạn SẼ chịu nếu đơn này không được duyệt — đóng băng để sau đọc lại còn biết đối tác
+  // xin giảm từ bao nhiêu. Đơn thường: mức đang áp. Đơn gia hạn: mức nền sau khi ưu đãi cũ hết hạn.
+  currentRate       Decimal                 @map("current_rate") @db.Decimal(5, 2)
+  reason            String
+  status            CommissionRequestStatus
+  // true = đơn xin gia hạn (nộp khi ưu đãi hiện tại sắp hết hạn) — quyết định ngày bắt đầu khi duyệt
+  isRenewal         Boolean                 @default(false) @map("is_renewal")
+  reviewedBy        String?                 @map("reviewed_by") @db.Uuid
+  reviewedByUser    User?                   @relation("commissionReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  reviewedAt        DateTime?               @map("reviewed_at")
+  rejectionReason   String?                 @map("rejection_reason")
+  createdAt         DateTime                @default(now()) @map("created_at")
+  updatedAt         DateTime                @default(now()) @updatedAt @map("updated_at")
+
+  agreement         CommissionRate?
+
+  @@index([hotelId, status])
+  @@map("commission_rate_requests")
 }
 
 // Ví per-hotel: mỗi khách sạn có 1 ví. Payout thực tế đi về bank cấp partner,

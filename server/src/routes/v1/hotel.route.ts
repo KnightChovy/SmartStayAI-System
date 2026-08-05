@@ -13,6 +13,7 @@ import {
   reviewValidation,
   revenueValidation,
   refundValidation,
+  commissionRateValidation,
 } from '../../validations';
 import {
   hotelController,
@@ -26,6 +27,7 @@ import {
   reviewController,
   revenueController,
   refundController,
+  commissionRateController,
 } from '../../controllers';
 
 const router = express.Router();
@@ -51,6 +53,19 @@ router.get('/:hotelId/manage', auth(), validate(hotelValidation.getHotel), hotel
 router.get('/:hotelId/revenue', auth(), validate(revenueValidation.getHotelRevenue), revenueController.getHotelRevenue);
 router.get('/:hotelId/wallet', auth(), validate(revenueValidation.getHotelWallet), revenueController.getHotelWallet);
 router.get('/:hotelId/analytics', auth(), validate(revenueValidation.getHotelAnalytics), revenueController.getHotelAnalytics);
+
+// Mức hoa hồng nền tảng thu của khách sạn + đơn xin giảm (chủ KS; service kiểm qua getManagedHotel).
+// Đơn nộp ở đây, còn duyệt nằm bên /platform-manager/commission-requests.
+router.get(
+  '/:hotelId/commission-rate',
+  auth(),
+  validate(commissionRateValidation.getHotelRate),
+  commissionRateController.getHotelRate
+);
+router
+  .route('/:hotelId/commission-requests')
+  .get(auth(), validate(commissionRateValidation.listHotelRequests), commissionRateController.listHotelRequests)
+  .post(auth(), validate(commissionRateValidation.createRequest), commissionRateController.createRequest);
 
 // Partner tự bật/tắt mở bán (publish) khách sạn của mình — chủ KS hoặc quyền manageHotels (service tự kiểm)
 router.patch(
