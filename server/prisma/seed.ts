@@ -30,6 +30,16 @@ const daysFromNow = (days: number): Date => {
   return d;
 };
 
+/**
+ * Mức hoa hồng nền của sàn (%). MỘT nguồn duy nhất cho cả bản ghi `commission_rates`, cột
+ * `hotel_partners.commission_rate` và hoa hồng của các booking mẫu — ba chỗ này mà lệch nhau thì
+ * dữ liệu seed tự mâu thuẫn.
+ *
+ * Khách sạn seed đều dùng mức nền, KHÔNG khách sạn nào có ưu đãi riêng: ưu đãi phải đi qua luồng
+ * đối tác nộp đơn → Platform Manager duyệt, seed sẵn sẽ che mất chính luồng cần demo.
+ */
+const PLATFORM_BASE_COMMISSION_RATE = 15;
+
 // ---------------------------------------------------------------------------
 // Ảnh: dùng ảnh THẬT đã upload sẵn trên Cloudinary (thư mục smartstay/seed).
 // URL không kèm version → không phải sửa seed mỗi lần ảnh được thay.
@@ -151,7 +161,6 @@ interface SeedHotel {
   businessName: string;
   businessRegistrationNumber: string;
   taxCode: string;
-  commissionRate: number;
   representative: { fullName: string; role: RepresentativeRole; idNumber: string; phone: string; address: string };
   payout: { accountHolder: string; bankName: string; accountNumber: string; bankBranch: string };
   // --- khách sạn ---
@@ -187,7 +196,6 @@ const HOTELS: SeedHotel[] = [
     businessName: 'Công ty TNHH Biển Xanh Hospitality',
     businessRegistrationNumber: '0401234567',
     taxCode: '0401234567-001',
-    commissionRate: 15,
     representative: { fullName: 'Trần Minh Đức', role: 'owner', idNumber: '048201001234', phone: '0901000001', address: '12 Võ Nguyên Giáp, Sơn Trà, Đà Nẵng' },
     payout: { accountHolder: 'TRAN MINH DUC', bankName: 'Vietcombank', accountNumber: '0071000123456', bankBranch: 'CN Đà Nẵng' },
     name: 'SmartStay Đà Nẵng Beach Resort',
@@ -263,7 +271,6 @@ const HOTELS: SeedHotel[] = [
     businessName: 'Công ty CP Sài Gòn Central Group',
     businessRegistrationNumber: '0312345678',
     taxCode: '0312345678-001',
-    commissionRate: 12,
     representative: { fullName: 'Nguyễn Thu Hà', role: 'general_manager', idNumber: '079198002345', phone: '0901000002', address: '45 Lê Lợi, Quận 1, TP.HCM' },
     payout: { accountHolder: 'NGUYEN THU HA', bankName: 'Techcombank', accountNumber: '19036789012345', bankBranch: 'CN Sài Gòn' },
     name: 'SmartStay Saigon Central',
@@ -334,7 +341,6 @@ const HOTELS: SeedHotel[] = [
     businessName: 'Công ty TNHH Hà Nội Heritage',
     businessRegistrationNumber: '0101234567',
     taxCode: '0101234567-001',
-    commissionRate: 10,
     representative: { fullName: 'Lê Quốc Bảo', role: 'legal_representative', idNumber: '001199003456', phone: '0901000003', address: '22 Hàng Bạc, Hoàn Kiếm, Hà Nội' },
     payout: { accountHolder: 'LE QUOC BAO', bankName: 'BIDV', accountNumber: '21010001234567', bankBranch: 'CN Hoàn Kiếm' },
     name: 'SmartStay Hanoi Old Quarter',
@@ -400,7 +406,6 @@ const HOTELS: SeedHotel[] = [
     businessName: 'Công ty CP Nha Trang Bay Resorts',
     businessRegistrationNumber: '4201234567',
     taxCode: '4201234567-001',
-    commissionRate: 14,
     representative: { fullName: 'Phạm Hải Yến', role: 'director', idNumber: '056200004567', phone: '0901000004', address: '90 Trần Phú, Nha Trang, Khánh Hoà' },
     payout: { accountHolder: 'PHAM HAI YEN', bankName: 'ACB', accountNumber: '18790001234567', bankBranch: 'CN Nha Trang' },
     name: 'SmartStay Nha Trang Bay',
@@ -539,6 +544,23 @@ const main = async (): Promise<void> => {
   const admin = userByEmail.get('admin@gmail.com')!;
   const manager = userByEmail.get('manager@gmail.com')!;
 
+  // ----- Mức hoa hồng nền toàn sàn -----
+  // Bảng commission_rates là NGUỒN SỰ THẬT cho mọi phép tính hoa hồng (xem commission-rate.service).
+  // Không có bản ghi nền thì resolveRate rơi về giá trị env — ra đúng số nhưng màn hình của Platform
+  // Manager sẽ không có lịch sử nào để hiển thị, và không ai biết mức này do đâu mà có.
+  // effectiveFrom lùi 1 năm để mọi booking mẫu (kể cả đơn cũ nhất) đều nằm trong khoảng hiệu lực.
+  await prisma.commissionRate.create({
+    data: {
+      hotelId: null,
+      rate: PLATFORM_BASE_COMMISSION_RATE,
+      effectiveFrom: daysFromNow(-365),
+      effectiveTo: null,
+      source: 'platform_base',
+      createdBy: admin.id,
+    },
+  });
+  console.log(`\n  ✓ Mức hoa hồng nền toàn sàn: ${PLATFORM_BASE_COMMISSION_RATE}%`);
+
   // ----- Tiện nghi -----
   const amenityId = new Map<string, string>();
   for (const a of AMENITIES) {
@@ -566,7 +588,9 @@ const main = async (): Promise<void> => {
         contactEmail: h.email,
         contactPhone: h.phone,
         status: 'approved',
-        commissionRate: h.commissionRate,
+        // Cột này KHÔNG còn là nguồn sự thật (resolveRate đọc bảng commission_rates) — giữ đồng bộ
+        // với mức nền để màn hình cũ nào còn đọc nó cũng không hiện số mâu thuẫn.
+        commissionRate: PLATFORM_BASE_COMMISSION_RATE,
         approvedBy: admin.id,
         approvedAt: daysFromNow(-60),
       },
@@ -820,6 +844,27 @@ const main = async (): Promise<void> => {
   const [danang, saigon, hanoi, nhatrang] = createdHotels;
   const oceanDanang = danang.roomTypes.find((r) => r.viewType === 'ocean')!;
 
+  // ----- Đơn xin giảm hoa hồng đang CHỜ DUYỆT (để test luồng của Platform Manager) -----
+  // Cố ý để ở trạng thái pending, KHÔNG duyệt sẵn: duyệt rồi thì mất chính thứ cần demo (hàng chờ
+  // của PM, nút Duyệt/Từ chối, và việc khách sạn chuyển từ mức nền sang ưu đãi riêng).
+  // 12% < mức nền 15% và ≥ sàn cứng 10% nên hợp lệ với mọi ràng buộc của commission-rate.service.
+  await prisma.commissionRateRequest.create({
+    data: {
+      hotelId: danang.id,
+      requestedBy: userByEmail.get('partner@gmail.com')!.id,
+      requestedRate: 12,
+      // Mức sẽ chịu nếu đơn không được duyệt — ở đây là mức nền vì khách sạn chưa có ưu đãi nào
+      currentRate: PLATFORM_BASE_COMMISSION_RATE,
+      reason:
+        'Khu vực biển Mỹ Khê có nhiều resort mới mở, giá phòng bị ép xuống trong khi chi phí vận hành tăng. ' +
+        'Chúng tôi cam kết tăng ít nhất 30% lượng đặt phòng qua nền tảng trong 6 tháng tới nếu được duyệt mức 12%.',
+      status: 'pending',
+      isRenewal: false,
+      createdAt: daysFromNow(-2),
+    },
+  });
+  console.log(`\n  ✓ 1 đơn xin giảm hoa hồng chờ duyệt: ${danang.name} xin 12% (mức nền ${PLATFORM_BASE_COMMISSION_RATE}%)`);
+
   await prisma.pricingRule.create({
     data: {
       hotelId: danang.id, roomTypeId: oceanDanang.id, name: 'Phụ thu cuối tuần — Deluxe Hướng Biển',
@@ -1021,8 +1066,14 @@ const main = async (): Promise<void> => {
       });
 
       // Hoa hồng: đơn đã trả phòng thì đã tất toán (tiền về ví khả dụng), đơn tương lai còn treo
-      const rate = HOTELS.find((x) => x.name === b.hotel.name)!.commissionRate;
-      const commissionAmount = Math.round((m.subtotal * rate) / 100);
+      // Booking mẫu đều phát sinh trong thời gian mức nền có hiệu lực, và không khách sạn nào có
+      // ưu đãi riêng ⇒ rate đúng bằng mức nền (khớp kết quả resolveRate nếu tính lại).
+      const rate = PLATFORM_BASE_COMMISSION_RATE;
+      // Tính trên totalAmount (tiền phòng − giảm giá + thuế + phí) — ĐÚNG như payment.service và
+      // booking.service làm khi tiền thật về. Trước đây seed tính trên subtotal nên hoa hồng và số
+      // dư ví thấp hơn thực tế, khiến báo cáo doanh thu demo không khớp công thức của hệ thống.
+      const commissionAmount = Math.round((m.totalAmount * rate) / 100);
+      const net = m.totalAmount - commissionAmount;
       const settled = b.status === 'checked_out';
       await prisma.platformCommission.create({
         data: {
@@ -1038,8 +1089,8 @@ const main = async (): Promise<void> => {
       await prisma.wallet.update({
         where: { hotelId: b.hotel.id },
         data: settled
-          ? { balanceAvailable: { increment: m.subtotal - commissionAmount } }
-          : { balancePending: { increment: m.subtotal - commissionAmount } },
+          ? { balanceAvailable: { increment: net } }
+          : { balancePending: { increment: net } },
       });
     }
 
