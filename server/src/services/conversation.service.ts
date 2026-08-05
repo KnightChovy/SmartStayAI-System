@@ -11,6 +11,7 @@ import { hotelService } from './hotel.service';
 import { AiTool } from './ai/ai.types';
 import { setPendingAction, consumePendingAction } from './ai/pending-action.store';
 import { emitMessageToConversation, emitConversationEscalated } from '../config/socket';
+import { toUtcDate, todayInVietnam } from '../utils/dates';
 import type { HotelSearchFilter } from '../dto/hotel.dto';
 
 // Thông tin một khách sạn đủ để dựng lời nhắc + RAG cho concierge theo KS.
@@ -67,6 +68,39 @@ const isHumanHandling = (c: { status: ConversationStatus; assignedTo: string | n
 //     Lưu ý: nếu FAQ của KS đổi giữa lúc server đang chạy, cache sẽ cũ tới khi restart.
 const faqEmbedCache = new Map<string, { question: string; answer: string; vector: number[] }[]>();
 
+/**
+ * Kiểm ngày lưu trú do model tự điền TRƯỚC khi tra cứu/dựng phiếu.
+ *
+ * Trả về câu HƯỚNG DẪN thay vì throw: model đọc được thì tự hỏi lại khách ngay trong lượt đó. Nếu để
+ * lọt, tool vẫn chạy và trả kết quả trông rất thật cho một kỳ nghỉ đã qua (bảng tồn kho không có dòng
+ * cho ngày cũ nên rơi về đếm phòng vật lý ⇒ báo "còn phòng"), rồi khách đi hết quy trình mới ăn lỗi ở
+ * createBooking. Ngày đảo ngược cũng chặn ở đây vì không đêm nào được tính ⇒ mọi loại phòng bị báo
+ * nhầm là "hết phòng".
+ *
+ * Mốc so sánh dùng ĐÚNG hàm của createBooking (toUtcDate) để tool không từ chối ngày mà đặt phòng vẫn nhận.
+ *
+ * @returns câu nhắc cho model, hoặc null nếu ngày hợp lệ
+ */
+const stayDateWarning = (checkInDate: string, checkOutDate: string): string | null => {
+  const checkIn = new Date(checkInDate);
+  const checkOut = new Date(checkOutDate);
+  if (Number.isNaN(checkIn.getTime()) || Number.isNaN(checkOut.getTime())) {
+    return 'Ngày nhận/trả phòng không hợp lệ. Hãy hỏi lại khách và truyền đúng định dạng YYYY-MM-DD.';
+  }
+  const today = todayInVietnam();
+  if (toUtcDate(checkIn) < toUtcDate(new Date())) {
+    return (
+      `Ngày nhận phòng ${checkInDate} đã ở QUÁ KHỨ — hôm nay là ${today.label} (${today.iso}). ` +
+      'Không tra cứu hay đặt phòng cho ngày đã qua. Hãy HỎI LẠI khách ngày nhận phòng mong muốn ' +
+      'rồi gọi lại tool với ngày đó.'
+    );
+  }
+  if (toUtcDate(checkOut) <= toUtcDate(checkIn)) {
+    return `Ngày trả phòng ${checkOutDate} phải SAU ngày nhận phòng ${checkInDate}. Hãy hỏi lại khách.`;
+  }
+  return null;
+};
+
 export class ConversationService {
   // (A) Dựng "lời nhắc hệ thống" từ thông tin khách sạn
   private buildSystemPrompt = (
@@ -80,8 +114,17 @@ export class ConversationService {
     faqs: { question: string; answer: string }[],
     isAuthenticated: boolean
   ): string => {
+    const today = todayInVietnam();
     const lines = [
       `Bạn là trợ lý ảo của khách sạn "${hotel.name}" tại ${hotel.city}.`,
+      // Model KHÔNG có đồng hồ: không nói ngày thì nó lấy mốc thời gian từ dữ liệu huấn luyện, rồi tra
+      // phòng/giá và dựng phiếu đặt cho một kỳ nghỉ đã qua. Phải là thứ đầu tiên nó đọc.
+      '',
+      `HÔM NAY là ${today.label} (${today.iso}).`,
+      'Mọi ngày tương đối khách nói ("ngày mai", "cuối tuần này", "thứ 7 tới", "tuần sau") phải quy đổi ' +
+        'theo mốc hôm nay ở trên; khi gọi tool luôn truyền dạng YYYY-MM-DD.',
+      'TUYỆT ĐỐI không tự nghĩ ra hay dùng ngày trong QUÁ KHỨ. Nếu việc cần ngày mà khách chưa nói, hãy HỎI khách.',
+      '',
       hotel.description ? `Giới thiệu: ${hotel.description}` : '',
       hotel.checkInTime ? `Giờ nhận phòng: ${hotel.checkInTime}.` : '',
       hotel.checkOutTime ? `Giờ trả phòng: ${hotel.checkOutTime}.` : '',
@@ -182,6 +225,10 @@ export class ConversationService {
         required: ['checkInDate', 'checkOutDate', 'guests'],
       },
       execute: async (args) => {
+        const warning = stayDateWarning(String(args.checkInDate), String(args.checkOutDate));
+        if (warning) {
+          return warning;
+        }
         const checkIn = new Date(args.checkInDate as string);
         const checkOut = new Date(args.checkOutDate as string);
         const roomTypes = await prisma.roomType.findMany({
@@ -355,6 +402,12 @@ export class ConversationService {
         required: ['roomTypeName', 'checkInDate', 'checkOutDate', 'guests'],
       },
       execute: async (args) => {
+        // Chặn ngày sai TRƯỚC khi dựng phiếu: để lọt thì khách nghe một tóm tắt rất thật (có tổng tiền)
+        // rồi đồng ý, và chỉ tới confirm_action mới ăn lỗi "Ngày nhận phòng không được ở quá khứ".
+        const warning = stayDateWarning(String(args.checkInDate), String(args.checkOutDate));
+        if (warning) {
+          return warning;
+        }
         // Khách gọi phòng theo TÊN; tra ra id thật trong đúng khách sạn này
         const roomType = await prisma.roomType.findFirst({
           where: { hotelId, isActive: true, name: { equals: String(args.roomTypeName), mode: 'insensitive' } },
@@ -494,11 +547,18 @@ export class ConversationService {
 
   // (A′) Lời nhắc cho trợ lý TOÀN SÀN: chỉ tư vấn & tìm/gợi ý khách sạn — KHÔNG đặt/huỷ/tra đơn
   // (không có KS cụ thể để thao tác). Không phân biệt đăng nhập vì cả hai đều chỉ được tư vấn.
-  private buildPlatformSystemPrompt = (): string =>
-    [
+  private buildPlatformSystemPrompt = (): string => {
+    const today = todayInVietnam();
+    return [
       'Bạn là trợ lý ảo của sàn đặt phòng khách sạn SmartStay.',
       'Nhiệm vụ: giúp khách TÌM, SO SÁNH và TÌM HIỂU về khách sạn trên sàn — vị trí, hạng sao, giá "từ", ' +
         'tiện nghi/dịch vụ, các loại phòng — rồi GỢI Ý lựa chọn phù hợp.',
+      // Xem ghi chú ở buildSystemPrompt: model không có đồng hồ, không nói ngày thì nó tra cho kỳ nghỉ đã qua.
+      '',
+      `HÔM NAY là ${today.label} (${today.iso}).`,
+      'Mọi ngày tương đối khách nói ("ngày mai", "cuối tuần này", "thứ 7 tới", "tuần sau") phải quy đổi ' +
+        'theo mốc hôm nay ở trên; khi gọi tool luôn truyền dạng YYYY-MM-DD.',
+      'TUYỆT ĐỐI không tự nghĩ ra hay dùng ngày trong QUÁ KHỨ.',
       '',
       // Chống "hỏi tuần tự": mọi tham số của search_hotels đều TUỲ CHỌN, nên phải gọi tool NGAY với
       // thông tin đang có. Bắt khách khai đủ thành phố+ngày+số khách trước khi làm gì là trải nghiệm tệ
@@ -530,6 +590,7 @@ export class ConversationService {
       '',
       'Trả lời ngắn gọn, lịch sự, bằng tiếng Việt.',
     ].join('\n');
+  };
 
   // (B′) Tool cho trợ lý toàn sàn: CHỈ tìm khách sạn (đọc dữ liệu công khai của cả sàn).
   // Không cấp tool đặt/huỷ/tra đơn/escalate — các việc đó cần một KS cụ thể (làm ở concierge theo KS).
@@ -559,6 +620,10 @@ export class ConversationService {
         }
         // checkIn/checkOut phải đi CÙNG nhau mới tính được tồn kho (như API search public)
         if (args.checkInDate && args.checkOutDate) {
+          const warning = stayDateWarning(String(args.checkInDate), String(args.checkOutDate));
+          if (warning) {
+            return warning;
+          }
           filter.checkIn = new Date(String(args.checkInDate));
           filter.checkOut = new Date(String(args.checkOutDate));
         }
@@ -862,28 +927,57 @@ export class ConversationService {
       content: m.content,
     }));
 
-    // (5) chuẩn bị sẵn prompt + tools để generator dùng (theo chế độ: concierge KS / toàn sàn)
-    const { systemPrompt, tools } = await this.buildTurnContext(hotel, text, currentUser, conversation.id);
     const convId = conversation.id;
+    // Lấy ra để generator (function* thường, không có `this`) gọi được. buildTurnContext KHÔNG vô hại:
+    // nó gọi embed() — một request Gemini THẬT cho mỗi tin — nên hết quota/timeout là ném. Vì vậy nó
+    // nằm HẲN trong generator để mọi lỗi của lượt đi chung một đường như sendMessage; để ở ngoài thì
+    // lỗi thoát ra controller thành 500, trong khi tin của khách thì đã lưu rồi.
+    const { buildTurnContext } = this;
 
-    // (6) generator: đẩy từng mẩu ra, GOM lại thành câu đầy đủ, lưu DB SAU KHI stream xong
+    // (5+6) generator: dựng prompt → đẩy từng mẩu ra, GOM lại thành câu đầy đủ, lưu DB khi kết thúc
     async function* generate(): AsyncGenerator<string> {
       let full = '';
       try {
+        const { systemPrompt, tools } = await buildTurnContext(hotel, text, currentUser, convId);
         for await (const chunk of aiProvider.chatWithToolsStream(systemPrompt, messages, tools)) {
           full += chunk;
           yield chunk;
         }
+        // Model chỉ gọi tool mà không nói gì, hoặc cạn MAX_TOOL_ROUNDS ⇒ không có chữ nào. Bản không
+        // stream đã có câu chốt sẵn trong provider; ở đây phải tự bù, nếu không khách nhìn khung chat
+        // trống còn DB lưu lại một tin rỗng.
+        if (!full.trim()) {
+          full = 'Xin lỗi, tôi chưa hoàn tất được yêu cầu. Bạn liên hệ lễ tân giúp em nhé.';
+          yield full;
+        }
       } catch (err) {
         logger.error(`[Chatbot] stream lỗi: ${(err as Error).message}`);
-        full = 'Xin lỗi, trợ lý đang bận. Bạn thử lại sau ít phút giúp em nhé.';
-        yield full;
+        // KHÔNG ghi đè `full`: phần chữ đã đẩy ra thì khách ĐÃ ĐỌC rồi — xoá khỏi bản lưu là làm lịch sử
+        // lệch với cái khách nhìn thấy. Chỉ NỐI thêm lời xin lỗi vào sau.
+        const notice = full
+          ? '\n\n(Xin lỗi, trợ lý bị gián đoạn giữa chừng. Bạn thử lại giúp em nhé.)'
+          : 'Xin lỗi, trợ lý đang bận. Bạn thử lại sau ít phút giúp em nhé.';
+        full += notice;
+        yield notice;
+      } finally {
+        // finally chứ KHÔNG phải đặt sau for-await: khách đóng tab giữa chừng thì consumer bỏ generator
+        // và đoạn sau không bao giờ chạy. Mà lượt đó tool có thể đã tạo/huỷ booking THẬT ⇒ không lưu thì
+        // hội thoại không còn dấu vết nào của việc vừa xảy ra. Lưu phần đã có còn hơn mất trắng.
+        try {
+          if (full) {
+            await prisma.message.create({
+              data: { conversationId: convId, senderType: 'ai_bot', content: full, messageType: 'text' },
+            });
+          }
+          // Luôn cập nhật kể cả khi không có chữ nào: bỏ qua thì hội thoại tụt hạng ở danh sách sắp theo
+          // lastMessageAt dù khách vừa nhắn.
+          await prisma.conversation.update({ where: { id: convId }, data: { lastMessageAt: new Date() } });
+        } catch (err) {
+          // Lỗi ở đây thường xảy ra lúc khách đã ngắt kết nối ⇒ ném tiếp chỉ tạo unhandled rejection,
+          // không ai nhận. Ghi log rồi thôi.
+          logger.error(`[Chatbot] lưu câu trả lời lỗi: ${(err as Error).message}`);
+        }
       }
-      // lưu câu trả lời đầy đủ + cập nhật thời điểm
-      await prisma.message.create({
-        data: { conversationId: convId, senderType: 'ai_bot', content: full, messageType: 'text' },
-      });
-      await prisma.conversation.update({ where: { id: convId }, data: { lastMessageAt: new Date() } });
     }
 
     // status/handoff ở meta là trạng thái TRƯỚC lượt (bot chưa chạy) — client đợi event 'done' để lấy
