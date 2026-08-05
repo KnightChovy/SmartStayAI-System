@@ -21,6 +21,7 @@ import type {
   CancelBookingDto,
 } from '../dto/booking.dto';
 import { walletService } from './wallet.service';
+import { commissionRateService } from './commission-rate.service';
 import { encrypt } from '../utils/encryption';
 
 // Đặt tối đa bao nhiêu đêm cho một booking (chặn khoảng ngày vô lý)
@@ -871,7 +872,8 @@ export class BookingService {
         throw new ApiError(httpStatus.BAD_REQUEST, 'Khoản tiền mặt này vừa được ghi nhận');
       }
 
-      const rate = booking.hotel.partner.commissionRate;
+      // Tiền mặt vừa thu xong ⇒ tra mức hoa hồng theo ĐÚNG hôm nay, giống hệt đường thanh toán online
+      const rate = await commissionRateService.resolveRate(hotelId, new Date(), tx);
       const commissionAmount = booking.totalAmount.mul(rate).div(100).toDecimalPlaces(2);
       await tx.platformCommission.create({
         data: {

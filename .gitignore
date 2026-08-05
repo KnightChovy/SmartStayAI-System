@@ -20,3 +20,13 @@
 
 # Tài liệu review nội bộ (đánh giá luồng booking) — chia sẻ trực tiếp cho team, không đưa lên repo.
 /server/docs/booking-flow-review.md
+
+# Báo cáo đồ án + SRS bản Word/PDF ở thư mục gốc /docs — nộp trực tiếp, không đưa lên repo.
+/docs/
+
+# Tài liệu thiết kế/bàn giao nội bộ trong server/docs — chia sẻ trực tiếp cho team.
+# Liệt kê từng file thay vì chặn cả thư mục vì server/docs/auth/ đã nằm trong repo từ trước.
+/server/docs/api-design.md
+/server/docs/be_changes_for_fe.md
+/server/docs/commission-rate-management.md
+/server/docs/smart_stay_be_todo.md

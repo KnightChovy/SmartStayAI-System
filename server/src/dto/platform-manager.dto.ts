@@ -13,3 +13,10 @@ export interface PerformanceQuery {
   from?: string | Date;
   to?: string | Date;
 }
+
+/** Đình chỉ / khôi phục một đối tác. */
+export interface SetPartnerStatusDto {
+  action: 'suspend' | 'reactivate';
+  /** Bắt buộc khi đình chỉ — đối tác phải biết vì sao bị dừng hoạt động */
+  reason?: string;
+}

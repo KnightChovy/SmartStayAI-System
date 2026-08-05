@@ -22,3 +22,4 @@ export { notificationController } from './notification.controller';
 export { promotionController } from './promotion.controller';
 export { statsController } from './stats.controller';
 export { destinationController } from './destination.controller';
+export { commissionRateController } from './commission-rate.controller';

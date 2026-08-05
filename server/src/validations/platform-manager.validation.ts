@@ -37,3 +37,18 @@ export const getPerformanceLeaderboard = {
     to: Joi.date().iso().greater(Joi.ref('from')),
   }),
 };
+
+// Đình chỉ / khôi phục đối tác. Đình chỉ BẮT BUỘC nêu lý do — đối tác phải biết vì sao bị dừng.
+export const setPartnerStatus = {
+  params: Joi.object().keys({
+    partnerId: Joi.string().uuid().required(),
+  }),
+  body: Joi.object().keys({
+    action: Joi.string().valid('suspend', 'reactivate').required(),
+    reason: Joi.string().max(500).when('action', {
+      is: 'suspend',
+      then: Joi.required(),
+      otherwise: Joi.forbidden(),
+    }),
+  }),
+};
