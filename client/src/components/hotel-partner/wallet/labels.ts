@@ -13,11 +13,13 @@ export const WALLET_TXN_CONFIG: Record<
   adjustment: { label: 'Adjustment', tone: 'slate' },
 };
 
-export const WALLET_TXN_OPTIONS: { value: WalletTransactionType; label: string }[] =
-  Object.entries(WALLET_TXN_CONFIG).map(([value, { label }]) => ({
-    value: value as WalletTransactionType,
-    label,
-  }));
+export const WALLET_TXN_OPTIONS: {
+  value: WalletTransactionType;
+  label: string;
+}[] = Object.entries(WALLET_TXN_CONFIG).map(([value, { label }]) => ({
+  value: value as WalletTransactionType,
+  label,
+}));
 
 /** Giao dịch làm tăng số dư (hiển thị dấu + xanh) vs làm giảm (dấu − đỏ). */
 export function isPositiveTxn(type: WalletTransactionType): boolean {

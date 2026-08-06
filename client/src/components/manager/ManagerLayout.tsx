@@ -9,6 +9,7 @@ import {
   Users,
   TrendingUp,
   Banknote,
+  Percent,
   BarChart2,
   Settings,
 } from 'lucide-react';
@@ -18,6 +19,7 @@ const navItems = [
   { name: 'Verifications', href: '/manager/verification', icon: ShieldCheck },
   { name: 'Hotel Partners', href: '/manager/hotel-partners', icon: Users },
   { name: 'Refunds', href: '/manager/refunds', icon: Banknote },
+  { name: 'Commission', href: '/manager/commission', icon: Percent },
   { name: 'Revenue', href: '/manager/revenue', icon: TrendingUp },
   { name: 'Analytics', href: '/manager/analytics', icon: BarChart2 },
 ];

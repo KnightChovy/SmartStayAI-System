@@ -14,14 +14,15 @@ export interface PlatformPartnerOwner {
   email: string;
 }
 
-/**
- * Một đối tác (hotel_partner) toàn sàn — `GET /platform-manager/partners`.
- * `commissionRate` là Decimal được backend serialize thành string.
- */
 export interface PlatformPartner {
   id: string;
   businessName: string;
   status: PlatformPartnerStatus;
+  /**
+   * @deprecated KHÔNG còn là nguồn sự thật. Cột `hotel_partners.commission_rate` là giá trị
+   * đông cứng từ lúc đối tác đăng ký; mức thật nằm ở `commission_rates` theo TỪNG KHÁCH SẠN
+   * và theo ngày (xem `HotelCommissionSummary`). Đừng hiển thị con số này như mức đang áp.
+   */
   commissionRate: string;
   contactEmail: string | null;
   contactPhone: string | null;
@@ -40,9 +41,22 @@ export interface PlatformPartnersParams {
 
 export type PlatformPartnersResponse = Paginated<PlatformPartner>;
 
-// ─── Performance (leaderboard + per-hotel) ───────────────────────────────────
+export type SetPartnerStatusDto =
+  | { action: 'suspend'; reason: string }
+  | { action: 'reactivate' };
 
-/** Khoảng thời gian báo cáo performance (mặc định 90 ngày gần nhất). */
+export interface SetPartnerStatusResponse {
+  partner: {
+    id: string;
+    businessName: string;
+    status: PlatformPartnerStatus;
+
+    rejectionReason: string | null;
+  };
+
+  unlistedHotels: number;
+}
+
 export interface PerformanceQueryParams {
   from?: string;
   to?: string;

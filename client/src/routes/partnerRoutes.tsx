@@ -9,11 +9,12 @@ import AmenitiesPage from '@/pages/hotel-partner/amenities/AmenitiesPage';
 import StaffManagementPage from '@/pages/hotel-partner/staff/StaffManagementPage';
 import BookingsPage from '@/pages/hotel-partner/bookings/BookingsPage';
 import RevenuePage from '@/pages/hotel-partner/revenue/RevenuePage';
+import CommissionPage from '@/pages/hotel-partner/commission/CommissionPage';
+import WalletPage from '@/pages/hotel-partner/wallet/WalletPage';
 import RefundsPage from '@/pages/hotel-partner/refunds/RefundsPage';
 import AnalyticsPage from '@/pages/hotel-partner/analytics/AnalyticsPage';
 import ReviewsPage from '@/pages/hotel-partner/reviews/ReviewsPage';
 import { CommonProfilePage } from '@/common/profile/CommonProfilePage';
-import ComingSoonPage from '@/pages/ComingSoonPage';
 import NotFoundPage from '@/pages/NotFoundPage';
 import { ProtectedRoute } from '@/routes/ProtectedRoute';
 import { UserRole } from '@/constants/roles';
@@ -37,11 +38,11 @@ export const partnerRoutes: RouteObject[] = [
           { path: 'bookings', element: <BookingsPage /> },
           { path: 'profile', element: <CommonProfilePage /> },
           { path: 'revenue', element: <RevenuePage /> },
+          { path: 'commission', element: <CommissionPage /> },
+          { path: 'wallet', element: <WalletPage /> },
           { path: 'refunds', element: <RefundsPage /> },
           { path: 'analytics', element: <AnalyticsPage /> },
           { path: 'reviews', element: <ReviewsPage /> },
-          // Đã có trong sidebar nhưng chưa triển khai — tạm dùng "Coming soon" để tránh link chết.
-          { path: 'settings', element: <ComingSoonPage title="Settings" /> },
 
           { path: '*', element: <NotFoundPage /> },
         ],
