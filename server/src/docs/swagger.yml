@@ -2951,6 +2951,32 @@ paths:
                 reason:
                   type: string
                   maxLength: 500
+                  description: Free text, stored for the audit trail. Never used to compute money.
+                reasonCode:
+                  type: string
+                  enum:
+                    [
+                      guest_request,
+                      guest_no_show,
+                      room_out_of_order,
+                      overbooking,
+                      hotel_force_majeure,
+                      payment_failed,
+                      hold_expired,
+                      partner_suspended,
+                      fraud_detected,
+                      policy_violation,
+                    ]
+                  description: >
+                    Machine-readable reason that decides the refund. Hotel-fault
+                    (`room_out_of_order`, `overbooking`, `hotel_force_majeure`) and
+                    system/platform codes refund the full paid amount with no cancellation
+                    penalty — the guest did nothing wrong, so they should not lose money.
+
+
+                    **Only users with manageBookings may send it (403 otherwise).** Left out, it
+                    defaults to `guest_request` and the hotel's cancellation policy applies as
+                    before.
                 refundMethod:
                   type: string
                   enum: [wallet, bank]
@@ -3902,13 +3928,26 @@ paths:
 
   /hotels/{hotelId}/rooms/{roomId}/status:
     patch:
-      summary: Update a room's status (staff room map / housekeeping)
+      summary: Update a room's status (LEGACY room map entry point)
       description: >
-        Assigned staff (or owner/manager) quickly changes a room's operational status
-        (available / occupied / maintenance / cleaning) — used by the room map and housekeeping.
-        Switching into maintenance takes the room out of sellable inventory (future
-        room_availability.totalRooms is decremented); switching back out adds it again.
-        Moves between available/occupied/cleaning do not touch inventory.
+        Kept so the existing room map keeps working, but each value is now translated into the
+        dimension it really belongs to. Prefer PATCH .../housekeeping and POST .../blocks.
+
+
+        - `available` — marks the room inspected AND resolves every open block on it.
+
+        - `cleaning` — housekeeping picks up the job; the cleaning SLA starts.
+
+        - `maintenance` — creates a 7-day OOO block (no dates were supplied). Use
+        POST .../blocks instead so staff can enter the real end date and reason.
+
+        - `occupied` — **rejected with 400**. That status must carry a booking, so only check-in
+        can produce it. Setting it by hand leaves the front desk unable to hand over the room:
+        check-in only claims rooms that are still `available`.
+
+
+        Rejected with 400 as well when the room currently has a guest in it (fo_status =
+        occupied) — check the guest out from the Front desk first.
       tags: [HotelManagement]
       security:
         - bearerAuth: []
@@ -3945,7 +3984,197 @@ paths:
               schema: { $ref: '#/components/schemas/Room' }
         '409': { description: Someone else changed the room status first — retry }
         '400':
-          description: Invalid status
+          description: Invalid status, or `occupied` requested, or the room still has a guest in it
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /hotels/{hotelId}/rooms/{roomId}/housekeeping:
+    patch:
+      summary: Update a room's housekeeping status
+      description: >
+        The one dimension staff change directly. `hkExpectedUntil` is computed **on the server**
+        from `roomType.cleaningDurationMinutes` — never accepted from the client, or the deadline
+        would mean nothing.
+
+
+        Passing the SLA deadline does **not** flip the room back to available on its own: 30
+        minutes elapsed is not the same as the room being clean, and selling a dirty room is a
+        mistake you cannot undo. Housekeeping must confirm. See `cleaningSla` on the room list
+        for the badge level (on_time / warning / overdue).
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: path
+          name: roomId
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [hkStatus]
+              properties:
+                hkStatus:
+                  type: string
+                  enum: [dirty, cleaning, clean, inspected]
+      responses:
+        '200':
+          description: Housekeeping status updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Room' }
+        '409': { description: Someone else changed the room status first — retry }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /hotels/{hotelId}/rooms/{roomId}/blocks:
+    post:
+      summary: Block a room for maintenance (with conflict check)
+      description: >
+        Takes a room out of service for a **date range** instead of flipping an instantaneous
+        status, so the system knows when it will be sellable again and can still price future
+        inventory correctly.
+
+
+        `blockType: ooo` (out of order) removes the room from sellable inventory for exactly those
+        dates. `oos` (out of service) does not touch inventory — it only marks the room on the map.
+
+
+        With `?dryRun=true` nothing is written: the response is the conflict report alone. The room
+        map should call it on every date change (debounced) so staff see the warning **before**
+        confirming, rather than finding out on the guest's arrival day.
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: path
+          name: roomId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: query
+          name: dryRun
+          description: Only check for conflicts; write nothing
+          schema: { type: boolean }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [blockType, startDate, endDate, reason]
+              properties:
+                blockType:
+                  type: string
+                  enum: [ooo, oos]
+                startDate: { type: string, format: date }
+                endDate:
+                  type: string
+                  format: date
+                  description: Last day still blocked (inclusive); must not precede startDate
+                reason:
+                  type: string
+                  description: Required and non-empty — blocking a room removes it from sale
+                estimatedCost: { type: number }
+      responses:
+        '201':
+          description: Block created (returns the block plus the same conflict report as dryRun)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RoomBlockResult' }
+        '200':
+          description: dryRun — conflict report only, nothing written
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RoomBlockPreview' }
+        '400':
+          description: endDate precedes startDate, or the payload is invalid
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /hotels/{hotelId}/rooms/{roomId}/blocks/{blockId}:
+    delete:
+      summary: Mark a block as resolved ("repair finished")
+      description: >
+        Does **not** delete the row — it is kept to report incident cost and downtime. Inventory is
+        returned only for the days still ahead: days already gone cannot be sold again, and adding
+        them back would just inflate past figures.
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: path
+          name: roomId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: path
+          name: blockId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Block resolved
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RoomBlock' }
+        '400': { description: Block was already resolved }
+        '409': { description: Someone else resolved it first — reload }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /hotels/{hotelId}/room-blocks:
+    get:
+      summary: List a hotel's room blocks
+      description: Unresolved blocks by default; pass `includeResolved=true` for the full history.
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: query
+          name: includeResolved
+          schema: { type: boolean }
+      responses:
+        '200':
+          description: List of blocks
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/RoomBlock' }
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':

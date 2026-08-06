@@ -3,7 +3,7 @@ import { Request, Response } from 'express';
 import type { User } from '@prisma/client';
 import pick from '../utils/pick';
 import catchAsync from '../utils/catchAsync';
-import { roomService } from '../services';
+import { roomService, roomBlockService } from '../services';
 
 export class RoomController {
   createRoom = catchAsync(async (req: Request, res: Response): Promise<void> => {
@@ -22,10 +22,21 @@ export class RoomController {
   });
 
   listRooms = catchAsync(async (req: Request, res: Response): Promise<void> => {
-    const filter = pick(req.query, ['status', 'roomTypeId']);
+    const filter = pick(req.query, ['status', 'roomTypeId', 'isActive']);
     const options = pick(req.query, ['sortBy', 'limit', 'page']);
     const result = await roomService.listRooms(req.params.hotelId as string, req.user as User, filter, options);
     res.send(result);
+  });
+
+  // Buồng phòng đổi trạng thái dọn phòng — chiều duy nhất staff bấm trực tiếp
+  updateHousekeeping = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const room = await roomService.updateHousekeeping(
+      req.params.hotelId as string,
+      req.params.roomId as string,
+      req.user as User,
+      req.body.hkStatus
+    );
+    res.send(room);
   });
 
   // Staff đổi nhanh trạng thái phòng (bản đồ phòng / housekeeping 1-tap)
@@ -43,6 +54,43 @@ export class RoomController {
   deleteRoom = catchAsync(async (req: Request, res: Response): Promise<void> => {
     await roomService.deleteRoom(req.params.hotelId as string, req.params.roomId as string, req.user as User);
     res.status(httpStatus.NO_CONTENT).send();
+  });
+
+  /**
+   * Chặn phòng để sửa. `?dryRun=true` chỉ KIỂM TRA và trả về hậu quả (booking bị ảnh hưởng, ngày
+   * thiếu phòng) mà không ghi gì — FE gọi mỗi khi user đổi ngày trong modal để cảnh báo trước.
+   */
+  createBlock = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const hotelId = req.params.hotelId as string;
+    const roomId = req.params.roomId as string;
+    if (req.query.dryRun === 'true') {
+      const preview = await roomBlockService.previewBlock(hotelId, roomId, req.user as User, req.body);
+      res.send(preview);
+      return;
+    }
+    const result = await roomBlockService.createBlock(hotelId, roomId, req.user as User, req.body);
+    res.status(httpStatus.CREATED).send(result);
+  });
+
+  // Đánh dấu đã sửa xong — trả phòng về kho bán cho những ngày còn lại của đợt chặn
+  resolveBlock = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const block = await roomBlockService.resolveBlock(
+      req.params.hotelId as string,
+      req.params.roomId as string,
+      req.params.blockId as string,
+      req.user as User
+    );
+    res.send(block);
+  });
+
+  // Danh sách đợt chặn của khách sạn (mặc định chỉ những đợt chưa xử lý xong)
+  listBlocks = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const blocks = await roomBlockService.listBlocks(
+      req.params.hotelId as string,
+      req.user as User,
+      req.query.includeResolved === 'true'
+    );
+    res.send(blocks);
   });
 }
 

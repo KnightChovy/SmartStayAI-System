@@ -74,11 +74,42 @@ enum AmenityCategory {
   restaurant
 }
 
+/// Trạng thái HIỂN THỊ của phòng — suy ra từ 3 chiều bên dưới, không phải nguồn sự thật.
+/// Vẫn lưu ở rooms.status để mọi code cũ (check-in, tìm phòng, bộ lọc room map) chạy y như trước;
+/// sẽ drop ở giai đoạn C sau khi hệ thống chạy ổn. Xem deriveRoomStatus ở src/utils/room-status.ts.
 enum RoomStatus {
   available
   occupied
   maintenance
   cleaning
+}
+
+/// Chiều LỄ TÂN: phòng đang có khách hay không. Chỉ đổi từ check-in/check-out (cần gắn booking),
+/// không cho staff bấm tay trên room map.
+enum FoStatus {
+  vacant
+  occupied
+}
+
+/// Chiều BUỒNG PHÒNG: mức độ sẵn sàng của phòng. Đây là chiều duy nhất staff đổi trực tiếp.
+enum HkStatus {
+  dirty
+  cleaning
+  clean
+  inspected
+}
+
+/// ooo = out of order (hỏng thật, TRỪ khỏi tồn kho bán)
+/// oos = out of service (tạm ngưng trong ngày, KHÔNG trừ tồn kho — vd. kê lại đồ, giữ phòng VIP)
+enum RoomBlockType {
+  ooo
+  oos
+}
+
+enum RoomStatusDimension {
+  fo
+  hk
+  block
 }
 
 enum HousekeepingTaskStatus {
@@ -114,6 +145,35 @@ enum BookingSource {
   chatbot
   walk_in
   staff
+}
+
+/// Ai đã bấm huỷ. Tách khỏi UserRole vì `system` không phải một tài khoản (cron nhả chỗ quá hạn),
+/// và vì cột này phải giữ nguyên giá trị lịch sử kể cả khi role của người đó đổi về sau.
+enum CancelledByRole {
+  customer
+  hotel_staff
+  hotel_partner
+  platform_manager
+  admin
+  system
+}
+
+/// Lý do huỷ dạng MÁY ĐỌC ĐƯỢC — quyết định chính sách tiền, không cần if-else theo role:
+///  - guest_*                         → theo cancellation policy của khách sạn
+///  - room_out_of_order / overbooking / hotel_force_majeure → lỗi khách sạn: hoàn 100% + bồi thường
+///  - còn lại (lỗi hệ thống/platform) → hoàn 100%, không trừ phí huỷ
+/// Cột `cancellation_reason` (text tự do) vẫn giữ để lưu lời khách nói, không thay thế nhau.
+enum CancellationReasonCode {
+  guest_request
+  guest_no_show
+  room_out_of_order
+  overbooking
+  hotel_force_majeure
+  payment_failed
+  hold_expired
+  partner_suspended
+  fraud_detected
+  policy_violation
 }
 
 enum PaymentMethod {
@@ -456,6 +516,7 @@ model User {
   approvedPartners              HotelPartner[]              @relation("partnerApprover")
   staffAssignments              HotelStaffAssignment[]
   bookings                      Booking[]                   @relation("bookingCustomer")
+  cancelledBookings             Booking[]                   @relation("bookingCancelledBy")
   reviews                       Review[]                    @relation("reviewCustomer")
   refunds                       Refund[]                    @relation("refundRequester")
   reviewedRefunds               Refund[]                    @relation("refundReviewer")
@@ -625,6 +686,7 @@ model Hotel {
   payoutAccounts        HotelPayoutAccount[]
   roomConfig            HotelRoomConfig?
   housekeepingTasks     HousekeepingTask[]
+  roomBlocks            RoomBlock[]
   contacts              HotelContact[]
   policies              HotelPolicy[]
   charges               HotelCharge[]
@@ -710,6 +772,14 @@ model RoomType {
   hasPrivateBathroom Boolean       @default(true) @map("has_private_bathroom")
   hasBalcony         Boolean       @default(false) @map("has_balcony")
 
+  // ----- SLA dọn phòng -----
+  // Thời lượng dọn chuẩn của loại phòng này (Standard 30' · Deluxe 45' · Suite 60'), dùng để tính
+  // hk_expected_until Ở SERVER khi buồng phòng bắt đầu dọn. Hết giờ chỉ đổi màu badge, KHÔNG tự
+  // trả phòng về available — hết 30 phút không có nghĩa là phòng đã sạch.
+  cleaningDurationMinutes Int     @default(30) @map("cleaning_duration_minutes") @db.SmallInt
+  // true = phải qua bước supervisor kiểm tra (hk_status = inspected) mới bán được; false thì clean là đủ
+  requiresInspection      Boolean @default(false) @map("requires_inspection")
+
   // pgvector semantic search embedding (Tạm thời ẩn đi để chạy trên local không cần pgvector. Khi nào cài extension vector, bạn chỉ cần bỏ comment dòng dưới)
   // embedding    Unsupported("vector(1536)")?
 
@@ -753,22 +823,88 @@ model RoomTypeImage {
 }
 
 model Room {
-  id         String     @id @default(uuid()) @db.Uuid
-  hotelId    String     @map("hotel_id") @db.Uuid
-  hotel      Hotel      @relation(fields: [hotelId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  roomTypeId String     @map("room_type_id") @db.Uuid
-  roomType   RoomType   @relation(fields: [roomTypeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  roomNumber String     @map("room_number")
-  floor      Int?       @db.SmallInt
-  status     RoomStatus
-  notes      String?
-  createdAt  DateTime   @default(now()) @map("created_at")
-  updatedAt  DateTime   @default(now()) @updatedAt @map("updated_at")
+  id         String   @id @default(uuid()) @db.Uuid
+  hotelId    String   @map("hotel_id") @db.Uuid
+  hotel      Hotel    @relation(fields: [hotelId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  roomTypeId String   @map("room_type_id") @db.Uuid
+  roomType   RoomType @relation(fields: [roomTypeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  roomNumber String   @map("room_number")
+  floor      Int?     @db.SmallInt
+
+  /// Trạng thái hiển thị — GIÁ TRỊ SUY RA, luôn được ghi lại từ deriveRoomStatus() mỗi lần đổi
+  /// fo/hk/block. Đừng ghi thẳng cột này ở bất kỳ đâu ngoài room.service.
+  status RoomStatus
+
+  // ----- 3 chiều độc lập (nguồn sự thật) -----
+  foStatus        FoStatus  @default(vacant) @map("fo_status")
+  hkStatus        HkStatus  @default(inspected) @map("hk_status")
+  /// Mốc buồng phòng bắt đầu trạng thái hk hiện tại — gốc để đo SLA
+  hkStatusSince   DateTime? @map("hk_status_since")
+  /// Hạn dọn xong do SERVER tính (= hkStatusSince + cleaningDurationMinutes), không nhận từ client
+  hkExpectedUntil DateTime? @map("hk_expected_until")
+
+  /// Ngừng sử dụng phòng (thay cho DELETE — booking cũ và báo cáo doanh thu còn tham chiếu tới nó)
+  isActive Boolean @default(true) @map("is_active")
+
+  notes     String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
   bookingRooms      BookingRoom[]
   housekeepingTasks HousekeepingTask[]
+  blocks            RoomBlock[]
+  statusHistory     RoomStatusHistory[]
 
+  // Số phòng không được trùng trong cùng một khách sạn (trước đây chỉ check tay ở service)
+  @@unique([hotelId, roomNumber])
   @@map("rooms")
+}
+
+/// Đợt chặn phòng theo KHOẢNG NGÀY (bảo trì, hỏng hóc). Tách khỏi rooms.status vì "đang sửa" vốn
+/// có ngày bắt đầu và ngày dự kiến xong — nhét vào một enum tức thời thì không biết bao giờ bán lại
+/// được, và không tính được tồn kho tương lai.
+model RoomBlock {
+  id            String        @id @default(uuid()) @db.Uuid
+  roomId        String        @map("room_id") @db.Uuid
+  room          Room          @relation(fields: [roomId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  /// Lặp lại hotelId của phòng để lọc theo tenant mà không phải join — mọi endpoint đều phải kiểm tra nó
+  hotelId       String        @map("hotel_id") @db.Uuid
+  hotel         Hotel         @relation(fields: [hotelId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  blockType     RoomBlockType @map("block_type")
+  startDate     DateTime      @map("start_date") @db.Date
+  /// Ngày cuối CÒN BỊ CHẶN (bao gồm cả ngày này), khác với checkOutDate của booking
+  endDate       DateTime      @map("end_date") @db.Date
+  reason        String
+  estimatedCost Decimal?      @map("estimated_cost") @db.Decimal(12, 2)
+  createdBy     String        @map("created_by") @db.Uuid
+  /// Đã sửa xong → phòng bán lại được. Không xoá dòng, giữ để thống kê chi phí sự cố.
+  resolvedAt    DateTime?     @map("resolved_at")
+  resolvedBy    String?       @map("resolved_by") @db.Uuid
+  createdAt     DateTime      @default(now()) @map("created_at")
+
+  @@index([roomId, startDate, endDate])
+  @@index([hotelId, resolvedAt])
+  @@map("room_blocks")
+}
+
+/// Nhật ký đổi trạng thái phòng theo từng chiều. Để trả lời "ai bật bảo trì phòng này, lúc nào,
+/// vì sao" và để tính thời gian dọn trung bình theo nhân viên / loại phòng.
+model RoomStatusHistory {
+  id            String              @id @default(uuid()) @db.Uuid
+  roomId        String              @map("room_id") @db.Uuid
+  room          Room                @relation(fields: [roomId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  dimension     RoomStatusDimension
+  fromValue     String?             @map("from_value")
+  toValue       String              @map("to_value")
+  startedAt     DateTime            @default(now()) @map("started_at")
+  expectedEndAt DateTime?           @map("expected_end_at")
+  endedAt       DateTime?           @map("ended_at")
+  changedBy     String?             @map("changed_by") @db.Uuid
+  reason        String?
+  note          String?
+
+  @@index([roomId, startedAt])
+  @@map("room_status_history")
 }
 
 // Task dọn phòng — auto-sinh khi check-out (S22), staff 1-tap hoàn thành để trả phòng về available
@@ -861,10 +997,18 @@ model Booking {
   specialRequests    String?       @map("special_requests")
   // Hạn giữ chỗ cho booking chưa thanh toán: quá hạn mà vẫn pending thì nhả tồn kho (xem releaseExpiredHolds)
   holdExpiresAt      DateTime?     @map("hold_expires_at")
-  cancellationReason String?       @map("cancellation_reason")
-  checkedInAt        DateTime?     @map("checked_in_at")
-  checkedOutAt       DateTime?     @map("checked_out_at")
-  cancelledAt        DateTime?     @map("cancelled_at")
+  // ----- Vết huỷ đơn: AI huỷ, VÌ SAO (máy đọc), và lời giải thích tự do -----
+  // Ba cột này đi cùng nhau; thiếu cancelledByRole thì không đối soát được ai chịu chi phí hoàn tiền.
+  cancelledByRole        CancelledByRole?        @map("cancelled_by_role")
+  cancelledByUserId      String?                 @map("cancelled_by_user_id") @db.Uuid
+  cancelledByUser        User?                   @relation("bookingCancelledBy", fields: [cancelledByUserId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  /// Lý do dạng enum — hàm tính refund CHỈ đọc cột này (xem CancellationReasonCode)
+  cancellationReasonCode CancellationReasonCode? @map("cancellation_reason_code")
+  /// Lý do dạng text tự do (lời khách nói / ghi chú lễ tân) — không dùng để tính tiền
+  cancellationReason     String?                 @map("cancellation_reason")
+  checkedInAt            DateTime?               @map("checked_in_at")
+  checkedOutAt           DateTime?               @map("checked_out_at")
+  cancelledAt            DateTime?               @map("cancelled_at")
   createdAt          DateTime      @default(now()) @map("created_at")
   updatedAt          DateTime      @default(now()) @updatedAt @map("updated_at")
 
