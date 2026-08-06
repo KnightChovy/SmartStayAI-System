@@ -3,7 +3,7 @@ import { Prisma } from '@prisma/client';
 import type { RoomBlock, User } from '@prisma/client';
 import prisma from '../config/prisma';
 import ApiError from '../utils/ApiError';
-import { toUtcDate, eachDayInclusive } from '../utils/dates';
+import { toUtcDate, eachDayInclusive, todayInVietnamDate } from '../utils/dates';
 import { deriveRoomStatus } from '../utils/room-status';
 import { hotelService } from './hotel.service';
 import type { CreateRoomBlockDto, RoomBlockPreview, ShortageNight, AffectedBooking } from '../dto/room-block.dto';
@@ -40,7 +40,7 @@ export class RoomBlockService {
       return new Map();
     }
     const blocks = await prisma.roomBlock.findMany({
-      where: { roomId: { in: roomIds }, ...this.activeOnDate(toUtcDate(new Date())) },
+      where: { roomId: { in: roomIds }, ...this.activeOnDate(todayInVietnamDate()) },
       orderBy: { createdAt: 'asc' },
     });
     // Ghi đè dần theo thứ tự tăng dần ⇒ block tạo sau cùng thắng
@@ -57,7 +57,7 @@ export class RoomBlockService {
       select: { foStatus: true, hkStatus: true },
     });
     const blockCount = await tx.roomBlock.count({
-      where: { roomId, ...this.activeOnDate(toUtcDate(new Date())) },
+      where: { roomId, ...this.activeOnDate(todayInVietnamDate()) },
     });
     await tx.room.update({ where: { id: roomId }, data: { status: deriveRoomStatus(room, blockCount > 0) } });
   };
@@ -323,7 +323,7 @@ export class RoomBlockService {
       throw new ApiError(httpStatus.BAD_REQUEST, 'Đợt chặn này đã được xử lý xong trước đó');
     }
 
-    const today = toUtcDate(new Date());
+    const today = todayInVietnamDate();
     const restoreFrom = block.startDate > today ? block.startDate : today;
 
     return prisma.$transaction(async (tx) => {

@@ -12,7 +12,7 @@ import type {
 import prisma from '../config/prisma';
 import ApiError from '../utils/ApiError';
 import { roleRights } from '../config/roles';
-import { toUtcDate, eachNightOfStay } from '../utils/dates';
+import { toUtcDate, eachNightOfStay, todayInVietnamDate } from '../utils/dates';
 import { availabilityService } from './availability.service';
 import { hotelService, readCancellationPolicy } from './hotel.service';
 import type { CancellationPolicy } from './hotel.service';
@@ -131,12 +131,17 @@ const generateInvoiceNumber = (): string => `INV${Date.now().toString(36)}${rand
 // Mã e-voucher duy nhất; cột voucher_code có unique constraint
 const generateVoucherCode = (): string => `VC${Date.now().toString(36)}${randomBytes(3).toString('hex')}`.toUpperCase();
 
+// Giờ nhận phòng của KS được lưu là giờ TƯỜNG theo giờ VN (UTC+7, không DST). VN-only.
+const VN_UTC_OFFSET_HOURS = 7;
+
 // Thời điểm nhận phòng thực tế = ngày nhận phòng + giờ nhận phòng của KS (mặc định 14:00)
 // để tính "còn bao nhiêu giờ tới giờ nhận phòng" cho chính xác thay vì lấy nửa đêm.
 const checkInMomentOf = (checkInDate: Date, checkInTime: string | null): Date => {
   const [h, m] = (checkInTime ?? '14:00').split(':').map((part) => Number(part) || 0);
   const moment = new Date(checkInDate);
-  moment.setUTCHours(h, m, 0, 0);
+  // Quy giờ VN về mốc UTC tuyệt đối (trừ 7 giờ). Trước đây setUTCHours(h) coi "14:00" là 14:00 UTC
+  // = 21:00 VN ⇒ hoursBeforeCheckIn + cửa sổ hoàn tiền lệch 7 giờ. h<7 thì tự lùi về ngày trước (đúng).
+  moment.setUTCHours(h - VN_UTC_OFFSET_HOURS, m, 0, 0);
   return moment;
 };
 
@@ -228,7 +233,7 @@ export class BookingService {
 
     const checkIn = toUtcDate(payload.checkInDate);
     const checkOut = toUtcDate(payload.checkOutDate);
-    const today = toUtcDate(new Date());
+    const today = todayInVietnamDate();
     if (checkIn < today) {
       throw new ApiError(httpStatus.BAD_REQUEST, 'Ngày nhận phòng không được ở quá khứ');
     }
@@ -461,7 +466,7 @@ export class BookingService {
 
     const paidAmount = paidPayment?.amount ?? new Prisma.Decimal(0);
     const canCancel =
-      toUtcDate(booking.checkInDate) > toUtcDate(new Date()) &&
+      toUtcDate(booking.checkInDate) > todayInVietnamDate() &&
       (booking.status === 'pending' || booking.status === 'confirmed');
 
     return {
@@ -472,7 +477,7 @@ export class BookingService {
       canCancel,
       cannotCancelReason: canCancel
         ? null
-        : toUtcDate(booking.checkInDate) <= toUtcDate(new Date())
+        : toUtcDate(booking.checkInDate) <= todayInVietnamDate()
           ? 'Chỉ được huỷ trước ngày nhận phòng'
           : 'Chỉ huỷ được booking đang chờ hoặc đã xác nhận',
       isPaid: paidPayment !== null,
@@ -499,7 +504,7 @@ export class BookingService {
       reasonCode
     );
 
-    const today = toUtcDate(new Date());
+    const today = todayInVietnamDate();
     if (toUtcDate(booking.checkInDate) <= today) {
       throw new ApiError(httpStatus.BAD_REQUEST, 'Chỉ được huỷ trước ngày nhận phòng');
     }
@@ -770,7 +775,7 @@ export class BookingService {
     }
     // Chỉ cho check-in trong cửa sổ ở thực tế: từ ngày nhận phòng đến trước ngày trả phòng.
     // (checkInDate <= hôm nay < checkOutDate) — chặn check-in quá sớm và check-in khi kỳ ở đã kết thúc.
-    const today = toUtcDate(new Date());
+    const today = todayInVietnamDate();
     if (toUtcDate(booking.checkInDate) > today) {
       throw new ApiError(httpStatus.BAD_REQUEST, 'Chưa tới ngày nhận phòng, không thể check-in');
     }
@@ -993,7 +998,7 @@ export class BookingService {
     if (booking.status !== 'confirmed') {
       throw new ApiError(httpStatus.BAD_REQUEST, 'Chỉ đánh dấu no-show cho booking đã xác nhận chưa nhận phòng');
     }
-    if (toUtcDate(booking.checkInDate) > toUtcDate(new Date())) {
+    if (toUtcDate(booking.checkInDate) > todayInVietnamDate()) {
       throw new ApiError(httpStatus.BAD_REQUEST, 'Chưa tới ngày nhận phòng, chưa thể đánh dấu no-show');
     }
 
@@ -1016,6 +1021,18 @@ export class BookingService {
       if (cashPending) {
         await tx.payment.update({ where: { id: cashPending.id }, data: { status: 'failed' } });
       }
+      // Nhả tồn kho các đêm CÒN LẠI (từ hôm nay trở đi). Khách không đến thì các đêm này phải bán
+      // lại được — no-show là mất khách chứ không được khoá luôn phòng. Đêm đã qua thì bỏ (không còn
+      // bán được, trừ đi chỉ làm sai occupancy lịch sử). sweepNoShows không cần vì mọi đêm đã qua.
+      const releasableNights = eachNightOfStay(booking.checkInDate, booking.checkOutDate).filter(
+        (night) => night >= todayInVietnamDate()
+      );
+      if (releasableNights.length > 0) {
+        await tx.roomAvailability.updateMany({
+          where: { roomTypeId: booking.roomTypeId, date: { in: releasableNights }, bookedRooms: { gt: 0 } },
+          data: { bookedRooms: { decrement: 1 } },
+        });
+      }
       return tx.booking.findUniqueOrThrow({ where: { id: bookingId }, include: staffBookingInclude });
     });
   };
@@ -1028,7 +1045,7 @@ export class BookingService {
    * @returns số booking đã đánh dấu no-show
    */
   sweepNoShows = async (): Promise<number> => {
-    const today = toUtcDate(new Date());
+    const today = todayInVietnamDate();
     const elapsed = await prisma.booking.findMany({
       where: { status: 'confirmed', checkOutDate: { lte: today } },
       select: { id: true },
