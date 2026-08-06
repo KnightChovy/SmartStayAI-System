@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { staffService } from '@/services/staff.service';
 import type { RoomStatus } from '@/types/staff.types';
 import { staffKeys } from './keys';
+import { hotelManagementKeys } from '../hotel-management/keys';
 
 /** Quickly change a room's status (available / occupied / cleaning / maintenance). */
 export function useUpdateRoomStatus(hotelId: string | undefined) {
@@ -11,6 +12,9 @@ export function useUpdateRoomStatus(hotelId: string | undefined) {
       staffService.updateRoomStatus(hotelId as string, roomId, status),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: staffKeys.all });
+      qc.invalidateQueries({
+        queryKey: [...hotelManagementKeys.all, 'rooms', hotelId as string],
+      });
     },
   });
 }

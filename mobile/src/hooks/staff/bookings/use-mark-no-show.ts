@@ -9,6 +9,7 @@ export function useMarkNoShow(hotelId: string) {
     mutationFn: (bookingId: string) => staffService.markNoShow(hotelId, bookingId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.staff.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.bookings.all() });
     },
   });
 }
