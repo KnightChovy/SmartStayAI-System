@@ -44,8 +44,13 @@ export class HousekeepingService {
         data: { status: 'done', completedAt: new Date() },
         include: taskInclude,
       });
-      // Dọn xong ⇒ phòng sẵn sàng bán lại (chỉ khi vẫn đang cleaning)
-      await tx.room.updateMany({ where: { id: task.roomId, status: 'cleaning' }, data: { status: 'available' } });
+      // Dọn xong ⇒ phòng sẵn sàng bán lại (chỉ khi vẫn đang cleaning — điều kiện này cũng khiến
+      // phòng đang bị chặn để sửa không bị vô tình mở bán lại, vì status của nó là 'maintenance').
+      // hkExpectedUntil về null: SLA đã kết thúc, để lại thì FE đếm ngược một cái hạn đã qua.
+      await tx.room.updateMany({
+        where: { id: task.roomId, status: 'cleaning' },
+        data: { status: 'available', hkStatus: 'clean', hkStatusSince: new Date(), hkExpectedUntil: null },
+      });
       return updated;
     });
   };

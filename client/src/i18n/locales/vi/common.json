@@ -63,7 +63,18 @@
     "quick": {
       "stays": "Chỗ nghỉ ở Đà Nẵng",
       "hanoi": "Khách sạn ở Hà Nội",
-      "suggest": "Gợi ý khách sạn cho tôi"
+      "suggest": "Gợi ý khách sạn cho tôi",
+      "availability": "Còn phòng trống không?",
+      "amenities": "Khách sạn có tiện nghi gì?",
+      "policies": "Chính sách huỷ phòng thế nào?"
+    },
+    "hotelSubtitle": "Trợ lý & lễ tân của khách sạn này",
+    "hotelGreeting": "Xin chào! Tôi là trợ lý của {{hotel}}. Bạn muốn hỏi về phòng trống, giá, tiện nghi hay chính sách của khách sạn? Cần gặp người thật, bạn chuyển sang \"Lễ tân\" bên dưới nhé.",
+    "handoffNotice": "Đang chờ lễ tân khách sạn. Nhân viên sẽ trả lời ngay tại khung chat này.",
+    "signInForStaff": "Đăng nhập để lưu cuộc trò chuyện và nhắn được với lễ tân khách sạn.",
+    "scope": {
+      "platform": "Toàn sàn",
+      "hotel": "Khách sạn này"
     }
   }
 }

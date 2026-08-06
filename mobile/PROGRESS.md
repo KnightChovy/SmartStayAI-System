@@ -8,6 +8,18 @@ This file tracks the accomplished tasks, resolved user requests, and structural/
 
 ## Completed Tasks Checklist
 
+### August 6, 2026
+
+- [x] **Rà lại validate luồng xác thực cho khớp BE (làm cùng đợt với client) — sửa 2 lỗi thật**:
+  - **Bối cảnh**: client cho qua mật khẩu 6 ký tự trong khi BE bắt ≥8 + có chữ + có số ⇒ lỗi chỉ nổ ở màn OTP. Rà sang mobile thì **luật đăng ký vốn đã đúng** (`passwordError` 8 + chữ + số, `otpError` 6 chữ số, `fullNameError` trần 255) — nhưng phát hiện 2 chỗ khác lệch.
+  - **Lỗi 1 — màn đổi mật khẩu (`profile/security.tsx`) chỉ kiểm ĐỘ DÀI**: `newPassword.length < 8` mà **không** kiểm chữ + số, trong khi `PATCH /users/me/password` của BE dùng đúng `custom.validation.password` ⇒ mật khẩu `"12345678"` phải chờ **400 từ BE** mới biết. Nay chặn tại chỗ, thêm key `account:security.needLetterAndNumber` (en/vi **cân bằng 176/176**) và sửa dòng gợi ý `security.hint` cho nói đủ luật (trước chỉ ghi "ít nhất 8 ký tự").
+  - **Lỗi 2 — `(auth)/login.tsx` CRASH khi đăng nhập sai**: `onError` gọi `Alert.alert(...)` nhưng file **chỉ import `{ Pressable, View }`** từ `react-native` ⇒ `ReferenceError: Alert is not defined`, sai mật khẩu là app văng thay vì hiện thông báo. Đã import `Alert`. (Lỗi im lặng vì `tsc` không bắt — `Alert` là tên global hợp lệ ở nhiều môi trường type khác.)
+  - **Một nguồn chân lý cho luật mật khẩu**: tách `passwordViolation()` trả **mã lỗi** (`required` / `tooShort` / `needLetterAndNumber`) + hằng `PASSWORD_MIN_LENGTH`; `passwordError()` chỉ còn là lớp bọc dịch mã sang chuỗi. Nhờ vậy màn đã i18n hoá (`security.tsx`) map mã sang key của mình **mà không phải chép lại regex** — chép là hai bản sẽ trôi lệch.
+  - **Chuẩn hoá kèm**: `phoneError` nới từ `8–20` xuống **`6–20`** cho khớp `profileSchema` bên client và trần 20 của BE (`Joi.string().max(20)`); `loginPasswordError` tách riêng **chỉ bắt buộc, KHÔNG áp luật độ dài** — đúng như BE (đã đo trên deploy: mật khẩu `"abc"` trả **401** chứ không phải 400 validation), chặn ở FE là khoá cửa với tài khoản cũ; gỡ chuỗi `'Mật khẩu là bắt buộc.'` hardcode trong `login.tsx`.
+  - **Verify**: đối chiếu **API thật (deploy Render)** — `"abc1234"` → 400 `password must be at least 8 characters`, `"12345678"`/`"abcdefgh"` → 400 `must contain at least 1 letter and 1 number`, `"abc12345"` → qua; `verificationCode` 5 số → 400 `length must be 6`. `tsc --noEmit` **0 lỗi ngoài `components/ui/*` pre-existing**, `eslint` **sạch** trên 3 file đụng tới, và **20 assertion** chạy trên chính module validation — **20 pass / 0 fail** (mốc 7↔8 ký tự, toàn số, toàn chữ, tên 255↔256, phone 5↔6 và 20↔21, OTP có chữ cái).
+  - ⚠️ **Chưa chạy được app trong phiên này** ⇒ nhờ bạn thử: đăng nhập sai mật khẩu (phải hiện Alert, không văng app) và đổi mật khẩu bằng chuỗi toàn số (phải báo lỗi ngay, không chờ BE).
+  - ⚠️ **Phát hiện thêm, CHƯA sửa (ngoài phạm vi)**: message trong `validations/auth.validation.ts` là **tiếng Việt hardcode** trong khi app **mặc định tiếng Anh** ⇒ người dùng EN gõ sai email sẽ đọc "Email chưa đúng định dạng." giữa giao diện tiếng Anh. Cách sửa đúng là chuyển hết sang **mã lỗi + key i18n** (đã làm mẫu cho mật khẩu ở lượt này); đụng 5 màn (`login`, `register`, `forget-password`, `booking/checkout`, `profile/edit`) + 2 file locale nên chưa tự làm. **Client lệch y hệt nhưng ngược chiều** (message tiếng Anh hardcode, giao diện mặc định tiếng Việt).
+
 ### July 29, 2026
 
 - [x] **Staff conversation — bàn phím iOS vẫn che ô nhập (lượt vá trước chưa dứt điểm)**:

@@ -10,6 +10,7 @@ export { bookingService } from './booking.service';
 export { paymentService } from './payment.service';
 export { roomTypeService } from './room-type.service';
 export { roomService } from './room.service';
+export { roomBlockService } from './room-block.service';
 export { amenityService } from './amenity.service';
 export { pricingRuleService } from './pricing-rule.service';
 export { staffService } from './staff.service';

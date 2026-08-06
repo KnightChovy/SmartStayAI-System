@@ -34,6 +34,25 @@ export const todayInVietnam = (): { iso: string; label: string } => {
 };
 
 /**
+ * Liệt kê mọi ngày trong một khoảng ĐÓNG [start, end] — ngày cuối cũng được tính.
+ * Khác eachNightOfStay: đợt chặn phòng (room_blocks) tính theo NGÀY BỊ CHẶN, không theo đêm ngủ,
+ * nên chặn 12/08 → 12/08 vẫn là một ngày chứ không phải rỗng.
+ * @param {Date} start
+ * @param {Date} end
+ * @returns {Date[]} mỗi phần tử là một mốc UTC-midnight
+ */
+export const eachDayInclusive = (start: Date, end: Date): Date[] => {
+  const days: Date[] = [];
+  const current = toUtcDate(start);
+  const last = toUtcDate(end);
+  while (current <= last) {
+    days.push(new Date(current));
+    current.setUTCDate(current.getUTCDate() + 1);
+  }
+  return days;
+};
+
+/**
  * List every night of a stay: [checkIn, checkOut) — the check-out day itself is not a night.
  * @param {Date} checkIn
  * @param {Date} checkOut

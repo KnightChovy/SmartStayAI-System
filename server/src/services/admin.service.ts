@@ -43,11 +43,11 @@ export class AdminService {
       prisma.booking.count(),
       prisma.booking.groupBy({ by: ['status'], _count: { _all: true } }),
       prisma.booking.count({ where: { createdAt: { gte: startOfMonth } } }),
-      // GMV = tổng tiền các booking ĐÃ chốt (confirmed trở đi); bỏ pending/cancelled/no_show
-      prisma.booking.aggregate({
-        _sum: { totalAmount: true },
-        where: { status: { in: ['confirmed', 'checked_in', 'checked_out'] } },
-      }),
+      // GMV = tổng totalAmount của các booking ĐÃ GHI NHẬN (đã trả tiền → có commission), khớp mốc
+      // với getPlatformRevenue. Trước lọc theo booking.status nên lệch cơ sở với /admin/revenue.
+      prisma.$queryRaw<{ gmv: string }[]>`
+        SELECT coalesce(sum(b.total_amount), 0)::text AS gmv
+        FROM platform_commissions pc JOIN bookings b ON b.id = pc.booking_id`,
       prisma.platformCommission.groupBy({ by: ['status'], _sum: { commissionAmount: true } }),
       prisma.refund.aggregate({ _sum: { amount: true } }),
     ]);
@@ -79,7 +79,7 @@ export class AdminService {
       },
       revenue: {
         // tiền dạng chuỗi để khỏi sai số số thực với Decimal
-        gmv: (gmvAgg._sum.totalAmount ?? 0).toString(),
+        gmv: gmvAgg[0]?.gmv ?? '0',
         commissionPending: commission.pending ?? '0',
         commissionSettled: commission.settled ?? '0',
         refundedTotal: (refundAgg._sum.amount ?? 0).toString(),
@@ -88,10 +88,10 @@ export class AdminService {
   };
 
   /**
-   * [Admin/PM] Doanh thu NỀN TẢNG theo khoảng [from, to]: GMV (tổng tiền booking đã chốt),
-   * hoa hồng pending/settled, tiền hoàn, và net platform revenue (= tổng hoa hồng). Kèm chuỗi
-   * thời gian day/month và so sánh % với kỳ trước liền kề (chỉ khi truyền đủ from + to).
-   * Rule GMV giống getOverview. Tiền trả dạng chuỗi (Decimal).
+   * [Admin/PM] Doanh thu NỀN TẢNG theo khoảng [from, to]: GMV (tổng totalAmount booking đã GHI NHẬN
+   * theo NGÀY THANH TOÁN — commission.createdAt), hoa hồng pending/settled, tiền hoàn, và net platform
+   * revenue (= tổng hoa hồng pending + settled). Kèm chuỗi thời gian day/month và so sánh % với kỳ
+   * trước liền kề (chỉ khi truyền đủ from + to). Cùng mốc ghi nhận với getOverview. Tiền dạng chuỗi.
    */
   getPlatformRevenue = async (query: { from?: Date; to?: Date; groupBy?: 'day' | 'month' }) => {
     const groupBy = query.groupBy ?? 'month';
@@ -100,28 +100,29 @@ export class AdminService {
     const toExclusive = query.to ? new Date(query.to.getTime() + 24 * 60 * 60 * 1000) : undefined;
     const dateWhere = this.buildDateWhere(from, toExclusive);
 
-    const [bookingAgg, commissionByStatus, refundAgg] = await prisma.$transaction([
-      prisma.booking.aggregate({
-        _sum: { totalAmount: true },
-        _count: { _all: true },
-        where: { status: { in: ['confirmed', 'checked_in', 'checked_out'] }, ...dateWhere },
-      }),
-      prisma.platformCommission.groupBy({
-        by: ['status'],
-        _sum: { commissionAmount: true },
+    // GMV + hoa hồng cùng MỐC NGÀY THANH TOÁN: mỗi booking trả đủ tiền tạo đúng 1 PlatformCommission
+    // (cổng/ví/tiền mặt), nên commission.createdAt = mốc ghi nhận; GMV = tổng totalAmount của các
+    // booking đã ghi nhận trong kỳ. refunded theo ngày tạo yêu cầu hoàn.
+    const [commissions, refundAgg] = await prisma.$transaction([
+      prisma.platformCommission.findMany({
         where: dateWhere,
+        select: { status: true, commissionAmount: true, booking: { select: { totalAmount: true } } },
       }),
       prisma.refund.aggregate({ _sum: { amount: true }, where: dateWhere }),
     ]);
 
-    const commissionMap: Record<string, Prisma.Decimal> = {};
-    for (const r of commissionByStatus) commissionMap[r.status] = r._sum.commissionAmount ?? new Prisma.Decimal(0);
-    const commissionPending = commissionMap.pending ?? new Prisma.Decimal(0);
-    const commissionSettled = commissionMap.settled ?? new Prisma.Decimal(0);
+    let gmv = new Prisma.Decimal(0);
+    let commissionPending = new Prisma.Decimal(0);
+    let commissionSettled = new Prisma.Decimal(0);
+    for (const c of commissions) {
+      gmv = gmv.add(c.booking.totalAmount);
+      if (c.status === 'pending') commissionPending = commissionPending.add(c.commissionAmount);
+      else if (c.status === 'settled') commissionSettled = commissionSettled.add(c.commissionAmount);
+      // 'disputed' không tính vào doanh thu thật
+    }
     // Doanh thu thật của sàn = hoa hồng đã ghi nhận (pending + settled); disputed không tính
     const netPlatformRevenue = commissionPending.add(commissionSettled);
 
-    const gmv = bookingAgg._sum.totalAmount ?? new Prisma.Decimal(0);
     const series = await this.buildPlatformSeries(groupBy, from, toExclusive);
     const comparison = await this.buildPeriodComparison(from, toExclusive, gmv, netPlatformRevenue);
 
@@ -132,7 +133,7 @@ export class AdminService {
         commissionSettled: commissionSettled.toString(),
         refunded: (refundAgg._sum.amount ?? new Prisma.Decimal(0)).toString(),
         netPlatformRevenue: netPlatformRevenue.toString(),
-        bookingCount: bookingAgg._count._all,
+        bookingCount: commissions.length,
       },
       groupBy,
       series,
@@ -147,34 +148,27 @@ export class AdminService {
     const fromParam = from ?? null;
     const toParam = toExclusive ?? null;
 
-    const gmvRows = await prisma.$queryRawUnsafe<{ period: string; bookingCount: number; gmv: string }[]>(
-      `SELECT to_char(date_trunc('${trunc}', created_at), '${fmt}') AS period,
+    // GMV + hoa hồng theo NGÀY THANH TOÁN (pc.created_at), join booking để lấy totalAmount
+    const rows = await prisma.$queryRawUnsafe<
+      { period: string; bookingCount: number; gmv: string; commission: string }[]
+    >(
+      `SELECT to_char(date_trunc('${trunc}', pc.created_at), '${fmt}') AS period,
               count(*)::int AS "bookingCount",
-              coalesce(sum(total_amount), 0)::text AS gmv
-       FROM bookings
-       WHERE status IN ('confirmed', 'checked_in', 'checked_out')
-         AND ($1::timestamptz IS NULL OR created_at >= $1)
-         AND ($2::timestamptz IS NULL OR created_at < $2)
-       GROUP BY 1`,
-      fromParam,
-      toParam
-    );
-    const commissionRows = await prisma.$queryRawUnsafe<{ period: string; commission: string }[]>(
-      `SELECT to_char(date_trunc('${trunc}', created_at), '${fmt}') AS period,
-              coalesce(sum(commission_amount), 0)::text AS commission
-       FROM platform_commissions
-       WHERE ($1::timestamptz IS NULL OR created_at >= $1)
-         AND ($2::timestamptz IS NULL OR created_at < $2)
+              coalesce(sum(b.total_amount), 0)::text AS gmv,
+              coalesce(sum(pc.commission_amount), 0)::text AS commission
+       FROM platform_commissions pc
+       JOIN bookings b ON b.id = pc.booking_id
+       WHERE ($1::timestamptz IS NULL OR pc.created_at >= $1)
+         AND ($2::timestamptz IS NULL OR pc.created_at < $2)
        GROUP BY 1`,
       fromParam,
       toParam
     );
 
-    const commissionByPeriod = new Map(commissionRows.map((r) => [r.period, r.commission]));
-    return gmvRows
+    return rows
       .sort((a, b) => a.period.localeCompare(b.period))
       .map((r) => {
-        const commission = new Prisma.Decimal(commissionByPeriod.get(r.period) ?? 0);
+        const commission = new Prisma.Decimal(r.commission);
         return {
           period: r.period,
           gmv: new Prisma.Decimal(r.gmv).toString(),
@@ -198,18 +192,17 @@ export class AdminService {
     const prevToExclusive = from; // kỳ trước kết thúc ngay khi kỳ này bắt đầu
     const prevWhere = this.buildDateWhere(prevFrom, prevToExclusive);
 
-    const [prevBooking, prevCommission] = await prisma.$transaction([
-      prisma.booking.aggregate({
-        _sum: { totalAmount: true },
-        where: { status: { in: ['confirmed', 'checked_in', 'checked_out'] }, ...prevWhere },
-      }),
-      prisma.platformCommission.aggregate({
-        _sum: { commissionAmount: true },
-        where: { status: { in: ['pending', 'settled'] }, ...prevWhere },
-      }),
-    ]);
-    const prevGmv = prevBooking._sum.totalAmount ?? new Prisma.Decimal(0);
-    const prevNet = prevCommission._sum.commissionAmount ?? new Prisma.Decimal(0);
+    // Kỳ trước cũng theo mốc ghi nhận (commission.createdAt) để so sánh cùng cơ sở với kỳ hiện tại
+    const prevCommissions = await prisma.platformCommission.findMany({
+      where: prevWhere,
+      select: { status: true, commissionAmount: true, booking: { select: { totalAmount: true } } },
+    });
+    let prevGmv = new Prisma.Decimal(0);
+    let prevNet = new Prisma.Decimal(0);
+    for (const c of prevCommissions) {
+      prevGmv = prevGmv.add(c.booking.totalAmount);
+      if (c.status === 'pending' || c.status === 'settled') prevNet = prevNet.add(c.commissionAmount);
+    }
 
     return {
       previous: { gmv: prevGmv.toString(), netPlatformRevenue: prevNet.toString() },

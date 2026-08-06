@@ -547,13 +547,50 @@ components:
 
     Room:
       type: object
+      description: >
+        A physical room. `status` is a DERIVED label kept for the room map — the source of truth is
+        the three independent dimensions below (front office / housekeeping / blocks), which is why
+        a room can be occupied AND dirty at the same time without losing one of the two facts.
       properties:
         id: { type: string, format: uuid }
         hotelId: { type: string, format: uuid }
         roomTypeId: { type: string, format: uuid }
         roomNumber: { type: string }
         floor: { type: integer, nullable: true }
-        status: { type: string, enum: [available, occupied, maintenance, cleaning, blocked] }
+        status:
+          type: string
+          enum: [available, occupied, maintenance, cleaning]
+          description: >
+            Derived: active block → maintenance; else guest in room → occupied;
+            else dirty/cleaning → cleaning; else available.
+        foStatus:
+          type: string
+          enum: [vacant, occupied]
+          description: Front office. Only check-in/check-out produce `occupied`.
+        hkStatus:
+          type: string
+          enum: [dirty, cleaning, clean, inspected]
+          description: Housekeeping — the only dimension staff set directly.
+        hkStatusSince: { type: string, format: date-time, nullable: true }
+        hkExpectedUntil:
+          type: string
+          format: date-time
+          nullable: true
+          description: Server-computed cleaning deadline. Passing it does NOT auto-release the room.
+        cleaningSla:
+          type: string
+          nullable: true
+          enum: [on_time, warning, overdue]
+          description: >
+            Badge level while cleaning is in progress (over 50% of the SLA → warning,
+            over 100% → overdue). Null when the room is not being cleaned.
+        activeBlock:
+          nullable: true
+          allOf: [{ $ref: '#/components/schemas/RoomBlock' }]
+          description: The block in force today, if any — carries the expected end date.
+        isActive:
+          type: boolean
+          description: false = retired from use. Rooms are never deleted; old bookings still point at them.
         notes: { type: string, nullable: true }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
@@ -562,6 +599,64 @@ components:
           properties:
             id: { type: string, format: uuid }
             name: { type: string }
+
+    RoomBlock:
+      type: object
+      description: A room taken out of service for a date range (maintenance / breakdown).
+      properties:
+        id: { type: string, format: uuid }
+        roomId: { type: string, format: uuid }
+        hotelId: { type: string, format: uuid }
+        blockType:
+          type: string
+          enum: [ooo, oos]
+          description: ooo = out of order (removed from sellable inventory); oos = out of service (map only).
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date, description: Last day still blocked, inclusive }
+        reason: { type: string }
+        estimatedCost: { type: number, nullable: true }
+        createdBy: { type: string, format: uuid }
+        resolvedAt: { type: string, format: date-time, nullable: true }
+        resolvedBy: { type: string, format: uuid, nullable: true }
+        createdAt: { type: string, format: date-time }
+
+    RoomBlockPreview:
+      type: object
+      description: What blocking this room would cost you — returned by `?dryRun=true`.
+      properties:
+        roomNumber: { type: string }
+        roomTypeName: { type: string }
+        affectedBookings:
+          type: array
+          description: Bookings already assigned to THIS room that overlap the range — they must be moved.
+          items:
+            type: object
+            properties:
+              id: { type: string, format: uuid }
+              bookingCode: { type: string }
+              checkInDate: { type: string, format: date }
+              checkOutDate: { type: string, format: date }
+              status: { type: string }
+              guestName: { type: string }
+        shortageNights:
+          type: array
+          description: >
+            Only the days that genuinely run short (booked > sellable) — usually one or two peak
+            days rather than the whole range.
+          items:
+            type: object
+            properties:
+              date: { type: string, format: date }
+              sellable: { type: integer }
+              booked: { type: integer }
+              shortage: { type: integer }
+
+    RoomBlockResult:
+      allOf:
+        - $ref: '#/components/schemas/RoomBlockPreview'
+        - type: object
+          properties:
+            block: { $ref: '#/components/schemas/RoomBlock' }
 
     # ===== Khách sạn (chi tiết + tóm tắt) =====
     Hotel:
@@ -924,6 +1019,36 @@ components:
         checkedInAt: { type: string, format: date-time, nullable: true }
         checkedOutAt: { type: string, format: date-time, nullable: true }
         cancelledAt: { type: string, format: date-time, nullable: true }
+        cancelledByRole:
+          type: string
+          nullable: true
+          enum: [customer, hotel_staff, hotel_partner, platform_manager, admin, system]
+          description: Who cancelled, frozen at cancellation time. `system` = the expired-hold job.
+        cancelledByUserId: { type: string, format: uuid, nullable: true }
+        cancellationReasonCode:
+          type: string
+          nullable: true
+          enum:
+            [
+              guest_request,
+              guest_no_show,
+              room_out_of_order,
+              overbooking,
+              hotel_force_majeure,
+              payment_failed,
+              hold_expired,
+              partner_suspended,
+              fraud_detected,
+              policy_violation,
+            ]
+          description: >
+            Machine-readable reason; this alone decides the money. Hotel-fault and
+            system/platform codes refund in full with no cancellation fee, so only users with
+            manageBookings may supply it — otherwise every guest would pick "room broken".
+        cancellationReason:
+          type: string
+          nullable: true
+          description: Free text (the guest's own words / front-desk note). Never used to compute money.
         createdAt: { type: string, format: date-time }
         hotel:
           type: object

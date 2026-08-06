@@ -30,6 +30,23 @@ export const setPendingAction = (conversationId: string, action: Omit<PendingAct
 };
 
 /**
+ * Xem phiếu chờ mà KHÔNG tiêu — dùng để nhắc lại cho model biết bước prepare đã xong.
+ *
+ * Vì sao cần: lịch sử gửi cho LLM chỉ gồm tin khách + câu trả lời cuối của bot, KHÔNG có lượt gọi
+ * tool nào. Nên ở lượt khách gật đầu, model KHÔNG hề biết phiếu chờ đang tồn tại và confirm_action
+ * đã sẵn sàng — nó phải tự suy từ chính câu tóm tắt nó viết ở lượt trước. Model yếu suy không ra thì
+ * đi hỏi thêm thông tin vu vơ (số điện thoại...) rồi bí và chuyển cho lễ tân, dù đơn chỉ còn một
+ * bước là xong. Đọc phiếu ở đây rồi nhét vào lời nhắc là cách nói thẳng cho model biết.
+ */
+export const peekPendingAction = (conversationId: string, customerId: string): PendingAction | null => {
+  const action = store.get(conversationId);
+  if (!action || action.expiresAt < Date.now() || action.customerId !== customerId) {
+    return null;
+  }
+  return action;
+};
+
+/**
  * Lấy & XOÁ (dùng-một-lần) phiếu chờ của hội thoại. Chỉ trả về khi còn hạn VÀ đúng khách.
  * Trả null nếu không có / hết hạn / không thuộc về khách này.
  */

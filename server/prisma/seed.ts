@@ -67,70 +67,70 @@ interface SeedAccount {
 }
 
 const ACCOUNTS: SeedAccount[] = [
-  { email: 'admin@gmail.com', password: 'admin123', fullName: 'Quản trị hệ thống', role: 'admin', phone: '0900000001' },
-  { email: 'manager@gmail.com', password: 'manager123', fullName: 'Quản lý sàn', role: 'platform_manager', phone: '0900000002' },
+  { email: 'admin@gmail.com', password: 'admin123', fullName: 'System Administrator', role: 'admin', phone: '0900000001' },
+  { email: 'manager@gmail.com', password: 'manager123', fullName: 'Platform Manager', role: 'platform_manager', phone: '0900000002' },
 
   // 4 partner — mỗi người sở hữu một khách sạn
-  { email: 'partner@gmail.com', password: 'partner123', fullName: 'Trần Minh Đức', role: 'hotel_partner', phone: '0901000001' },
-  { email: 'partner2@gmail.com', password: 'partner123', fullName: 'Nguyễn Thu Hà', role: 'hotel_partner', phone: '0901000002' },
-  { email: 'partner3@gmail.com', password: 'partner123', fullName: 'Lê Quốc Bảo', role: 'hotel_partner', phone: '0901000003' },
-  { email: 'partner4@gmail.com', password: 'partner123', fullName: 'Phạm Hải Yến', role: 'hotel_partner', phone: '0901000004' },
+  { email: 'partner@gmail.com', password: 'partner123', fullName: 'Tran Minh Duc', role: 'hotel_partner', phone: '0901000001' },
+  { email: 'partner2@gmail.com', password: 'partner123', fullName: 'Nguyen Thu Ha', role: 'hotel_partner', phone: '0901000002' },
+  { email: 'partner3@gmail.com', password: 'partner123', fullName: 'Le Quoc Bao', role: 'hotel_partner', phone: '0901000003' },
+  { email: 'partner4@gmail.com', password: 'partner123', fullName: 'Pham Hai Yen', role: 'hotel_partner', phone: '0901000004' },
 
   // 4 staff — mỗi người trực một khách sạn
-  { email: 'staff@gmail.com', password: 'staff123', fullName: 'Lễ tân Đà Nẵng', role: 'staff', phone: '0902000001' },
-  { email: 'staff2@gmail.com', password: 'staff123', fullName: 'Lễ tân Sài Gòn', role: 'staff', phone: '0902000002' },
-  { email: 'staff3@gmail.com', password: 'staff123', fullName: 'Lễ tân Hà Nội', role: 'staff', phone: '0902000003' },
-  { email: 'staff4@gmail.com', password: 'staff123', fullName: 'Lễ tân Nha Trang', role: 'staff', phone: '0902000004' },
+  { email: 'staff@gmail.com', password: 'staff123', fullName: 'Da Nang Front Desk', role: 'staff', phone: '0902000001' },
+  { email: 'staff2@gmail.com', password: 'staff123', fullName: 'Saigon Front Desk', role: 'staff', phone: '0902000002' },
+  { email: 'staff3@gmail.com', password: 'staff123', fullName: 'Ha Noi Front Desk', role: 'staff', phone: '0902000003' },
+  { email: 'staff4@gmail.com', password: 'staff123', fullName: 'Nha Trang Front Desk', role: 'staff', phone: '0902000004' },
 
   // Khách — nhiều người để có đủ đánh giá cho điểm trung bình hiển thị đẹp
-  { email: 'customer@gmail.com', password: 'customer123', fullName: 'Nguyễn Văn An', role: 'customer', phone: '0903000001' },
-  { email: 'customer2@gmail.com', password: 'customer123', fullName: 'Trần Thị Bình', role: 'customer', phone: '0903000002' },
-  { email: 'customer3@gmail.com', password: 'customer123', fullName: 'Võ Hoàng Long', role: 'customer', phone: '0903000003' },
+  { email: 'customer@gmail.com', password: 'customer123', fullName: 'Nguyen Van An', role: 'customer', phone: '0903000001' },
+  { email: 'customer2@gmail.com', password: 'customer123', fullName: 'Tran Thi Binh', role: 'customer', phone: '0903000002' },
+  { email: 'customer3@gmail.com', password: 'customer123', fullName: 'Vo Hoang Long', role: 'customer', phone: '0903000003' },
 
-  { email: 'guest@gmail.com', password: 'guest123', fullName: 'Khách vãng lai', role: 'guest', phone: '0904000001' },
+  { email: 'guest@gmail.com', password: 'guest123', fullName: 'Walk-in Guest', role: 'guest', phone: '0904000001' },
 ];
 
 // ---------------------------------------------------------------------------
 // Tiện nghi dùng chung
 // ---------------------------------------------------------------------------
 const AMENITIES: { name: string; icon: string; category: AmenityCategory }[] = [
-  { name: 'WiFi miễn phí', icon: 'wifi', category: 'connectivity' },
-  { name: 'Hồ bơi', icon: 'pool', category: 'wellness' },
-  { name: 'Phòng gym', icon: 'gym', category: 'wellness' },
+  { name: 'Free WiFi', icon: 'wifi', category: 'connectivity' },
+  { name: 'Swimming pool', icon: 'pool', category: 'wellness' },
+  { name: 'Fitness center', icon: 'gym', category: 'wellness' },
   { name: 'Spa', icon: 'spa', category: 'wellness' },
-  { name: 'Bãi đậu xe', icon: 'parking', category: 'parking' },
-  { name: 'Nhà hàng', icon: 'restaurant', category: 'restaurant' },
-  { name: 'Quầy bar', icon: 'bar', category: 'food_drink' },
-  { name: 'Bữa sáng buffet', icon: 'breakfast', category: 'food_drink' },
-  { name: 'Lễ tân 24/7', icon: 'reception', category: 'service' },
-  { name: 'Dịch vụ giặt là', icon: 'laundry', category: 'service' },
-  { name: 'Đưa đón sân bay', icon: 'shuttle', category: 'service' },
-  { name: 'Điều hoà', icon: 'air-conditioner', category: 'room' },
-  { name: 'TV màn hình phẳng', icon: 'tv', category: 'room' },
+  { name: 'Parking', icon: 'parking', category: 'parking' },
+  { name: 'Restaurant', icon: 'restaurant', category: 'restaurant' },
+  { name: 'Bar', icon: 'bar', category: 'food_drink' },
+  { name: 'Buffet breakfast', icon: 'breakfast', category: 'food_drink' },
+  { name: '24/7 front desk', icon: 'reception', category: 'service' },
+  { name: 'Laundry service', icon: 'laundry', category: 'service' },
+  { name: 'Airport shuttle', icon: 'shuttle', category: 'service' },
+  { name: 'Air conditioning', icon: 'air-conditioner', category: 'room' },
+  { name: 'Flat-screen TV', icon: 'tv', category: 'room' },
   { name: 'Minibar', icon: 'minibar', category: 'room' },
-  { name: 'Ban công', icon: 'balcony', category: 'room' },
-  { name: 'Két an toàn', icon: 'safe', category: 'room' },
-  { name: 'Máy pha cà phê', icon: 'coffee', category: 'room' },
-  { name: 'Bồn tắm', icon: 'bathtub', category: 'room' },
+  { name: 'Balcony', icon: 'balcony', category: 'room' },
+  { name: 'In-room safe', icon: 'safe', category: 'room' },
+  { name: 'Coffee maker', icon: 'coffee', category: 'room' },
+  { name: 'Bathtub', icon: 'bathtub', category: 'room' },
 ];
 
 // FAQ chung — nhiều câu để trợ lý AI có cái mà chọn lọc
 const GENERIC_FAQS: { category: string; question: string; answer: string }[] = [
-  { category: 'Chính sách', question: 'Khách sạn có cho mang theo thú cưng không?', answer: 'Rất tiếc, khách sạn không nhận thú cưng, trừ chó dẫn đường hỗ trợ người khuyết tật.' },
-  { category: 'Chính sách', question: 'Chính sách hủy phòng như thế nào?', answer: 'Hủy miễn phí nếu báo trước 48 giờ so với giờ nhận phòng; trong vòng 48 giờ sẽ bị thu phí 1 đêm đầu.' },
-  { category: 'Chính sách', question: 'Khách sạn có cho hút thuốc trong phòng không?', answer: 'Tất cả phòng đều cấm hút thuốc. Có khu vực hút thuốc riêng ngoài trời.' },
-  { category: 'Chính sách', question: 'Trẻ em ở cùng có tính phí không?', answer: 'Trẻ dưới 6 tuổi ngủ ghép giường với bố mẹ được miễn phí; từ 6 tuổi tính như người lớn hoặc phụ thu giường phụ.' },
-  { category: 'Chính sách', question: 'Nhận phòng cần giấy tờ gì?', answer: 'Khách vui lòng xuất trình CCCD/CMND hoặc hộ chiếu còn hiệu lực khi nhận phòng.' },
-  { category: 'Chính sách', question: 'Giờ nhận và trả phòng là mấy giờ?', answer: 'Nhận phòng từ 14:00, trả phòng trước 12:00.' },
-  { category: 'Chính sách', question: 'Nhận phòng sớm hoặc trả phòng muộn được không?', answer: 'Tuỳ tình trạng phòng. Trả phòng muộn sau 12:00 có thể phụ thu; vui lòng hỏi lễ tân.' },
-  { category: 'Tiện ích', question: 'Khách sạn có WiFi miễn phí không?', answer: 'Có WiFi miễn phí tốc độ cao ở toàn bộ khu vực và trong phòng.' },
-  { category: 'Tiện ích', question: 'Hồ bơi mở cửa mấy giờ?', answer: 'Hồ bơi mở từ 6:00 đến 21:00 hằng ngày (nếu khách sạn có hồ bơi).' },
-  { category: 'Tiện ích', question: 'Bữa sáng phục vụ mấy giờ?', answer: 'Bữa sáng buffet phục vụ từ 6:30 đến 9:30.' },
-  { category: 'Tiện ích', question: 'Có chỗ đậu xe không?', answer: 'Có bãi đậu xe cho khách lưu trú, ưu tiên theo chỗ trống.' },
-  { category: 'Tiện ích', question: 'Có thể gửi hành lý trước hoặc sau giờ nhận phòng không?', answer: 'Có, lễ tân nhận giữ hành lý miễn phí trước khi nhận phòng và sau khi trả phòng.' },
-  { category: 'Thanh toán', question: 'Khách sạn nhận thanh toán bằng hình thức nào?', answer: 'Nhận thanh toán online qua VNPay, chuyển khoản quét QR qua SePay, và tiền mặt tại quầy lễ tân.' },
-  { category: 'Thanh toán', question: 'Khách sạn có xuất hóa đơn VAT không?', answer: 'Có, hoá đơn được phát hành khi trả phòng và đã tách riêng phần thuế.' },
-  { category: 'Thanh toán', question: 'Tôi hủy phòng đã trả tiền thì được hoàn lại không?', answer: 'Có. Hoàn 100% nếu hủy trước 48 giờ; trong 48 giờ giữ lại 1 đêm đầu. Yêu cầu hoàn tiền cần khách sạn duyệt trước khi chuyển khoản.' },
+  { category: 'Policies', question: 'Are pets allowed at the hotel?', answer: 'Sorry, pets are not allowed, except for guide dogs assisting guests with disabilities.' },
+  { category: 'Policies', question: 'What is the cancellation policy?', answer: 'Free cancellation up to 48 hours before check-in time; within 48 hours the first night is charged.' },
+  { category: 'Policies', question: 'Is smoking allowed in the rooms?', answer: 'All rooms are non-smoking. A dedicated outdoor smoking area is available.' },
+  { category: 'Policies', question: 'Are children charged when staying with parents?', answer: 'Children under 6 sharing an existing bed stay free; from 6 years old they are charged as adults or an extra-bed fee applies.' },
+  { category: 'Policies', question: 'What documents are required at check-in?', answer: 'Please present a valid national ID card or passport at check-in.' },
+  { category: 'Policies', question: 'What are the check-in and check-out times?', answer: 'Check-in from 14:00, check-out before 12:00.' },
+  { category: 'Policies', question: 'Is early check-in or late check-out possible?', answer: 'Subject to room availability. Late check-out after 12:00 may incur a surcharge; please ask the front desk.' },
+  { category: 'Facilities', question: 'Does the hotel have free WiFi?', answer: 'Yes, high-speed WiFi is free in all areas and in the rooms.' },
+  { category: 'Facilities', question: 'What are the swimming pool opening hours?', answer: 'The pool is open from 6:00 to 21:00 daily (at properties with a pool).' },
+  { category: 'Facilities', question: 'What time is breakfast served?', answer: 'Buffet breakfast is served from 6:30 to 9:30.' },
+  { category: 'Facilities', question: 'Is parking available?', answer: 'Yes, parking is available for in-house guests on a first-come, first-served basis.' },
+  { category: 'Facilities', question: 'Can I store luggage before check-in or after check-out?', answer: 'Yes, the front desk stores luggage free of charge before check-in and after check-out.' },
+  { category: 'Payment', question: 'Which payment methods does the hotel accept?', answer: 'Online payment via VNPay, QR bank transfer via SePay, and cash at the front desk.' },
+  { category: 'Payment', question: 'Does the hotel issue VAT invoices?', answer: 'Yes, an invoice with tax stated separately is issued at check-out.' },
+  { category: 'Payment', question: 'Can I get a refund if I cancel a paid booking?', answer: 'Yes. A full refund if cancelled more than 48 hours in advance; within 48 hours the first night is retained. Refund requests must be approved by the hotel before the transfer is made.' },
 ];
 
 // ---------------------------------------------------------------------------
@@ -193,18 +193,18 @@ const HOTELS: SeedHotel[] = [
   {
     ownerEmail: 'partner@gmail.com',
     staffEmail: 'staff@gmail.com',
-    businessName: 'Công ty TNHH Biển Xanh Hospitality',
+    businessName: 'Blue Ocean Hospitality Co., Ltd',
     businessRegistrationNumber: '0401234567',
     taxCode: '0401234567-001',
-    representative: { fullName: 'Trần Minh Đức', role: 'owner', idNumber: '048201001234', phone: '0901000001', address: '12 Võ Nguyên Giáp, Sơn Trà, Đà Nẵng' },
-    payout: { accountHolder: 'TRAN MINH DUC', bankName: 'Vietcombank', accountNumber: '0071000123456', bankBranch: 'CN Đà Nẵng' },
-    name: 'SmartStay Đà Nẵng Beach Resort',
+    representative: { fullName: 'Tran Minh Duc', role: 'owner', idNumber: '048201001234', phone: '0901000001', address: '12 Vo Nguyen Giap, Son Tra, Da Nang' },
+    payout: { accountHolder: 'TRAN MINH DUC', bankName: 'Vietcombank', accountNumber: '0071000123456', bankBranch: 'Da Nang Branch' },
+    name: 'SmartStay Da Nang Beach Resort',
     description:
-      'Khu nghỉ dưỡng 5 sao nằm ngay mặt tiền biển Mỹ Khê, cách sân bay Đà Nẵng 15 phút xe. Toàn bộ phòng đều có ban công riêng nhìn ra biển, kèm hồ bơi vô cực, spa và nhà hàng hải sản.',
-    address: '128 Võ Nguyên Giáp',
-    city: 'Đà Nẵng',
-    district: 'Sơn Trà',
-    ward: 'Phước Mỹ',
+      'A 5-star beachfront resort right on My Khe Beach, a 15-minute drive from Da Nang airport. Every room has a private ocean-view balcony, complemented by an infinity pool, a spa and a seafood restaurant.',
+    address: '128 Vo Nguyen Giap',
+    city: 'Da Nang',
+    district: 'Son Tra',
+    ward: 'Phuoc My',
     postalCode: '550000',
     phone: '0236 3888 999',
     email: 'danang@smartstay.ai',
@@ -216,70 +216,70 @@ const HOTELS: SeedHotel[] = [
     builtYear: 2018,
     renovationYear: 2023,
     cancellation: { freeUntilHours: 48, latePenalty: 'first_night' },
-    amenities: ['WiFi miễn phí', 'Hồ bơi', 'Spa', 'Phòng gym', 'Nhà hàng', 'Quầy bar', 'Bữa sáng buffet', 'Lễ tân 24/7', 'Bãi đậu xe', 'Đưa đón sân bay'],
+    amenities: ['Free WiFi', 'Swimming pool', 'Spa', 'Fitness center', 'Restaurant', 'Bar', 'Buffet breakfast', '24/7 front desk', 'Parking', 'Airport shuttle'],
     images: [
-      { name: 'resort-01', category: 'cover', caption: 'Toàn cảnh khu nghỉ dưỡng nhìn từ biển' },
-      { name: 'resort-02', category: 'exterior', caption: 'Khuôn viên và lối vào chính' },
-      { name: 'resort-03', category: 'exterior', caption: 'Khu vườn nhiệt đới' },
-      { name: 'hotel-pool-01', category: 'exterior', caption: 'Hồ bơi vô cực hướng biển' },
-      { name: 'resort-04', category: 'exterior', caption: 'Bãi biển riêng' },
+      { name: 'resort-01', category: 'cover', caption: 'Panoramic view of the resort from the sea' },
+      { name: 'resort-02', category: 'exterior', caption: 'Grounds and main entrance' },
+      { name: 'resort-03', category: 'exterior', caption: 'Tropical garden' },
+      { name: 'hotel-pool-01', category: 'exterior', caption: 'Ocean-facing infinity pool' },
+      { name: 'resort-04', category: 'exterior', caption: 'Private beach' },
     ],
     roomTypes: [
       {
-        name: 'Deluxe Hướng Biển', description: 'Phòng 32m² với ban công riêng nhìn thẳng ra biển Mỹ Khê, giường King và bồn tắm nằm.',
+        name: 'Ocean View Deluxe', description: 'A 32m² room with a private balcony facing My Khe Beach, a king bed and a bathtub.',
         maxOccupancy: 2, maxAdults: 2, maxChildren: 1, basePrice: 1_500_000, areaSqm: 32, bedType: 'king', viewType: 'ocean', floor: 5, roomCount: 8, hasBalcony: true,
         beds: [{ bedType: 'king', quantity: 1 }],
-        amenities: ['Điều hoà', 'TV màn hình phẳng', 'Minibar', 'Ban công', 'Két an toàn', 'Bồn tắm'],
+        amenities: ['Air conditioning', 'Flat-screen TV', 'Minibar', 'Balcony', 'In-room safe', 'Bathtub'],
         images: ['room-01', 'room-02'],
       },
       {
-        name: 'Suite Gia Đình', description: 'Suite 55m² hai phòng ngủ riêng biệt, phù hợp gia đình 4 người, có khu bếp nhỏ và phòng khách.',
+        name: 'Family Suite', description: 'A 55m² suite with two separate bedrooms, ideal for a family of four, with a kitchenette and a living room.',
         maxOccupancy: 4, maxAdults: 2, maxChildren: 2, basePrice: 2_600_000, areaSqm: 55, bedType: 'king', viewType: 'ocean', floor: 8, roomCount: 4, hasBalcony: true,
         beds: [{ bedType: 'king', quantity: 1 }, { bedType: 'single', quantity: 2 }],
-        amenities: ['Điều hoà', 'TV màn hình phẳng', 'Minibar', 'Ban công', 'Két an toàn', 'Máy pha cà phê', 'Bồn tắm'],
+        amenities: ['Air conditioning', 'Flat-screen TV', 'Minibar', 'Balcony', 'In-room safe', 'Coffee maker', 'Bathtub'],
         images: ['suite-01', 'suite-02'],
       },
       {
-        name: 'Standard Hướng Vườn', description: 'Phòng 26m² nhìn ra vườn nhiệt đới, yên tĩnh, giường Queen.',
+        name: 'Garden View Standard', description: 'A quiet 26m² room overlooking the tropical garden, with a queen bed.',
         maxOccupancy: 2, maxAdults: 2, maxChildren: 0, basePrice: 900_000, areaSqm: 26, bedType: 'queen', viewType: 'garden', floor: 3, roomCount: 10, hasBalcony: false,
         beds: [{ bedType: 'queen', quantity: 1 }],
-        amenities: ['Điều hoà', 'TV màn hình phẳng', 'Két an toàn'],
+        amenities: ['Air conditioning', 'Flat-screen TV', 'In-room safe'],
         images: ['room-03', 'room-04'],
       },
     ],
     charges: [
       { chargeType: 'tax', name: 'VAT', amount: 8, isPercentage: true },
-      { chargeType: 'fee', name: 'Phí dịch vụ', amount: 50_000, isPercentage: false, chargeFrequency: 'per_night' },
+      { chargeType: 'fee', name: 'Service fee', amount: 50_000, isPercentage: false, chargeFrequency: 'per_night' },
     ],
     policies: [
-      { title: 'Chính sách huỷ phòng', description: 'Huỷ miễn phí trước 48 giờ so với giờ nhận phòng. Huỷ muộn hơn sẽ bị giữ lại tiền một đêm đầu.', important: true },
-      { title: 'Giờ nhận / trả phòng', description: 'Nhận phòng từ 14:00, trả phòng trước 12:00. Trả phòng muộn có thể phụ thu.' },
-      { title: 'Đặt cọc', description: 'Đặt cọc minibar 200.000đ khi nhận phòng, hoàn lại đầy đủ lúc trả phòng nếu không phát sinh.' },
-      { title: 'Thú cưng', description: 'Không nhận thú cưng, trừ chó dẫn đường hỗ trợ người khuyết tật.' },
+      { title: 'Cancellation policy', description: 'Free cancellation up to 48 hours before check-in time. Later cancellations are charged the first night.', important: true },
+      { title: 'Check-in / check-out', description: 'Check-in from 14:00, check-out before 12:00. Late check-out may incur a surcharge.' },
+      { title: 'Deposit', description: 'A 200,000 VND minibar deposit is collected at check-in and refunded in full at check-out if nothing is consumed.' },
+      { title: 'Pets', description: 'Pets are not allowed, except for guide dogs assisting guests with disabilities.' },
     ],
     nearby: [
-      { name: 'Biển Mỹ Khê', category: 'beach', distance: 0.1, transportType: 'walk', journeyMinutes: 2 },
-      { name: 'Sân bay quốc tế Đà Nẵng', category: 'airport', distance: 6, transportType: 'car', journeyMinutes: 15 },
-      { name: 'Cầu Rồng', category: 'landmark', distance: 3.2, transportType: 'car', journeyMinutes: 10 },
-      { name: 'Bán đảo Sơn Trà', category: 'nature', distance: 8, transportType: 'car', journeyMinutes: 20 },
+      { name: 'My Khe Beach', category: 'beach', distance: 0.1, transportType: 'walk', journeyMinutes: 2 },
+      { name: 'Da Nang International Airport', category: 'airport', distance: 6, transportType: 'car', journeyMinutes: 15 },
+      { name: 'Dragon Bridge', category: 'landmark', distance: 3.2, transportType: 'car', journeyMinutes: 10 },
+      { name: 'Son Tra Peninsula', category: 'nature', distance: 8, transportType: 'car', journeyMinutes: 20 },
     ],
   },
 
   {
     ownerEmail: 'partner2@gmail.com',
     staffEmail: 'staff2@gmail.com',
-    businessName: 'Công ty CP Sài Gòn Central Group',
+    businessName: 'Saigon Central Group JSC',
     businessRegistrationNumber: '0312345678',
     taxCode: '0312345678-001',
-    representative: { fullName: 'Nguyễn Thu Hà', role: 'general_manager', idNumber: '079198002345', phone: '0901000002', address: '45 Lê Lợi, Quận 1, TP.HCM' },
-    payout: { accountHolder: 'NGUYEN THU HA', bankName: 'Techcombank', accountNumber: '19036789012345', bankBranch: 'CN Sài Gòn' },
+    representative: { fullName: 'Nguyen Thu Ha', role: 'general_manager', idNumber: '079198002345', phone: '0901000002', address: '45 Le Loi, District 1, Ho Chi Minh City' },
+    payout: { accountHolder: 'NGUYEN THU HA', bankName: 'Techcombank', accountNumber: '19036789012345', bankBranch: 'Saigon Branch' },
     name: 'SmartStay Saigon Central',
     description:
-      'Khách sạn 4 sao ngay trung tâm Quận 1, đi bộ 5 phút tới chợ Bến Thành và phố đi bộ Nguyễn Huệ. Lựa chọn quen thuộc của khách công tác nhờ phòng họp và WiFi tốc độ cao.',
-    address: '45 Lê Lợi',
-    city: 'Thành phố Hồ Chí Minh',
-    district: 'Quận 1',
-    ward: 'Bến Nghé',
+      'A 4-star hotel in the heart of District 1, a 5-minute walk from Ben Thanh Market and Nguyen Hue Walking Street. A familiar choice for business travellers thanks to its meeting rooms and high-speed WiFi.',
+    address: '45 Le Loi',
+    city: 'Ho Chi Minh City',
+    district: 'District 1',
+    ward: 'Ben Nghe',
     postalCode: '700000',
     phone: '028 3822 1234',
     email: 'saigon@smartstay.ai',
@@ -291,65 +291,65 @@ const HOTELS: SeedHotel[] = [
     builtYear: 2015,
     renovationYear: 2022,
     cancellation: { freeUntilHours: 24, latePenalty: 'first_night' },
-    amenities: ['WiFi miễn phí', 'Phòng gym', 'Nhà hàng', 'Quầy bar', 'Bữa sáng buffet', 'Lễ tân 24/7', 'Bãi đậu xe', 'Dịch vụ giặt là'],
+    amenities: ['Free WiFi', 'Fitness center', 'Restaurant', 'Bar', 'Buffet breakfast', '24/7 front desk', 'Parking', 'Laundry service'],
     images: [
-      { name: 'hotel-exterior-01', category: 'cover', caption: 'Mặt tiền khách sạn trên đường Lê Lợi' },
-      { name: 'hotel-exterior-02', category: 'exterior', caption: 'Toà nhà nhìn từ phố đi bộ' },
-      { name: 'hotel-lobby-01', category: 'exterior', caption: 'Sảnh đón khách' },
-      { name: 'hotel-restaurant-01', category: 'exterior', caption: 'Nhà hàng tầng trệt' },
+      { name: 'hotel-exterior-01', category: 'cover', caption: 'Hotel facade on Le Loi street' },
+      { name: 'hotel-exterior-02', category: 'exterior', caption: 'The building seen from the walking street' },
+      { name: 'hotel-lobby-01', category: 'exterior', caption: 'Reception lobby' },
+      { name: 'hotel-restaurant-01', category: 'exterior', caption: 'Ground-floor restaurant' },
     ],
     roomTypes: [
       {
-        name: 'Superior', description: 'Phòng 24m² nhìn ra thành phố, bàn làm việc rộng, phù hợp khách công tác.',
+        name: 'Superior', description: 'A 24m² city-view room with a large work desk, ideal for business travellers.',
         maxOccupancy: 2, maxAdults: 2, maxChildren: 0, basePrice: 850_000, areaSqm: 24, bedType: 'queen', viewType: 'city', floor: 4, roomCount: 12, hasBalcony: false,
         beds: [{ bedType: 'queen', quantity: 1 }],
-        amenities: ['Điều hoà', 'TV màn hình phẳng', 'Két an toàn', 'Máy pha cà phê'],
+        amenities: ['Air conditioning', 'Flat-screen TV', 'In-room safe', 'Coffee maker'],
         images: ['room-05', 'room-06'],
       },
       {
-        name: 'Deluxe Thành Phố', description: 'Phòng 30m² tầng cao, cửa sổ kính lớn nhìn toàn cảnh trung tâm Quận 1.',
+        name: 'City View Deluxe', description: 'A 30m² high-floor room with floor-to-ceiling windows overlooking downtown District 1.',
         maxOccupancy: 3, maxAdults: 2, maxChildren: 1, basePrice: 1_200_000, areaSqm: 30, bedType: 'king', viewType: 'city', floor: 10, roomCount: 8, hasBalcony: false,
         beds: [{ bedType: 'king', quantity: 1 }, { bedType: 'sofa_bed', quantity: 1 }],
-        amenities: ['Điều hoà', 'TV màn hình phẳng', 'Minibar', 'Két an toàn', 'Máy pha cà phê'],
+        amenities: ['Air conditioning', 'Flat-screen TV', 'Minibar', 'In-room safe', 'Coffee maker'],
         images: ['room-07', 'room-08'],
       },
       {
-        name: 'Executive Suite', description: 'Suite 48m² tầng 16 có phòng khách riêng và quyền vào phòng chờ Executive.',
+        name: 'Executive Suite', description: 'A 48m² suite on the 16th floor with a separate living room and Executive Lounge access.',
         maxOccupancy: 3, maxAdults: 3, maxChildren: 0, basePrice: 2_200_000, areaSqm: 48, bedType: 'king', viewType: 'city', floor: 16, roomCount: 4, hasBalcony: true,
         beds: [{ bedType: 'king', quantity: 1 }],
-        amenities: ['Điều hoà', 'TV màn hình phẳng', 'Minibar', 'Két an toàn', 'Máy pha cà phê', 'Bồn tắm', 'Ban công'],
+        amenities: ['Air conditioning', 'Flat-screen TV', 'Minibar', 'In-room safe', 'Coffee maker', 'Bathtub', 'Balcony'],
         images: ['suite-03', 'suite-04'],
       },
     ],
     charges: [{ chargeType: 'tax', name: 'VAT', amount: 8, isPercentage: true }],
     policies: [
-      { title: 'Chính sách huỷ phòng', description: 'Huỷ miễn phí trước 24 giờ so với giờ nhận phòng. Huỷ muộn hơn sẽ bị giữ lại tiền một đêm đầu.', important: true },
-      { title: 'Giờ nhận / trả phòng', description: 'Nhận phòng từ 14:00, trả phòng trước 12:00.' },
-      { title: 'Trẻ em', description: 'Trẻ dưới 6 tuổi ngủ ghép giường với bố mẹ được miễn phí.' },
+      { title: 'Cancellation policy', description: 'Free cancellation up to 24 hours before check-in time. Later cancellations are charged the first night.', important: true },
+      { title: 'Check-in / check-out', description: 'Check-in from 14:00, check-out before 12:00.' },
+      { title: 'Children', description: 'Children under 6 sharing an existing bed with their parents stay free.' },
     ],
     nearby: [
-      { name: 'Chợ Bến Thành', category: 'attraction', distance: 0.6, transportType: 'walk', journeyMinutes: 8 },
-      { name: 'Phố đi bộ Nguyễn Huệ', category: 'attraction', distance: 0.4, transportType: 'walk', journeyMinutes: 5 },
-      { name: 'Sân bay Tân Sơn Nhất', category: 'airport', distance: 7.5, transportType: 'car', journeyMinutes: 25 },
-      { name: 'Ga Metro Bến Thành', category: 'public_transport', distance: 0.7, transportType: 'walk', journeyMinutes: 9 },
+      { name: 'Ben Thanh Market', category: 'attraction', distance: 0.6, transportType: 'walk', journeyMinutes: 8 },
+      { name: 'Nguyen Hue Walking Street', category: 'attraction', distance: 0.4, transportType: 'walk', journeyMinutes: 5 },
+      { name: 'Tan Son Nhat Airport', category: 'airport', distance: 7.5, transportType: 'car', journeyMinutes: 25 },
+      { name: 'Ben Thanh Metro Station', category: 'public_transport', distance: 0.7, transportType: 'walk', journeyMinutes: 9 },
     ],
   },
 
   {
     ownerEmail: 'partner3@gmail.com',
     staffEmail: 'staff3@gmail.com',
-    businessName: 'Công ty TNHH Hà Nội Heritage',
+    businessName: 'Ha Noi Heritage Co., Ltd',
     businessRegistrationNumber: '0101234567',
     taxCode: '0101234567-001',
-    representative: { fullName: 'Lê Quốc Bảo', role: 'legal_representative', idNumber: '001199003456', phone: '0901000003', address: '22 Hàng Bạc, Hoàn Kiếm, Hà Nội' },
-    payout: { accountHolder: 'LE QUOC BAO', bankName: 'BIDV', accountNumber: '21010001234567', bankBranch: 'CN Hoàn Kiếm' },
-    name: 'SmartStay Hanoi Old Quarter',
+    representative: { fullName: 'Le Quoc Bao', role: 'legal_representative', idNumber: '001199003456', phone: '0901000003', address: '22 Hang Bac, Hoan Kiem, Ha Noi' },
+    payout: { accountHolder: 'LE QUOC BAO', bankName: 'BIDV', accountNumber: '21010001234567', bankBranch: 'Hoan Kiem Branch' },
+    name: 'SmartStay Ha Noi Old Quarter',
     description:
-      'Khách sạn boutique 3 sao trong lòng phố cổ Hà Nội, đi bộ 5 phút ra hồ Hoàn Kiếm. Kiến trúc nhà phố cải tạo giữ nguyên nét cũ, phù hợp khách muốn ở giữa khu phố cổ.',
-    address: '22 Hàng Bạc',
-    city: 'Hà Nội',
-    district: 'Hoàn Kiếm',
-    ward: 'Hàng Buồm',
+      'A 3-star boutique hotel in the heart of the Ha Noi Old Quarter, a 5-minute walk from Hoan Kiem Lake. A restored shophouse that keeps its original character, ideal for guests who want to stay right in the old town.',
+    address: '22 Hang Bac',
+    city: 'Ha Noi',
+    district: 'Hoan Kiem',
+    ward: 'Hang Buom',
     postalCode: '100000',
     phone: '024 3926 5678',
     email: 'hanoi@smartstay.ai',
@@ -361,60 +361,60 @@ const HOTELS: SeedHotel[] = [
     builtYear: 2010,
     renovationYear: 2021,
     cancellation: { freeUntilHours: 24, latePenalty: 'first_night' },
-    amenities: ['WiFi miễn phí', 'Nhà hàng', 'Lễ tân 24/7', 'Dịch vụ giặt là', 'Đưa đón sân bay'],
+    amenities: ['Free WiFi', 'Restaurant', '24/7 front desk', 'Laundry service', 'Airport shuttle'],
     images: [
-      { name: 'hotel-exterior-03', category: 'cover', caption: 'Mặt tiền nhà phố cổ đã cải tạo' },
-      { name: 'hotel-exterior-04', category: 'exterior', caption: 'Góc phố Hàng Bạc' },
-      { name: 'hotel-lobby-02', category: 'exterior', caption: 'Sảnh nhỏ ấm cúng' },
+      { name: 'hotel-exterior-03', category: 'cover', caption: 'Restored old-quarter shophouse facade' },
+      { name: 'hotel-exterior-04', category: 'exterior', caption: 'The corner of Hang Bac street' },
+      { name: 'hotel-lobby-02', category: 'exterior', caption: 'Cosy little lobby' },
     ],
     roomTypes: [
       {
-        name: 'Standard Phố Cổ', description: 'Phòng 20m² gọn gàng, cửa sổ nhìn ra phố Hàng Bạc nhộn nhịp.',
+        name: 'Old Quarter Standard', description: 'A neat 20m² room with a window onto the bustling Hang Bac street.',
         maxOccupancy: 2, maxAdults: 2, maxChildren: 0, basePrice: 650_000, areaSqm: 20, bedType: 'double', viewType: 'city', floor: 2, roomCount: 10, hasBalcony: false,
         beds: [{ bedType: 'double', quantity: 1 }],
-        amenities: ['Điều hoà', 'TV màn hình phẳng'],
+        amenities: ['Air conditioning', 'Flat-screen TV'],
         images: ['room-09', 'room-10'],
       },
       {
-        name: 'Superior Ban Công', description: 'Phòng 26m² có ban công nhỏ nhìn xuống phố cổ, sáng và thoáng.',
+        name: 'Balcony Superior', description: 'A bright, airy 26m² room with a small balcony overlooking the old quarter.',
         maxOccupancy: 2, maxAdults: 2, maxChildren: 1, basePrice: 950_000, areaSqm: 26, bedType: 'queen', viewType: 'city', floor: 4, roomCount: 6, hasBalcony: true,
         beds: [{ bedType: 'queen', quantity: 1 }],
-        amenities: ['Điều hoà', 'TV màn hình phẳng', 'Minibar', 'Ban công'],
+        amenities: ['Air conditioning', 'Flat-screen TV', 'Minibar', 'Balcony'],
         images: ['room-11', 'room-12'],
       },
     ],
     charges: [
       { chargeType: 'tax', name: 'VAT', amount: 8, isPercentage: true },
-      { chargeType: 'fee', name: 'Phí phục vụ', amount: 30_000, isPercentage: false, chargeFrequency: 'per_stay' },
+      { chargeType: 'fee', name: 'Service charge', amount: 30_000, isPercentage: false, chargeFrequency: 'per_stay' },
     ],
     policies: [
-      { title: 'Chính sách huỷ phòng', description: 'Huỷ miễn phí trước 24 giờ so với giờ nhận phòng.', important: true },
-      { title: 'Tiếng ồn khu phố cổ', description: 'Khách sạn nằm giữa khu phố đi bộ cuối tuần, có thể ồn tới khuya thứ Sáu và thứ Bảy.', important: true },
-      { title: 'Giờ nhận / trả phòng', description: 'Nhận phòng từ 14:00, trả phòng trước 12:00.' },
+      { title: 'Cancellation policy', description: 'Free cancellation up to 24 hours before check-in time.', important: true },
+      { title: 'Old Quarter noise', description: 'The hotel sits inside the weekend walking-street area and can be noisy until late on Friday and Saturday nights.', important: true },
+      { title: 'Check-in / check-out', description: 'Check-in from 14:00, check-out before 12:00.' },
     ],
     nearby: [
-      { name: 'Hồ Hoàn Kiếm', category: 'landmark', distance: 0.4, transportType: 'walk', journeyMinutes: 5 },
-      { name: 'Chợ Đồng Xuân', category: 'attraction', distance: 0.8, transportType: 'walk', journeyMinutes: 10 },
-      { name: 'Sân bay Nội Bài', category: 'airport', distance: 27, transportType: 'car', journeyMinutes: 45 },
-      { name: 'Nhà hát Lớn Hà Nội', category: 'landmark', distance: 1.2, transportType: 'walk', journeyMinutes: 15 },
+      { name: 'Hoan Kiem Lake', category: 'landmark', distance: 0.4, transportType: 'walk', journeyMinutes: 5 },
+      { name: 'Dong Xuan Market', category: 'attraction', distance: 0.8, transportType: 'walk', journeyMinutes: 10 },
+      { name: 'Noi Bai Airport', category: 'airport', distance: 27, transportType: 'car', journeyMinutes: 45 },
+      { name: 'Ha Noi Opera House', category: 'landmark', distance: 1.2, transportType: 'walk', journeyMinutes: 15 },
     ],
   },
 
   {
     ownerEmail: 'partner4@gmail.com',
     staffEmail: 'staff4@gmail.com',
-    businessName: 'Công ty CP Nha Trang Bay Resorts',
+    businessName: 'Nha Trang Bay Resorts JSC',
     businessRegistrationNumber: '4201234567',
     taxCode: '4201234567-001',
-    representative: { fullName: 'Phạm Hải Yến', role: 'director', idNumber: '056200004567', phone: '0901000004', address: '90 Trần Phú, Nha Trang, Khánh Hoà' },
-    payout: { accountHolder: 'PHAM HAI YEN', bankName: 'ACB', accountNumber: '18790001234567', bankBranch: 'CN Nha Trang' },
+    representative: { fullName: 'Pham Hai Yen', role: 'director', idNumber: '056200004567', phone: '0901000004', address: '90 Tran Phu, Nha Trang, Khanh Hoa' },
+    payout: { accountHolder: 'PHAM HAI YEN', bankName: 'ACB', accountNumber: '18790001234567', bankBranch: 'Nha Trang Branch' },
     name: 'SmartStay Nha Trang Bay',
     description:
-      'Resort 4 sao bên vịnh Nha Trang với bãi biển riêng, hồ bơi ngoài trời và spa. Bungalow nằm rải trong vườn dừa, cách chợ Đầm 10 phút xe.',
-    address: '90 Trần Phú',
+      'A 4-star resort on Nha Trang Bay with a private beach, an outdoor pool and a spa. Bungalows are scattered through a coconut garden, a 10-minute drive from Dam Market.',
+    address: '90 Tran Phu',
     city: 'Nha Trang',
-    district: 'Lộc Thọ',
-    ward: 'Lộc Thọ',
+    district: 'Loc Tho',
+    ward: 'Loc Tho',
     postalCode: '650000',
     phone: '0258 3852 468',
     email: 'nhatrang@smartstay.ai',
@@ -426,44 +426,44 @@ const HOTELS: SeedHotel[] = [
     builtYear: 2016,
     renovationYear: 2022,
     cancellation: { freeUntilHours: 72, latePenalty: 'full' },
-    amenities: ['WiFi miễn phí', 'Hồ bơi', 'Spa', 'Nhà hàng', 'Quầy bar', 'Bữa sáng buffet', 'Lễ tân 24/7', 'Bãi đậu xe'],
+    amenities: ['Free WiFi', 'Swimming pool', 'Spa', 'Restaurant', 'Bar', 'Buffet breakfast', '24/7 front desk', 'Parking'],
     images: [
-      { name: 'hotel-exterior-05', category: 'cover', caption: 'Resort nhìn từ vịnh Nha Trang' },
-      { name: 'hotel-exterior-06', category: 'exterior', caption: 'Khu bungalow trong vườn dừa' },
-      { name: 'hotel-pool-02', category: 'exterior', caption: 'Hồ bơi ngoài trời' },
-      { name: 'hotel-spa-01', category: 'exterior', caption: 'Khu spa' },
-      { name: 'hotel-lobby-03', category: 'exterior', caption: 'Sảnh mở hướng biển' },
+      { name: 'hotel-exterior-05', category: 'cover', caption: 'The resort seen from Nha Trang Bay' },
+      { name: 'hotel-exterior-06', category: 'exterior', caption: 'Bungalow area in the coconut garden' },
+      { name: 'hotel-pool-02', category: 'exterior', caption: 'Outdoor swimming pool' },
+      { name: 'hotel-spa-01', category: 'exterior', caption: 'Spa area' },
+      { name: 'hotel-lobby-03', category: 'exterior', caption: 'Open lobby facing the sea' },
     ],
     roomTypes: [
       {
-        name: 'Deluxe Hướng Vịnh', description: 'Phòng 30m² ban công nhìn thẳng ra vịnh Nha Trang, giường King.',
+        name: 'Bay View Deluxe', description: 'A 30m² room with a balcony looking straight out over Nha Trang Bay, with a king bed.',
         maxOccupancy: 2, maxAdults: 2, maxChildren: 1, basePrice: 1_350_000, areaSqm: 30, bedType: 'king', viewType: 'ocean', floor: 5, roomCount: 10, hasBalcony: true,
         beds: [{ bedType: 'king', quantity: 1 }],
-        amenities: ['Điều hoà', 'TV màn hình phẳng', 'Minibar', 'Ban công', 'Két an toàn'],
+        amenities: ['Air conditioning', 'Flat-screen TV', 'Minibar', 'Balcony', 'In-room safe'],
         images: ['room-13', 'room-14'],
       },
       {
-        name: 'Bungalow Vườn Dừa', description: 'Bungalow riêng 40m² giữa vườn dừa, hiên riêng và lối đi thẳng ra hồ bơi.',
+        name: 'Coconut Garden Bungalow', description: 'A private 40m² bungalow in the coconut garden, with its own terrace and direct access to the pool.',
         maxOccupancy: 3, maxAdults: 2, maxChildren: 1, basePrice: 1_900_000, areaSqm: 40, bedType: 'king', viewType: 'garden', floor: 1, roomCount: 6, hasBalcony: true,
         beds: [{ bedType: 'king', quantity: 1 }, { bedType: 'sofa_bed', quantity: 1 }],
-        amenities: ['Điều hoà', 'TV màn hình phẳng', 'Minibar', 'Ban công', 'Bồn tắm', 'Máy pha cà phê'],
+        amenities: ['Air conditioning', 'Flat-screen TV', 'Minibar', 'Balcony', 'Bathtub', 'Coffee maker'],
         images: ['room-15', 'suite-05'],
       },
     ],
     charges: [
       { chargeType: 'tax', name: 'VAT', amount: 8, isPercentage: true },
-      { chargeType: 'fee', name: 'Phí resort', amount: 80_000, isPercentage: false, chargeFrequency: 'per_night' },
+      { chargeType: 'fee', name: 'Resort fee', amount: 80_000, isPercentage: false, chargeFrequency: 'per_night' },
     ],
     policies: [
-      { title: 'Chính sách huỷ phòng', description: 'Huỷ miễn phí trước 72 giờ so với giờ nhận phòng. Huỷ muộn hơn sẽ mất toàn bộ tiền phòng.', important: true },
-      { title: 'Phí resort', description: 'Phí resort 80.000đ/đêm đã gồm khăn tắm biển, ghế bãi biển và lớp yoga buổi sáng.', important: true },
-      { title: 'Giờ nhận / trả phòng', description: 'Nhận phòng từ 14:00, trả phòng trước 12:00.' },
+      { title: 'Cancellation policy', description: 'Free cancellation up to 72 hours before check-in time. Later cancellations forfeit the full room charge.', important: true },
+      { title: 'Resort fee', description: 'The 80,000 VND per night resort fee covers beach towels, beach loungers and the morning yoga class.', important: true },
+      { title: 'Check-in / check-out', description: 'Check-in from 14:00, check-out before 12:00.' },
     ],
     nearby: [
-      { name: 'Bãi biển Trần Phú', category: 'beach', distance: 0.05, transportType: 'walk', journeyMinutes: 1 },
-      { name: 'Chợ Đầm', category: 'attraction', distance: 3.5, transportType: 'car', journeyMinutes: 10 },
-      { name: 'Sân bay Cam Ranh', category: 'airport', distance: 32, transportType: 'car', journeyMinutes: 45 },
-      { name: 'Tháp Bà Ponagar', category: 'landmark', distance: 4.2, transportType: 'car', journeyMinutes: 12 },
+      { name: 'Tran Phu Beach', category: 'beach', distance: 0.05, transportType: 'walk', journeyMinutes: 1 },
+      { name: 'Dam Market', category: 'attraction', distance: 3.5, transportType: 'car', journeyMinutes: 10 },
+      { name: 'Cam Ranh Airport', category: 'airport', distance: 32, transportType: 'car', journeyMinutes: 45 },
+      { name: 'Po Nagar Cham Towers', category: 'landmark', distance: 4.2, transportType: 'car', journeyMinutes: 12 },
     ],
   },
 ];
@@ -487,11 +487,11 @@ const HOTELS: SeedHotel[] = [
 const HOLIDAY_RULE_PRIORITY = 50;
 
 const HOLIDAYS: { name: string; start: string; end: string; surchargePercent: number }[] = [
-  { name: 'Quốc khánh 2/9', start: '2026-08-31', end: '2026-09-02', surchargePercent: 35 },
-  { name: 'Tết Dương lịch', start: '2026-12-31', end: '2027-01-01', surchargePercent: 25 },
+  { name: 'National Day (Sep 2)', start: '2026-08-31', end: '2026-09-02', surchargePercent: 35 },
+  { name: "New Year's Day", start: '2026-12-31', end: '2027-01-01', surchargePercent: 25 },
   // Mùng 1 Tết Đinh Mùi rơi vào 06/02/2027 (dương lịch) — kiểm lại khi sang năm khác
-  { name: 'Tết Nguyên đán Đinh Mùi', start: '2027-02-05', end: '2027-02-11', surchargePercent: 50 },
-  { name: 'Lễ 30/4 - 1/5', start: '2027-04-29', end: '2027-05-03', surchargePercent: 40 },
+  { name: 'Lunar New Year (Tet)', start: '2027-02-05', end: '2027-02-11', surchargePercent: 50 },
+  { name: 'Reunification Day & Labour Day', start: '2027-04-29', end: '2027-05-03', surchargePercent: 40 },
 ];
 
 // Giấy tờ mỗi khách sạn phải nộp — dùng chung cho cả 4 hồ sơ
@@ -641,8 +641,8 @@ const main = async (): Promise<void> => {
         amenities: { create: h.amenities.map((name) => ({ amenityId: amenityId.get(name)! })) },
         contacts: {
           create: [
-            { contactType: 'general', name: 'Lễ tân', phone: h.phone, phoneType: 'voice', email: h.email },
-            { contactType: 'invoices', name: 'Phòng kế toán', email: `invoice-${h.city.toLowerCase().replace(/\s/g, '')}@smartstay.ai` },
+            { contactType: 'general', name: 'Front desk', phone: h.phone, phoneType: 'voice', email: h.email },
+            { contactType: 'invoices', name: 'Accounting department', email: `invoice-${h.city.toLowerCase().replace(/\s/g, '')}@smartstay.ai` },
           ],
         },
         nearbyPlaces: {
@@ -690,7 +690,7 @@ const main = async (): Promise<void> => {
         submittedAt: daysFromNow(-65),
         reviewedBy: manager.id,
         reviewedAt: daysFromNow(-60),
-        notes: 'Hồ sơ đầy đủ, giấy tờ hợp lệ.',
+        notes: 'Application complete, all documents valid.',
       },
     });
 
@@ -715,8 +715,8 @@ const main = async (): Promise<void> => {
     const starEnum = (`star${h.starRating}` as const) as 'star1' | 'star2' | 'star3' | 'star4' | 'star5';
     const licenses: { licenseType: LicenseType; number: string; docType: VerificationDocumentType }[] = [
       { licenseType: 'business_license', number: h.businessRegistrationNumber, docType: 'business_license' },
-      { licenseType: 'operating_license', number: `GP-${h.businessRegistrationNumber.slice(-4)}`, docType: 'operating_license' },
-      { licenseType: 'fire_safety', number: `PCCC-${h.businessRegistrationNumber.slice(-4)}`, docType: 'fire_safety' },
+      { licenseType: 'operating_license', number: `OL-${h.businessRegistrationNumber.slice(-4)}`, docType: 'operating_license' },
+      { licenseType: 'fire_safety', number: `FS-${h.businessRegistrationNumber.slice(-4)}`, docType: 'fire_safety' },
     ];
     for (const l of licenses) {
       await prisma.hotelLicense.create({
@@ -728,7 +728,7 @@ const main = async (): Promise<void> => {
           certificateNumber: l.licenseType === 'business_license' ? null : l.number,
           issueDate: daysFromNow(-400),
           expiryDate: daysFromNow(1000),
-          authority: `Sở Kế hoạch và Đầu tư ${h.city}`,
+          authority: `${h.city} Department of Planning and Investment`,
           validityStatus: 'active',
           currentDocumentId: docIdByType.get(l.docType)!,
         },
@@ -740,10 +740,10 @@ const main = async (): Promise<void> => {
         hotelId: hotel.id,
         verificationRequestId: request.id,
         licenseType: 'classification',
-        certificateNumber: `XH-${h.businessRegistrationNumber.slice(-4)}`,
+        certificateNumber: `CL-${h.businessRegistrationNumber.slice(-4)}`,
         issueDate: daysFromNow(-380),
         expiryDate: daysFromNow(1200),
-        authority: `Sở Du lịch ${h.city}`,
+        authority: `${h.city} Department of Tourism`,
         validityStatus: 'active',
         starRating: starEnum,
         currentDocumentId: docIdByType.get('classification')!,
@@ -828,11 +828,11 @@ const main = async (): Promise<void> => {
     await prisma.faqKnowledgeBase.createMany({
       data: [
         ...GENERIC_FAQS.map((f) => ({ hotelId: hotel.id, ...f })),
-        { hotelId: hotel.id, category: 'Tiện ích', question: 'Khách sạn có những tiện nghi gì?', answer: `Khách sạn có: ${h.amenities.join(', ')}.` },
-        { hotelId: hotel.id, category: 'Phòng', question: 'Khách sạn có những loại phòng nào?', answer: `Các loại phòng: ${h.roomTypes.map((r) => r.name).join(', ')}.` },
-        { hotelId: hotel.id, category: 'Phòng', question: 'Phòng rẻ nhất giá bao nhiêu?', answer: `Giá phòng thấp nhất từ ${minPrice.toLocaleString('vi-VN')}đ/đêm.` },
-        { hotelId: hotel.id, category: 'Vị trí', question: 'Khách sạn nằm ở đâu?', answer: `${h.address}, ${h.district}, ${h.city}.` },
-        { hotelId: hotel.id, category: 'Thông tin', question: 'Khách sạn được xếp hạng mấy sao?', answer: `Khách sạn đạt chuẩn ${h.starRating} sao.` },
+        { hotelId: hotel.id, category: 'Facilities', question: 'What amenities does the hotel offer?', answer: `The hotel offers: ${h.amenities.join(', ')}.` },
+        { hotelId: hotel.id, category: 'Rooms', question: 'What room types are available?', answer: `Room types: ${h.roomTypes.map((r) => r.name).join(', ')}.` },
+        { hotelId: hotel.id, category: 'Rooms', question: 'How much is the cheapest room?', answer: `Rooms start from ${minPrice.toLocaleString('en-US')} VND per night.` },
+        { hotelId: hotel.id, category: 'Location', question: 'Where is the hotel located?', answer: `${h.address}, ${h.district}, ${h.city}.` },
+        { hotelId: hotel.id, category: 'General', question: 'What is the hotel star rating?', answer: `The hotel is rated ${h.starRating} stars.` },
       ],
     });
 
@@ -856,8 +856,8 @@ const main = async (): Promise<void> => {
       // Mức sẽ chịu nếu đơn không được duyệt — ở đây là mức nền vì khách sạn chưa có ưu đãi nào
       currentRate: PLATFORM_BASE_COMMISSION_RATE,
       reason:
-        'Khu vực biển Mỹ Khê có nhiều resort mới mở, giá phòng bị ép xuống trong khi chi phí vận hành tăng. ' +
-        'Chúng tôi cam kết tăng ít nhất 30% lượng đặt phòng qua nền tảng trong 6 tháng tới nếu được duyệt mức 12%.',
+        'Several new resorts have opened around My Khe Beach, pushing room rates down while operating costs keep rising. ' +
+        'If the 12% rate is approved, we commit to growing bookings through the platform by at least 30% over the next 6 months.',
       status: 'pending',
       isRenewal: false,
       createdAt: daysFromNow(-2),
@@ -867,28 +867,28 @@ const main = async (): Promise<void> => {
 
   await prisma.pricingRule.create({
     data: {
-      hotelId: danang.id, roomTypeId: oceanDanang.id, name: 'Phụ thu cuối tuần — Deluxe Hướng Biển',
+      hotelId: danang.id, roomTypeId: oceanDanang.id, name: 'Weekend surcharge — Ocean View Deluxe',
       ruleType: 'weekend' as PricingRuleType, startDate: daysFromNow(0), endDate: daysFromNow(90),
       dayOfWeek: [5, 6], adjustmentType: 'percentage' as AdjustmentType, adjustmentValue: 20, priority: 10, isActive: true,
     },
   });
   await prisma.pricingRule.create({
     data: {
-      hotelId: nhatrang.id, name: 'Cao điểm hè — toàn khách sạn',
+      hotelId: nhatrang.id, name: 'Summer peak season — whole hotel',
       ruleType: 'seasonal' as PricingRuleType, startDate: daysFromNow(15), endDate: daysFromNow(60),
       dayOfWeek: [], adjustmentType: 'percentage' as AdjustmentType, adjustmentValue: 30, priority: 20, isActive: true,
     },
   });
   await prisma.pricingRule.create({
     data: {
-      hotelId: saigon.id, name: 'Đặt sớm giảm 15%',
+      hotelId: saigon.id, name: 'Early bird — 15% off',
       ruleType: 'early_bird' as PricingRuleType, startDate: daysFromNow(0), endDate: daysFromNow(30),
       dayOfWeek: [], adjustmentType: 'percentage' as AdjustmentType, adjustmentValue: -15, priority: 5, isActive: true,
     },
   });
   await prisma.pricingRule.create({
     data: {
-      hotelId: hanoi.id, name: 'Phụ thu khi gần kín phòng',
+      hotelId: hanoi.id, name: 'High occupancy surcharge',
       ruleType: 'occupancy' as PricingRuleType, startDate: daysFromNow(0), endDate: daysFromNow(90),
       dayOfWeek: [], occupancyThreshold: 80, adjustmentType: 'percentage' as AdjustmentType, adjustmentValue: 25, priority: 15, isActive: true,
     },
@@ -901,14 +901,14 @@ const main = async (): Promise<void> => {
   // ⇒ /deals có 3 khách sạn (Saigon, Đà Nẵng, Hà Nội).
   await prisma.pricingRule.create({
     data: {
-      hotelId: danang.id, name: 'Flash sale hôm nay — giảm 25%',
+      hotelId: danang.id, name: 'Flash sale today — 25% off',
       ruleType: 'seasonal' as PricingRuleType, startDate: daysFromNow(0), endDate: daysFromNow(1),
       dayOfWeek: [], adjustmentType: 'percentage' as AdjustmentType, adjustmentValue: -25, priority: 30, isActive: true,
     },
   });
   await prisma.pricingRule.create({
     data: {
-      hotelId: hanoi.id, name: 'Ưu đãi mở bán — giảm 20%',
+      hotelId: hanoi.id, name: 'Grand opening offer — 20% off',
       ruleType: 'seasonal' as PricingRuleType, startDate: daysFromNow(0), endDate: daysFromNow(45),
       dayOfWeek: [], adjustmentType: 'percentage' as AdjustmentType, adjustmentValue: -20, priority: 30, isActive: true,
     },
@@ -921,7 +921,7 @@ const main = async (): Promise<void> => {
       await prisma.pricingRule.create({
         data: {
           hotelId: hotel.id,
-          name: `Phụ thu ${holiday.name}`,
+          name: `${holiday.name} surcharge`,
           ruleType: 'seasonal' as PricingRuleType,
           startDate: new Date(`${holiday.start}T00:00:00Z`),
           endDate: new Date(`${holiday.end}T00:00:00Z`),
@@ -992,20 +992,20 @@ const main = async (): Promise<void> => {
 
   const BOOKINGS: SeedBooking[] = [
     // Đà Nẵng — đủ vòng đời để demo check-in → check-out → đánh giá
-    { code: 'BKSEED001', customerId: customer1.id, hotel: danang, roomTypeIdx: 0, fromDay: 7, nights: 2, guests: 2, status: 'confirmed', paid: true, voucher: 'VCSEED001', specialRequests: 'Phòng tầng cao, xa thang máy' },
+    { code: 'BKSEED001', customerId: customer1.id, hotel: danang, roomTypeIdx: 0, fromDay: 7, nights: 2, guests: 2, status: 'confirmed', paid: true, voucher: 'VCSEED001', specialRequests: 'High floor, away from the elevator' },
     { code: 'BKSEED002', customerId: customer1.id, hotel: danang, roomTypeIdx: 0, fromDay: 0, nights: 2, guests: 2, status: 'confirmed', paid: true, voucher: 'VCSEED002' },
     { code: 'BKSEED003', customerId: customer2.id, hotel: danang, roomTypeIdx: 2, fromDay: -5, nights: 2, guests: 2, status: 'checked_out', paid: true },
-    { code: 'BKSEED004', customerId: customer3.id, hotel: danang, roomTypeIdx: 1, fromDay: -12, nights: 3, guests: 4, status: 'checked_out', paid: true, review: { by: customer3.id, rating: 5, title: 'Resort tuyệt vời', content: 'Phòng rộng, ban công nhìn thẳng ra biển. Nhân viên nhiệt tình, bữa sáng nhiều món. Sẽ quay lại.' } },
-    { code: 'BKSEED005', customerId: customer2.id, hotel: danang, roomTypeIdx: 0, fromDay: -20, nights: 2, guests: 2, status: 'checked_out', paid: true, review: { by: customer2.id, rating: 4, title: 'Đáng tiền', content: 'Vị trí sát biển rất tiện. Hồ bơi hơi đông vào buổi chiều nhưng nhìn chung rất ổn.' } },
+    { code: 'BKSEED004', customerId: customer3.id, hotel: danang, roomTypeIdx: 1, fromDay: -12, nights: 3, guests: 4, status: 'checked_out', paid: true, review: { by: customer3.id, rating: 5, title: 'Wonderful resort', content: 'Spacious room with a balcony looking straight out to the sea. Friendly staff and a breakfast with plenty of choice. We will come back.' } },
+    { code: 'BKSEED005', customerId: customer2.id, hotel: danang, roomTypeIdx: 0, fromDay: -20, nights: 2, guests: 2, status: 'checked_out', paid: true, review: { by: customer2.id, rating: 4, title: 'Worth the money', content: 'The beachfront location is very convenient. The pool gets a bit crowded in the afternoon, but overall a great stay.' } },
     { code: 'BKSEED006', customerId: customer1.id, hotel: danang, roomTypeIdx: 2, fromDay: 20, nights: 1, guests: 2, status: 'cancelled', paid: false },
     // Sài Gòn
-    { code: 'BKSEED007', customerId: customer1.id, hotel: saigon, roomTypeIdx: 1, fromDay: -8, nights: 2, guests: 2, status: 'checked_out', paid: true, review: { by: customer1.id, rating: 5, title: 'Ngay trung tâm', content: 'Đi bộ ra Bến Thành 5 phút. Phòng sạch, cách âm tốt dù ở mặt đường.' } },
+    { code: 'BKSEED007', customerId: customer1.id, hotel: saigon, roomTypeIdx: 1, fromDay: -8, nights: 2, guests: 2, status: 'checked_out', paid: true, review: { by: customer1.id, rating: 5, title: 'Right in the centre', content: 'A 5-minute walk to Ben Thanh Market. Clean room with good sound insulation even facing the street.' } },
     { code: 'BKSEED008', customerId: customer2.id, hotel: saigon, roomTypeIdx: 0, fromDay: 5, nights: 3, guests: 1, status: 'confirmed', paid: true },
     // Hà Nội
-    { code: 'BKSEED009', customerId: customer3.id, hotel: hanoi, roomTypeIdx: 1, fromDay: -15, nights: 2, guests: 2, status: 'checked_out', paid: true, review: { by: customer3.id, rating: 4, title: 'Vị trí đẹp giữa phố cổ', content: 'Ban công nhìn xuống phố rất thích. Cuối tuần hơi ồn đúng như khách sạn đã báo trước.' } },
+    { code: 'BKSEED009', customerId: customer3.id, hotel: hanoi, roomTypeIdx: 1, fromDay: -15, nights: 2, guests: 2, status: 'checked_out', paid: true, review: { by: customer3.id, rating: 4, title: 'Great spot in the Old Quarter', content: 'Loved the balcony overlooking the street. A little noisy at the weekend, exactly as the hotel had warned.' } },
     { code: 'BKSEED010', customerId: customer1.id, hotel: hanoi, roomTypeIdx: 0, fromDay: 12, nights: 2, guests: 2, status: 'confirmed', paid: true },
     // Nha Trang
-    { code: 'BKSEED011', customerId: customer2.id, hotel: nhatrang, roomTypeIdx: 1, fromDay: -25, nights: 3, guests: 3, status: 'checked_out', paid: true, review: { by: customer2.id, rating: 5, title: 'Bungalow rất riêng tư', content: 'Ở giữa vườn dừa, sáng ra hồ bơi vài bước chân. Phí resort đáng giá vì gồm cả ghế bãi biển.' } },
+    { code: 'BKSEED011', customerId: customer2.id, hotel: nhatrang, roomTypeIdx: 1, fromDay: -25, nights: 3, guests: 3, status: 'checked_out', paid: true, review: { by: customer2.id, rating: 5, title: 'Very private bungalow', content: 'Set in the coconut garden, just a few steps to the pool in the morning. The resort fee is worth it since it includes the beach loungers.' } },
     { code: 'BKSEED012', customerId: customer3.id, hotel: nhatrang, roomTypeIdx: 0, fromDay: 25, nights: 2, guests: 2, status: 'confirmed', paid: true },
   ];
 
@@ -1041,7 +1041,7 @@ const main = async (): Promise<void> => {
         source: 'website',
         specialRequests: b.specialRequests ?? null,
         ...(b.status === 'checked_out' && { checkedInAt: checkIn, checkedOutAt: checkOut }),
-        ...(b.status === 'cancelled' && { cancelledAt: daysFromNow(-1), cancellationReason: 'Khách đổi lịch trình' }),
+        ...(b.status === 'cancelled' && { cancelledAt: daysFromNow(-1), cancellationReason: 'Guest changed travel plans' }),
       },
     });
 
@@ -1128,7 +1128,7 @@ const main = async (): Promise<void> => {
           type: 'adjustment',
           amount: 2_000_000,
           balanceAfter: 2_000_000,
-          description: 'Số dư mẫu để demo thanh toán bằng ví',
+          description: 'Sample balance for the wallet payment demo',
         },
       },
     },
@@ -1142,7 +1142,7 @@ const main = async (): Promise<void> => {
           type: 'adjustment',
           amount: 300_000,
           balanceAfter: 300_000,
-          description: 'Số dư mẫu (ít) để demo thanh toán kết hợp ví + cổng',
+          description: 'Small sample balance for the wallet + gateway split payment demo',
         },
       },
     },
