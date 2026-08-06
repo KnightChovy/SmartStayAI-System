@@ -102,7 +102,8 @@ export function StaffGlobalSearch() {
         icon: BedDouble,
         title: `Room ${r.roomNumber}`,
         subtitle: `${r.roomType.name} · ${r.status}`,
-        to: `${ROUTES.staffRooms}?room=${encodeURIComponent(r.roomNumber)}`,
+        // Bản đồ phòng nay nằm trong lịch tồn kho — mở ở ngày hôm nay và làm nổi đúng phòng.
+        to: `${ROUTES.staffInventory}?room=${encodeURIComponent(r.roomNumber)}`,
       }));
 
     return [...bookingHits, ...guestHits, ...roomHits];

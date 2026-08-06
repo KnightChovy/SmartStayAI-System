@@ -2,7 +2,6 @@ import { Outlet, useNavigate } from 'react-router';
 import {
   LayoutDashboard,
   ConciergeBell,
-  BedDouble,
   CalendarRange,
   MessageSquare,
   Sparkles,
@@ -27,9 +26,9 @@ const navItems = [
   { name: 'Front desk', href: ROUTES.staffFrontDesk, icon: ConciergeBell },
   { name: 'Chat', href: ROUTES.staffChat, icon: MessageSquare },
   { name: 'Housekeeping', href: ROUTES.staffHousekeeping, icon: Sparkles },
-  { name: 'Room map', href: ROUTES.staffRooms, icon: BedDouble },
-  // Room map là bảng vận hành của HÔM NAY; lịch tồn kho mới là chỗ nhìn được các ngày tới.
-  { name: 'Inventory', href: ROUTES.staffInventory, icon: CalendarRange },
+  // Bản đồ phòng đã gộp vào đây: bấm một ngày trên lịch là ra đúng các phòng của ngày đó, và đổi
+  // tình trạng chỉ ảnh hưởng ngày đã chọn (Room map cũ chỉ nói được hôm nay).
+  { name: 'Rooms & inventory', href: ROUTES.staffInventory, icon: CalendarRange },
 ];
 
 export function StaffLayout() {

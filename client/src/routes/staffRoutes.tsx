@@ -9,8 +9,8 @@ import FrontDeskPage from '@/pages/staff/FrontDeskPage';
 import BookingDetailPage from '@/pages/staff/BookingDetailPage';
 import StaffChatPage from '@/pages/staff/StaffChatPage';
 import HousekeepingPage from '@/pages/staff/HousekeepingPage';
-import RoomsPage from '@/pages/staff/RoomsPage';
 import InventoryCalendarPage from '@/pages/staff/InventoryCalendarPage';
+import { RoomMapRedirect } from '@/components/staff/RoomMapRedirect';
 
 /** Staff portal (`/staff`) — `staff` role only. */
 export const staffRoutes: RouteObject[] = [
@@ -33,7 +33,7 @@ export const staffRoutes: RouteObject[] = [
               { path: 'front-desk/:bookingId', element: <BookingDetailPage /> },
               { path: 'chat', element: <StaffChatPage /> },
               { path: 'housekeeping', element: <HousekeepingPage /> },
-              { path: 'rooms', element: <RoomsPage /> },
+              { path: 'rooms', element: <RoomMapRedirect /> },
               { path: 'inventory', element: <InventoryCalendarPage /> },
             ],
           },

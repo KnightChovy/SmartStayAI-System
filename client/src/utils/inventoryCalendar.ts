@@ -4,6 +4,8 @@ import type {
   InventoryDayCell,
   InventoryTypeRow,
   RoomBlockListItem,
+  RoomDayEntry,
+  RoomDayState,
   StaffRoom,
 } from '@/types/staff.types';
 import { toUtcDateKey } from '@/utils/formatDate';
@@ -75,6 +77,233 @@ export function blockedRoomIdsOn(
     }
   }
   return blocked;
+}
+
+/**
+ * Đợt chặn **còn hiệu lực** phủ đúng một ngày, tra theo phòng.
+ *
+ * Khác `blockedRoomIdsOn` (chỉ đếm `ooo` để tính tồn kho): ở đây giữ cả `oos` vì bản đồ phòng vẫn
+ * phải cho staff thấy phòng đang ngưng phục vụ, dù nó không rút phòng khỏi kho bán. Một phòng dính
+ * nhiều đợt chồng nhau thì lấy đợt **tạo sau cùng** — cùng luật với `getActiveBlocksToday` của BE.
+ */
+export function activeBlocksOn(
+  blocks: RoomBlockListItem[],
+  dateKey: string
+): Map<string, RoomBlockListItem> {
+  const byRoom = new Map<string, RoomBlockListItem>();
+  for (const block of blocks) {
+    if (block.resolvedAt) continue;
+    const start = toUtcDateKey(block.startDate);
+    const end = toUtcDateKey(block.endDate);
+    if (!start || !end || dateKey < start || dateKey > end) continue;
+    const current = byRoom.get(block.roomId);
+    if (!current || block.createdAt >= current.createdAt) byRoom.set(block.roomId, block);
+  }
+  return byRoom;
+}
+
+/**
+ * Bản đồ phòng của MỘT ngày cụ thể — thứ mà `rooms.status` không nói được.
+ *
+ * **Thứ tự ưu tiên bám đúng `deriveRoomStatus` của BE** (đợt chặn → có khách → chưa sạch → trống)
+ * nên xem ngày hôm nay ở đây ra đúng nhãn mà room map cũ hiện. Khác biệt duy nhất: `oos` tách khỏi
+ * `maintenance` vì nó KHÔNG rút phòng khỏi kho bán.
+ *
+ * Một ngày trong tương lai chỉ có hai dữ kiện chắc chắn: đơn đã được **gán đúng phòng** và đợt chặn
+ * phủ ngày đó ⇒ `includeHousekeeping` phải là `false`, phòng "đang dọn" sáng nay không nói gì về
+ * tuần sau. Phòng vừa có khách vừa dính chặn thì `block` và `booking` **đều được trả về** để UI
+ * cảnh báo xung đột thay vì giấu một trong hai.
+ */
+export function buildRoomDayView({
+  rooms,
+  blocks,
+  bookings,
+  date,
+  includeHousekeeping = false,
+  now = new Date(),
+}: {
+  rooms: StaffRoom[];
+  blocks: RoomBlockListItem[];
+  bookings: HotelBooking[];
+  /** `YYYY-MM-DD`. */
+  date: string;
+  /** Bật khi `date` là HÔM NAY — chỉ khi đó trạng thái buồng phòng mới có nghĩa. */
+  includeHousekeeping?: boolean;
+  now?: Date;
+}): RoomDayEntry[] {
+  const blockByRoom = activeBlocksOn(blocks, date);
+
+  const bookingByRoom = new Map<string, HotelBooking>();
+  for (const booking of bookings) {
+    if (!occupiesInventory(booking, now)) continue;
+    const checkIn = toUtcDateKey(booking.checkInDate);
+    const checkOut = toUtcDateKey(booking.checkOutDate);
+    // Đêm cuối không tính: khách trả phòng sáng hôm đó nên phòng dùng lại được cho chính đêm ấy.
+    if (!checkIn || !checkOut || date < checkIn || date >= checkOut) continue;
+    for (const link of booking.bookingRooms) {
+      bookingByRoom.set(link.roomId, booking);
+    }
+  }
+
+  return rooms.map(room => {
+    const block = blockByRoom.get(room.id) ?? null;
+    const booking = bookingByRoom.get(room.id) ?? null;
+    let state: RoomDayState = 'available';
+    if (block) {
+      // Đợt chặn đè lên tất cả: phòng hỏng thì sạch hay bẩn, có khách hay không cũng không bán được.
+      state = block.blockType === 'ooo' ? 'maintenance' : 'out_of_service';
+    } else if (booking) {
+      state = 'occupied';
+    } else if (includeHousekeeping && (room.hkStatus === 'dirty' || room.hkStatus === 'cleaning')) {
+      state = 'cleaning';
+    }
+    return { room, date, state, block, booking, heldBy: null };
+  });
+}
+
+/**
+ * Xếp TẠM mỗi đơn chưa check-in vào một phòng còn trống cùng loại, để phòng đó không nằm lẫn trong
+ * nhóm "còn trống phát được".
+ *
+ * ⚠️ **Đây là phỏng đoán của FE.** BE không có endpoint gán phòng trước — phòng vật lý chỉ được
+ * chọn lúc check-in (`booking.service.checkIn` quét phòng `available` đúng loại). Vì vậy:
+ * - Xếp theo **số phòng tăng dần** và theo thứ tự đơn cố định (ngày nhận phòng, rồi mã đơn) để
+ *   cùng một dữ liệu luôn ra cùng kết quả — nếu không, mỗi lần tải lại một phòng khác bị đánh dấu.
+ * - Phòng được xếp tạm vẫn là phòng **trống thật**, nên UI phải ghi rõ "dự kiến" và không được để
+ *   lễ tân đọc số phòng đó cho khách như số phòng chính thức.
+ *
+ * Đơn không còn phòng trống nào để xếp thì trả về ở `unplaced` — đó là dấu hiệu **thiếu phòng
+ * thật**, phải hiện cảnh báo chứ không được im lặng bỏ qua.
+ */
+export function applyProvisionalHolds({
+  entries,
+  bookings,
+}: {
+  entries: RoomDayEntry[];
+  /** Đơn chiếm đêm này nhưng chưa được gán phòng nào. */
+  bookings: HotelBooking[];
+}): { entries: RoomDayEntry[]; unplaced: HotelBooking[] } {
+  if (bookings.length === 0) return { entries, unplaced: [] };
+
+  // Chỉ số của các phòng có thể xếp tạm, gom theo loại phòng, đã sắp theo số phòng tự nhiên.
+  const freeByType = new Map<string, number[]>();
+  entries.forEach((entry, index) => {
+    if (entry.state !== 'available' || !entry.room.isActive) return;
+    const list = freeByType.get(entry.room.roomTypeId);
+    if (list) list.push(index);
+    else freeByType.set(entry.room.roomTypeId, [index]);
+  });
+  for (const list of freeByType.values()) {
+    list.sort((a, b) =>
+      entries[a].room.roomNumber.localeCompare(entries[b].room.roomNumber, undefined, {
+        numeric: true,
+        sensitivity: 'base',
+      })
+    );
+  }
+
+  const ordered = [...bookings].sort(
+    (a, b) =>
+      a.checkInDate.localeCompare(b.checkInDate) || a.bookingCode.localeCompare(b.bookingCode)
+  );
+
+  const next = [...entries];
+  const unplaced: HotelBooking[] = [];
+  const cursor = new Map<string, number>();
+
+  for (const booking of ordered) {
+    const candidates = freeByType.get(booking.roomTypeId) ?? [];
+    const at = cursor.get(booking.roomTypeId) ?? 0;
+    if (at >= candidates.length) {
+      unplaced.push(booking);
+      continue;
+    }
+    cursor.set(booking.roomTypeId, at + 1);
+    const index = candidates[at];
+    next[index] = { ...next[index], state: 'held', heldBy: booking };
+  }
+
+  return { entries: next, unplaced };
+}
+
+/** Hậu quả dự kiến của một đợt chặn, tính TẠI CLIENT từ dữ liệu lịch đang hiển thị. */
+export interface LocalBlockPreview {
+  /** Đơn đã được gán ĐÚNG phòng này và trùng khoảng chặn ⇒ phải xếp lại phòng. */
+  affectedBookings: HotelBooking[];
+  /** Đêm sẽ thiếu phòng sau khi chặn (`booked > sellable`). */
+  shortageNights: { date: string; sellable: number; booked: number; shortage: number }[];
+  /** Ngày cuối cùng còn dữ liệu để kiểm tra — sau ngày này lịch chưa tải booking nên không kết luận. */
+  checkedThrough: string | null;
+}
+
+/**
+ * Xem trước hậu quả của việc chặn một phòng — **tính ở client**, không gọi BE.
+ *
+ * ⚠️ Vì sao không dùng `POST .../blocks?dryRun=true` của BE: middleware `validate` chạy
+ * `Object.assign(req, value)` nên `req.query.dryRun` đã được Joi convert thành **boolean**, trong
+ * khi controller so với chuỗi `'true'` ⇒ nhánh xem trước không bao giờ chạy và mỗi lần "xem trước"
+ * lại **chặn thật** một phòng (đã tái hiện trên deploy). Đã sửa controller, nhưng FE vẫn phải an
+ * toàn với bản server đang chạy — và tính ở đây thì con số khớp đúng thứ đang hiện trên lưới.
+ *
+ * Mirror `computeShortage` của BE: đếm theo PHÒNG bị chặn (không đếm block) và chỉ `ooo` mới rút
+ * phòng khỏi kho bán.
+ */
+export function previewRoomBlockLocally({
+  rooms,
+  blocks,
+  bookings,
+  roomId,
+  blockType,
+  startDate,
+  endDate,
+  dataTo,
+  now = new Date(),
+}: {
+  rooms: StaffRoom[];
+  blocks: RoomBlockListItem[];
+  bookings: HotelBooking[];
+  roomId: string;
+  blockType: RoomBlockListItem['blockType'];
+  startDate: string;
+  endDate: string;
+  /** Ngày cuối của khoảng đã tải booking — quá mốc này thì không kết luận thiếu phòng. */
+  dataTo: string;
+  now?: Date;
+}): LocalBlockPreview {
+  const room = rooms.find(r => r.id === roomId);
+  const live = bookings.filter(booking => occupiesInventory(booking, now));
+
+  const affectedBookings = live.filter(booking => {
+    if (!booking.bookingRooms.some(link => link.roomId === roomId)) return false;
+    const checkIn = toUtcDateKey(booking.checkInDate);
+    const checkOut = toUtcDateKey(booking.checkOutDate);
+    // Trùng khoảng chặn khi: nhận phòng <= ngày cuối bị chặn VÀ trả phòng > ngày đầu bị chặn
+    // (ngày trả phòng không phải một đêm ngủ nên dùng >, không phải >=).
+    return Boolean(checkIn && checkOut && checkIn <= endDate && checkOut > startDate);
+  });
+
+  const shortageNights: LocalBlockPreview['shortageNights'] = [];
+  const checkedThrough = endDate <= dataTo ? endDate : dataTo >= startDate ? dataTo : null;
+
+  if (room && checkedThrough) {
+    const typeRoomIds = rooms.filter(r => r.roomTypeId === room.roomTypeId && r.isActive).map(r => r.id);
+    for (const date of eachDateKey(startDate, checkedThrough)) {
+      const blocked = blockedRoomIdsOn(blocks, date);
+      if (blockType === 'ooo') blocked.add(roomId);
+      const sellable = typeRoomIds.filter(id => !blocked.has(id)).length;
+      const booked = live.filter(booking => {
+        if (booking.roomTypeId !== room.roomTypeId) return false;
+        const checkIn = toUtcDateKey(booking.checkInDate);
+        const checkOut = toUtcDateKey(booking.checkOutDate);
+        return Boolean(checkIn && checkOut && date >= checkIn && date < checkOut);
+      }).length;
+      if (booked > sellable) {
+        shortageNights.push({ date, sellable, booked, shortage: booked - sellable });
+      }
+    }
+  }
+
+  return { affectedBookings, shortageNights, checkedThrough };
 }
 
 /** Danh sách khoá ngày `YYYY-MM-DD` từ `from` tới `to` (bao gồm cả hai đầu). */
