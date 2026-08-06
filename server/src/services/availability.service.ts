@@ -1,7 +1,7 @@
 import { Prisma } from '@prisma/client';
 import type { PricingRule, ChargeType, ChargeFrequency } from '@prisma/client';
 import prisma from '../config/prisma';
-import { toUtcDate, eachNightOfStay } from '../utils/dates';
+import { toUtcDate, eachNightOfStay, todayInVietnamDate } from '../utils/dates';
 
 /** Một khoản thu của khách sạn (thuế hoặc phí), đủ để tính ra tiền. */
 export interface TaxFeeCharge {
@@ -288,7 +288,7 @@ export class AvailabilityService {
       availabilityRows.map((row) => [`${row.roomTypeId}:${row.date.getTime()}`, row])
     );
 
-    const today = toUtcDate(new Date());
+    const today = todayInVietnamDate();
     const quotes = new Map<string, StayQuote>();
     for (const roomType of roomTypes) {
       // Số phòng đặt được cả kỳ = đêm eo hẹp nhất. Bắt đầu từ Infinity rồi min dần, vì trần tồn kho

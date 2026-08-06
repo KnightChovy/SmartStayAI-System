@@ -12,7 +12,7 @@ import { hotelService } from './hotel.service';
 import { AiTool } from './ai/ai.types';
 import { setPendingAction, consumePendingAction, peekPendingAction } from './ai/pending-action.store';
 import { emitMessageToConversation, emitConversationEscalated } from '../config/socket';
-import { toUtcDate, todayInVietnam } from '../utils/dates';
+import { toUtcDate, todayInVietnam, todayInVietnamDate } from '../utils/dates';
 import type { HotelSearchFilter } from '../dto/hotel.dto';
 
 // Thông tin một khách sạn đủ để dựng lời nhắc + RAG cho concierge theo KS.
@@ -89,7 +89,7 @@ const stayDateWarning = (checkInDate: string, checkOutDate: string): string | nu
     return 'Ngày nhận/trả phòng không hợp lệ. Hãy hỏi lại khách và truyền đúng định dạng YYYY-MM-DD.';
   }
   const today = todayInVietnam();
-  if (toUtcDate(checkIn) < toUtcDate(new Date())) {
+  if (toUtcDate(checkIn) < todayInVietnamDate()) {
     return (
       `Ngày nhận phòng ${checkInDate} đã ở QUÁ KHỨ — hôm nay là ${today.label} (${today.iso}). ` +
       'Không tra cứu hay đặt phòng cho ngày đã qua. Hãy HỎI LẠI khách ngày nhận phòng mong muốn ' +

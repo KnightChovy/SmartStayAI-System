@@ -53,6 +53,18 @@ export const eachDayInclusive = (start: Date, end: Date): Date[] => {
 };
 
 /**
+ * "Hôm nay" theo GIỜ VIỆT NAM, trả về Date UTC-midnight (cùng chuẩn với cột @db.Date / toUtcDate)
+ * để so sánh trực tiếp với checkInDate/checkOutDate. Dùng cho MỌI guard ngày của luồng đặt phòng
+ * (đặt/nhận/trả/huỷ/no-show) thay cho `toUtcDate(new Date())`: server chạy UTC (Render) nên
+ * `toUtcDate(new Date())` trễ 1 ngày trong khoảng 00:00–07:00 giờ VN, khiến "hôm nay" sai.
+ * @returns {Date} UTC-midnight của ngày lịch theo giờ VN
+ */
+export const todayInVietnamDate = (): Date => {
+  const [year, month, day] = todayInVietnam().iso.split('-').map(Number);
+  return new Date(Date.UTC(year, month - 1, day));
+};
+
+/**
  * List every night of a stay: [checkIn, checkOut) — the check-out day itself is not a night.
  * @param {Date} checkIn
  * @param {Date} checkOut
