@@ -11,6 +11,7 @@ export function useCheckOut(hotelId: string) {
       staffService.checkOut(hotelId, bookingId, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.staff.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.bookings.all() });
     },
   });
 }
