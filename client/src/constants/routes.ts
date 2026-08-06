@@ -52,6 +52,7 @@ export const ROUTES = {
   partnerAmenities: '/partner/amenities',
   partnerRefunds: '/partner/refunds',
   partnerCommission: '/partner/commission',
+  partnerWallet: '/partner/wallet',
   partnerProfile: '/partner/profile',
 
   // Cổng Platform Manager

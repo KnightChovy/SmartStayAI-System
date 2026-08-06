@@ -167,7 +167,7 @@ export function CommissionRequestsQueue() {
                 <tr className="border-b border-slate-100 bg-slate-50">
                   <Th>Hotel</Th>
                   <Th>Submitted by</Th>
-                  <Th align="right">Current → requested</Th>
+                  <Th align="center">Current → requested</Th>
                   <Th>Reason</Th>
                   <Th>Submitted</Th>
                   <Th>Status</Th>
@@ -213,8 +213,8 @@ export function CommissionRequestsQueue() {
                             {r.requestedByUser.email}
                           </p>
                         </td>
-                        <td className="px-5 py-4 text-right">
-                          <p className="tabular-nums">
+                        <td className="px-5 py-4 text-center">
+                          <p className="whitespace-nowrap tabular-nums">
                             <span className="text-slate-400">
                               {formatRate(r.currentRate)}
                             </span>
@@ -300,18 +300,24 @@ export function CommissionRequestsQueue() {
   );
 }
 
+const TH_ALIGN = {
+  left: 'text-left',
+  right: 'text-right',
+  center: 'text-center',
+} as const;
+
 function Th({
   children,
   align = 'left',
 }: {
   children: React.ReactNode;
-  align?: 'left' | 'right';
+  align?: keyof typeof TH_ALIGN;
 }) {
   return (
     <th
       className={cn(
         'px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-600',
-        align === 'right' ? 'text-right' : 'text-left'
+        TH_ALIGN[align]
       )}
     >
       {children}

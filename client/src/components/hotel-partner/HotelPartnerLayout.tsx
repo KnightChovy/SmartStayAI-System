@@ -17,8 +17,8 @@ import {
   RotateCcw,
   BarChart2,
   MessageSquareShare,
-  Settings,
   Sparkles,
+  Wallet,
   Loader2,
 } from 'lucide-react';
 
@@ -32,14 +32,14 @@ const navItems = [
   { name: 'Bookings', href: '/partner/bookings', icon: CalendarDays },
   { name: 'Refunds', href: '/partner/refunds', icon: RotateCcw },
   { name: 'Revenue', href: '/partner/revenue', icon: Banknote },
+  { name: 'Wallet', href: '/partner/wallet', icon: Wallet },
   { name: 'Commission', href: '/partner/commission', icon: Percent },
   { name: 'Analytics', href: '/partner/analytics', icon: BarChart2 },
   { name: 'Reviews', href: '/partner/reviews', icon: MessageSquareShare },
 ];
 
-const footerItems = [
-  { name: 'Settings', href: '/partner/settings', icon: Settings },
-];
+// Không còn mục footer: "Settings" trước đây chỉ trỏ vào một trang "Coming soon" rỗng,
+// thay bằng Wallet ở nhóm chính. `CommonSidebar` bỏ qua footer khi không truyền `footerItems`.
 
 /** Route được phép truy cập kể cả khi chưa verify (để partner còn hoàn tất hồ sơ + sửa profile). */
 function isAllowedWhenUnverified(pathname: string): boolean {
@@ -66,7 +66,6 @@ export function HotelPartnerLayout() {
         title="StayHub"
         subtitle="Partner Portal"
         navItems={navItems}
-        footerItems={footerItems}
         onLogout={() => logout()}
         isLoggingOut={isLoggingOut}
       />

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { FileText } from 'lucide-react';
+import { ChevronRight, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DataTable,
@@ -22,6 +22,7 @@ import type {
   CommissionRateRequest,
   CommissionRequestStatus,
 } from '@/types/commission-rate.types';
+import { CommissionRequestDetailModal } from './CommissionRequestDetailModal';
 
 const PAGE_SIZE = 10;
 
@@ -44,6 +45,7 @@ export function CommissionRequestsTable({
 }: CommissionRequestsTableProps) {
   const [status, setStatus] = useState<FilterStatus>('all');
   const [page, setPage] = useState(1);
+  const [selected, setSelected] = useState<CommissionRateRequest | null>(null);
 
   const { data, isLoading, isError, refetch } = useHotelCommissionRequests(
     hotelId,
@@ -69,8 +71,18 @@ export function CommissionRequestsTable({
         id: 'createdAt',
         header: 'Submitted',
         cell: r => (
-          <div>
-            <p className="text-slate-700">{formatDate(r.createdAt)}</p>
+          <div className="min-w-0">
+            {/* Tên người nộp là thông tin chính, ngày là dòng phụ — khớp cách các bảng
+                khác của portal (vd cột Guest ở Refunds) hiển thị người trước, chi tiết sau. */}
+            <p
+              className="truncate font-medium text-slate-700"
+              title={r.requestedByUser.email}
+            >
+              {r.requestedByUser.fullName ?? r.requestedByUser.email}
+            </p>
+            <p className="whitespace-nowrap text-xs text-slate-400">
+              {formatDate(r.createdAt)}
+            </p>
             {r.isRenewal && (
               <Pill tone="blue" className="mt-1">
                 Renewal
@@ -78,26 +90,37 @@ export function CommissionRequestsTable({
             )}
           </div>
         ),
+        className: 'max-w-[170px]',
       },
       {
-        id: 'requestedRate',
-        header: 'Requested',
-        align: 'right',
+        id: 'rates',
+        header: 'Compared → requested',
+        // Căn giữa để con số nằm ngay dưới tiêu đề; căn phải khiến nó trôi khỏi cột.
+        align: 'center',
         cell: r => (
-          <span className="font-semibold tabular-nums text-slate-800">
-            {formatRate(r.requestedRate)}
+          <span className="whitespace-nowrap tabular-nums">
+            <span className="text-slate-400">{formatRate(r.currentRate)}</span>
+            <span className="mx-1.5 text-slate-300">→</span>
+            <span
+              className={cn(
+                'font-semibold',
+                r.status === 'approved' ? 'text-emerald-600' : 'text-slate-800'
+              )}
+            >
+              {formatRate(r.requestedRate)}
+            </span>
           </span>
         ),
       },
       {
-        id: 'currentRate',
-        header: 'Compared against',
-        align: 'right',
+        id: 'reason',
+        header: 'Your reason',
         cell: r => (
-          <span className="tabular-nums text-slate-500">
-            {formatRate(r.currentRate)}
-          </span>
+          <p className="line-clamp-2 text-xs text-slate-600" title={r.reason}>
+            {r.reason}
+          </p>
         ),
+        className: 'max-w-[260px]',
       },
       {
         id: 'status',
@@ -112,7 +135,9 @@ export function CommissionRequestsTable({
                 {cfg.label}
               </Pill>
               {r.reviewedAt && (
-                <span className="text-[10px] text-slate-400">
+                <span className="whitespace-nowrap text-[10px] text-slate-400">
+                  {/* `reviewedByUser` rỗng mà vẫn có `reviewedAt` = hệ thống tự xử lý. */}
+                  {r.reviewedByUser?.fullName ?? 'System'} ·{' '}
                   {formatDate(r.reviewedAt)}
                 </span>
               )}
@@ -121,38 +146,51 @@ export function CommissionRequestsTable({
         },
       },
       {
-        id: 'agreement',
-        header: 'Rate applied',
-        cell: r =>
-          r.agreement ? (
-            <div className="text-xs text-slate-600">
-              <p className="font-medium">{formatRate(r.agreement.rate)}</p>
-              <p className="text-slate-400">
-                {formatDate(r.agreement.effectiveFrom)} →{' '}
-                {r.agreement.effectiveTo
-                  ? formatDate(r.agreement.effectiveTo)
-                  : '—'}
+        id: 'outcome',
+        header: 'Outcome',
+        cell: r => {
+          if (r.agreement) {
+            return (
+              <div className="text-xs">
+                <p className="font-semibold text-emerald-700">
+                  {formatRate(r.agreement.rate)} applied
+                </p>
+                <p className="whitespace-nowrap text-slate-400">
+                  {formatDate(r.agreement.effectiveFrom)} →{' '}
+                  {r.agreement.effectiveTo
+                    ? formatDate(r.agreement.effectiveTo)
+                    : '—'}
+                </p>
+              </div>
+            );
+          }
+          if (r.status === 'rejected') {
+            return (
+              <p
+                className="line-clamp-2 text-xs text-red-600"
+                title={r.rejectionReason ?? undefined}
+              >
+                {r.rejectionReason ?? (
+                  <span className="italic text-red-400">No reason given</span>
+                )}
               </p>
-            </div>
-          ) : (
-            <span className="text-slate-300">—</span>
-          ),
+            );
+          }
+          return (
+            <span className="text-xs italic text-slate-400">
+              Awaiting a decision
+            </span>
+          );
+        },
+        className: 'max-w-[240px]',
       },
       {
-        id: 'rejectionReason',
-        header: 'Rejection reason',
-        cell: r =>
-          r.rejectionReason ? (
-            <p
-              className="max-w-[260px] truncate text-xs text-red-600"
-              title={r.rejectionReason}
-            >
-              {r.rejectionReason}
-            </p>
-          ) : (
-            <span className="text-slate-300">—</span>
-          ),
-        className: 'max-w-[280px]',
+        id: 'open',
+        header: '',
+        align: 'right',
+        cell: () => (
+          <ChevronRight className="ml-auto h-4 w-4 shrink-0 text-slate-300" />
+        ),
       },
     ],
     []
@@ -215,7 +253,8 @@ export function CommissionRequestsTable({
               columns={columns}
               rows={rows}
               rowKey={r => r.id}
-              minWidthClass="min-w-[840px]"
+              minWidthClass="min-w-[980px]"
+              onRowClick={setSelected}
             />
             {totalPages > 1 && (
               <div className="mt-4 flex items-center justify-between text-sm text-slate-500">
@@ -247,6 +286,13 @@ export function CommissionRequestsTable({
           </>
         )}
       </div>
+
+      {selected && (
+        <CommissionRequestDetailModal
+          request={selected}
+          onClose={() => setSelected(null)}
+        />
+      )}
     </div>
   );
 }
