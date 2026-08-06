@@ -1,26 +1,35 @@
-import type { RoomStatus } from '@prisma/client';
+import type { RoomStatus, HkStatus } from '@prisma/client';
 
 /** Payload tạo phòng vật lý trong khách sạn. */
 export interface CreateRoomDto {
   roomTypeId: string;
   roomNumber: string;
   floor?: number;
+  /** Không nhận 'occupied' — trạng thái đó chỉ sinh ra từ check-in */
   status?: RoomStatus;
   notes?: string;
 }
 
-/** Payload cập nhật phòng (đổi trạng thái dọn phòng/bảo trì, số phòng, tầng, ghi chú). */
+/** Payload cập nhật phòng (số phòng, tầng, ghi chú, ngừng dùng, trạng thái vận hành). */
 export interface UpdateRoomDto {
   roomNumber?: string;
   floor?: number;
   status?: RoomStatus;
   notes?: string;
+  /** false = ngừng dùng phòng (thay cho xoá, vì booking cũ còn tham chiếu tới nó) */
+  isActive?: boolean;
+}
+
+/** Payload đổi trạng thái buồng phòng — chiều duy nhất staff bấm trực tiếp. */
+export interface UpdateHousekeepingDto {
+  hkStatus: HkStatus;
 }
 
 /** Bộ lọc khi liệt kê phòng của khách sạn. */
 export interface RoomFilter {
   status?: RoomStatus;
   roomTypeId?: string;
+  isActive?: boolean;
 }
 
 /** Tuỳ chọn phân trang / sắp xếp khi liệt kê phòng. */
