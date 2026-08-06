@@ -4,11 +4,11 @@ import { toast } from 'sonner';
 import { useRevenueSummary, useRevenueTimeSeries } from '@/hooks/revenue';
 import { exportToCsv } from '@/utils/exportCsv';
 import type { DateRange } from '@/types/revenue.types';
+import { RevenueDateRangePicker } from '@/components/manager/revenue/RevenueDateRangePicker';
 import {
-  RevenueDateRangePicker,
   resolvePreset,
   type RangePreset,
-} from '@/components/manager/revenue/RevenueDateRangePicker';
+} from '@/components/shared/date-range-presets';
 import { RevenueKpiCards } from '@/components/manager/revenue/RevenueKpiCards';
 import { RevenueVsCommissionChart } from '@/components/manager/revenue/RevenueVsCommissionChart';
 import { RevenueCommissionSplit } from '@/components/manager/revenue/RevenueCommissionSplit';
