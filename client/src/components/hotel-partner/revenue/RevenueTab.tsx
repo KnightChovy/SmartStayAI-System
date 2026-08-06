@@ -12,7 +12,10 @@ import { useHotelRevenue, useHotelWallet } from '@/hooks/hotel-revenue';
 import { Button } from '@/components/ui/button';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Skeleton } from '@/components/ui/skeleton';
-import { DataTable, type Column } from '@/components/hotel-partner/shared/DataTable';
+import {
+  DataTable,
+  type Column,
+} from '@/components/hotel-partner/shared/DataTable';
 import { Pill } from '@/components/hotel-partner/shared/Pill';
 import { ErrorState } from '@/components/hotel-partner/shared/states';
 import { TableSkeleton } from '@/components/shared/skeletons';
@@ -107,13 +110,17 @@ export function RevenueTab({ hotelId }: RevenueTabProps) {
         header: 'Balance after',
         align: 'right',
         cell: t => (
-          <span className="tabular-nums text-slate-700">{formatCurrency(t.balanceAfter)}</span>
+          <span className="tabular-nums text-slate-700">
+            {formatCurrency(t.balanceAfter)}
+          </span>
         ),
       },
       {
         id: 'createdAt',
         header: 'Date',
-        cell: t => <span className="text-slate-500">{formatDate(t.createdAt)}</span>,
+        cell: t => (
+          <span className="text-slate-500">{formatDate(t.createdAt)}</span>
+        ),
       },
     ],
     []
@@ -129,12 +136,26 @@ export function RevenueTab({ hotelId }: RevenueTabProps) {
       {/* ─── Bộ lọc khoảng thời gian ─── */}
       <div className="flex flex-wrap items-end gap-3">
         <div className="w-40">
-          <label className="mb-1 block text-xs font-medium text-slate-500">From</label>
-          <DatePicker value={from} onChange={setFrom} max={to} clearable={false} />
+          <label className="mb-1 block text-xs font-medium text-slate-500">
+            From
+          </label>
+          <DatePicker
+            value={from}
+            onChange={setFrom}
+            max={to}
+            clearable={false}
+          />
         </div>
         <div className="w-40">
-          <label className="mb-1 block text-xs font-medium text-slate-500">To</label>
-          <DatePicker value={to} onChange={setTo} min={from} clearable={false} />
+          <label className="mb-1 block text-xs font-medium text-slate-500">
+            To
+          </label>
+          <DatePicker
+            value={to}
+            onChange={setTo}
+            min={from}
+            clearable={false}
+          />
         </div>
         <div className="flex items-center gap-1 rounded-lg border border-slate-200 p-1">
           {(['day', 'month'] as const).map(g => (
@@ -171,7 +192,7 @@ export function RevenueTab({ hotelId }: RevenueTabProps) {
             />
             <KpiCard
               icon={TrendingUp}
-              label="Net (after commission)"
+              label="Net Revenue (after commission)"
               value={formatCurrency(summary.net)}
               tone="text-emerald-600"
             />
@@ -214,7 +235,9 @@ export function RevenueTab({ hotelId }: RevenueTabProps) {
           <h2 className="font-semibold text-slate-900">Wallet</h2>
           <select
             value={txnType}
-            onChange={e => changeType(e.target.value as WalletTransactionType | '')}
+            onChange={e =>
+              changeType(e.target.value as WalletTransactionType | '')
+            }
             className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-600"
           >
             <option value="">All transaction types</option>
@@ -257,7 +280,8 @@ export function RevenueTab({ hotelId }: RevenueTabProps) {
                 />
                 <div className="mt-4 flex items-center justify-between text-sm text-slate-500">
                   <span>
-                    Page {txns.page} of {txns.totalPages} · {txns.totalResults} transactions
+                    Page {txns.page} of {txns.totalPages} · {txns.totalResults}{' '}
+                    transactions
                   </span>
                   <div className="flex gap-2">
                     <Button
@@ -280,7 +304,9 @@ export function RevenueTab({ hotelId }: RevenueTabProps) {
                 </div>
               </>
             ) : (
-              <p className="py-10 text-center text-sm text-slate-400">No transactions yet.</p>
+              <p className="py-10 text-center text-sm text-slate-400">
+                No transactions yet.
+              </p>
             )}
           </>
         )}

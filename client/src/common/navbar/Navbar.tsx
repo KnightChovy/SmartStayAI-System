@@ -54,7 +54,7 @@ function SidebarToggleControl({ role }: { role: PortalRole }) {
   return (
     <button
       aria-label={label}
-      className="group inline-flex h-9 items-center gap-2 rounded-xl border border-slate-200 bg-white px-1.5 pr-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950 active:translate-y-px active:scale-[0.98]"
+      className="group inline-flex size-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950 active:translate-y-px active:scale-[0.98]"
       onClick={toggleSidebar}
       title={label}
       type="button"
@@ -66,9 +66,6 @@ function SidebarToggleControl({ role }: { role: PortalRole }) {
         )}
       >
         <Icon className="size-4" />
-      </span>
-      <span className="hidden sm:inline">
-        {isExpanded ? 'Collapse' : 'Expand'}
       </span>
     </button>
   );

@@ -1,5 +1,13 @@
 import { api } from '@/lib/api';
 import type {
+  CommissionRateRequest,
+  CommissionRequestsResponse,
+  PlatformBaseRate,
+  PlatformCommissionRequestsParams,
+  ReviewCommissionRequestDto,
+  SetBaseRateDto,
+} from '@/types/commission-rate.types';
+import type {
   HotelPerformance,
   PerformanceLeaderboard,
   PerformanceQueryParams,
@@ -7,6 +15,8 @@ import type {
   PlatformBookingsResponse,
   PlatformPartnersParams,
   PlatformPartnersResponse,
+  SetPartnerStatusDto,
+  SetPartnerStatusResponse,
 } from '@/types/platform-manager.types';
 
 function cleanParams<T extends object>(params: T): Record<string, unknown> {
@@ -62,6 +72,62 @@ export const platformManagerService = {
     const { data } = await api.get<HotelPerformance>(
       `/platform-manager/hotels/${hotelId}/performance`,
       { params: cleanParams(params) }
+    );
+    return data;
+  },
+
+  // ─── Hoa hồng (quyền `manageCommissions`) ──────────────────────────────────
+
+  /** `GET /platform-manager/commission-requests` — hàng chờ, CŨ NHẤT TRƯỚC. */
+  async listCommissionRequests(
+    params: PlatformCommissionRequestsParams = {}
+  ): Promise<CommissionRequestsResponse> {
+    const { data } = await api.get<CommissionRequestsResponse>(
+      '/platform-manager/commission-requests',
+      { params: cleanParams(params) }
+    );
+    return data;
+  },
+
+  /** `PATCH /platform-manager/commission-requests/:requestId/review` — duyệt / từ chối. */
+  async reviewCommissionRequest(
+    requestId: string,
+    dto: ReviewCommissionRequestDto
+  ): Promise<CommissionRateRequest> {
+    const { data } = await api.patch<CommissionRateRequest>(
+      `/platform-manager/commission-requests/${requestId}/review`,
+      dto
+    );
+    return data;
+  },
+
+  /** `GET /platform-manager/commission-rate` — mức nền + lịch đã đặt + lịch sử. */
+  async getBaseRate(): Promise<PlatformBaseRate> {
+    const { data } = await api.get<PlatformBaseRate>(
+      '/platform-manager/commission-rate'
+    );
+    return data;
+  },
+
+  /** `PUT /platform-manager/commission-rate` — đặt mức nền mới (báo trước ≥ 30 ngày). */
+  async setBaseRate(dto: SetBaseRateDto): Promise<PlatformBaseRate> {
+    const { data } = await api.put<PlatformBaseRate>(
+      '/platform-manager/commission-rate',
+      dto
+    );
+    return data;
+  },
+
+  // ─── Đình chỉ đối tác (quyền `manageHotels`) ───────────────────────────────
+
+  /** `PATCH /platform-manager/partners/:partnerId/status` — đình chỉ / khôi phục. */
+  async setPartnerStatus(
+    partnerId: string,
+    dto: SetPartnerStatusDto
+  ): Promise<SetPartnerStatusResponse> {
+    const { data } = await api.patch<SetPartnerStatusResponse>(
+      `/platform-manager/partners/${partnerId}/status`,
+      dto
     );
     return data;
   },

@@ -13,6 +13,7 @@ import {
   Users,
   CalendarDays,
   Banknote,
+  Percent,
   RotateCcw,
   BarChart2,
   MessageSquareShare,
@@ -31,6 +32,7 @@ const navItems = [
   { name: 'Bookings', href: '/partner/bookings', icon: CalendarDays },
   { name: 'Refunds', href: '/partner/refunds', icon: RotateCcw },
   { name: 'Revenue', href: '/partner/revenue', icon: Banknote },
+  { name: 'Commission', href: '/partner/commission', icon: Percent },
   { name: 'Analytics', href: '/partner/analytics', icon: BarChart2 },
   { name: 'Reviews', href: '/partner/reviews', icon: MessageSquareShare },
 ];
