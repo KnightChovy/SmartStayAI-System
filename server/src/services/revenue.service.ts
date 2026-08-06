@@ -4,19 +4,21 @@ import prisma from '../config/prisma';
 import { hotelService } from './hotel.service';
 import { platformManagerService } from './platform-manager.service';
 
-// Booking được tính doanh thu = đã chốt (giống rule GMV toàn sàn ở admin.service.getOverview)
-const REVENUE_STATUSES: Prisma.BookingWhereInput['status'] = {
-  in: ['confirmed', 'checked_in', 'checked_out'],
-};
-
 type RevenueQuery = { from?: Date; to?: Date; groupBy?: 'day' | 'month' };
 type WalletQuery = { type?: WalletTransactionType; page?: number; limit?: number };
 
 export class RevenueService {
   /**
    * [Chủ KS / manager] Báo cáo doanh thu MỘT khách sạn trong khoảng [from, to].
-   * gross = tổng tiền booking đã chốt; commission = hoa hồng sàn; net = gross − commission;
-   * refunded = tổng đã hoàn. Kèm chuỗi thời gian theo ngày/tháng. Tiền trả dạng chuỗi (Decimal).
+   *
+   * MỐC NGÀY THỐNG NHẤT = "ngày ghi nhận" theo sự kiện tiền:
+   * - gross/commission tính theo NGÀY THANH TOÁN. Mỗi booking trả đủ tiền tạo ĐÚNG một
+   *   PlatformCommission (cả cổng, ví lẫn tiền mặt), nên `commission.createdAt` = mốc thanh toán;
+   *   gross = tổng `booking.totalAmount` của các booking đã ghi nhận trong kỳ.
+   * - refunded tính theo NGÀY TẠO yêu cầu hoàn (`refund.createdAt`).
+   *
+   * net = gross − commission (GIỮ NGUYÊN cho FE cũ). netAfterRefund = net − refunded (MỚI, phản ánh
+   * doanh thu THỰC sau hoàn tiền — net cũ không trừ refund nên phóng đại). Tiền trả dạng chuỗi.
    */
   getHotelRevenue = async (hotelId: string, currentUser: User, query: RevenueQuery) => {
     await hotelService.getOperableHotel(hotelId, currentUser); // ném lỗi nếu không có quyền
@@ -28,15 +30,11 @@ export class RevenueService {
     const createdAt = this.buildDateFilter(from, toExclusive);
     const dateWhere = createdAt ? { createdAt } : {};
 
-    const [bookingAgg, commissionAgg, refundAgg] = await prisma.$transaction([
-      prisma.booking.aggregate({
-        _sum: { totalAmount: true },
-        _count: { _all: true },
-        where: { hotelId, status: REVENUE_STATUSES, ...dateWhere },
-      }),
-      prisma.platformCommission.aggregate({
-        _sum: { commissionAmount: true },
+    const [commissions, refundAgg] = await prisma.$transaction([
+      // Lấy commission (đã ghi nhận trong kỳ) kèm totalAmount của booking để cộng gross cùng một mốc
+      prisma.platformCommission.findMany({
         where: { booking: { hotelId }, ...dateWhere },
+        select: { commissionAmount: true, booking: { select: { totalAmount: true } } },
       }),
       prisma.refund.aggregate({
         _sum: { amount: true },
@@ -44,9 +42,10 @@ export class RevenueService {
       }),
     ]);
 
-    const gross = bookingAgg._sum.totalAmount ?? new Prisma.Decimal(0);
-    const commission = commissionAgg._sum.commissionAmount ?? new Prisma.Decimal(0);
+    const gross = commissions.reduce((sum, c) => sum.add(c.booking.totalAmount), new Prisma.Decimal(0));
+    const commission = commissions.reduce((sum, c) => sum.add(c.commissionAmount), new Prisma.Decimal(0));
     const refunded = refundAgg._sum.amount ?? new Prisma.Decimal(0);
+    const net = gross.sub(commission);
 
     const series = await this.buildRevenueSeries(hotelId, groupBy, from, toExclusive);
 
@@ -54,16 +53,18 @@ export class RevenueService {
       summary: {
         gross: gross.toString(),
         commission: commission.toString(),
-        net: gross.sub(commission).toString(),
+        net: net.toString(),
+        netAfterRefund: net.sub(refunded).toString(),
         refunded: refunded.toString(),
-        bookingCount: bookingAgg._count._all,
+        bookingCount: commissions.length,
       },
       groupBy,
       series,
     };
   };
 
-  // Chuỗi thời gian gross/commission theo kỳ. Prisma không group theo date_trunc được nên dùng raw SQL.
+  // Chuỗi thời gian theo kỳ, CÙNG mốc ghi nhận với summary. Prisma không group theo date_trunc được
+  // nên dùng raw SQL. gross+commission theo pc.created_at (ngày thanh toán); refunded theo r.created_at.
   private buildRevenueSeries = async (
     hotelId: string,
     groupBy: 'day' | 'month',
@@ -75,22 +76,13 @@ export class RevenueService {
     const fromParam = from ?? null;
     const toParam = toExclusive ?? null;
 
-    const grossRows = await prisma.$queryRawUnsafe<{ period: string; bookingCount: number; gross: string }[]>(
-      `SELECT to_char(date_trunc('${trunc}', created_at), '${fmt}') AS period,
-              count(*)::int AS "bookingCount",
-              coalesce(sum(total_amount), 0)::text AS gross
-       FROM bookings
-       WHERE hotel_id = $1::uuid
-         AND status IN ('confirmed', 'checked_in', 'checked_out')
-         AND ($2::timestamptz IS NULL OR created_at >= $2)
-         AND ($3::timestamptz IS NULL OR created_at < $3)
-       GROUP BY 1`,
-      hotelId,
-      fromParam,
-      toParam
-    );
-    const commissionRows = await prisma.$queryRawUnsafe<{ period: string; commission: string }[]>(
+    // gross + commission theo NGÀY THANH TOÁN (pc.created_at), join booking để lấy totalAmount
+    const recRows = await prisma.$queryRawUnsafe<
+      { period: string; bookingCount: number; gross: string; commission: string }[]
+    >(
       `SELECT to_char(date_trunc('${trunc}', pc.created_at), '${fmt}') AS period,
+              count(*)::int AS "bookingCount",
+              coalesce(sum(b.total_amount), 0)::text AS gross,
               coalesce(sum(pc.commission_amount), 0)::text AS commission
        FROM platform_commissions pc
        JOIN bookings b ON b.id = pc.booking_id
@@ -102,19 +94,42 @@ export class RevenueService {
       fromParam,
       toParam
     );
+    // refunded theo NGÀY TẠO yêu cầu hoàn (r.created_at)
+    const refundRows = await prisma.$queryRawUnsafe<{ period: string; refunded: string }[]>(
+      `SELECT to_char(date_trunc('${trunc}', r.created_at), '${fmt}') AS period,
+              coalesce(sum(r.amount), 0)::text AS refunded
+       FROM refunds r
+       JOIN payments p ON p.id = r.payment_id
+       JOIN bookings b ON b.id = p.booking_id
+       WHERE b.hotel_id = $1::uuid
+         AND ($2::timestamptz IS NULL OR r.created_at >= $2)
+         AND ($3::timestamptz IS NULL OR r.created_at < $3)
+       GROUP BY 1`,
+      hotelId,
+      fromParam,
+      toParam
+    );
 
-    const commissionByPeriod = new Map(commissionRows.map((r) => [r.period, r.commission]));
-    return grossRows
-      .sort((a, b) => a.period.localeCompare(b.period))
-      .map((r) => {
-        const gross = new Prisma.Decimal(r.gross);
-        const commission = new Prisma.Decimal(commissionByPeriod.get(r.period) ?? 0);
+    const recByPeriod = new Map(recRows.map((r) => [r.period, r]));
+    const refundByPeriod = new Map(refundRows.map((r) => [r.period, r.refunded]));
+    // Gộp mọi kỳ xuất hiện ở doanh thu HOẶC hoàn tiền (kỳ chỉ có refund vẫn phải hiện, net âm)
+    const periods = [...new Set([...recByPeriod.keys(), ...refundByPeriod.keys()])];
+    return periods
+      .sort((a, b) => a.localeCompare(b))
+      .map((period) => {
+        const rec = recByPeriod.get(period);
+        const gross = new Prisma.Decimal(rec?.gross ?? 0);
+        const commission = new Prisma.Decimal(rec?.commission ?? 0);
+        const refunded = new Prisma.Decimal(refundByPeriod.get(period) ?? 0);
+        const net = gross.sub(commission);
         return {
-          period: r.period,
+          period,
           gross: gross.toString(),
           commission: commission.toString(),
-          net: gross.sub(commission).toString(),
-          bookingCount: r.bookingCount,
+          net: net.toString(),
+          netAfterRefund: net.sub(refunded).toString(),
+          refunded: refunded.toString(),
+          bookingCount: rec?.bookingCount ?? 0,
         };
       });
   };

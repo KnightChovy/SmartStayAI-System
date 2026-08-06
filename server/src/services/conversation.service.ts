@@ -6,7 +6,8 @@ import ApiError from '../utils/ApiError';
 import logger from '../config/logger';
 import { aiProvider, type ChatMessage } from './ai';
 import { availabilityService } from './availability.service';
-import { bookingService } from './booking.service';
+import { bookingService, HOLD_MINUTES, SEPAY_HOLD_MINUTES } from './booking.service';
+import { paymentService } from './payment.service';
 import { hotelService } from './hotel.service';
 import { AiTool } from './ai/ai.types';
 import { setPendingAction, consumePendingAction, peekPendingAction } from './ai/pending-action.store';
@@ -152,11 +153,14 @@ export class ConversationService {
         'RIÊNG SỐ ĐIỆN THOẠI là bắt buộc, và hồ sơ khách có thể chưa có. Khi tool báo thiếu số điện thoại: ' +
           'hãy hỏi khách số liên hệ, gọi save_contact_phone để lưu, rồi TIẾP TỤC đúng chỗ đang dở ' +
           '(thường là gọi lại prepare_booking hoặc confirm_action). TUYỆT ĐỐI không chuyển cho lễ tân vì việc này.',
-        // Chốt cứng để bot không hứa một thứ nó không làm được — nó không có tool nào tạo link thanh toán.
-        'Đặt phòng qua trò chuyện LUÔN là TRẢ TIỀN MẶT tại khách sạn khi nhận phòng. Bạn KHÔNG nhận ' +
-          'thanh toán online và KHÔNG có link thanh toán nào để gửi.',
-        'Khách muốn trả trước bằng VNPay/thẻ/chuyển khoản ⇒ nói rõ là đặt qua trò chuyện chỉ trả tiền mặt, ' +
-          'và mời khách tự đặt trên trang khách sạn nếu muốn thanh toán online. Đừng hứa, đừng chuyển cho lễ tân.'
+        // Đơn online có đồng hồ đếm ngược nên khách PHẢI biết trả tiền ở đâu ngay trong lượt đó.
+        'Đặt phòng qua trò chuyện chỉ nhận TRẢ TRƯỚC ONLINE, hai lựa chọn: VNPay (cổng thanh toán) ' +
+          'hoặc SePay (chuyển khoản quét QR). KHÔNG có trả tiền mặt tại khách sạn.',
+        'Luôn HỎI khách chọn cách nào TRƯỚC khi gọi prepare_booking, đừng tự chọn thay khách.',
+        'Sau khi confirm_action thành công, tool sẽ đưa bạn link VNPay hoặc thông tin QR SePay — ' +
+          'hãy chuyển NGUYÊN VẸN cho khách và nhắc rõ thời hạn giữ chỗ, quá hạn chưa trả tiền là đơn tự huỷ.',
+        'Khách nằng nặc đòi trả tiền mặt ⇒ nói rõ trò chuyện chỉ hỗ trợ trả trước online, và mời khách ' +
+          'liên hệ lễ tân nếu muốn thu xếp cách khác. Đừng tự hứa, đừng tạo đơn tiền mặt.'
       );
       // Phiếu chờ nằm server-side nên nó SỐNG qua các lượt, nhưng model không thấy được (lịch sử
       // không chứa lượt gọi tool). Nói thẳng ra đây để lượt khách gật đầu là nó chốt luôn.
@@ -239,7 +243,12 @@ export class ConversationService {
   };
 
   // (B) Khai báo các tool chatbot được phép gọi — ĐÓNG KÍN theo hotelId + currentUser (bảo mật)
-  private buildTools = (hotelId: string, currentUser: User | null, conversationId: string): AiTool[] => {
+  private buildTools = (
+    hotelId: string,
+    currentUser: User | null,
+    conversationId: string,
+    ipAddr: string
+  ): AiTool[] => {
     // Tool CÔNG KHAI: khách vãng lai cũng dùng được — chỉ ĐỌC thông tin công khai, không đụng dữ liệu cá nhân.
     const publicTools: AiTool[] = [
     {
@@ -455,8 +464,14 @@ export class ConversationService {
           checkInDate: { type: 'string', description: 'Ngày nhận phòng, YYYY-MM-DD' },
           checkOutDate: { type: 'string', description: 'Ngày trả phòng, YYYY-MM-DD' },
           guests: { type: 'number', description: 'Số khách' },
+          paymentMethod: {
+            type: 'string',
+            description:
+              "BẮT BUỘC hỏi khách rồi truyền: 'vnpay' = thanh toán qua cổng VNPay, " +
+              "'sepay' = chuyển khoản quét mã QR. KHÔNG có lựa chọn tiền mặt.",
+          },
         },
-        required: ['roomTypeName', 'checkInDate', 'checkOutDate', 'guests'],
+        required: ['roomTypeName', 'checkInDate', 'checkOutDate', 'guests', 'paymentMethod'],
       },
       execute: async (args) => {
         // Chặn ngày sai TRƯỚC khi dựng phiếu: để lọt thì khách nghe một tóm tắt rất thật (có tổng tiền)
@@ -496,12 +511,22 @@ export class ConversationService {
         if (!quote || quote.availableRooms < 1) {
           return `Tiếc quá, "${roomType.name}" đã hết phòng cho khoảng ngày này.`;
         }
-        // Đặt qua chatbot LUÔN là trả tiền mặt tại khách sạn. Đơn online sinh ra ở trạng thái chờ
-        // thanh toán kèm đồng hồ đếm ngược, mà khung chat không phải chỗ dẫn khách qua cổng thanh
-        // toán — hết giờ là cron huỷ đơn và khách mất phòng mà không hiểu vì sao.
+        // Đặt qua chatbot chỉ nhận trả trước online. Không đoán thay khách: thiếu/sai phương thức thì
+        // hỏi lại, vì đây là thứ quyết định khách phải làm gì tiếp và giữ chỗ được bao lâu.
+        const method = args.paymentMethod === 'sepay' ? 'sepay' : args.paymentMethod === 'vnpay' ? 'vnpay' : null;
+        if (!method) {
+          return (
+            'Chưa rõ khách muốn thanh toán bằng cách nào. Hãy HỎI khách chọn một trong hai: ' +
+            'VNPay (thanh toán qua cổng) hoặc SePay (chuyển khoản quét mã QR), rồi gọi lại prepare_booking. ' +
+            'Đặt qua trò chuyện KHÔNG có lựa chọn trả tiền mặt.'
+          );
+        }
+        const holdMinutes = method === 'sepay' ? SEPAY_HOLD_MINUTES : HOLD_MINUTES;
+        const methodText = method === 'vnpay' ? 'thanh toán qua cổng VNPay' : 'chuyển khoản quét mã QR (SePay)';
         const summary =
           `Đặt ${roomType.name} | ${String(args.checkInDate)} → ${String(args.checkOutDate)} | ` +
-          `${guests} khách | trả tiền mặt tại khách sạn | tổng ${quote.totalPrice} VND`;
+          `${guests} khách | ${methodText} | tổng ${quote.totalPrice} VND ` +
+          `(giữ chỗ ${holdMinutes} phút sau khi tạo đơn)`;
         setPendingAction(conversationId, {
           type: 'create_booking',
           customerId: currentUser.id,
@@ -511,7 +536,7 @@ export class ConversationService {
             checkInDate: String(args.checkInDate),
             checkOutDate: String(args.checkOutDate),
             numGuests: guests,
-            paymentMethod: 'cash',
+            paymentMethod: method,
           },
           summary,
         });
@@ -588,14 +613,38 @@ export class ConversationService {
               checkInDate: new Date(String(p.checkInDate)),
               checkOutDate: new Date(String(p.checkOutDate)),
               numGuests: Number(p.numGuests),
-              // Luôn tiền mặt — xem ghi chú ở prepare_booking. Đơn tiền mặt được confirm ngay và
-              // không có hạn giữ chỗ, nên không có bước thanh toán nào cần dẫn dắt trong chat.
-              paymentMethod: 'cash',
+              paymentMethod: p.paymentMethod === 'sepay' ? 'sepay' : 'vnpay',
             });
-            return (
-              `Đặt phòng thành công! Mã booking: ${booking.bookingCode}. ` +
-              `Đã xác nhận — khách trả tiền mặt tại khách sạn khi nhận phòng.`
-            );
+            // Đơn online sinh ra ở trạng thái CHỜ THANH TOÁN kèm đồng hồ đếm ngược, nên bắt buộc phải
+            // đưa được khách tới chỗ trả tiền ngay trong lượt này. Hết hạn là cron huỷ đơn, nhả phòng.
+            const holdMinutes = p.paymentMethod === 'sepay' ? SEPAY_HOLD_MINUTES : HOLD_MINUTES;
+            try {
+              if (p.paymentMethod === 'sepay') {
+                const qr = await paymentService.createSepayPayment(booking.id, currentUser);
+                return (
+                  `Đã tạo booking ${booking.bookingCode}, giữ chỗ ${holdMinutes} phút. ` +
+                  `Hãy đưa khách ĐẦY ĐỦ các thông tin chuyển khoản sau, không bỏ sót dòng nào: ` +
+                  `ảnh QR ${qr.qrUrl} | số tài khoản ${qr.accountNumber} (${qr.bankCode}) | ` +
+                  `số tiền ${qr.amount} VND | nội dung chuyển khoản BẮT BUỘC ghi đúng "${qr.transferContent}". ` +
+                  `Nhắc khách ghi sai nội dung thì hệ thống không tự khớp được đơn.`
+                );
+              }
+              const { paymentUrl } = await paymentService.createVnpayPaymentUrl(booking.id, currentUser, ipAddr);
+              return (
+                `Đã tạo booking ${booking.bookingCode}, giữ chỗ ${holdMinutes} phút. ` +
+                `Gửi cho khách link thanh toán VNPay này NGUYÊN VẸN, không rút gọn, không sửa một ký tự, ` +
+                `không bọc trong cú pháp nào: ${paymentUrl}`
+              );
+            } catch (err) {
+              // Booking ĐÃ tạo rồi nên tuyệt đối không được im: phải chỉ khách đường trả tiền khác,
+              // nếu không đơn sẽ chết lặng lẽ khi hết hạn giữ chỗ.
+              logger.error(`[Chatbot] tạo thông tin thanh toán lỗi: ${(err as Error).message}`);
+              return (
+                `Đã tạo booking ${booking.bookingCode} (chờ thanh toán, giữ chỗ ${holdMinutes} phút) ` +
+                `nhưng chưa lấy được thông tin thanh toán. Hãy báo khách vào "Tài khoản → Đặt phòng của tôi" ` +
+                `và bấm "Thanh toán ngay" trong ${holdMinutes} phút, nếu không đơn sẽ tự huỷ.`
+              );
+            }
           }
           // cancel_booking — hoàn vào ví: chatbot không phải chỗ để khách đọc/nhập số tài khoản,
           // và vào ví thì khách nhận được ngay. Muốn về ngân hàng thì huỷ ở trang booking.
@@ -819,7 +868,8 @@ export class ConversationService {
     hotel: HotelChatContext | null,
     text: string,
     currentUser: User | null,
-    conversationId: string
+    conversationId: string,
+    ipAddr: string
   ): Promise<{ systemPrompt: string; tools: AiTool[] }> => {
     if (!hotel) {
       return { systemPrompt: this.buildPlatformSystemPrompt(), tools: this.buildPlatformTools() };
@@ -829,7 +879,7 @@ export class ConversationService {
     const pending = currentUser ? peekPendingAction(conversationId, currentUser.id) : null;
     return {
       systemPrompt: this.buildSystemPrompt(hotel, topFaqs, !!currentUser, pending?.summary ?? null),
-      tools: this.buildTools(hotel.id, currentUser, conversationId),
+      tools: this.buildTools(hotel.id, currentUser, conversationId, ipAddr),
     };
   };
 
@@ -870,7 +920,8 @@ export class ConversationService {
     hotelId: string | undefined,
     conversationId: string | undefined,
     currentUser: User | null,
-    text: string
+    text: string,
+    ipAddr: string
   ) => {
     // (1) Tìm khách sạn — hoặc null nếu không có hotelId (chế độ toàn sàn: chỉ tư vấn tìm KS)
     const hotel = await this.resolveHotel(hotelId);
@@ -935,7 +986,7 @@ export class ConversationService {
     let reply: string;
     try {
       // Dựng prompt + tool theo chế độ (concierge theo KS có RAG FAQ / toàn sàn tìm khách sạn)
-      const { systemPrompt, tools } = await this.buildTurnContext(hotel, text, currentUser, conversation.id);
+      const { systemPrompt, tools } = await this.buildTurnContext(hotel, text, currentUser, conversation.id, ipAddr);
       reply = await aiProvider.chatWithTools(systemPrompt, messages, tools);
     } catch (err) {
       logger.error(`[Chatbot] LLM lỗi: ${(err as Error).message}`);
@@ -960,7 +1011,8 @@ export class ConversationService {
     hotelId: string | undefined,
     conversationId: string | undefined,
     currentUser: User | null,
-    text: string
+    text: string,
+    ipAddr: string
   ): Promise<{ conversationId: string; status: ConversationStatus; handoff: boolean; stream: AsyncGenerator<string> }> => {
     // (1)-(4): y hệt sendMessage — tìm KS (hoặc null = toàn sàn), lấy/tạo hội thoại, lưu tin khách, đọc lịch sử
     const hotel = await this.resolveHotel(hotelId);
@@ -1021,7 +1073,7 @@ export class ConversationService {
     async function* generate(): AsyncGenerator<string> {
       let full = '';
       try {
-        const { systemPrompt, tools } = await buildTurnContext(hotel, text, currentUser, convId);
+        const { systemPrompt, tools } = await buildTurnContext(hotel, text, currentUser, convId, ipAddr);
         for await (const chunk of aiProvider.chatWithToolsStream(systemPrompt, messages, tools)) {
           full += chunk;
           yield chunk;

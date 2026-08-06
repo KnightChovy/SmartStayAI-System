@@ -293,8 +293,9 @@ paths:
     get:
       summary: Platform revenue report (admin/platform_manager)
       description: >
-        viewPlatformStats. Platform-wide revenue over [from, to]: GMV (total of settled bookings —
-        confirmed/checked_in/checked_out), commission pending/settled, total refunded, and
+        viewPlatformStats. Platform-wide revenue over [from, to], on a single recognition-date basis:
+        GMV (sum of totalAmount of bookings recognized by PAYMENT date — commission.createdAt),
+        commission pending/settled, total refunded (by refund request date), and
         netPlatformRevenue (= pending + settled commission — the platform's actual earnings).
         Includes a day/month time series and, when BOTH from and to are given, a % comparison against
         the immediately preceding period of equal length. All money values are strings.
@@ -2198,10 +2199,14 @@ paths:
     get:
       summary: Hotel revenue report (owner/manager)
       description: >
-        Auth. Revenue for ONE hotel over [from, to]. gross = total of settled bookings
-        (confirmed/checked_in/checked_out); commission = platform commission; net = gross − commission;
-        refunded = total refunded. Includes a day/month time series. All money values are strings.
-        Access is limited to the hotel owner, a manager, or assigned staff (checked in-service).
+        Auth. Revenue for ONE hotel over [from, to], all on a SINGLE recognition date basis.
+        gross/commission are recognized by PAYMENT date (each fully-paid booking — gateway/wallet/cash —
+        creates one commission, so commission.createdAt is the payment moment; gross = sum of those
+        bookings' totalAmount). refunded is by refund request date (refund.createdAt).
+        net = gross − commission (kept for backward-compat, does NOT subtract refund);
+        netAfterRefund = net − refunded (the hotel's real take after refunds). Includes a day/month
+        time series (same basis). All money values are strings. Access limited to the hotel owner,
+        a manager, or assigned staff.
       tags: [Revenue]
       security:
         - bearerAuth: []
@@ -2234,7 +2239,8 @@ paths:
                     properties:
                       gross: { type: string, example: '12500000' }
                       commission: { type: string, example: '1875000' }
-                      net: { type: string, example: '10625000' }
+                      net: { type: string, example: '10625000', description: 'gross − commission (does NOT subtract refund; kept for backward-compat)' }
+                      netAfterRefund: { type: string, example: '10125000', description: 'net − refunded — the hotel real take after refunds' }
                       refunded: { type: string, example: '500000' }
                       bookingCount: { type: integer, example: 25 }
                   groupBy: { type: string, example: day }
@@ -2247,6 +2253,8 @@ paths:
                         gross: { type: string }
                         commission: { type: string }
                         net: { type: string }
+                        netAfterRefund: { type: string }
+                        refunded: { type: string }
                         bookingCount: { type: integer }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }

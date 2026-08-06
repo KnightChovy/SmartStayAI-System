@@ -5,12 +5,24 @@ import catchAsync from '../utils/catchAsync';
 import pick from '../utils/pick';
 import { conversationService } from '../services';
 
+// Cùng cách lấy IP như payment.controller: VNPay đòi vnp_IpAddr, mà sau proxy (Render) thì
+// req.socket.remoteAddress là IP của proxy nên phải ưu tiên x-forwarded-for.
+// Chatbot cần IP vì tool đặt phòng sinh luôn link thanh toán VNPay.
+const clientIp = (req: Request): string =>
+  (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || req.ip || '127.0.0.1';
+
 export class ConversationController {
   // Khách gửi tin nhắn cho chatbot → nhận lại câu trả lời của bot
   sendMessage = catchAsync(async (req: Request, res: Response): Promise<void> => {
     const { hotelId, conversationId, message } = req.body;
     // optionalAuth: khách vãng lai không có req.user ⇒ truyền null xuống service (chế độ chỉ-đọc)
-    const result = await conversationService.sendMessage(hotelId, conversationId, (req.user as User | undefined) ?? null, message);
+    const result = await conversationService.sendMessage(
+      hotelId,
+      conversationId,
+      (req.user as User | undefined) ?? null,
+      message,
+      clientIp(req)
+    );
     res.status(httpStatus.CREATED).send(result);
   });
 
@@ -21,7 +33,8 @@ export class ConversationController {
       hotelId,
       conversationId,
       (req.user as User | undefined) ?? null,
-      message
+      message,
+      clientIp(req)
     );
 
     // Mở kênh SSE: 1 response HTTP giữ mở, server đẩy nhiều "event" xuống dần
