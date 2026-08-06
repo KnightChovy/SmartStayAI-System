@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { staffService } from '@/services/staff.service';
 import type { CheckInPayload } from '@/types/staff.types';
 import { staffKeys } from './keys';
+import { queryKeys } from '@/constants/queryKeys';
 
 /** Check in a guest at the front desk. */
 export function useCheckIn(hotelId: string | undefined) {
@@ -11,6 +12,7 @@ export function useCheckIn(hotelId: string | undefined) {
       staffService.checkIn(hotelId as string, bookingId, payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: staffKeys.all });
+      qc.invalidateQueries({ queryKey: queryKeys.bookings.all });
     },
   });
 }

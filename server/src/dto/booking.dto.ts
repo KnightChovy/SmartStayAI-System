@@ -1,4 +1,4 @@
-import type { BookingStatus } from '@prisma/client';
+import type { BookingStatus, CancellationReasonCode } from '@prisma/client';
 
 /**
  * Payload tạo booking. Giá tiền KHÔNG nhận từ client — server tự tính từ
@@ -24,6 +24,12 @@ export interface CreateBookingDto {
 /** Khách huỷ booking — kèm lựa chọn nhận tiền hoàn ở đâu. */
 export interface CancelBookingDto {
   reason?: string;
+  /**
+   * Lý do dạng enum — quyết định chính sách tiền (lỗi khách sạn / lỗi hệ thống thì hoàn 100%).
+   * CHỈ người có quyền manageBookings được gửi: để khách tự khai thì ai cũng chọn "phòng hỏng"
+   * để né phí huỷ.
+   */
+  reasonCode?: CancellationReasonCode;
   // Mặc định 'wallet' (nhận ngay, không chờ ai chuyển khoản). 'bank' thì bắt buộc có bankAccount.
   refundMethod?: 'wallet' | 'bank';
   bankAccount?: { accountNumber: string; bankName: string; accountHolder: string };

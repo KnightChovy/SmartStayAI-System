@@ -32,16 +32,15 @@ export interface NightInventory {
 }
 
 /**
- * Điều kiện "phòng bán được": phòng ĐANG BẢO TRÌ bị loại khỏi tồn kho, vì staff bật maintenance
- * chính là để ngừng bán phòng đó.
+ * Điều kiện "phòng còn thuộc biên chế khách sạn". Đây là phần KHÔNG phụ thuộc ngày; phần phụ thuộc
+ * ngày (phòng bị chặn để sửa) nằm ở countSellableRoomsPerDate.
  *
- * Các trạng thái còn lại KHÔNG trừ: occupied/cleaning chỉ là tình trạng tức thời của hôm nay —
- * phòng đang có khách vẫn bán được cho những đêm sau, và lượt khách đó đã được đếm ở bookedRooms
- * rồi (trừ thêm là trừ hai lần).
- *
- * Dùng chung cho MỌI chỗ đếm phòng vật lý (tìm phòng + đặt phòng) để hai đầu không thể lệch nhau.
+ * KHÔNG lọc theo rooms.status nữa. Status là tình trạng của HÔM NAY: phòng đang có khách hay đang
+ * dọn vẫn bán được cho những đêm sau (và lượt khách đó đã đếm ở bookedRooms rồi, trừ thêm là trừ
+ * hai lần). Còn "đang sửa" thì có khoảng ngày riêng — phòng hỏng 10–12/08 không có lý do gì làm mất
+ * doanh thu ngày 20/08.
  */
-export const SELLABLE_ROOM_WHERE: Prisma.RoomWhereInput = { status: { not: 'maintenance' } };
+export const ACTIVE_ROOM_WHERE: Prisma.RoomWhereInput = { isActive: true };
 
 /** Kết quả tồn kho + giá cho một khoảng ngày ở của một loại phòng. */
 export interface StayQuote {
@@ -127,6 +126,60 @@ export class AvailabilityService {
       }
     }
     return { taxAmount, feeAmount };
+  };
+
+  /**
+   * Số phòng BÁN ĐƯỢC của từng loại phòng trong từng ngày = số phòng còn dùng được, trừ đi những
+   * phòng đang bị chặn OOO trong đúng ngày đó.
+   *
+   * Chỉ 'ooo' mới trừ — 'oos' là ngưng phục vụ trong ngày (kê lại đồ, giữ phòng), không rút phòng
+   * khỏi kho bán. Đếm theo PHÒNG chứ không theo block: một phòng dính hai đợt chặn chồng nhau vẫn
+   * chỉ mất đúng một phòng khỏi kho.
+   *
+   * @returns Map khoá `${roomTypeId}:${date.getTime()}`
+   */
+  countSellableRoomsPerDate = async (roomTypeIds: string[], dates: Date[]): Promise<Map<string, number>> => {
+    const result = new Map<string, number>();
+    if (roomTypeIds.length === 0 || dates.length === 0) {
+      return result;
+    }
+    const times = dates.map((date) => date.getTime());
+    const first = new Date(Math.min(...times));
+    const last = new Date(Math.max(...times));
+
+    const [roomGroups, blocks] = await Promise.all([
+      prisma.room.groupBy({
+        by: ['roomTypeId'],
+        where: { roomTypeId: { in: roomTypeIds }, ...ACTIVE_ROOM_WHERE },
+        _count: { _all: true },
+      }),
+      prisma.roomBlock.findMany({
+        where: {
+          blockType: 'ooo',
+          resolvedAt: null,
+          startDate: { lte: last },
+          endDate: { gte: first },
+          room: { roomTypeId: { in: roomTypeIds }, ...ACTIVE_ROOM_WHERE },
+        },
+        select: { roomId: true, startDate: true, endDate: true, room: { select: { roomTypeId: true } } },
+      }),
+    ]);
+
+    const activeRoomCount = new Map(roomGroups.map((group) => [group.roomTypeId, group._count._all]));
+    for (const roomTypeId of roomTypeIds) {
+      const total = activeRoomCount.get(roomTypeId) ?? 0;
+      const blocksOfType = blocks.filter((block) => block.room.roomTypeId === roomTypeId);
+      for (const date of dates) {
+        const time = date.getTime();
+        const blockedRooms = new Set(
+          blocksOfType
+            .filter((block) => block.startDate.getTime() <= time && block.endDate.getTime() >= time)
+            .map((block) => block.roomId)
+        );
+        result.set(`${roomTypeId}:${time}`, Math.max(0, total - blockedRooms.size));
+      }
+    }
+    return result;
   };
 
   /** Toàn bộ rule đang bật của các khách sạn — lọc khớp từng đêm bằng JS vì số rule mỗi khách sạn nhỏ. */
@@ -222,12 +275,8 @@ export class AvailabilityService {
     }
 
     const hotelIds = [...new Set(roomTypes.map((rt) => rt.hotelId))];
-    const [roomGroups, availabilityRows, pricingRules] = await Promise.all([
-      prisma.room.groupBy({
-        by: ['roomTypeId'],
-        where: { roomTypeId: { in: roomTypeIds }, ...SELLABLE_ROOM_WHERE },
-        _count: { _all: true },
-      }),
+    const [sellableByNight, availabilityRows, pricingRules] = await Promise.all([
+      this.countSellableRoomsPerDate(roomTypeIds, nights),
       prisma.roomAvailability.findMany({
         where: { roomTypeId: { in: roomTypeIds }, date: { in: nights } },
         select: { roomTypeId: true, date: true, totalRooms: true, bookedRooms: true, priceOverride: true },
@@ -235,7 +284,6 @@ export class AvailabilityService {
       this.getActivePricingRules(hotelIds),
     ]);
 
-    const physicalRoomCount = new Map(roomGroups.map((g) => [g.roomTypeId, g._count._all]));
     const rowByRoomTypeAndNight = new Map(
       availabilityRows.map((row) => [`${row.roomTypeId}:${row.date.getTime()}`, row])
     );
@@ -243,18 +291,23 @@ export class AvailabilityService {
     const today = toUtcDate(new Date());
     const quotes = new Map<string, StayQuote>();
     for (const roomType of roomTypes) {
-      const physicalRooms = physicalRoomCount.get(roomType.id) ?? 0;
-      let availableRooms = physicalRooms;
+      // Số phòng đặt được cả kỳ = đêm eo hẹp nhất. Bắt đầu từ Infinity rồi min dần, vì trần tồn kho
+      // giờ khác nhau theo từng đêm (đợt chặn chỉ ăn vào đúng khoảng ngày của nó).
+      let availableRooms = Number.POSITIVE_INFINITY;
       let totalPrice = new Prisma.Decimal(0);
 
       for (const night of nights) {
-        const row = rowByRoomTypeAndNight.get(`${roomType.id}:${night.getTime()}`);
-        const nightAvailable = row ? row.totalRooms - row.bookedRooms : physicalRooms;
+        const key = `${roomType.id}:${night.getTime()}`;
+        const row = rowByRoomTypeAndNight.get(key);
+        const sellable = sellableByNight.get(key) ?? 0;
+        // Đêm đã có dòng tồn kho thì totalRooms đã tính cả đợt chặn (room-block.service trừ vào đó);
+        // đêm chưa có dòng thì đếm lại từ bảng rooms.
+        const nightAvailable = row ? row.totalRooms - row.bookedRooms : sellable;
         availableRooms = Math.min(availableRooms, Math.max(0, nightAvailable));
         totalPrice = totalPrice.add(this.priceForNight(roomType, night, row, pricingRules, today));
       }
 
-      quotes.set(roomType.id, { availableRooms, totalPrice });
+      quotes.set(roomType.id, { availableRooms: Number.isFinite(availableRooms) ? availableRooms : 0, totalPrice });
     }
     return quotes;
   };

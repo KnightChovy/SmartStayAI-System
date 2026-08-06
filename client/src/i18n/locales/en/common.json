@@ -63,7 +63,18 @@
     "quick": {
       "stays": "Stays in Da Nang",
       "hanoi": "Hotels in Hanoi",
-      "suggest": "Suggest a hotel for me"
+      "suggest": "Suggest a hotel for me",
+      "availability": "Any rooms available?",
+      "amenities": "What amenities do you have?",
+      "policies": "What's the cancellation policy?"
+    },
+    "hotelSubtitle": "This hotel's assistant & front desk",
+    "hotelGreeting": "Hi! I'm the assistant for {{hotel}}. Ask me about availability, rates, amenities or hotel policies. Need a real person? Switch to \"Front desk\" below.",
+    "handoffNotice": "Waiting for the hotel front desk. A staff member will reply right here.",
+    "signInForStaff": "Sign in to keep this conversation and message the hotel front desk.",
+    "scope": {
+      "platform": "Platform",
+      "hotel": "This hotel"
     }
   }
 }

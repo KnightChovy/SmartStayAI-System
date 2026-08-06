@@ -198,12 +198,36 @@ router.put('/:hotelId/rooms/:roomId', auth(), validate(roomValidation.updateRoom
 // Xoá phòng vật lý — chỉ khi phòng chưa từng được đặt
 router.delete('/:hotelId/rooms/:roomId', auth(), validate(roomValidation.deleteRoom), roomController.deleteRoom);
 
-// Staff đổi nhanh trạng thái phòng (bản đồ phòng S20 / housekeeping 1-tap)
+// Lối vào CŨ của bản đồ phòng — giữ để FE hiện tại không gãy. Service dịch từng giá trị về đúng
+// chiều của nó và từ chối 'occupied'. Nên chuyển dần sang hai endpoint bên dưới.
 router.patch(
   '/:hotelId/rooms/:roomId/status',
   auth(),
   validate(roomValidation.updateRoomStatus),
   roomController.updateRoomStatus
+);
+
+// Buồng phòng đổi trạng thái dọn phòng (dirty/cleaning/clean/inspected)
+router.patch(
+  '/:hotelId/rooms/:roomId/housekeeping',
+  auth(),
+  validate(roomValidation.updateHousekeeping),
+  roomController.updateHousekeeping
+);
+
+// ----- Đợt chặn phòng (bảo trì theo khoảng ngày) -----
+// Danh sách phải đứng TRƯỚC '/:roomId/blocks' để param không nuốt mất route này
+router.get('/:hotelId/room-blocks', auth(), validate(roomValidation.listBlocks), roomController.listBlocks);
+
+// POST ...?dryRun=true chỉ kiểm tra xung đột, không ghi gì
+router.post('/:hotelId/rooms/:roomId/blocks', auth(), validate(roomValidation.createBlock), roomController.createBlock);
+
+// Đánh dấu đã sửa xong (không xoá bản ghi — còn dùng để thống kê chi phí sự cố)
+router.delete(
+  '/:hotelId/rooms/:roomId/blocks/:blockId',
+  auth(),
+  validate(roomValidation.resolveBlock),
+  roomController.resolveBlock
 );
 
 // ----- Quản lý pricing rule -----

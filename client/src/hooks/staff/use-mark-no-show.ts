@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { staffService } from '@/services/staff.service';
 import { staffKeys } from './keys';
+import { queryKeys } from '@/constants/queryKeys';
 
 /** Mark a guest as a no-show (failed to check in). */
 export function useMarkNoShow(hotelId: string | undefined) {
@@ -10,6 +11,7 @@ export function useMarkNoShow(hotelId: string | undefined) {
       staffService.markNoShow(hotelId as string, bookingId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: staffKeys.all });
+      qc.invalidateQueries({ queryKey: queryKeys.bookings.all });
     },
   });
 }

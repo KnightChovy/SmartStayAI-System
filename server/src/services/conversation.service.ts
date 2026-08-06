@@ -144,11 +144,19 @@ export class ConversationService {
         '2) Đọc tóm tắt cho khách và HỎI khách có đồng ý không.',
         '3) CHỈ khi khách đồng ý rõ ràng ở lượt sau (vâng/ok/đặt đi/huỷ đi...) mới gọi confirm_action (không cần tham số) để thực hiện.',
         'TUYỆT ĐỐI không gọi confirm_action khi khách chưa đồng ý. Mỗi lần đặt/huỷ phải prepare lại trước.',
-        // Không chốt danh sách này thì model lấp bằng thói quen đặt phòng ngoài đời (xin số điện thoại,
-        // CMND...) — hỏi xong lại không có tool nào nhận, thế là bí và chuyển cho lễ tân.
-        'Đặt phòng chỉ cần ĐÚNG 4 thông tin: tên loại phòng, ngày nhận, ngày trả, số khách.',
-        'Danh tính khách (họ tên, email, SỐ ĐIỆN THOẠI, CCCD) hệ thống ĐÃ CÓ từ tài khoản đăng nhập — ' +
-          'TUYỆT ĐỐI không hỏi khách những thứ đó, cũng không nói rằng hệ thống đang yêu cầu chúng.'
+        // Không chốt danh sách này thì model lấp bằng thói quen đặt phòng ngoài đời (xin CCCD, địa chỉ...).
+        'Đặt phòng cần ĐÚNG 4 thông tin hỏi khách: tên loại phòng, ngày nhận, ngày trả, số khách.',
+        'Họ tên, email, CCCD hệ thống đã có từ tài khoản đăng nhập — KHÔNG hỏi khách những thứ đó.',
+        // createBooking CHẶN nếu hồ sơ chưa có số điện thoại (khách sạn phải liên lạc được với khách).
+        // Đây là yêu cầu THẬT, không được bỏ qua — nhưng đã có tool để tự xử, không phải việc của lễ tân.
+        'RIÊNG SỐ ĐIỆN THOẠI là bắt buộc, và hồ sơ khách có thể chưa có. Khi tool báo thiếu số điện thoại: ' +
+          'hãy hỏi khách số liên hệ, gọi save_contact_phone để lưu, rồi TIẾP TỤC đúng chỗ đang dở ' +
+          '(thường là gọi lại prepare_booking hoặc confirm_action). TUYỆT ĐỐI không chuyển cho lễ tân vì việc này.',
+        // Chốt cứng để bot không hứa một thứ nó không làm được — nó không có tool nào tạo link thanh toán.
+        'Đặt phòng qua trò chuyện LUÔN là TRẢ TIỀN MẶT tại khách sạn khi nhận phòng. Bạn KHÔNG nhận ' +
+          'thanh toán online và KHÔNG có link thanh toán nào để gửi.',
+        'Khách muốn trả trước bằng VNPay/thẻ/chuyển khoản ⇒ nói rõ là đặt qua trò chuyện chỉ trả tiền mặt, ' +
+          'và mời khách tự đặt trên trang khách sạn nếu muốn thanh toán online. Đừng hứa, đừng chuyển cho lễ tân.'
       );
       // Phiếu chờ nằm server-side nên nó SỐNG qua các lượt, nhưng model không thấy được (lịch sử
       // không chứa lượt gọi tool). Nói thẳng ra đây để lượt khách gật đầu là nó chốt luôn.
@@ -409,6 +417,33 @@ export class ConversationService {
       },
     },
     {
+      name: 'save_contact_phone',
+      description:
+        'Lưu số điện thoại liên hệ vào hồ sơ của khách. Gọi khi một tool khác báo hồ sơ CHƯA CÓ số ' +
+        'điện thoại và khách vừa đọc số cho bạn. Lưu xong thì tiếp tục việc đang dở.',
+      parameters: {
+        type: 'object',
+        properties: {
+          phone: { type: 'string', description: 'Số điện thoại khách vừa cung cấp, ví dụ 0356942879' },
+        },
+        required: ['phone'],
+      },
+      execute: async (args) => {
+        const phone = String(args.phone).trim();
+        // Đếm CHỮ SỐ chứ không đếm độ dài chuỗi: "0356 942 879" hợp lệ, còn "alo nhé" thì không.
+        // Chặn ở đây vì Joi của BE chỉ giới hạn 20 ký tự — gõ chữ vào cột này vẫn lọt.
+        const digits = phone.replace(/\D/g, '');
+        if (!/^[\d+()\-.\s]+$/.test(phone) || digits.length < 8 || digits.length > 15) {
+          return 'Số vừa nhận không hợp lệ. Hãy hỏi lại khách một số điện thoại hợp lệ (8–15 chữ số).';
+        }
+        if (phone.length > 20) {
+          return 'Số điện thoại quá dài (cột lưu tối đa 20 ký tự). Hãy hỏi lại khách.';
+        }
+        await prisma.user.update({ where: { id: currentUser.id }, data: { phone } });
+        return `Đã lưu số điện thoại ${phone} vào hồ sơ khách. Hãy tiếp tục việc đang dở ngay.`;
+      },
+    },
+    {
       name: 'prepare_booking',
       description:
         'BƯỚC 1 để ĐẶT PHÒNG: kiểm tra phòng trống + tính giá rồi tạo "phiếu chờ xác nhận". ' +
@@ -420,10 +455,6 @@ export class ConversationService {
           checkInDate: { type: 'string', description: 'Ngày nhận phòng, YYYY-MM-DD' },
           checkOutDate: { type: 'string', description: 'Ngày trả phòng, YYYY-MM-DD' },
           guests: { type: 'number', description: 'Số khách' },
-          paymentMethod: {
-            type: 'string',
-            description: "Hình thức trả: 'cash' = trả tiền mặt tại khách sạn (mặc định), 'vnpay' = trả online",
-          },
         },
         required: ['roomTypeName', 'checkInDate', 'checkOutDate', 'guests'],
       },
@@ -433,6 +464,18 @@ export class ConversationService {
         const warning = stayDateWarning(String(args.checkInDate), String(args.checkOutDate));
         if (warning) {
           return warning;
+        }
+        // Cùng lý do: createBooking chặn khi hồ sơ chưa có số điện thoại. Phát hiện ở đây thì khách bổ
+        // sung số rồi mới nghe tóm tắt; để tới confirm_action mới lộ là hỏng đúng bước cuối.
+        const profile = await prisma.user.findUnique({
+          where: { id: currentUser.id },
+          select: { phone: true },
+        });
+        if (!profile?.phone?.trim()) {
+          return (
+            'Hồ sơ của khách CHƯA CÓ số điện thoại — bắt buộc phải có mới đặt phòng được. ' +
+            'Hãy hỏi khách số liên hệ, gọi save_contact_phone để lưu, rồi gọi lại prepare_booking.'
+          );
         }
         // Khách gọi phòng theo TÊN; tra ra id thật trong đúng khách sạn này
         const roomType = await prisma.roomType.findFirst({
@@ -453,11 +496,12 @@ export class ConversationService {
         if (!quote || quote.availableRooms < 1) {
           return `Tiếc quá, "${roomType.name}" đã hết phòng cho khoảng ngày này.`;
         }
-        const method = args.paymentMethod === 'vnpay' ? 'vnpay' : 'cash';
-        const methodText = method === 'cash' ? 'trả tiền mặt tại khách sạn' : 'thanh toán online (VNPay)';
+        // Đặt qua chatbot LUÔN là trả tiền mặt tại khách sạn. Đơn online sinh ra ở trạng thái chờ
+        // thanh toán kèm đồng hồ đếm ngược, mà khung chat không phải chỗ dẫn khách qua cổng thanh
+        // toán — hết giờ là cron huỷ đơn và khách mất phòng mà không hiểu vì sao.
         const summary =
           `Đặt ${roomType.name} | ${String(args.checkInDate)} → ${String(args.checkOutDate)} | ` +
-          `${guests} khách | ${methodText} | tổng ${quote.totalPrice} VND`;
+          `${guests} khách | trả tiền mặt tại khách sạn | tổng ${quote.totalPrice} VND`;
         setPendingAction(conversationId, {
           type: 'create_booking',
           customerId: currentUser.id,
@@ -467,7 +511,7 @@ export class ConversationService {
             checkInDate: String(args.checkInDate),
             checkOutDate: String(args.checkOutDate),
             numGuests: guests,
-            paymentMethod: method,
+            paymentMethod: 'cash',
           },
           summary,
         });
@@ -544,11 +588,14 @@ export class ConversationService {
               checkInDate: new Date(String(p.checkInDate)),
               checkOutDate: new Date(String(p.checkOutDate)),
               numGuests: Number(p.numGuests),
-              paymentMethod: p.paymentMethod === 'vnpay' ? 'vnpay' : 'cash',
+              // Luôn tiền mặt — xem ghi chú ở prepare_booking. Đơn tiền mặt được confirm ngay và
+              // không có hạn giữ chỗ, nên không có bước thanh toán nào cần dẫn dắt trong chat.
+              paymentMethod: 'cash',
             });
-            return booking.status === 'confirmed'
-              ? `Đặt phòng thành công! Mã booking: ${booking.bookingCode}. Đã xác nhận — khách trả tiền mặt tại khách sạn khi nhận phòng.`
-              : `Đã tạo booking ${booking.bookingCode} (chờ thanh toán). Khách cần thanh toán online trong 15 phút để giữ phòng.`;
+            return (
+              `Đặt phòng thành công! Mã booking: ${booking.bookingCode}. ` +
+              `Đã xác nhận — khách trả tiền mặt tại khách sạn khi nhận phòng.`
+            );
           }
           // cancel_booking — hoàn vào ví: chatbot không phải chỗ để khách đọc/nhập số tài khoản,
           // và vào ví thì khách nhận được ngay. Muốn về ngân hàng thì huỷ ở trang booking.
