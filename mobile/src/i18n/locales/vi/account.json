@@ -95,7 +95,7 @@
   "security": {
     "title": "Bảo mật & riêng tư",
     "changePassword": "Đổi mật khẩu",
-    "hint": "Dùng ít nhất 8 ký tự.",
+    "hint": "Dùng ít nhất 8 ký tự, gồm cả chữ và số.",
     "currentPassword": "Mật khẩu hiện tại",
     "newPassword": "Mật khẩu mới",
     "confirmPassword": "Xác nhận mật khẩu mới",
@@ -107,6 +107,7 @@
     "updating": "Đang cập nhật…",
     "updated": "Đã cập nhật mật khẩu.",
     "tooShort": "Mật khẩu phải có ít nhất 8 ký tự.",
+    "needLetterAndNumber": "Mật khẩu cần gồm ít nhất 1 chữ và 1 số.",
     "mismatch": "Mật khẩu xác nhận không khớp.",
     "updateFailed": "Không cập nhật được mật khẩu. Vui lòng thử lại.",
     "deleteTitle": "Xoá tài khoản",

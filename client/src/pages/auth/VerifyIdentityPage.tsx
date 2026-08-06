@@ -31,7 +31,13 @@ export default function VerifyIdentityPage() {
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  const { register, handleSubmit, setValue, watch } = useForm<VerifyFormValues>(
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<VerifyFormValues>(
     {
       resolver: zodResolver(verifySchema),
       defaultValues: {
@@ -124,6 +130,8 @@ export default function VerifyIdentityPage() {
     }
   };
 
+  // Schema đã chốt đủ 6 chữ số nên tới đây mã luôn hợp lệ; ô nào còn thiếu thì
+  // handleSubmit chặn lại và banner `verify.incomplete` bên dưới nói rõ lý do.
   const onSubmit = async (values: VerifyFormValues) => {
     const enteredOtp = [
       values.digit0,
@@ -133,11 +141,6 @@ export default function VerifyIdentityPage() {
       values.digit4,
       values.digit5,
     ].join('');
-
-    if (enteredOtp.length < 6) {
-      alert(t('verify.incomplete'));
-      return;
-    }
 
     if (!email || !name || !password) {
       alert(t('verify.missingContext'));
@@ -234,6 +237,14 @@ export default function VerifyIdentityPage() {
               <div className="bg-error/10 border border-error/20 text-error p-3 rounded-xl text-sm font-semibold mb-4 text-center">
                 {(registerError as any)?.response?.data?.message ||
                   t('verify.error')}
+              </div>
+            )}
+
+            {/* Thiếu/sai chữ số: trước đây bấm nút không có phản hồi gì vì handleSubmit
+                chặn im lặng (message của từng ô để rỗng). */}
+            {Object.keys(errors).length > 0 && (
+              <div className="bg-error/10 border border-error/20 text-error p-3 rounded-xl text-sm font-semibold mb-4 text-center">
+                {t('verify.incomplete')}
               </div>
             )}
 
