@@ -61,7 +61,7 @@ export class WalletService {
     });
     await this.writeTxn(tx, {
       walletId: wallet.id,
-      type: 'payout',
+      type: 'settlement',
       amount: netAmount,
       balanceAfter: newAvailable,
       commissionId,
@@ -88,6 +88,47 @@ export class WalletService {
       bookingId,
       description: 'Điều chỉnh do huỷ/hoàn tiền',
     });
+  };
+
+  /**
+   * GIỮ tiền cho một yêu cầu rút: trừ balanceAvailable ngay khi partner tạo yêu cầu (không đợi duyệt)
+   * để không thể tạo nhiều yêu cầu rút vượt số dư. Trừ CÓ ĐIỀU KIỆN (updateMany + balanceAvailable >=
+   * amount) rồi kiểm count — hai yêu cầu song song cùng tiêu một số dư thì chỉ một bên thắng. Bị từ
+   * chối thì hoàn lại bằng releasePayoutHold.
+   */
+  holdForPayout = async (tx: Tx, hotelId: string, amount: Prisma.Decimal) => {
+    const wallet = await this.getOrCreateWallet(tx, hotelId);
+    const { count } = await tx.wallet.updateMany({
+      where: { id: wallet.id, balanceAvailable: { gte: amount } },
+      data: { balanceAvailable: { decrement: amount } },
+    });
+    if (count === 0) {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Số dư khả dụng không đủ để rút');
+    }
+    const after = wallet.balanceAvailable.sub(amount);
+    await this.writeTxn(tx, {
+      walletId: wallet.id,
+      type: 'payout',
+      amount: amount.negated(),
+      balanceAfter: after,
+      description: 'Yêu cầu rút tiền',
+    });
+    return after;
+  };
+
+  /** Yêu cầu rút bị TỪ CHỐI ⇒ hoàn lại phần đã giữ vào balanceAvailable. */
+  releasePayoutHold = async (tx: Tx, hotelId: string, amount: Prisma.Decimal) => {
+    const wallet = await this.getOrCreateWallet(tx, hotelId);
+    const after = wallet.balanceAvailable.add(amount);
+    await tx.wallet.update({ where: { id: wallet.id }, data: { balanceAvailable: after } });
+    await this.writeTxn(tx, {
+      walletId: wallet.id,
+      type: 'adjustment',
+      amount,
+      balanceAfter: after,
+      description: 'Hoàn tiền do yêu cầu rút bị từ chối',
+    });
+    return after;
   };
 
   // ===== Ví khách hàng =====

@@ -18,6 +18,7 @@ export { revenueController } from './revenue.controller';
 export { adminController } from './admin.controller';
 export { platformManagerController } from './platform-manager.controller';
 export { refundController } from './refund.controller';
+export { payoutController } from './payout.controller';
 export { notificationController } from './notification.controller';
 export { promotionController } from './promotion.controller';
 export { statsController } from './stats.controller';

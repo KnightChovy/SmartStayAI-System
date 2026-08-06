@@ -221,7 +221,8 @@ enum CommissionRequestStatus {
 enum WalletTransactionType {
   earning     // [ví KS] nhận tiền (net) khi booking thanh toán thành công
   commission  // [ví KS] phần hoa hồng platform cắt
-  payout      // [ví KS] chi trả về bank của partner
+  payout      // [ví KS] chi trả THẬT về bank của partner (rút tiền — âm)
+  settlement  // [ví KS] tất toán nội bộ: chuyển net từ pending → available (không rời nền tảng)
   refund      // [ví KS] trừ đi khi huỷ/hoàn (âm) — [ví khách] cộng vào khi được hoàn (dương)
   adjustment  // điều chỉnh thủ công
   spend       // [ví khách] trừ đi khi dùng số dư trả cho booking (âm)
