@@ -112,6 +112,11 @@ export function useInventoryCalendar(
 
   return {
     data,
+    // Nguồn thô để dựng bản đồ phòng của một ngày (`buildRoomDayView`) — dùng lại đúng cache này,
+    // không gọi thêm request nào.
+    rooms,
+    blocks,
+    bookings: bookingResult?.bookings,
     // Giá chỉ ảnh hưởng THỨ TỰ hàng, không phải con số ⇒ không chặn lịch hiện vì nó.
     isLoading: roomsQuery.isLoading || blocksQuery.isLoading || bookingsQuery.isLoading,
     isFetching:
