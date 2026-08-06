@@ -414,7 +414,7 @@ export class BookingService {
       where: { id: bookingId },
       include: {
         hotel: { select: { settings: true, checkInTime: true } },
-        payments: { where: { status: 'completed' }, take: 1 },
+        payments: { where: { status: 'completed' } },
         commission: true,
       },
     });
@@ -436,17 +436,20 @@ export class BookingService {
     const checkInMoment = checkInMomentOf(booking.checkInDate, booking.hotel.checkInTime);
     const hoursBeforeCheckIn = (checkInMoment.getTime() - Date.now()) / (1000 * 60 * 60);
 
-    // Chỉ có tiền để hoàn khi booking đã thanh toán thật
+    // Booking có thể trả GHÉP nhiều payment (ví + gateway) ⇒ tiền đã trả = TỔNG các payment,
+    // KHÔNG phải một payment. paidPayment chỉ để NEO bản ghi Refund (schema cần 1 paymentId);
+    // mọi phép tính tiền hoàn đi theo tổng đã trả của booking.
     const paidPayment = booking.payments[0] ?? null;
+    const paidTotal = booking.payments.reduce((sum, p) => sum.add(p.amount), new Prisma.Decimal(0));
     // Lỗi khách sạn hoặc lỗi hệ thống thì hoàn nguyên tiền, KHÔNG trừ phí huỷ theo chính sách —
     // khách không làm gì sai thì không có lý do gì để họ mất tiền.
     const refundAmount = !paidPayment
       ? new Prisma.Decimal(0)
       : reasonCode && FULL_REFUND_REASON_CODES.includes(reasonCode)
-        ? paidPayment.amount
-        : computeRefundAmount(policy, hoursBeforeCheckIn, paidPayment.amount, booking.basePricePerNight);
+        ? paidTotal
+        : computeRefundAmount(policy, hoursBeforeCheckIn, paidTotal, booking.basePricePerNight);
 
-    return { booking, policy, checkInMoment, hoursBeforeCheckIn, paidPayment, refundAmount };
+    return { booking, policy, checkInMoment, hoursBeforeCheckIn, paidPayment, paidTotal, refundAmount };
   };
 
   /**
@@ -456,10 +459,11 @@ export class BookingService {
    * freeUntilMoment để FE đếm ngược).
    */
   getRefundPreview = async (bookingId: string, currentUser: User) => {
-    const { booking, policy, checkInMoment, hoursBeforeCheckIn, paidPayment, refundAmount } =
+    const { booking, policy, checkInMoment, hoursBeforeCheckIn, paidPayment, paidTotal, refundAmount } =
       await this.loadBookingForCancel(bookingId, currentUser);
 
-    const paidAmount = paidPayment?.amount ?? new Prisma.Decimal(0);
+    // Tiền đã trả = TỔNG các payment (booking có thể trả ghép), không phải một payment
+    const paidAmount = paidTotal;
     const canCancel =
       toUtcDate(booking.checkInDate) > toUtcDate(new Date()) &&
       (booking.status === 'pending' || booking.status === 'confirmed');

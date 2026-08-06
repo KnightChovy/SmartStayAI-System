@@ -140,21 +140,33 @@ export class RefundService {
   private settleHotelSide = async (
     tx: Prisma.TransactionClient,
     refund: { amount: Prisma.Decimal },
-    payment: { id: string; amount: Prisma.Decimal },
-    booking: { id: string; hotelId: string; commission: { commissionRate: Prisma.Decimal; commissionAmount: Prisma.Decimal } | null }
+    booking: {
+      id: string;
+      hotelId: string;
+      totalAmount: Prisma.Decimal;
+      commission: { commissionRate: Prisma.Decimal; commissionAmount: Prisma.Decimal } | null;
+      payments: { id: string; amount: Prisma.Decimal }[];
+    }
   ) => {
-    // Hoàn 100% ⇒ Payment refunded; hoàn một phần ⇒ giữ completed (bản ghi Refund là nguồn sự thật)
-    if (refund.amount.equals(payment.amount)) {
-      await tx.payment.update({ where: { id: payment.id }, data: { status: 'refunded' } });
+    // Booking có thể trả GHÉP nhiều payment (ví + gateway). Hoàn HẾT phần đã trả ⇒ đánh dấu MỌI
+    // payment của booking là refunded; hoàn một phần ⇒ giữ completed (bản ghi Refund là nguồn sự thật).
+    const paidTotal = booking.payments.reduce((sum, p) => sum.add(p.amount), new Prisma.Decimal(0));
+    if (refund.amount.greaterThanOrEqualTo(paidTotal)) {
+      await tx.payment.updateMany({
+        where: { bookingId: booking.id, status: 'completed' },
+        data: { status: 'refunded' },
+      });
     }
     if (booking.commission) {
-      const retained = payment.amount.sub(refund.amount);
+      // Hoa hồng là PER-BOOKING (tính trên totalAmount), KHÔNG theo từng payment ⇒ phải tính lại
+      // trên phần khách sạn THỰC GIỮ của CẢ booking, nếu không sẽ sai khi booking trả ghép.
+      const retained = Prisma.Decimal.max(new Prisma.Decimal(0), booking.totalAmount.sub(refund.amount));
       const newCommission = retained.mul(booking.commission.commissionRate).div(100).toDecimalPlaces(2);
       await tx.platformCommission.update({
         where: { bookingId: booking.id },
         data: { commissionAmount: newCommission },
       });
-      const oldNet = payment.amount.sub(booking.commission.commissionAmount);
+      const oldNet = booking.totalAmount.sub(booking.commission.commissionAmount);
       const newNet = retained.sub(newCommission);
       await walletService.recordRefund(tx, booking.hotelId, booking.id, oldNet.sub(newNet));
     }
@@ -176,7 +188,16 @@ export class RefundService {
             select: {
               id: true,
               amount: true,
-              booking: { select: { id: true, hotelId: true, bookingCode: true, commission: true } },
+              booking: {
+                select: {
+                  id: true,
+                  hotelId: true,
+                  bookingCode: true,
+                  totalAmount: true,
+                  commission: true,
+                  payments: { where: { status: 'completed' }, select: { id: true, amount: true } },
+                },
+              },
             },
           },
         },
@@ -199,7 +220,7 @@ export class RefundService {
         booking.id,
         `Hoàn tiền booking ${booking.bookingCode}`
       );
-      await this.settleHotelSide(tx, refund, payment, booking);
+      await this.settleHotelSide(tx, refund, booking);
 
       logger.info(`[Refund] Hoàn ${refund.amount.toString()}đ vào ví khách cho booking ${booking.bookingCode}`);
       return tx.refund.findUniqueOrThrow({ where: { id: refundId }, include: refundInclude });
@@ -253,7 +274,16 @@ export class RefundService {
           select: {
             id: true,
             amount: true,
-            booking: { select: { id: true, hotelId: true, bookingCode: true, commission: true } },
+            booking: {
+              select: {
+                id: true,
+                hotelId: true,
+                bookingCode: true,
+                totalAmount: true,
+                commission: true,
+                payments: { where: { status: 'completed' }, select: { id: true, amount: true } },
+              },
+            },
           },
         },
       },
@@ -291,7 +321,7 @@ export class RefundService {
         throw new ApiError(httpStatus.BAD_REQUEST, 'Yêu cầu này vừa được xử lý');
       }
 
-      await this.settleHotelSide(tx, refund, payment, booking);
+      await this.settleHotelSide(tx, refund, booking);
 
       return tx.refund.findUniqueOrThrow({ where: { id: refundId }, include: refundInclude });
     });

@@ -17,7 +17,7 @@ export const getHotelWallet = {
     hotelId: Joi.string().uuid().required(),
   }),
   query: Joi.object().keys({
-    type: Joi.string().valid('earning', 'commission', 'payout', 'refund', 'adjustment'),
+    type: Joi.string().valid('earning', 'commission', 'payout', 'settlement', 'refund', 'adjustment'),
     limit: Joi.number().integer().min(1).max(100),
     page: Joi.number().integer().min(1),
   }),
