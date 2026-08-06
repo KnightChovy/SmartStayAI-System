@@ -2204,9 +2204,11 @@ paths:
         creates one commission, so commission.createdAt is the payment moment; gross = sum of those
         bookings' totalAmount). refunded is by refund request date (refund.createdAt).
         net = gross − commission (kept for backward-compat, does NOT subtract refund);
-        netAfterRefund = net − refunded (the hotel's real take after refunds). Includes a day/month
-        time series (same basis). All money values are strings. Access limited to the hotel owner,
-        a manager, or assigned staff.
+        netAfterRefund = net − refunded (the hotel's real take after refunds). commissionRate is the
+        rate the hotel is on TODAY (%), so the UI can label the commission amount without dividing
+        commission by gross — that division is wrong whenever the period contains a refund. Includes
+        a day/month time series (same basis). All money values are strings. Access limited to the
+        hotel owner, a manager, or assigned staff.
       tags: [Revenue]
       security:
         - bearerAuth: []
@@ -2243,6 +2245,7 @@ paths:
                       netAfterRefund: { type: string, example: '10125000', description: 'net − refunded — the hotel real take after refunds' }
                       refunded: { type: string, example: '500000' }
                       bookingCount: { type: integer, example: 25 }
+                      commissionRate: { type: string, example: '15', description: 'Commission rate in effect TODAY (percent). Not an average of the period — a long period may span several rates.' }
                   groupBy: { type: string, example: day }
                   series:
                     type: array
@@ -2256,6 +2259,114 @@ paths:
                         netAfterRefund: { type: string }
                         refunded: { type: string }
                         bookingCount: { type: integer }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /hotels/{hotelId}/payouts:
+    post:
+      summary: Request a payout (hotel owner)
+      description: >
+        Auth. The HOTEL OWNER requests a withdrawal of a chosen amount from the hotel's AVAILABLE
+        balance (settled earnings). Only the owner may request — not staff/manager/admin. Minimum
+        100,000 VND. The amount is HELD immediately (deducted from balanceAvailable) so concurrent
+        requests cannot exceed the balance; a rejected request returns it. The pending (not-yet-settled)
+        escrow balance cannot be withdrawn. The hotel must have a payout bank account on file. A
+        Platform Manager then approves once and transfers the money.
+      tags: [Payouts]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [amount]
+              properties:
+                amount:
+                  type: number
+                  minimum: 100000
+                  description: Amount to withdraw (VND). Min 100,000; must not exceed balanceAvailable.
+              example:
+                amount: 2000000
+      responses:
+        '201':
+          description: Payout request created (status pending); money held from balanceAvailable
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string, format: uuid }
+                  hotelId: { type: string, format: uuid }
+                  amount: { type: string, example: '2000000' }
+                  currency: { type: string, example: VND }
+                  status: { type: string, enum: [pending, processing, paid, failed], example: pending }
+                  payoutTransactionId: { type: string, nullable: true }
+                  processedAt: { type: string, format: date-time, nullable: true }
+                  notes: { type: string, nullable: true }
+                  createdAt: { type: string, format: date-time }
+        '400':
+          description: Below minimum, insufficient available balance, or no payout account on file
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    get:
+      summary: List a hotel's payout requests (owner/manager)
+      description: >
+        Auth. Paginated payout history for ONE hotel (newest first). The bank account number is NOT
+        included here (revealed only to the Platform Manager at payout time).
+      tags: [Payouts]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: query
+          name: status
+          schema: { type: string, enum: [pending, processing, paid, failed] }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1, default: 1 }
+      responses:
+        '200':
+          description: Paginated payout requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string, format: uuid }
+                        amount: { type: string, example: '2000000' }
+                        currency: { type: string, example: VND }
+                        status: { type: string, enum: [pending, processing, paid, failed] }
+                        payoutTransactionId: { type: string, nullable: true }
+                        processedAt: { type: string, format: date-time, nullable: true }
+                        notes: { type: string, nullable: true }
+                        createdAt: { type: string, format: date-time }
+                  page: { type: integer }
+                  limit: { type: integer }
+                  totalPages: { type: integer }
+                  totalResults: { type: integer }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -2277,8 +2388,8 @@ paths:
           schema: { type: string, format: uuid }
         - in: query
           name: type
-          schema: { type: string, enum: [earning, commission, payout, refund, adjustment] }
-          description: Filter transactions by type.
+          schema: { type: string, enum: [earning, commission, payout, settlement, refund, adjustment] }
+          description: 'Filter transactions by type. payout = real bank withdrawal; settlement = internal pending→available.'
         - in: query
           name: page
           schema: { type: integer, minimum: 1, default: 1 }
@@ -3162,6 +3273,183 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+
+  /platform-manager/payouts:
+    get:
+      summary: List payout requests platform-wide (Platform Manager)
+      description: >
+        Requires `manageCommissions`. Filter by status — use `status=pending` to get the withdrawal
+        queue awaiting approval. Includes the hotel and the bank name/holder for identification, but
+        NOT the account number (revealed only in the detail endpoint below).
+      tags: [Payouts]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: status
+          schema: { type: string, enum: [pending, processing, paid, failed] }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1, default: 1 }
+      responses:
+        '200':
+          description: Paginated payout requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string, format: uuid }
+                        amount: { type: string, example: '2000000' }
+                        currency: { type: string, example: VND }
+                        status: { type: string, enum: [pending, processing, paid, failed] }
+                        payoutTransactionId: { type: string, nullable: true }
+                        processedAt: { type: string, format: date-time, nullable: true }
+                        notes: { type: string, nullable: true }
+                        createdAt: { type: string, format: date-time }
+                        hotel:
+                          type: object
+                          properties:
+                            id: { type: string, format: uuid }
+                            name: { type: string }
+                            city: { type: string }
+                        payoutAccount:
+                          type: object
+                          properties:
+                            accountHolder: { type: string }
+                            bankName: { type: string }
+                  page: { type: integer }
+                  limit: { type: integer }
+                  totalPages: { type: integer }
+                  totalResults: { type: integer }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /platform-manager/payouts/{payoutId}:
+    get:
+      summary: Payout request detail with bank account (Platform Manager)
+      description: >
+        Requires `manageCommissions`. Returns one payout request together with the FULL payout bank
+        account — the account number is DECRYPTED here, and only here, for the person about to make the
+        transfer. Do not expose this to partners.
+      tags: [Payouts]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: payoutId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Payout detail (bank account number decrypted)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string, format: uuid }
+                  amount: { type: string, example: '2000000' }
+                  currency: { type: string, example: VND }
+                  status: { type: string, enum: [pending, processing, paid, failed] }
+                  payoutTransactionId: { type: string, nullable: true }
+                  processedAt: { type: string, format: date-time, nullable: true }
+                  notes: { type: string, nullable: true }
+                  createdAt: { type: string, format: date-time }
+                  hotel:
+                    type: object
+                    properties:
+                      id: { type: string, format: uuid }
+                      name: { type: string }
+                      city: { type: string }
+                  payoutAccount:
+                    type: object
+                    properties:
+                      accountHolder: { type: string }
+                      bankName: { type: string }
+                      accountNumber: { type: string, description: 'DECRYPTED — only returned here' }
+                      bankBranch: { type: string, nullable: true }
+                      swiftCode: { type: string, nullable: true }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /platform-manager/payouts/{payoutId}/review:
+    patch:
+      summary: Approve or reject a payout request (Platform Manager)
+      description: >
+        Requires `manageCommissions`. Only a `pending` request can be reviewed.
+
+
+        approve: call AFTER the money has actually been transferred to the hotel's bank account,
+        passing the real bank transaction id. Sets status `paid`. The wallet was already debited when
+        the request was made, so approval touches no balance.
+
+
+        reject: sets status `failed` and RETURNS the held amount to the hotel's balanceAvailable.
+      tags: [Payouts]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: payoutId
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [decision]
+              properties:
+                decision: { type: string, enum: [approve, reject] }
+                payoutTransactionId:
+                  type: string
+                  maxLength: 255
+                  description: Real bank transaction id — recommended when approving (reconciliation)
+                notes:
+                  type: string
+                  maxLength: 500
+                  description: Optional note / rejection reason
+              example:
+                decision: approve
+                payoutTransactionId: FT26080612345678
+      responses:
+        '200':
+          description: Updated payout request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string, format: uuid }
+                  amount: { type: string }
+                  status: { type: string, enum: [pending, processing, paid, failed] }
+                  payoutTransactionId: { type: string, nullable: true }
+                  processedAt: { type: string, format: date-time, nullable: true }
+                  notes: { type: string, nullable: true }
+                  hotel:
+                    type: object
+                    properties:
+                      id: { type: string, format: uuid }
+                      name: { type: string }
+        '400':
+          description: Already reviewed (not pending)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
 
   /platform-manager/refunds:
     get:

@@ -6,12 +6,14 @@ import {
   bookingValidation,
   refundValidation,
   commissionRateValidation,
+  payoutValidation,
 } from '../../validations';
 import {
   platformManagerController,
   bookingController,
   refundController,
   commissionRateController,
+  payoutController,
 } from '../../controllers';
 
 const router = express.Router();
@@ -103,5 +105,27 @@ router
   .route('/commission-rate')
   .get(auth('manageCommissions'), commissionRateController.getBaseRate)
   .put(auth('manageCommissions'), validate(commissionRateValidation.setBaseRate), commissionRateController.setBaseRate);
+
+// ===== Rút tiền / chi trả (manageCommissions) =====
+// Chủ KS tạo yêu cầu rút (POST /hotels/:hotelId/payouts); Platform Manager duyệt MỘT lần ở đây rồi
+// chuyển khoản, vì tiền nằm ở tài khoản platform (escrow). Chi tiết trả kèm số TK đã giải mã.
+router.get(
+  '/payouts',
+  auth('manageCommissions'),
+  validate(payoutValidation.listPlatformPayouts),
+  payoutController.listPlatformPayouts
+);
+router.get(
+  '/payouts/:payoutId',
+  auth('manageCommissions'),
+  validate(payoutValidation.getPayout),
+  payoutController.getPayout
+);
+router.patch(
+  '/payouts/:payoutId/review',
+  auth('manageCommissions'),
+  validate(payoutValidation.reviewPayout),
+  payoutController.reviewPayout
+);
 
 export default router;

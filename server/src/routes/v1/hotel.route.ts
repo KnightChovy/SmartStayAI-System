@@ -14,6 +14,7 @@ import {
   revenueValidation,
   refundValidation,
   commissionRateValidation,
+  payoutValidation,
 } from '../../validations';
 import {
   hotelController,
@@ -28,6 +29,7 @@ import {
   revenueController,
   refundController,
   commissionRateController,
+  payoutController,
 } from '../../controllers';
 
 const router = express.Router();
@@ -53,6 +55,11 @@ router.get('/:hotelId/manage', auth(), validate(hotelValidation.getHotel), hotel
 router.get('/:hotelId/revenue', auth(), validate(revenueValidation.getHotelRevenue), revenueController.getHotelRevenue);
 router.get('/:hotelId/wallet', auth(), validate(revenueValidation.getHotelWallet), revenueController.getHotelWallet);
 router.get('/:hotelId/analytics', auth(), validate(revenueValidation.getHotelAnalytics), revenueController.getHotelAnalytics);
+
+// Rút tiền: CHỦ KS tạo yêu cầu rút từ số dư khả dụng + xem lịch sử (service kiểm đúng owner).
+// Platform Manager là bên DUYỆT + chuyển khoản (xem routes/platform-manager.route.ts).
+router.post('/:hotelId/payouts', auth(), validate(payoutValidation.requestPayout), payoutController.requestPayout);
+router.get('/:hotelId/payouts', auth(), validate(payoutValidation.listHotelPayouts), payoutController.listHotelPayouts);
 
 // Mức hoa hồng nền tảng thu của khách sạn + đơn xin giảm (chủ KS; service kiểm qua getManagedHotel).
 // Đơn nộp ở đây, còn duyệt nằm bên /platform-manager/commission-requests.

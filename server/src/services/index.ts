@@ -22,6 +22,7 @@ export { adminService } from './admin.service';
 export { platformManagerService } from './platform-manager.service';
 export { auditService } from './audit.service';
 export { refundService } from './refund.service';
+export { payoutService } from './payout.service';
 export { notificationService } from './notification.service';
 export { promotionService } from './promotion.service';
 export { statsService } from './stats.service';
