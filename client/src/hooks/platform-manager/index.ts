@@ -3,3 +3,8 @@ export { usePlatformPartners } from './use-platform-partners';
 export { usePlatformBookings } from './use-platform-bookings';
 export { usePerformanceLeaderboard } from './use-performance-leaderboard';
 export { useHotelPerformance } from './use-hotel-performance';
+export { useCommissionRequests } from './use-commission-requests';
+export { useReviewCommissionRequest } from './use-review-commission-request';
+export { useBaseCommissionRate } from './use-base-commission-rate';
+export { useSetBaseCommissionRate } from './use-set-base-commission-rate';
+export { useSetPartnerStatus } from './use-set-partner-status';

@@ -14,6 +14,8 @@ export const adminKeys = {
     ['admin', 'revenue', params] as const,
   commissions: (params: AdminCommissionsParams) =>
     ['admin', 'commissions', params] as const,
+  /** Prefix của mọi danh sách khách sạn — invalidate khi trạng thái niêm yết đổi hàng loạt. */
+  hotelsAll: ['admin', 'hotels'] as const,
   hotels: (params: AdminHotelsParams) => ['admin', 'hotels', params] as const,
   auditLogs: (params: AdminAuditLogsParams) =>
     ['admin', 'audit-logs', params] as const,

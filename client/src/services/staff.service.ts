@@ -9,9 +9,11 @@ import type {
   HotelBookingsResponse,
   HousekeepingTask,
   HousekeepingTaskStatus,
+  RoomBlockListItem,
   RoomStatus,
   StaffHotel,
   StaffRoom,
+  StaffRoomsParams,
   StaffRoomsResponse,
 } from '@/types/staff.types';
 
@@ -157,12 +159,36 @@ export const staffService = {
 
   // ----- Physical rooms -----
 
-  /** Physical room list (`GET /hotels/:hotelId/rooms`). */
-  async listRooms(hotelId: string): Promise<StaffRoom[]> {
+  /**
+   * Physical room list (`GET /hotels/:hotelId/rooms`).
+   *
+   * ⚠️ BE mặc định chỉ trả **50 phòng/trang** (trần 200) — gọi không kèm `limit` là khách sạn lớn bị
+   * cắt bớt trong im lặng, room map hiện thiếu phòng mà không báo gì.
+   */
+  async listRooms(
+    hotelId: string,
+    params: StaffRoomsParams = {}
+  ): Promise<StaffRoomsResponse> {
     const { data } = await api.get<StaffRoomsResponse>(
-      `/hotels/${hotelId}/rooms`
+      `/hotels/${hotelId}/rooms`,
+      { params: cleanParams(params) }
     );
-    return data.results;
+    return data;
+  },
+
+  /**
+   * Đợt chặn phòng của khách sạn (`GET /hotels/:hotelId/room-blocks`).
+   * Mặc định BE chỉ trả đợt **chưa xử lý xong** (`resolvedAt = null`) — đúng thứ cần để tính tồn kho.
+   */
+  async listRoomBlocks(
+    hotelId: string,
+    includeResolved = false
+  ): Promise<RoomBlockListItem[]> {
+    const { data } = await api.get<RoomBlockListItem[]>(
+      `/hotels/${hotelId}/room-blocks`,
+      { params: includeResolved ? { includeResolved: true } : undefined }
+    );
+    return data;
   },
 
   /** Quickly change a room's status (`PATCH .../status`). */

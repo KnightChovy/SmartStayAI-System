@@ -11,3 +11,5 @@ export { useHousekeepingTasks } from './use-housekeeping-tasks';
 export { useCompleteHousekeeping } from './use-complete-housekeeping';
 export { useHotelRooms } from './use-hotel-rooms';
 export { useUpdateRoomStatus } from './use-update-room-status';
+export { useRoomBlocks } from './use-room-blocks';
+export { useInventoryCalendar } from './use-inventory-calendar';

@@ -15,8 +15,8 @@ import {
   Copy,
   Building2,
   Loader2,
-  Percent,
   CalendarDays,
+  RotateCcw,
   BarChart3,
   Activity,
   Timer,
@@ -38,12 +38,18 @@ import {
   Tooltip,
   Legend,
 } from 'recharts';
+import { Link } from 'react-router';
 import { toast } from 'sonner';
+import { ROUTES } from '@/constants/routes';
 import { cn } from '@/lib/cn';
 import { formatDate } from '@/utils/formatDate';
 import { errorMessage } from '@/utils/errorMessage';
-import { ActionMenu, type ActionItem } from '@/components/hotel-partner/shared/ActionMenu';
+import {
+  ActionMenu,
+  type ActionItem,
+} from '@/components/hotel-partner/shared/ActionMenu';
 import { BookingActivitiesTab } from '@/components/manager/hotel-partners/BookingActivitiesTab';
+import { PartnerStatusModal } from '@/components/manager/hotel-partners/PartnerStatusModal';
 import {
   usePlatformPartners,
   usePerformanceLeaderboard,
@@ -62,7 +68,11 @@ type TabId = 'partners' | 'hotels' | 'performance' | 'bookings';
 // ─── Trạng thái đối tác (người) ──────────────────────────────────────────────
 const partnerStatusConfig: Record<
   PlatformPartnerStatus,
-  { label: string; class: string; icon: React.ComponentType<{ className?: string }> }
+  {
+    label: string;
+    class: string;
+    icon: React.ComponentType<{ className?: string }>;
+  }
 > = {
   approved: {
     label: 'Approved',
@@ -173,9 +183,13 @@ function SummaryCards(
 function PartnerDetailModal({
   partner,
   onClose,
+  onSuspend,
+  onReactivate,
 }: {
   partner: PlatformPartner;
   onClose: () => void;
+  onSuspend: () => void;
+  onReactivate: () => void;
 }) {
   const cfg = partnerStatusConfig[partner.status];
   const StatusIcon = cfg.icon;
@@ -189,7 +203,9 @@ function PartnerDetailModal({
               <Users className="w-5 h-5 text-role-manager-primary" />
             </div>
             <div>
-              <h2 className="font-bold text-slate-900">{partner.businessName}</h2>
+              <h2 className="font-bold text-slate-900">
+                {partner.businessName}
+              </h2>
               <p className="text-xs text-slate-500">
                 {partner.owner?.fullName ?? partner.owner?.email ?? '—'}
               </p>
@@ -222,18 +238,15 @@ function PartnerDetailModal({
                 icon: Hotel,
               },
               {
-                label: 'Commission',
-                value: `${partner.commissionRate}%`,
-                icon: Percent,
-              },
-              {
                 label: 'Joined',
                 value: formatDate(partner.createdAt),
                 icon: CalendarDays,
               },
               {
                 label: 'Approved',
-                value: partner.approvedAt ? formatDate(partner.approvedAt) : '—',
+                value: partner.approvedAt
+                  ? formatDate(partner.approvedAt)
+                  : '—',
                 icon: CheckCircle2,
               },
             ].map(item => {
@@ -264,6 +277,22 @@ function PartnerDetailModal({
               {cfg.label}
             </span>
           </div>
+
+          {/*
+            Mức hoa hồng CỐ Ý không hiện ở đây: ưu đãi gắn với TỪNG KHÁCH SẠN, một đối tác
+            nhiều khách sạn có thể chịu nhiều mức khác nhau nên không có "một con số" đúng
+            cho cả đối tác.
+          */}
+          <Link
+            to={ROUTES.managerCommission}
+            className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50/60 px-3.5 py-2.5 text-xs text-slate-600 hover:bg-slate-100"
+          >
+            <span>
+              Commission is managed <strong>per hotel</strong> — see the
+              Commission page
+            </span>
+            <ChevronRight className="h-4 w-4 shrink-0 text-slate-400" />
+          </Link>
         </div>
 
         <div className="flex gap-3 p-6 pt-0">
@@ -273,6 +302,22 @@ function PartnerDetailModal({
           >
             Close
           </button>
+          {partner.status === 'approved' && (
+            <button
+              onClick={onSuspend}
+              className="flex-1 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+            >
+              Suspend partner
+            </button>
+          )}
+          {partner.status === 'suspended' && (
+            <button
+              onClick={onReactivate}
+              className="flex-1 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+            >
+              Reactivate partner
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -284,10 +329,16 @@ function PartnersTab() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<PartnerFilter>('all');
   const [selected, setSelected] = useState<PlatformPartner | null>(null);
+  const [statusTarget, setStatusTarget] = useState<{
+    partner: PlatformPartner;
+    action: 'suspend' | 'reactivate';
+  } | null>(null);
 
-  const { data, isLoading, isError, refetch, isFetching } = usePlatformPartners({
-    limit: 100,
-  });
+  const { data, isLoading, isError, refetch, isFetching } = usePlatformPartners(
+    {
+      limit: 100,
+    }
+  );
   const all = useMemo(() => data?.results ?? [], [data]);
 
   const filtered = all.filter(p => {
@@ -312,8 +363,16 @@ function PartnersTab() {
   return (
     <div className="space-y-4">
       {SummaryCards([
-        { label: 'Total Partners', value: counts.all, color: 'text-role-manager-primary' },
-        { label: 'Approved', value: counts.approved, color: 'text-emerald-600' },
+        {
+          label: 'Total Partners',
+          value: counts.all,
+          color: 'text-role-manager-primary',
+        },
+        {
+          label: 'Approved',
+          value: counts.approved,
+          color: 'text-emerald-600',
+        },
         { label: 'Pending', value: counts.pending, color: 'text-amber-600' },
         { label: 'Suspended', value: counts.suspended, color: 'text-red-600' },
       ])}
@@ -322,30 +381,30 @@ function PartnersTab() {
       <div className="bg-white rounded-xl border border-slate-200 p-4">
         <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
           <div className="flex gap-2 flex-wrap">
-            {(['all', 'approved', 'pending', 'suspended'] as PartnerFilter[]).map(
-              s => (
-                <button
-                  key={s}
-                  onClick={() => setFilter(s)}
+            {(
+              ['all', 'approved', 'pending', 'suspended'] as PartnerFilter[]
+            ).map(s => (
+              <button
+                key={s}
+                onClick={() => setFilter(s)}
+                className={cn(
+                  'px-4 py-1.5 rounded-full text-sm font-medium transition-all',
+                  filter === s
+                    ? 'bg-role-manager-primary text-white shadow-sm'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                )}
+              >
+                {s.charAt(0).toUpperCase() + s.slice(1)}
+                <span
                   className={cn(
-                    'px-4 py-1.5 rounded-full text-sm font-medium transition-all',
-                    filter === s
-                      ? 'bg-role-manager-primary text-white shadow-sm'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    'ml-1.5 text-xs px-1.5 py-0.5 rounded-full',
+                    filter === s ? 'bg-white/20' : 'bg-slate-200'
                   )}
                 >
-                  {s.charAt(0).toUpperCase() + s.slice(1)}
-                  <span
-                    className={cn(
-                      'ml-1.5 text-xs px-1.5 py-0.5 rounded-full',
-                      filter === s ? 'bg-white/20' : 'bg-slate-200'
-                    )}
-                  >
-                    {counts[s]}
-                  </span>
-                </button>
-              )
-            )}
+                  {counts[s]}
+                </span>
+              </button>
+            ))}
           </div>
           <div className="relative w-full sm:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -366,16 +425,20 @@ function PartnersTab() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-100">
-                {['Partner', 'Contact', 'Hotels', 'Commission', 'Joined', 'Status'].map(
-                  h => (
-                    <th
-                      key={h}
-                      className="text-left px-5 py-3.5 font-semibold text-slate-600 text-xs uppercase tracking-wide"
-                    >
-                      {h}
-                    </th>
-                  )
-                )}
+                {/*
+                  CỐ Ý KHÔNG có cột "Commission": `hotel_partners.commission_rate` là giá trị
+                  đông cứng từ lúc đăng ký, KHÔNG còn là nguồn sự thật. Mức thật nằm ở
+                  `commission_rates` theo TỪNG KHÁCH SẠN + theo ngày, nên đặt ở bảng đối tác
+                  là sai cấp. Xem mức thật ở trang Commission (`/manager/commission`).
+                */}
+                {['Partner', 'Contact', 'Hotels', 'Joined', 'Status'].map(h => (
+                  <th
+                    key={h}
+                    className="text-left px-5 py-3.5 font-semibold text-slate-600 text-xs uppercase tracking-wide"
+                  >
+                    {h}
+                  </th>
+                ))}
                 <th className="text-right px-5 py-3.5 font-semibold text-slate-600 text-xs uppercase tracking-wide">
                   Actions
                 </th>
@@ -383,12 +446,14 @@ function PartnersTab() {
             </thead>
             <tbody className="divide-y divide-slate-50">
               {isLoading ? (
-                <TableStateRow colSpan={7}>
+                <TableStateRow colSpan={6}>
                   <Loader2 className="w-6 h-6 mx-auto animate-spin text-slate-300" />
                 </TableStateRow>
               ) : isError ? (
-                <TableStateRow colSpan={7}>
-                  <p className="text-slate-500 mb-3">Could not load partners.</p>
+                <TableStateRow colSpan={6}>
+                  <p className="text-slate-500 mb-3">
+                    Could not load partners.
+                  </p>
                   <button
                     onClick={() => refetch()}
                     className="px-4 py-1.5 rounded-lg bg-role-manager-primary text-white text-sm font-medium"
@@ -397,7 +462,7 @@ function PartnersTab() {
                   </button>
                 </TableStateRow>
               ) : filtered.length === 0 ? (
-                <TableStateRow colSpan={7}>
+                <TableStateRow colSpan={6}>
                   <span className="text-slate-400">No partners found</span>
                 </TableStateRow>
               ) : (
@@ -427,6 +492,23 @@ function PartnersTab() {
                         copyToClipboard(p.contactPhone as string, 'Phone'),
                     });
                   }
+                  // Đình chỉ là công cụ xử lý vi phạm — thay cho việc sửa mức hoa hồng tự do.
+                  if (p.status === 'approved') {
+                    items.push({
+                      label: 'Suspend partner',
+                      icon: ShieldOff,
+                      destructive: true,
+                      onClick: () =>
+                        setStatusTarget({ partner: p, action: 'suspend' }),
+                    });
+                  } else if (p.status === 'suspended') {
+                    items.push({
+                      label: 'Reactivate partner',
+                      icon: RotateCcw,
+                      onClick: () =>
+                        setStatusTarget({ partner: p, action: 'reactivate' }),
+                    });
+                  }
                   return (
                     <tr
                       key={p.id}
@@ -442,7 +524,9 @@ function PartnersTab() {
                         </p>
                       </td>
                       <td className="px-5 py-4">
-                        <p className="text-slate-600">{p.contactEmail ?? '—'}</p>
+                        <p className="text-slate-600">
+                          {p.contactEmail ?? '—'}
+                        </p>
                         <p className="text-xs text-slate-400">
                           {p.contactPhone ?? '—'}
                         </p>
@@ -452,9 +536,6 @@ function PartnersTab() {
                           <Hotel className="w-3.5 h-3.5 text-slate-400" />
                           {p._count.hotels}
                         </span>
-                      </td>
-                      <td className="px-5 py-4 text-slate-700 font-medium">
-                        {p.commissionRate}%
                       </td>
                       <td className="px-5 py-4 text-slate-600">
                         {formatDate(p.createdAt)}
@@ -499,6 +580,23 @@ function PartnersTab() {
         <PartnerDetailModal
           partner={selected}
           onClose={() => setSelected(null)}
+          onSuspend={() =>
+            setStatusTarget({ partner: selected, action: 'suspend' })
+          }
+          onReactivate={() =>
+            setStatusTarget({ partner: selected, action: 'reactivate' })
+          }
+        />
+      )}
+
+      {statusTarget && (
+        <PartnerStatusModal
+          partner={statusTarget.partner}
+          action={statusTarget.action}
+          onClose={() => {
+            setStatusTarget(null);
+            setSelected(null);
+          }}
         />
       )}
     </div>
@@ -558,7 +656,11 @@ function HotelsPartnerTab() {
   return (
     <div className="space-y-4">
       {SummaryCards([
-        { label: 'Verified Hotels', value: counts.all, color: 'text-role-manager-primary' },
+        {
+          label: 'Verified Hotels',
+          value: counts.all,
+          color: 'text-role-manager-primary',
+        },
         { label: 'Listed', value: counts.listed, color: 'text-emerald-600' },
         { label: 'Unlisted', value: counts.unlisted, color: 'text-slate-500' },
         {
@@ -650,7 +752,9 @@ function HotelsPartnerTab() {
                 filtered.map(h => {
                   const items: ActionItem[] = [
                     {
-                      label: h.isListed ? 'Unlist from platform' : 'List on platform',
+                      label: h.isListed
+                        ? 'Unlist from platform'
+                        : 'List on platform',
                       icon: h.isListed ? ShieldOff : CheckCircle2,
                       onClick: () => toggleListing(h),
                       disabled: updateFlags.isPending,
@@ -1141,7 +1245,9 @@ function PlatformPerformanceTab() {
                       {i + 1}
                     </td>
                     <td className="px-5 py-3.5">
-                      <p className="font-medium text-slate-800">{h.hotelName}</p>
+                      <p className="font-medium text-slate-800">
+                        {h.hotelName}
+                      </p>
                       <p className="text-xs text-slate-400">{h.city}</p>
                     </td>
                     <td className="px-5 py-3.5">
