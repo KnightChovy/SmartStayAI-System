@@ -73,8 +73,17 @@ const STATUS_META: Record<RoomStatus, StatusMeta> = {
 
 const STATUS_ORDER: RoomStatus[] = ['available', 'occupied', 'cleaning', 'maintenance'];
 
+/**
+ * Trạng thái staff được phép bấm tay trên bản đồ phòng.
+ *
+ * **Occupied không có ở đây**: BE từ chối (`PATCH .../status` trả 400 — "Trạng thái có khách chỉ
+ * sinh ra từ check-in"). Trước đây mục này bấm được và chỉ hiện hộp xác nhận, nên staff bấm xong
+ * chỉ nhận về một toast lỗi. Đổi phòng sang có khách phải đi qua Front desk để còn gắn booking.
+ */
+const CHANGEABLE: RoomStatus[] = ['available', 'cleaning', 'maintenance'];
+
 /** Changing to these leaves the room unsellable, so they get a confirmation step. */
-const SENSITIVE: RoomStatus[] = ['maintenance', 'occupied'];
+const SENSITIVE: RoomStatus[] = ['maintenance'];
 
 /** The guest currently in a room, joined from the in-house bookings. */
 interface RoomGuest {
@@ -269,11 +278,9 @@ export default function RoomsPage() {
         }
         confirmLabel={confirm ? STATUS_META[confirm.status].label : 'Confirm'}
         message={
-          confirm?.status === 'maintenance'
+          confirm
             ? `Room ${confirm.room.roomNumber} will stop being offered to guests until you set it back to Available.`
-            : confirm
-              ? `Room ${confirm.room.roomNumber} will be marked as occupied. Normally check-in does this automatically — only set it by hand if the room map is out of sync.`
-              : ''
+            : ''
         }
       />
     </div>
@@ -383,7 +390,7 @@ function RoomTile({
           Change status <ChevronDown className="size-3.5" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-44">
-          {STATUS_ORDER.map(s => {
+          {CHANGEABLE.map(s => {
             const m = STATUS_META[s];
             const ItemIcon = m.icon;
             const current = s === room.status;
@@ -402,6 +409,12 @@ function RoomTile({
               </DropdownMenuItem>
             );
           })}
+          {/* Phòng đang có khách: nói rõ đổi ở đâu, thay vì để staff bấm rồi ăn 400 từ BE. */}
+          {room.status === 'occupied' && (
+            <p className="px-2 py-1.5 text-[11px] leading-snug text-slate-400">
+              Occupied is set by check-in — change it from Front desk.
+            </p>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
     </div>

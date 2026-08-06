@@ -10,6 +10,7 @@ import BookingDetailPage from '@/pages/staff/BookingDetailPage';
 import StaffChatPage from '@/pages/staff/StaffChatPage';
 import HousekeepingPage from '@/pages/staff/HousekeepingPage';
 import RoomsPage from '@/pages/staff/RoomsPage';
+import InventoryCalendarPage from '@/pages/staff/InventoryCalendarPage';
 
 /** Staff portal (`/staff`) — `staff` role only. */
 export const staffRoutes: RouteObject[] = [
@@ -33,6 +34,7 @@ export const staffRoutes: RouteObject[] = [
               { path: 'chat', element: <StaffChatPage /> },
               { path: 'housekeeping', element: <HousekeepingPage /> },
               { path: 'rooms', element: <RoomsPage /> },
+              { path: 'inventory', element: <InventoryCalendarPage /> },
             ],
           },
         ],
