@@ -12,7 +12,26 @@ export type BookingStatus =
   | 'cancelled'
   | 'no_show';
 
+/**
+ * Nhãn hiển thị của phòng — **giá trị SUY RA** ở BE từ 3 chiều bên dưới (`deriveRoomStatus`).
+ * Vẫn được trả về nguyên vẹn nên room map cũ không phải viết lại.
+ */
 export type RoomStatus = 'available' | 'occupied' | 'maintenance' | 'cleaning';
+
+/** Chiều LỄ TÂN: phòng có khách hay không. Chỉ sinh ra từ check-in/check-out, staff KHÔNG bấm tay. */
+export type FoStatus = 'vacant' | 'occupied';
+
+/** Chiều BUỒNG PHÒNG: chiều duy nhất staff đổi trực tiếp (`PATCH .../housekeeping`). */
+export type HkStatus = 'dirty' | 'cleaning' | 'clean' | 'inspected';
+
+/**
+ * `ooo` = hỏng thật, **TRỪ khỏi tồn kho bán**.
+ * `oos` = tạm ngưng trong ngày (kê lại đồ, giữ phòng VIP), **KHÔNG** trừ tồn kho.
+ */
+export type RoomBlockType = 'ooo' | 'oos';
+
+/** Mức trễ so với định mức dọn phòng — BE tính sẵn để FE khỏi tự suy luật. */
+export type CleaningSla = 'on_time' | 'warning' | 'overdue';
 
 export type HousekeepingTaskStatus = 'pending' | 'in_progress' | 'done';
 
@@ -203,6 +222,30 @@ export interface HousekeepingTask {
 // Physical rooms (GET /hotels/:hotelId/rooms)
 // ============================================================
 
+/** Đợt chặn phòng theo KHOẢNG NGÀY (bảng `room_blocks`). */
+export interface RoomBlock {
+  id: string;
+  roomId: string;
+  hotelId: string;
+  blockType: RoomBlockType;
+  /** `YYYY-MM-DD` (cột `@db.Date`). */
+  startDate: string;
+  /** Ngày cuối **CÒN BỊ CHẶN** — khác `checkOutDate` của booking (ngày đó vẫn bị chặn). */
+  endDate: string;
+  reason: string;
+  estimatedCost: string | null;
+  createdBy: string;
+  /** Đã sửa xong ⇒ phòng bán lại được. Dòng không bị xoá, giữ để thống kê chi phí sự cố. */
+  resolvedAt: string | null;
+  resolvedBy: string | null;
+  createdAt: string;
+}
+
+/** Dòng của `GET /hotels/:hotelId/room-blocks` — kèm thông tin phòng để hiển thị. */
+export interface RoomBlockListItem extends RoomBlock {
+  room: { id: string; roomNumber: string; floor: number | null };
+}
+
 export interface StaffRoom {
   id: string;
   hotelId: string;
@@ -210,9 +253,74 @@ export interface StaffRoom {
   roomNumber: string;
   /** Nullable in the DB (`Room.floor Int?`) — a room may have no floor recorded. */
   floor: number | null;
+  /** Nhãn hiển thị BE suy ra từ 3 chiều bên dưới. */
   status: RoomStatus;
+  /** Chiều lễ tân — chỉ đọc, đổi qua check-in/check-out. */
+  foStatus: FoStatus;
+  hkStatus: HkStatus;
+  /** Mốc bắt đầu trạng thái dọn hiện tại — gốc để đo SLA. */
+  hkStatusSince: string | null;
+  /** Hạn dọn xong do SERVER tính, không nhận từ client. */
+  hkExpectedUntil: string | null;
+  /** `false` = ngừng dùng phòng (thay cho xoá) ⇒ **không tính vào tồn kho**. */
+  isActive: boolean;
   notes: string | null;
+  /** Đợt chặn còn hiệu lực **HÔM NAY** (BE chỉ tra theo ngày hôm nay, không phải tương lai). */
+  activeBlock: RoomBlock | null;
+  /** `null` khi phòng không ở trạng thái dọn dở hoặc thiếu mốc thời gian. */
+  cleaningSla: CleaningSla | null;
   roomType: { id: string; name: string };
 }
 
 export type StaffRoomsResponse = Paginated<StaffRoom>;
+
+export interface StaffRoomsParams {
+  status?: RoomStatus;
+  roomTypeId?: string;
+  isActive?: boolean;
+  sortBy?: string;
+  /** Trần của BE là 200; mặc định BE chỉ trả 50 nên phải tự truyền. */
+  limit?: number;
+  page?: number;
+}
+
+// ============================================================
+// Inventory calendar (suy ở client từ rooms + bookings)
+// ============================================================
+
+/** Tồn kho của MỘT loại phòng trong MỘT đêm. */
+export interface InventoryDayCell {
+  /** Khoá ngày UTC `YYYY-MM-DD` — cùng cách BE truncate ngày. */
+  date: string;
+  /** Số phòng vật lý bán được (đã loại phòng bảo trì). */
+  sellable: number;
+  /** Số phòng đang bị đơn đặt chiếm trong đêm này. */
+  booked: number;
+  /** `sellable - booked`. Âm = overbooking. */
+  available: number;
+}
+
+export interface InventoryTypeRow {
+  roomTypeId: string;
+  roomTypeName: string;
+  /**
+   * Giá gốc mỗi đêm (`RoomType.basePrice`) — dùng để xếp hàng theo phân khúc giá.
+   * `null` khi loại phòng không còn bán (endpoint công khai không trả loại đã tắt).
+   */
+  basePrice: number | null;
+  /** Đúng thứ tự ngày từ `from` tới `to`. */
+  days: InventoryDayCell[];
+}
+
+export interface InventoryCalendar {
+  /** Ngày đầu (YYYY-MM-DD). */
+  from: string;
+  /** Ngày cuối, ĐÃ BAO GỒM (YYYY-MM-DD). */
+  to: string;
+  rows: InventoryTypeRow[];
+  /**
+   * Danh sách booking bị cắt vì chạm trần phân trang (xem `use-inventory-calendar`).
+   * `true` ⇒ số liệu có thể thiếu, UI phải nói ra thay vì im lặng.
+   */
+  truncated: boolean;
+}

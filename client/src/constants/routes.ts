@@ -65,6 +65,8 @@ export const ROUTES = {
   staffChat: '/staff/chat',
   staffHousekeeping: '/staff/housekeeping',
   staffRooms: '/staff/rooms',
+  /** Lịch tồn kho theo ngày — khác Room map (bảng vận hành của hôm nay). */
+  staffInventory: '/staff/inventory',
 
   // Account (customer, cần đăng nhập)
   account: '/account',

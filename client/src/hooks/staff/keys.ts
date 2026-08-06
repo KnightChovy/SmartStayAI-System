@@ -1,4 +1,4 @@
-import type { HotelBookingsParams } from '@/types/staff.types';
+import type { HotelBookingsParams, StaffRoomsParams } from '@/types/staff.types';
 
 /** Shared query key factory for the staff portal (scoped per active hotel). */
 export const staffKeys = {
@@ -10,5 +10,10 @@ export const staffKeys = {
     ['staff', 'booking', hotelId, bookingId] as const,
   housekeeping: (hotelId: string, status?: string) =>
     ['staff', 'housekeeping', hotelId, status ?? 'all'] as const,
-  rooms: (hotelId: string) => ['staff', 'rooms', hotelId] as const,
+  rooms: (hotelId: string, params: StaffRoomsParams = {}) =>
+    ['staff', 'rooms', hotelId, params] as const,
+  roomBlocks: (hotelId: string, includeResolved: boolean) =>
+    ['staff', 'room-blocks', hotelId, includeResolved] as const,
+  inventory: (hotelId: string, from: string, to: string) =>
+    ['staff', 'inventory', hotelId, from, to] as const,
 };

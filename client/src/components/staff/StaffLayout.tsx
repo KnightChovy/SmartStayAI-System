@@ -3,6 +3,7 @@ import {
   LayoutDashboard,
   ConciergeBell,
   BedDouble,
+  CalendarRange,
   MessageSquare,
   Sparkles,
   Building2,
@@ -27,6 +28,8 @@ const navItems = [
   { name: 'Chat', href: ROUTES.staffChat, icon: MessageSquare },
   { name: 'Housekeeping', href: ROUTES.staffHousekeeping, icon: Sparkles },
   { name: 'Room map', href: ROUTES.staffRooms, icon: BedDouble },
+  // Room map là bảng vận hành của HÔM NAY; lịch tồn kho mới là chỗ nhìn được các ngày tới.
+  { name: 'Inventory', href: ROUTES.staffInventory, icon: CalendarRange },
 ];
 
 export function StaffLayout() {
