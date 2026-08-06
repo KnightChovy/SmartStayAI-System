@@ -3,6 +3,7 @@ import type { User, WalletTransactionType } from '@prisma/client';
 import prisma from '../config/prisma';
 import { hotelService } from './hotel.service';
 import { platformManagerService } from './platform-manager.service';
+import { commissionRateService } from './commission-rate.service';
 
 type RevenueQuery = { from?: Date; to?: Date; groupBy?: 'day' | 'month' };
 type WalletQuery = { type?: WalletTransactionType; page?: number; limit?: number };
@@ -19,6 +20,11 @@ export class RevenueService {
    *
    * net = gross − commission (GIỮ NGUYÊN cho FE cũ). netAfterRefund = net − refunded (MỚI, phản ánh
    * doanh thu THỰC sau hoàn tiền — net cũ không trừ refund nên phóng đại). Tiền trả dạng chuỗi.
+   *
+   * commissionRate = mức hoa hồng ĐANG áp cho khách sạn (%), để giao diện đối tác hiện "45.000đ · 15%"
+   * mà KHÔNG phải tự chia `commission / gross` — phép chia đó ra số sai khi trong kỳ có hoàn tiền:
+   * refund tính lại `commissionAmount` trên phần khách sạn thực giữ (xem refund.service), còn `gross`
+   * vẫn cộng cả booking đã hoàn, nên hai số khác mẫu số.
    */
   getHotelRevenue = async (hotelId: string, currentUser: User, query: RevenueQuery) => {
     await hotelService.getOperableHotel(hotelId, currentUser); // ném lỗi nếu không có quyền
@@ -49,6 +55,11 @@ export class RevenueService {
 
     const series = await this.buildRevenueSeries(hotelId, groupBy, from, toExclusive);
 
+    // Mức của HÔM NAY (cùng nguồn với màn Commission của đối tác), không phải mức trung bình của kỳ:
+    // một kỳ dài có thể trải qua nhiều mức (đổi mức nền, ưu đãi riêng hết hạn) nên không tồn tại một
+    // con số % đúng cho cả kỳ — trả mức đang chịu là thứ đối tác cần biết và luôn có, kể cả kỳ trống.
+    const commissionRate = await commissionRateService.resolveRate(hotelId, new Date());
+
     return {
       summary: {
         gross: gross.toString(),
@@ -57,6 +68,7 @@ export class RevenueService {
         netAfterRefund: net.sub(refunded).toString(),
         refunded: refunded.toString(),
         bookingCount: commissions.length,
+        commissionRate: commissionRate.toString(),
       },
       groupBy,
       series,
