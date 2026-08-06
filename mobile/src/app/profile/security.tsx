@@ -8,6 +8,7 @@ import { Text } from '@/components/ui/text';
 import { Heading } from '@/components/ui/heading';
 import { useChangePassword, useDeleteAccount } from '@/hooks/users';
 import { GUEST_COLORS } from '@/constants/guestTheme';
+import { passwordViolation } from '@/validations/auth.validation';
 
 
 /** Lấy message lỗi từ axios error mà không dùng `any`. */
@@ -38,8 +39,15 @@ export default function SecurityScreen() {
       setFormError(t('account:security.currentRequired'));
       return;
     }
-    if (newPassword.length < 8) {
+    // BE (`changeMyPassword` → `custom.validation.password`) đòi ≥8 ký tự VÀ có cả chữ lẫn số;
+    // trước đây chỉ kiểm độ dài nên "12345678" phải chờ BE trả 400 mới biết.
+    const violation = passwordViolation(newPassword);
+    if (violation === 'required' || violation === 'tooShort') {
       setFormError(t('account:security.tooShort'));
+      return;
+    }
+    if (violation === 'needLetterAndNumber') {
+      setFormError(t('account:security.needLetterAndNumber'));
       return;
     }
     if (newPassword !== confirmPassword) {

@@ -95,7 +95,7 @@
   "security": {
     "title": "Security & privacy",
     "changePassword": "Change password",
-    "hint": "Use at least 8 characters.",
+    "hint": "Use at least 8 characters, including a letter and a number.",
     "currentPassword": "Current password",
     "newPassword": "New password",
     "confirmPassword": "Confirm new password",
@@ -107,6 +107,7 @@
     "updating": "Updating…",
     "updated": "Password updated.",
     "tooShort": "Password must be at least 8 characters.",
+    "needLetterAndNumber": "Password must contain at least 1 letter and 1 number.",
     "mismatch": "Passwords do not match.",
     "updateFailed": "Could not update your password. Please try again.",
     "deleteTitle": "Delete account",

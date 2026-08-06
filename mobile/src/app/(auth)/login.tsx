@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { Alert, Pressable, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Text } from '@/components/ui/text';
@@ -10,7 +10,7 @@ import { useLogin } from '@/hooks/auth';
 import { homeRouteForRole } from '@/constants/roles';
 import { AUTH_IMAGES } from '@/constants/guestTheme';
 import { errorMessage } from '@/utils/errorMessage';
-import { emailError } from '@/validations/auth.validation';
+import { emailError, loginPasswordError } from '@/validations/auth.validation';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -23,7 +23,7 @@ export default function LoginScreen() {
   const [submitted, setSubmitted] = useState(false);
 
   const emailValidation = emailError(email);
-  const passwordValidation = !password ? 'Mật khẩu là bắt buộc.' : null;
+  const passwordValidation = loginPasswordError(password);
 
   function handleLogin() {
     setSubmitted(true);
