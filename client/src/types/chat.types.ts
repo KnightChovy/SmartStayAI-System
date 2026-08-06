@@ -4,8 +4,11 @@
  * - messageType: text | quick_reply | booking_card | image
  */
 
-/** Ai nói câu này, theo góc nhìn khung chat của khách ('staff' = lễ tân người thật). */
-export type ChatSender = 'user' | 'ai' | 'staff';
+/**
+ * Ai nói câu này, theo góc nhìn khung chat của khách ('staff' = lễ tân người thật,
+ * 'system' = ghi chú `[Hệ thống]` do BE tự thêm khi khách gạt AI ⇄ Lễ tân).
+ */
+export type ChatSender = 'user' | 'ai' | 'staff' | 'system';
 
 export interface Message {
   /** Id ổn định để cập nhật đúng bong bóng khi stream (tránh ghi nhầm vào tin của user). */

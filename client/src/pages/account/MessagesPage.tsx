@@ -2,19 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { formatDistanceToNowStrict } from 'date-fns';
-import {
-  Bot,
-  Headset,
-  Loader2,
-  MessageSquare,
-  Plus,
-  Send,
-  Sparkles,
-} from 'lucide-react';
+import { Bot, Headset, Loader2, MessageSquare, Plus, Send } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import { HotelPickerPanel } from '@/components/account/HotelPickerPanel';
+import { ConversationModeToggle } from '@/components/chat';
 import { Button } from '@/components/ui/button';
 import {
   useConversationSocket,
@@ -430,40 +423,12 @@ export default function MessagesPage() {
                 {/* Công tắc: khách tự chọn nói chuyện với AI hay lễ tân. Cần có hội thoại rồi mới
                     đổi được chế độ nên chỉ hiện sau khi đã gửi tin đầu tiên. */}
                 {conversation && (
-                  <div className="mb-2 flex rounded-full border border-outline-variant/40 bg-surface-container-low p-0.5">
-                    {(
-                      [
-                        { mode: 'ai', label: t('chat.ai'), Icon: Sparkles },
-                        {
-                          mode: 'human',
-                          label: t('chat.frontDesk'),
-                          Icon: Headset,
-                        },
-                      ] as const
-                    ).map(({ mode, label, Icon }) => {
-                      const isActive = (isHandoff ? 'human' : 'ai') === mode;
-                      return (
-                        <button
-                          key={mode}
-                          type="button"
-                          onClick={() => void handleSetMode(mode)}
-                          disabled={setMode.isPending}
-                          aria-pressed={isActive}
-                          className={cn(
-                            'flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-60',
-                            isActive
-                              ? mode === 'human'
-                                ? 'bg-emerald-500/15 text-emerald-700'
-                                : 'bg-surface text-on-surface shadow-sm'
-                              : 'text-on-surface-variant hover:text-on-surface'
-                          )}
-                        >
-                          <Icon className="size-3" />
-                          {label}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  <ConversationModeToggle
+                    isHandoff={isHandoff}
+                    onChange={mode => void handleSetMode(mode)}
+                    disabled={setMode.isPending}
+                    className="mb-2"
+                  />
                 )}
 
                 <div className="flex items-end gap-2">
