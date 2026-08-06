@@ -9,7 +9,7 @@ import { availabilityService } from './availability.service';
 import { bookingService } from './booking.service';
 import { hotelService } from './hotel.service';
 import { AiTool } from './ai/ai.types';
-import { setPendingAction, consumePendingAction } from './ai/pending-action.store';
+import { setPendingAction, consumePendingAction, peekPendingAction } from './ai/pending-action.store';
 import { emitMessageToConversation, emitConversationEscalated } from '../config/socket';
 import { toUtcDate, todayInVietnam } from '../utils/dates';
 import type { HotelSearchFilter } from '../dto/hotel.dto';
@@ -112,7 +112,8 @@ export class ConversationService {
       checkOutTime: string | null;
     },
     faqs: { question: string; answer: string }[],
-    isAuthenticated: boolean
+    isAuthenticated: boolean,
+    pendingSummary: string | null
   ): string => {
     const today = todayInVietnam();
     const lines = [
@@ -142,8 +143,26 @@ export class ConversationService {
         '1) Gọi prepare_booking (đặt) hoặc prepare_cancellation (huỷ) để lấy TÓM TẮT — bước này CHƯA thay đổi gì thật.',
         '2) Đọc tóm tắt cho khách và HỎI khách có đồng ý không.',
         '3) CHỈ khi khách đồng ý rõ ràng ở lượt sau (vâng/ok/đặt đi/huỷ đi...) mới gọi confirm_action (không cần tham số) để thực hiện.',
-        'TUYỆT ĐỐI không gọi confirm_action khi khách chưa đồng ý. Mỗi lần đặt/huỷ phải prepare lại trước.'
+        'TUYỆT ĐỐI không gọi confirm_action khi khách chưa đồng ý. Mỗi lần đặt/huỷ phải prepare lại trước.',
+        // Không chốt danh sách này thì model lấp bằng thói quen đặt phòng ngoài đời (xin số điện thoại,
+        // CMND...) — hỏi xong lại không có tool nào nhận, thế là bí và chuyển cho lễ tân.
+        'Đặt phòng chỉ cần ĐÚNG 4 thông tin: tên loại phòng, ngày nhận, ngày trả, số khách.',
+        'Danh tính khách (họ tên, email, SỐ ĐIỆN THOẠI, CCCD) hệ thống ĐÃ CÓ từ tài khoản đăng nhập — ' +
+          'TUYỆT ĐỐI không hỏi khách những thứ đó, cũng không nói rằng hệ thống đang yêu cầu chúng.'
       );
+      // Phiếu chờ nằm server-side nên nó SỐNG qua các lượt, nhưng model không thấy được (lịch sử
+      // không chứa lượt gọi tool). Nói thẳng ra đây để lượt khách gật đầu là nó chốt luôn.
+      if (pendingSummary) {
+        lines.push(
+          '',
+          'ĐANG CÓ PHIẾU CHỜ XÁC NHẬN — bước 1 ĐÃ XONG, nội dung:',
+          pendingSummary,
+          'Khách đồng ý ở lượt này (ok/oke/vâng/ừ/đồng ý/đặt đi...) ⇒ gọi confirm_action NGAY LẬP TỨC, ' +
+            'KHÔNG hỏi thêm bất kỳ thông tin nào và KHÔNG gọi lại prepare_booking.',
+          'Chỉ khi khách muốn ĐỔI thông tin (ngày, loại phòng, số khách) mới gọi lại prepare_booking với thông tin mới.',
+          'Khách từ chối ⇒ không gọi confirm_action, hỏi xem khách muốn đổi gì.'
+        );
+      }
     } else {
       // Khách CHƯA đăng nhập: chỉ được tư vấn. Đặt/huỷ/tra đơn cần danh tính ⇒ mời khách đăng nhập,
       // không được hứa hay tự thực hiện (các tool đó cũng KHÔNG được cấp cho khách vãng lai).
@@ -172,7 +191,12 @@ export class ConversationService {
         'phòng nào, giá tham khảo, tiện nghi trong phòng → list_room_types. Cả hai KHÔNG cần ngày nhận/trả. ' +
         'Chỉ hỏi ngày và số khách khi khách muốn biết phòng CÒN TRỐNG hoặc giá THẬT của một kỳ nghỉ (search_rooms), ' +
         'hoặc khi khách muốn đặt phòng.',
-      'KHÔNG nói rằng bạn "không có thông tin" trước khi đã thử gọi tool.'
+      'KHÔNG nói rằng bạn "không có thông tin" trước khi đã thử gọi tool.',
+      // Chuyển cho lễ tân là đường MỘT CHIỀU: sau đó bot im cho tới khi nhân viên trả lời. Không có
+      // ai trực hộp thư thì khách treo vĩnh viễn — nên đây là lựa chọn cuối, không phải lối thoát khi bí.
+      'KHÔNG chuyển cho lễ tân những việc bạn tự làm được bằng tool (tra phòng/giá/tiện nghi, đặt, huỷ, ' +
+        'tra đơn). Bí thì gọi tool hoặc hỏi lại khách. Chỉ chuyển khi khách đòi gặp người thật, khách ' +
+        'khiếu nại, hoặc việc nằm ngoài mọi tool — vì chuyển xong bạn sẽ IM cho tới khi nhân viên trả lời.'
     );
     lines.push('', 'Trả lời ngắn gọn, lịch sự, bằng tiếng Việt. Nếu không chắc, hãy mời khách liên hệ lễ tân.');
     return lines.filter(Boolean).join('\n');
@@ -323,7 +347,9 @@ export class ConversationService {
       name: 'escalate_to_staff',
       description:
         'Chuyển cuộc trò chuyện cho nhân viên lễ tân xử lý. ' +
-        'Gọi khi bạn KHÔNG trả lời được, khách yêu cầu gặp người thật, hoặc khách phàn nàn/khiếu nại.',
+        'CHỈ gọi khi khách CHỦ ĐỘNG đòi gặp người thật, khách phàn nàn/khiếu nại, hoặc yêu cầu nằm ' +
+        'NGOÀI mọi tool khác. TUYỆT ĐỐI KHÔNG gọi cho việc đã có tool (đặt phòng, huỷ phòng, tra đơn, ' +
+        'hỏi phòng trống/giá/tiện nghi) — kể cả khi bạn đang bí: hãy dùng đúng tool đó hoặc hỏi lại khách.',
       parameters: {
         type: 'object',
         properties: {
@@ -618,9 +644,17 @@ export class ConversationService {
         if (args.guests) {
           filter.guests = Number(args.guests);
         }
-        // checkIn/checkOut phải đi CÙNG nhau mới tính được tồn kho (như API search public)
-        if (args.checkInDate && args.checkOutDate) {
-          const warning = stayDateWarning(String(args.checkInDate), String(args.checkOutDate));
+        // checkIn/checkOut phải đi CÙNG nhau mới tính được tồn kho (như API search public).
+        // Chỉ có MỘT ngày mà im lặng bỏ qua là ca sai NGUY HIỂM NHẤT: tra không-ngày rồi vẫn khẳng định
+        // kết quả là "cho ngày X" — số liệu thật nhưng sai mốc, khách không tài nào biết.
+        if (args.checkInDate || args.checkOutDate) {
+          const warning =
+            args.checkInDate && args.checkOutDate
+              ? stayDateWarning(String(args.checkInDate), String(args.checkOutDate))
+              : `Mới có ngày ${args.checkInDate ? 'nhận' : 'trả'} phòng — cần ĐỦ CẢ HAI ngày mới tra được ` +
+                `phòng trống và giá thật (hôm nay là ${todayInVietnam().iso}). Hãy HỎI khách ngày còn lại ` +
+                'rồi gọi lại. Nếu khách chỉ muốn xem giá tham khảo thì gọi lại KHÔNG kèm ngày nào, và ' +
+                'KHÔNG được nói kết quả đó là cho một ngày cụ thể.';
           if (warning) {
             return warning;
           }
@@ -744,8 +778,10 @@ export class ConversationService {
       return { systemPrompt: this.buildPlatformSystemPrompt(), tools: this.buildPlatformTools() };
     }
     const topFaqs = await this.retrieveFaqs(hotel.id, text, hotel.faqKnowledge);
+    // Đọc (không tiêu) phiếu chờ để nhắc model bước prepare đã xong — xem peekPendingAction.
+    const pending = currentUser ? peekPendingAction(conversationId, currentUser.id) : null;
     return {
-      systemPrompt: this.buildSystemPrompt(hotel, topFaqs, !!currentUser),
+      systemPrompt: this.buildSystemPrompt(hotel, topFaqs, !!currentUser, pending?.summary ?? null),
       tools: this.buildTools(hotel.id, currentUser, conversationId),
     };
   };
