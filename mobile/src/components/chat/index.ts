@@ -8,3 +8,7 @@ export { ChatSessionRow } from './ChatSessionRow';
 export type { ChatSessionRowProps } from './ChatSessionRow';
 export { RenameSessionDialog } from './RenameSessionDialog';
 export type { RenameSessionDialogProps } from './RenameSessionDialog';
+export { HotelPickerList } from './HotelPickerList';
+export type { HotelPickerListProps } from './HotelPickerList';
+export { HotelConversationThread } from './HotelConversationThread';
+export type { HotelConversationThreadProps } from './HotelConversationThread';
