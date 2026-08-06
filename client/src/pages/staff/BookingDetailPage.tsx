@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { Link, useParams, useLocation } from 'react-router';
+import { Link, useParams, useLocation, useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import {
   ArrowLeft,
@@ -9,10 +9,12 @@ import {
   Banknote,
   UserX,
   CalendarClock,
+  AlertTriangle,
   BedDouble,
   Ticket,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/cn';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -32,6 +34,11 @@ import { formatCurrency } from '@/utils/formatCurrency';
 import { formatDate, toUtcDateKey, todayUtcKey } from '@/utils/formatDate';
 import { errorMessage } from '@/utils/errorMessage';
 import {
+  bookingMoment,
+  checkInBlockMessage,
+  getCheckInBlockReason,
+} from '@/utils/checkInWindow';
+import {
   LATE_CHECKOUT_REASON_MAX,
   VOUCHER_CODE_MAX,
   lateCheckoutReasonSchema,
@@ -46,10 +53,25 @@ interface CheckInNavState {
 export default function BookingDetailPage() {
   const { bookingId } = useParams<{ bookingId: string }>();
   const location = useLocation();
+  const navigate = useNavigate();
   const navState = (location.state as CheckInNavState | null) ?? {};
   // Đến từ luồng quét QR → tự mở modal xác nhận check-in.
   const [showCheckInConfirm, setShowCheckInConfirm] = useState(!!navState.autoCheckIn);
-  const scanVoucher = navState.voucherCode ?? '';
+  // Giữ mã đã quét trong state riêng: khi Cancel ta xoá `location.state` (xem `dismissCheckInConfirm`)
+  // nên đọc thẳng `navState.voucherCode` sẽ mất mã ngay sau đó.
+  const [scanVoucher] = useState(navState.voucherCode ?? '');
+
+  /**
+   * Đóng modal xác nhận check-in mà KHÔNG check-in.
+   * Phải xoá luôn `location.state`: cờ `autoCheckIn` nằm trong history entry, nên nếu chỉ set state
+   * thì F5 hoặc bấm Back/Forward là modal bật lại — lễ tân đã bấm Cancel mà máy vẫn mời check-in.
+   */
+  const dismissCheckInConfirm = () => {
+    setShowCheckInConfirm(false);
+    if (navState.autoCheckIn) {
+      navigate(location.pathname, { replace: true, state: null });
+    }
+  };
   const hotel = useStaffHotelStore(state => state.hotel);
   const { data: booking, isLoading, isError } = useHotelBooking(hotel?.id, bookingId);
   const { data: rooms } = useHotelRooms(hotel?.id);
@@ -78,17 +100,19 @@ export default function BookingDetailPage() {
     p => p.paymentMethod === 'cash' && p.status === 'pending'
   );
 
-  // Actual check-in window: check-in date ≤ today < check-out date.
   const today = todayUtcKey();
-  const checkInKey = toUtcDateKey(booking.checkInDate);
   const checkOutKey = toUtcDateKey(booking.checkOutDate);
   const checkInTime = hotel?.checkInTime ?? '14:00';
   const checkOutTime = hotel?.checkOutTime ?? '12:00';
-  const beforeWindow = today < checkInKey;
   const afterWindow = today >= checkOutKey;
-  const beforeCheckInTime = new Date() < bookingMoment(booking.checkInDate, checkInTime);
   const afterCheckOutTime = new Date() > bookingMoment(booking.checkOutDate, checkOutTime);
-  const checkInLocked = beforeWindow || beforeCheckInTime;
+  // Cửa sổ check-in xét bằng helper dùng chung (mirror guard của BE), nên bao gồm CẢ ca quá kỳ lưu
+  // trú — trước đây chỉ chặn "chưa tới giờ" nên đơn đã hết hạn vẫn mời Confirm rồi ăn 400.
+  const checkInBlock = getCheckInBlockReason(booking, checkInTime);
+  const checkInLocked = checkInBlock !== null;
+  const checkInBlockText = checkInBlock
+    ? checkInBlockMessage(checkInBlock, booking, checkInTime)
+    : null;
 
   // Available rooms of the right type for the receptionist to assign (empty = let BE auto-assign).
   const availableRooms = (rooms ?? []).filter(
@@ -123,18 +147,28 @@ export default function BookingDetailPage() {
       'Check-out failed.'
     );
 
-  // Xác nhận check-in từ modal (quét QR): BE tự gán phòng trống, redeem voucher đã quét.
+  // Mã voucher dùng để redeem: ưu tiên mã lễ tân gõ tay, sau đó là mã vừa quét từ QR.
+  const effectiveVoucher = voucherCode.trim() || scanVoucher;
+
+  /**
+   * Check-in THẬT — chỉ chạy từ nút Confirm của `CheckInConfirmModal`.
+   * Mọi đường vào (quét QR hoặc bấm Check-in ở panel) đều phải đi qua modal này: check-in không
+   * hoàn tác được, mà phòng thì bị gán ngay trong cùng transaction ở BE.
+   */
   const handleConfirmCheckIn = async () => {
     await run(
       () =>
         checkIn.mutateAsync({
           bookingId: booking.id,
-          payload: { ...(scanVoucher ? { voucherCode: scanVoucher } : {}) },
+          payload: {
+            ...(roomId ? { roomId } : {}),
+            ...(effectiveVoucher ? { voucherCode: effectiveVoucher } : {}),
+          },
         }),
       'Guest checked in successfully.',
       'Check-in failed.'
     );
-    setShowCheckInConfirm(false);
+    dismissCheckInConfirm();
   };
 
   return (
@@ -216,10 +250,23 @@ export default function BookingDetailPage() {
 
             {booking.status === 'confirmed' && (
               <div className="mb-3 space-y-3">
-                {checkInLocked && (
-                  <div className="flex items-start gap-2 rounded-lg bg-amber-50 p-2.5 text-xs text-amber-700">
-                    <CalendarClock className="mt-0.5 size-3.5 shrink-0" />
-                    Check-in opens at {checkInTime} on {formatDate(booking.checkInDate)}.
+                {checkInBlockText && (
+                  <div
+                    className={cn(
+                      'flex items-start gap-2 rounded-lg p-2.5 text-xs',
+                      // Quá kỳ lưu trú là ngõ cụt (phải xử lý no-show) → đỏ; chờ tới giờ thì chỉ là
+                      // "quay lại sau" → vàng.
+                      checkInBlock === 'stay_ended'
+                        ? 'bg-rose-50 text-rose-700'
+                        : 'bg-amber-50 text-amber-700'
+                    )}
+                  >
+                    {checkInBlock === 'stay_ended' ? (
+                      <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
+                    ) : (
+                      <CalendarClock className="mt-0.5 size-3.5 shrink-0" />
+                    )}
+                    {checkInBlockText}
                   </div>
                 )}
                 {!checkInLocked && (
@@ -276,29 +323,15 @@ export default function BookingDetailPage() {
                 <Button
                   className="w-full bg-emerald-600 text-white hover:bg-emerald-700"
                   disabled={busy || checkInLocked}
-                  title={
-                    checkInLocked
-                      ? `Check-in opens at ${checkInTime} on ${formatDate(booking.checkInDate)}`
-                      : undefined
-                  }
+                  title={checkInBlockText ?? undefined}
                   onClick={() => {
                     const parsed = optionalVoucherCodeSchema.safeParse(voucherCode);
                     if (!parsed.success) {
                       toast.error(parsed.error.issues[0].message);
                       return;
                     }
-                    void run(
-                      () =>
-                        checkIn.mutateAsync({
-                          bookingId: booking.id,
-                          payload: {
-                            ...(roomId ? { roomId } : {}),
-                            ...(parsed.data ? { voucherCode: parsed.data } : {}),
-                          },
-                        }),
-                      'Guest checked in successfully.',
-                      'Check-in failed.'
-                    );
+                    // Mở modal xác nhận thay vì check-in ngay: thao tác này không hoàn tác được.
+                    setShowCheckInConfirm(true);
                   }}
                 >
                   {checkIn.isPending ? (
@@ -440,7 +473,7 @@ export default function BookingDetailPage() {
       {booking.status === 'confirmed' && (
         <CheckInConfirmModal
           open={showCheckInConfirm}
-          onClose={() => setShowCheckInConfirm(false)}
+          onClose={dismissCheckInConfirm}
           onConfirm={handleConfirmCheckIn}
           isPending={checkIn.isPending}
           disabled={checkInLocked}
@@ -450,12 +483,10 @@ export default function BookingDetailPage() {
           checkInDate={booking.checkInDate}
           checkOutDate={booking.checkOutDate}
           numNights={booking.numNights}
-          voucherCode={scanVoucher || booking.voucher?.voucherCode}
-          warning={
-            checkInLocked
-              ? `Check-in opens at ${checkInTime} on ${formatDate(booking.checkInDate)}.`
-              : null
-          }
+          voucherCode={effectiveVoucher || booking.voucher?.voucherCode}
+          roomNumber={availableRooms.find(r => r.id === roomId)?.roomNumber}
+          warning={checkInBlockText}
+          blocking={checkInBlock === 'stay_ended'}
         />
       )}
     </div>
@@ -471,10 +502,6 @@ function BackLink() {
       <ArrowLeft className="size-4" /> Front desk
     </Link>
   );
-}
-
-function bookingMoment(date: string, time: string): Date {
-  return new Date(`${toUtcDateKey(date)}T${time}:00`);
 }
 
 function Card({ title, children }: { title: string; children: ReactNode }) {

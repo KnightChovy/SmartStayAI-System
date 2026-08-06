@@ -10,6 +10,7 @@ import { emailService } from './email.service';
 import type { VnpayParams, VnpayResult, SepayWebhookPayload, SepayPaymentInfo } from '../dto/payment.dto';
 import { walletService } from './wallet.service';
 import { refundService } from './refund.service';
+import { commissionRateService } from './commission-rate.service';
 
 // Ảnh QR VietQR do SePay dựng sẵn — chỉ là URL ảnh, không cần gọi API/ký gì cả.
 const SEPAY_QR_ENDPOINT = 'https://qr.sepay.vn/img';
@@ -375,7 +376,10 @@ export class PaymentService {
       },
     });
 
-    const rate = booking.hotel.partner.commissionRate;
+    // Mức hoa hồng tra theo NGÀY THANH TOÁN (chính là lúc này) — ưu đãi riêng của khách sạn nếu còn
+    // hiệu lực, không thì mức nền toàn sàn. Snapshot ngay vào PlatformCommission bên dưới nên đổi
+    // mức về sau không bao giờ làm sai khoản đã ghi.
+    const rate = await commissionRateService.resolveRate(booking.hotelId, new Date(), tx);
     const commissionAmount = booking.totalAmount.mul(rate).div(100).toDecimalPlaces(2);
     await tx.platformCommission.create({
       data: {

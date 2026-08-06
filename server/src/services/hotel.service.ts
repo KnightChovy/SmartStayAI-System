@@ -80,7 +80,7 @@ export class HotelService {
   getManagedHotel = async (hotelId: string, currentUser: User) => {
     const hotel = await prisma.hotel.findFirst({
       where: { id: hotelId, deletedAt: null },
-      include: { partner: { select: { ownerId: true } } },
+      include: { partner: { select: { ownerId: true, status: true } } },
     });
     if (!hotel) {
       throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy khách sạn');
@@ -89,6 +89,14 @@ export class HotelService {
     const canManage = (roleRights.get(currentUser.role) || []).includes('manageHotels');
     if (!isOwner && !canManage) {
       throw new ApiError(httpStatus.FORBIDDEN, 'Forbidden');
+    }
+    // Đối tác đang bị đình chỉ thì không tự thao tác được nữa. Người có quyền manageHotels vẫn vào
+    // được vì chính họ là bên phải xử lý (gỡ niêm yết, xem lại hồ sơ, khôi phục).
+    if (isOwner && !canManage && hotel.partner.status === 'suspended') {
+      throw new ApiError(
+        httpStatus.FORBIDDEN,
+        'Tài khoản đối tác đang bị đình chỉ — vui lòng liên hệ quản trị nền tảng'
+      );
     }
     return hotel;
   };

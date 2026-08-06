@@ -3906,6 +3906,9 @@ paths:
       description: >
         Assigned staff (or owner/manager) quickly changes a room's operational status
         (available / occupied / maintenance / cleaning) — used by the room map and housekeeping.
+        Switching into maintenance takes the room out of sellable inventory (future
+        room_availability.totalRooms is decremented); switching back out adds it again.
+        Moves between available/occupied/cleaning do not touch inventory.
       tags: [HotelManagement]
       security:
         - bearerAuth: []
@@ -3940,6 +3943,7 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Room' }
+        '409': { description: Someone else changed the room status first — retry }
         '400':
           description: Invalid status
         '401':
@@ -5251,7 +5255,8 @@ paths:
       summary: Create a physical room
       description: >
         Room number must be unique within the hotel. Future room_availability rows of the
-        room type get totalRooms incremented so already-priced nights sell the new room too.
+        room type get totalRooms incremented so already-priced nights sell the new room too —
+        unless the room is created with status=maintenance, which is not sellable yet.
       tags: [HotelManagement]
       security:
         - bearerAuth: []
@@ -5321,6 +5326,9 @@ paths:
   /hotels/{hotelId}/rooms/{roomId}:
     put:
       summary: Update a room (status, number, floor, notes)
+      description: >
+        Hotel owner or manageHotels. Changing status into/out of maintenance also syncs future
+        sellable inventory (room_availability.totalRooms), same as the staff status endpoint.
       tags: [HotelManagement]
       security:
         - bearerAuth: []
@@ -5357,11 +5365,13 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
+        '409': { description: Someone else changed the room status first — retry }
     delete:
       summary: Delete a room (only if never booked)
       description: >
         Hotel owner or manageHotels. Allowed only when the room has no booking history; otherwise 400 —
-        set status=maintenance instead. Future inventory (room_availability.totalRooms) is decremented.
+        set status=maintenance instead. Future inventory (room_availability.totalRooms) is decremented,
+        except for a room already in maintenance (it was removed from inventory back then).
       tags: [HotelManagement]
       security:
         - bearerAuth: []
@@ -5619,3 +5629,335 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+
+  # ===== Mức hoa hồng nền tảng =====
+
+  /hotels/{hotelId}/commission-rate:
+    get:
+      summary: Current commission rate applied to a hotel
+      description: >
+        Hotel owner (or manageHotels). Returns the rate in force today, whether it comes from a
+        hotel-specific agreement or the platform base rate, how many days the agreement still has,
+        the rate it falls back to when it expires, any pending request, and whether a new request
+        may be filed right now (with the reason when it may not).
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Current rate summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  currentRate: { type: string, example: '12.00' }
+                  source: { type: string, enum: [platform_base, hotel_agreement] }
+                  baseRate: { type: string, example: '15.00' }
+                  agreement:
+                    nullable: true
+                    type: object
+                    properties:
+                      id: { type: string, format: uuid }
+                      rate: { type: string }
+                      effectiveFrom: { type: string, format: date }
+                      effectiveTo: { type: string, format: date }
+                      daysRemaining: { type: integer }
+                      rateAfterExpiry:
+                        type: string
+                        description: Base rate on the day AFTER expiry, not the base rate today
+                  pendingRequest:
+                    nullable: true
+                    allOf: [{ $ref: '#/components/schemas/CommissionRateRequest' }]
+                  canRequest:
+                    type: object
+                    properties:
+                      allowed: { type: boolean }
+                      reason: { type: string, nullable: true }
+                      isRenewal: { type: boolean }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /hotels/{hotelId}/commission-requests:
+    post:
+      summary: File a request to lower a hotel's commission rate
+      description: >
+        Hotel owner (or manageHotels). The proposed rate must be BELOW the rate that would otherwise
+        apply and not under the 10% floor. One pending request per hotel; a rejected request locks
+        new submissions for 7 days. While a discount is running only a renewal is allowed, and only
+        within 30 days of its expiry — a renewal is compared against the base rate that takes over
+        after expiry, not against the discount currently enjoyed.
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [requestedRate, reason]
+              properties:
+                requestedRate: { type: number, example: 12 }
+                reason: { type: string, minLength: 10, maxLength: 1000 }
+      responses:
+        '201':
+          description: Request filed, awaiting Platform Manager review
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CommissionRateRequest' }
+        '400':
+          description: Rate not below the applicable rate, under the floor, duplicate pending request, cooldown, or discount still running
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    get:
+      summary: A hotel's commission request history
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: query
+          name: status
+          schema: { type: string, enum: [pending, approved, rejected] }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100 }
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1 }
+      responses:
+        '200':
+          description: Paginated requests
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Pagination'
+                  - type: object
+                    properties:
+                      results:
+                        type: array
+                        items: { $ref: '#/components/schemas/CommissionRateRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /platform-manager/commission-requests:
+    get:
+      summary: Platform-wide queue of commission rate requests
+      description: Platform Manager (manageCommissions). Oldest first so nothing is left waiting.
+      tags: [PlatformManager]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: status
+          schema: { type: string, enum: [pending, approved, rejected] }
+        - in: query
+          name: hotelId
+          schema: { type: string, format: uuid }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100 }
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1 }
+      responses:
+        '200':
+          description: Paginated requests
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Pagination'
+                  - type: object
+                    properties:
+                      results:
+                        type: array
+                        items: { $ref: '#/components/schemas/CommissionRateRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /platform-manager/commission-requests/{requestId}/review:
+    patch:
+      summary: Approve or reject a commission rate request
+      description: >
+        Platform Manager (manageCommissions). Approving creates a 12-month agreement for that hotel.
+        A renewal starts the day AFTER the current agreement expires so the partner never loses days
+        already granted; a first-time request starts on the approval date. Never retroactive —
+        commissions already recorded keep their snapshot rate. Rejecting requires a reason, and the
+        partner must wait 7 days before filing again.
+      tags: [PlatformManager]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: requestId
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [decision]
+              properties:
+                decision: { type: string, enum: [approve, reject] }
+                rejectionReason:
+                  type: string
+                  maxLength: 500
+                  description: Required when rejecting, forbidden when approving
+      responses:
+        '200':
+          description: Reviewed request (carries the created agreement when approved)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CommissionRateRequest' }
+        '400':
+          description: Request already reviewed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /platform-manager/commission-rate:
+    get:
+      summary: Platform base commission rate — current, scheduled and history
+      tags: [PlatformManager]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Base rate state
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  currentRate: { type: string, example: '15.00' }
+                  scheduled:
+                    nullable: true
+                    description: Rate already scheduled to take over on a future date
+                    allOf: [{ $ref: '#/components/schemas/CommissionRate' }]
+                  history:
+                    type: array
+                    items: { $ref: '#/components/schemas/CommissionRate' }
+                  minRate: { type: number, example: 10 }
+                  maxRate: { type: number, example: 30 }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    put:
+      summary: Set a new platform-wide base commission rate
+      description: >
+        Platform Manager (manageCommissions). Must sit between 10% and 30% and be announced at least
+        30 days ahead — this changes terms for every partner, so every partner owner is notified.
+        Hotel agreements still running are NOT touched; they fall to the new base only once they
+        expire. Calling again before the scheduled date replaces the pending schedule.
+      tags: [PlatformManager]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [rate, effectiveFrom]
+              properties:
+                rate: { type: number, example: 18 }
+                effectiveFrom: { type: string, format: date, example: '2026-10-01' }
+      responses:
+        '201':
+          description: New base rate scheduled
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CommissionRate' }
+        '400':
+          description: Rate outside 10-30% or notice period shorter than 30 days
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /platform-manager/partners/{partnerId}/status:
+    patch:
+      summary: Suspend or reactivate a partner
+      description: >
+        Platform Manager (manageHotels). This is the enforcement tool for serious breaches — it is
+        NOT a way to interfere with an agreed commission rate; running agreements stay untouchable.
+        Suspending unlists EVERY hotel of the partner (sales stop immediately) and blocks all of
+        their management actions. Existing bookings are NOT cancelled — guests still get their stay
+        and the partner still has to serve them through the operational endpoints. Reactivating
+        returns the partner to approved but deliberately does NOT re-list the hotels; the partner
+        publishes each one again after reviewing it.
+      tags: [PlatformManager]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: partnerId
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action]
+              properties:
+                action: { type: string, enum: [suspend, reactivate] }
+                reason:
+                  type: string
+                  maxLength: 500
+                  description: Required when suspending, forbidden when reactivating
+            example:
+              action: suspend
+              reason: Phát hiện booking ảo nhằm trục lợi ưu đãi hoa hồng
+      responses:
+        '200':
+          description: Updated partner plus how many hotels were unlisted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  partner:
+                    type: object
+                    properties:
+                      id: { type: string, format: uuid }
+                      businessName: { type: string }
+                      status: { type: string, enum: [pending, approved, suspended, rejected] }
+                      rejectionReason: { type: string, nullable: true, description: Carries the suspension reason too }
+                  unlistedHotels: { type: integer, example: 3 }
+        '400':
+          description: Partner is not in a state that allows this action
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }

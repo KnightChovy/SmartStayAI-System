@@ -4,17 +4,29 @@ import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAdminMaintenanceReminder } from '@/hooks/admin-tools';
-import { formatDateLong, formatTime, toDateInputValue } from '@/utils/formatDate';
+import {
+  formatDateLong,
+  formatTime,
+  toDateInputValue,
+} from '@/utils/formatDate';
 
 interface AdminMaintenanceModalProps {
   currentTime: Date;
   onClose: () => void;
 }
 
-export function AdminMaintenanceModal({ currentTime, onClose }: AdminMaintenanceModalProps) {
-  const { reminder, saveReminder, clearReminder } = useAdminMaintenanceReminder();
-  const [title, setTitle] = useState(reminder?.title ?? 'Admin portal patch window');
-  const [date, setDate] = useState(reminder?.date ?? toDateInputValue(currentTime));
+export function AdminMaintenanceModal({
+  currentTime,
+  onClose,
+}: AdminMaintenanceModalProps) {
+  const { reminder, saveReminder, clearReminder } =
+    useAdminMaintenanceReminder();
+  const [title, setTitle] = useState(
+    reminder?.title ?? 'Admin portal patch window'
+  );
+  const [date, setDate] = useState(
+    reminder?.date ?? toDateInputValue(currentTime)
+  );
   const [time, setTime] = useState(reminder?.time ?? '09:00');
   const [notes, setNotes] = useState(reminder?.notes ?? '');
 
@@ -49,15 +61,18 @@ export function AdminMaintenanceModal({ currentTime, onClose }: AdminMaintenance
         type="button"
       />
 
-      <section className="relative z-10 w-full max-w-2xl overflow-hidden rounded-[28px] bg-white shadow-2xl">
+      <section className="relative z-10 w-full max-w-2xl overflow-hidden rounded-xl bg-white shadow-2xl">
         <header className="flex items-start justify-between gap-4 border-b border-outline-variant/40 px-4 py-4 sm:px-6">
           <div>
             <div className="flex items-center gap-2">
               <Wrench className="size-5 text-amber-600" />
-              <h2 className="text-xl font-bold text-slate-950">Schedule Maintenance</h2>
+              <h2 className="text-xl font-bold text-slate-950">
+                Schedule Maintenance
+              </h2>
             </div>
             <p className="mt-1 text-xs font-semibold text-muted-foreground">
-              Current time {formatDateLong(currentTime)} | {formatTime(currentTime)}
+              Current time {formatDateLong(currentTime)} |{' '}
+              {formatTime(currentTime)}
             </p>
           </div>
           <button
@@ -72,11 +87,11 @@ export function AdminMaintenanceModal({ currentTime, onClose }: AdminMaintenance
 
         <div className="grid gap-5 p-4 sm:p-6 lg:grid-cols-[1fr_220px]">
           <div className="space-y-4">
-            <div className="flex items-start gap-2 rounded-2xl bg-amber-50 p-3 text-xs text-amber-700">
+            <div className="flex items-start gap-2 rounded-xl bg-amber-50 p-3 text-xs text-amber-700">
               <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
-              This is a personal reminder saved on this device only. It does not actually put the
-              platform into maintenance mode for real users — there is no backend support for
-              that yet.
+              This is a personal reminder saved on this device only. It does not
+              actually put the platform into maintenance mode for real users —
+              there is no backend support for that yet.
             </div>
 
             <div className="space-y-2">
@@ -108,7 +123,7 @@ export function AdminMaintenanceModal({ currentTime, onClose }: AdminMaintenance
               </div>
             </div>
             <textarea
-              className="min-h-28 w-full resize-none rounded-[22px] border border-outline-variant/50 bg-white p-4 text-sm outline-none focus:border-blue-500 focus:ring-3 focus:ring-blue-500/20"
+              className="min-h-28 w-full resize-none rounded-lg border border-outline-variant/50 bg-white p-4 text-sm outline-none focus:border-role-admin-primary focus:ring-3 focus:ring-role-admin-primary/20"
               onChange={event => setNotes(event.target.value)}
               placeholder="Maintenance notes and affected services..."
               value={notes}
@@ -136,7 +151,7 @@ export function AdminMaintenanceModal({ currentTime, onClose }: AdminMaintenance
           </div>
 
           <aside className="space-y-3">
-            <div className="rounded-[22px] bg-slate-50 p-4">
+            <div className="rounded-lg bg-slate-50 p-4">
               <CalendarClock className="size-5 text-slate-700" />
               <p className="mt-3 text-sm font-bold text-slate-950">
                 {reminder ? 'Saved Reminder' : 'No Reminder Saved'}

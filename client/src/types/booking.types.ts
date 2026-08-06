@@ -88,6 +88,13 @@ export interface Booking {
   checkedInAt?: string | null;
   checkedOutAt?: string | null;
   cancelledAt?: string | null;
+  /**
+   * Hạn giữ chỗ của đơn `pending` chưa trả tiền (VNPay 15 phút, SePay 30 phút);
+   * `null` với đơn tiền mặt (BE confirm ngay). Quá hạn thì cron `releaseExpiredHolds`
+   * huỷ đơn, và mọi endpoint tạo thanh toán trả 400 "Booking đã quá hạn giữ chỗ"
+   * ⇒ đây là điều kiện để hiện/ẩn nút thanh toán lại.
+   */
+  holdExpiresAt?: string | null;
   createdAt: string;
   updatedAt: string;
   hotel?: BookingHotelSummary;

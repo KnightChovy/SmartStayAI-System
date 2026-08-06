@@ -3,6 +3,7 @@ import {
   Bot,
   KeyRound,
   Save,
+  Settings,
   ShieldCheck,
   SlidersHorizontal,
 } from 'lucide-react';
@@ -26,7 +27,7 @@ function SettingToggle({
 
   return (
     <label
-      className="flex cursor-pointer items-center justify-between gap-4 rounded-2xl border border-outline-variant/40 bg-surface-container-low px-4 py-3"
+      className="flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-outline-variant/40 bg-surface-container-low px-4 py-3"
       htmlFor={inputId}
     >
       <span>
@@ -43,7 +44,7 @@ function SettingToggle({
         id={inputId}
         type="checkbox"
       />
-      <span className="relative h-6 w-11 shrink-0 rounded-full bg-slate-300 transition-colors after:absolute after:left-1 after:top-1 after:size-4 after:rounded-full after:bg-white after:transition-transform peer-checked:bg-blue-600 peer-checked:after:translate-x-5" />
+      <span className="relative h-6 w-11 shrink-0 rounded-full bg-slate-300 transition-colors after:absolute after:left-1 after:top-1 after:size-4 after:rounded-full after:bg-white after:transition-transform peer-checked:bg-role-admin-primary peer-checked:after:translate-x-5" />
     </label>
   );
 }
@@ -56,9 +57,9 @@ interface SettingsCardProps {
 
 function SettingsCard({ children, icon: Icon, title }: SettingsCardProps) {
   return (
-    <section className="rounded-[28px] border border-outline-variant/40 bg-surface p-4 shadow-sm sm:p-5">
+    <section className="rounded-xl border border-outline-variant/40 bg-surface p-4 shadow-sm sm:p-5">
       <div className="mb-4 flex items-center gap-3">
-        <div className="flex size-10 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+        <div className="flex size-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
           <Icon className="size-5" />
         </div>
         <h2 className="text-lg font-bold text-slate-950">{title}</h2>
@@ -72,8 +73,9 @@ export function AdminSettingsPage() {
   return (
     <div className="space-y-6">
       <AdminPageHeader
+        icon={Settings}
         actions={
-          <Button className="rounded-full" size="lg" type="button">
+          <Button className="rounded-lg" type="button">
             <Save className="size-4" />
             Save changes
           </Button>
@@ -174,17 +176,17 @@ export function AdminSettingsPage() {
         </SettingsCard>
       </div>
 
-      <section className="rounded-[28px] border border-outline-variant/40 bg-slate-950 p-5 text-white shadow-sm">
+      <section className="rounded-xl border border-outline-variant/40 bg-slate-950 p-5 text-white shadow-sm">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex gap-3">
-            <div className="flex size-10 items-center justify-center rounded-2xl bg-white/10">
+            <div className="flex size-10 items-center justify-center rounded-xl bg-white/10">
               <KeyRound className="size-5" />
             </div>
             <div>
               <h2 className="text-lg font-bold">API access keys</h2>
               <p className="mt-1 max-w-2xl text-sm leading-6 text-white/65">
-                Rotate integration keys for internal services, AI providers,
-                and notification workers.
+                Rotate integration keys for internal services, AI providers, and
+                notification workers.
               </p>
             </div>
           </div>

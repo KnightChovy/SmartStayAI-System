@@ -3,9 +3,11 @@ import { useNavigate, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { CheckCircle2, XCircle } from 'lucide-react';
+import { useMyBookings } from '@/hooks/bookings';
 import { queryKeys } from '@/constants/queryKeys';
 import { ROUTES } from '@/constants/routes';
 import { Button } from '@/components/ui/button';
+import PayNowAction from '@/components/booking/PayNowAction';
 import type { PaymentResultStatus } from '@/types/payment.types';
 
 /**
@@ -22,6 +24,14 @@ export default function PaymentResultPage() {
   const status: PaymentResultStatus = params.get('status') === 'success' ? 'success' : 'failed';
   const bookingCode = params.get('bookingCode') ?? '';
   const success = status === 'success';
+
+  // Thanh toán hỏng KHÔNG huỷ booking — BE chỉ đánh dấu `Payment` là `failed`, đơn vẫn `pending`
+  // và vẫn còn hạn giữ chỗ. Nên mời khách trả lại ngay tại đây thay vì bắt tự mò vào Đặt phòng
+  // của tôi. VNPay chỉ trả về `bookingCode` và BE không có endpoint tra theo mã ⇒ lấy từ danh
+  // sách đơn của chính khách (cùng cách `MyBookingsPage` đang làm).
+  const { data: myBookings } = useMyBookings({ limit: 100 }, { enabled: !success });
+  const unpaidBooking =
+    myBookings?.results.find(b => b.bookingCode === bookingCode) ?? null;
 
   // Thanh toán xong → booking đổi trạng thái, làm mới danh sách booking của khách
   useEffect(() => {
@@ -57,6 +67,16 @@ export default function PaymentResultPage() {
                   {bookingCode}
                 </p>
               </div>
+            )}
+
+            {/* Tự ẩn nếu đơn đã hết hạn giữ chỗ / đã được thanh toán bằng đường khác */}
+            {unpaidBooking && (
+              <PayNowAction
+                booking={unpaidBooking}
+                label={t('confirm.retryPayment')}
+                className="mt-8 justify-center"
+                onPaid={() => navigate(ROUTES.accountBookings)}
+              />
             )}
 
             <div className="mt-8 flex w-full flex-col gap-3 sm:flex-row sm:justify-center">

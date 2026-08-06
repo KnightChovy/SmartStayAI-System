@@ -184,9 +184,8 @@ export function BookingActivitiesTab() {
                       'Guest',
                       'Check-in',
                       'Check-out',
-                      'Amount',
+                      'Price',
                       'Status',
-                      'Created',
                     ].map(h => (
                       <th
                         key={h}
@@ -247,9 +246,6 @@ export function BookingActivitiesTab() {
                             >
                               {cfg.label}
                             </span>
-                          </td>
-                          <td className="px-5 py-3.5 text-slate-400 text-xs">
-                            {formatDate(b.createdAt)}
                           </td>
                         </tr>
                       );

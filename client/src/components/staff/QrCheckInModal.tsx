@@ -1,18 +1,36 @@
 import { useEffect, useRef, useState } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
-import { Search, Loader2, X, QrCode } from 'lucide-react';
+import { Search, Loader2, X, QrCode, AlertTriangle, ChevronRight } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/cn';
 import { useLookupBooking } from '@/hooks/staff';
+import type { HotelBookingDetail } from '@/types/staff.types';
 import { errorMessage } from '@/utils/errorMessage';
+import { formatDate } from '@/utils/formatDate';
+import {
+  checkInBlockMessage,
+  getCheckInBlockReason,
+  type CheckInBlockReason,
+} from '@/utils/checkInWindow';
 import { VOUCHER_CODE_MAX } from '@/validations/staff-booking.validation';
 
 interface QrCheckInModalProps {
   open: boolean;
   onClose: () => void;
   hotelId: string | undefined;
-  /** Gọi khi tra được booking (bookingId để điều hướng + voucherCode đã quét để check-in). */
+  /** Giờ nhận phòng của khách sạn (HH:mm) — để chặn ngay khi quét thay vì đợi BE trả 400. */
+  checkInTime: string;
+  /** Gọi khi tra được booking VÀ booking đó check-in được ngay. */
   onFound: (bookingId: string, voucherCode: string) => void;
+  /** Mở booking mà KHÔNG vào luồng check-in (dùng cho ca bị chặn: no-show, thu tiền…). */
+  onOpenBooking: (bookingId: string) => void;
+}
+
+/** Booking quét được nhưng chưa/không thể check-in — hiện lý do ngay tại chỗ quét. */
+interface BlockedScan {
+  booking: HotelBookingDetail;
+  reason: CheckInBlockReason;
 }
 
 const SCANNER_ELEMENT_ID = 'staff-qr-check-in-reader';
@@ -35,17 +53,42 @@ export function QrCheckInModal({
   open,
   onClose,
   hotelId,
+  checkInTime,
   onFound,
+  onOpenBooking,
 }: QrCheckInModalProps) {
   const [code, setCode] = useState('');
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [codeError, setCodeError] = useState<string | null>(null);
+  const [blocked, setBlocked] = useState<BlockedScan | null>(null);
   const lookup = useLookupBooking(hotelId);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const busyRef = useRef(false);
+  // Lễ tân đóng modal khi request tra cứu đang bay: kết quả về sau đó phải bị bỏ, không thì
+  // `onFound` vẫn điều hướng sang trang check-in dù thao tác đã bị huỷ.
+  const dismissedRef = useRef(false);
+  // Camera vẫn chạy khi đang hiện thẻ "không check-in được": không chốt lại thì cùng một QR trong
+  // khung ngắm sẽ bị tra lại vài lần mỗi giây. Phải là ref — callback của scanner đóng gói lại
+  // `runLookup` của lần render đầu nên đọc state sẽ ra giá trị cũ.
+  const blockedRef = useRef(false);
+
+  function handleClose() {
+    dismissedRef.current = true;
+    // Dọn thẻ chặn ngay tại đây: component không unmount khi đóng (chỉ `return null`), nên nếu để
+    // lại thì lần mở sau sẽ thấy kết quả của khách trước. Dọn ở effect sẽ là setState-trong-effect.
+    resumeScanning();
+    onClose();
+  }
+
+  /** Bỏ thẻ chặn để quét khách tiếp theo. */
+  function resumeScanning() {
+    blockedRef.current = false;
+    setBlocked(null);
+    lookup.reset();
+  }
 
   function runLookup(voucherCode: string) {
-    if (!voucherCode || busyRef.current) return;
+    if (!voucherCode || busyRef.current || blockedRef.current) return;
     // Trần 50 khớp Joi `lookupBookingByVoucher` của BE. `maxLength` trên ô nhập chỉ chặn được
     // đường gõ tay — mã đến từ QR quét được cũng đi qua đây nên phải kiểm ở cả hai đường.
     if (voucherCode.length > VOUCHER_CODE_MAX) {
@@ -58,6 +101,16 @@ export function QrCheckInModal({
       onSuccess: booking => {
         busyRef.current = false;
         setCode('');
+        if (dismissedRef.current) return;
+        // Chặn ngay tại chỗ quét: quá kỳ lưu trú / chưa tới giờ / chưa thanh toán… thì không mở
+        // hộp "Confirm check-in" nữa. Trước đây mọi booking đều đi tiếp và lễ tân chỉ biết mình
+        // bấm sai khi BE trả 400 — đúng lúc khách đang đứng trước mặt.
+        const reason = getCheckInBlockReason(booking, checkInTime);
+        if (reason) {
+          blockedRef.current = true;
+          setBlocked({ booking, reason });
+          return;
+        }
         onFound(booking.id, voucherCode);
       },
       onError: () => {
@@ -69,6 +122,7 @@ export function QrCheckInModal({
   // Camera lifecycle: start when the modal opens, always stop/clear on close/unmount.
   useEffect(() => {
     if (!open) return;
+    dismissedRef.current = false;
     const scanner = new Html5Qrcode(SCANNER_ELEMENT_ID);
     scannerRef.current = scanner;
     let cameraStarted = false;
@@ -108,7 +162,7 @@ export function QrCheckInModal({
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
       onMouseDown={e => {
-        if (e.target === e.currentTarget) onClose();
+        if (e.target === e.currentTarget) handleClose();
       }}
     >
       <div
@@ -123,7 +177,7 @@ export function QrCheckInModal({
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
             aria-label="Close"
           >
@@ -147,6 +201,26 @@ export function QrCheckInModal({
                 <Loader2 className="size-8 animate-spin text-white" />
               </div>
             )}
+            {/* Phủ lên khung camera thay vì thay cả thân modal: phần tử scanner phải nằm nguyên
+                trong DOM để html5-qrcode còn stop()/clear() được. */}
+            {blocked && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-slate-900/95 px-5 text-center">
+                <AlertTriangle className="size-7 text-amber-400" />
+                <p className="text-sm font-semibold text-white">
+                  {blocked.booking.customer.fullName}
+                </p>
+                <p className="font-mono text-[11px] text-slate-400">
+                  {blocked.booking.bookingCode}
+                </p>
+                <p className="text-xs text-slate-300">
+                  {formatDate(blocked.booking.checkInDate)} →{' '}
+                  {formatDate(blocked.booking.checkOutDate)}
+                </p>
+                <p className="mt-1 text-xs leading-5 text-amber-200">
+                  {checkInBlockMessage(blocked.reason, blocked.booking, checkInTime)}
+                </p>
+              </div>
+            )}
           </div>
 
           {lookup.isError && (
@@ -158,6 +232,25 @@ export function QrCheckInModal({
             </p>
           )}
 
+          {blocked ? (
+            <div className="mt-4 space-y-2">
+              <Button
+                type="button"
+                className="w-full"
+                onClick={() => onOpenBooking(blocked.booking.id)}
+              >
+                Open booking <ChevronRight className="size-4" />
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={resumeScanning}
+              >
+                <QrCode className="size-4" /> Scan another guest
+              </Button>
+            </div>
+          ) : (
           <div className="mt-4">
             <label className="mb-1.5 block text-xs font-medium text-slate-600">
               Hoặc nhập mã e-voucher
@@ -198,6 +291,7 @@ export function QrCheckInModal({
               Tra cứu booking
             </button>
           </div>
+          )}
         </div>
       </div>
     </div>

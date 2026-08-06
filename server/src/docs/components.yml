@@ -1570,6 +1570,60 @@ components:
             results: { type: array, items: { $ref: '#/components/schemas/Notification' } }
             unreadCount: { type: integer, description: Total unread notifications across all types, example: 3 }
 
+    CommissionRate:
+      type: object
+      description: >
+        A commission rate in force over a date range. hotelId null = platform-wide base rate;
+        hotelId set = that hotel's negotiated discount. Rows are never edited — a change is always a
+        new row, so the rate that applied on any past date stays answerable.
+      properties:
+        id: { type: string, format: uuid }
+        hotelId: { type: string, format: uuid, nullable: true, description: null = platform base rate }
+        rate: { type: string, example: '12.00', description: Percent, serialised as string (Decimal) }
+        effectiveFrom: { type: string, format: date }
+        effectiveTo: { type: string, format: date, nullable: true, description: null = open-ended (base rate only) }
+        source: { type: string, enum: [platform_base, hotel_agreement] }
+        requestId: { type: string, format: uuid, nullable: true }
+        createdBy: { type: string, format: uuid }
+        lastReminderDaysBefore:
+          type: integer
+          nullable: true
+          description: Expiry reminder milestone already sent (30 / 14 / 7) — guards against re-sending daily
+        createdAt: { type: string, format: date-time }
+
+    CommissionRateRequest:
+      type: object
+      description: A partner's application to lower the commission rate on one hotel.
+      properties:
+        id: { type: string, format: uuid }
+        hotelId: { type: string, format: uuid }
+        hotel:
+          type: object
+          properties:
+            id: { type: string, format: uuid }
+            name: { type: string }
+            city: { type: string }
+        requestedBy: { type: string, format: uuid }
+        requestedRate: { type: string, example: '12.00' }
+        currentRate:
+          type: string
+          example: '15.00'
+          description: >
+            Rate the hotel would pay if this request is not approved — the applicable rate for a
+            first-time request, or the base rate taking over after expiry for a renewal.
+        reason: { type: string }
+        status: { type: string, enum: [pending, approved, rejected] }
+        isRenewal: { type: boolean, description: Filed while a discount was still running and near expiry }
+        reviewedBy: { type: string, format: uuid, nullable: true }
+        reviewedAt: { type: string, format: date-time, nullable: true }
+        rejectionReason: { type: string, nullable: true }
+        agreement:
+          nullable: true
+          description: The agreement created when approved
+          allOf: [{ $ref: '#/components/schemas/CommissionRate' }]
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
   responses:
     BadRequest:
       description: Validation error or business rule violated

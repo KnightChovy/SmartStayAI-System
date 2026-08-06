@@ -54,7 +54,7 @@ export function AdminSupportModal({ onClose }: AdminSupportModalProps) {
         type="button"
       />
 
-      <section className="relative z-10 w-full max-w-3xl overflow-hidden rounded-[28px] bg-white shadow-2xl">
+      <section className="relative z-10 w-full max-w-3xl overflow-hidden rounded-xl bg-white shadow-2xl">
         <header className="flex items-start justify-between gap-4 border-b border-outline-variant/40 px-4 py-4 sm:px-6">
           <div>
             <div className="flex items-center gap-2">
@@ -83,10 +83,10 @@ export function AdminSupportModal({ onClose }: AdminSupportModalProps) {
 
             return (
               <article
-                className="rounded-[24px] border border-outline-variant/40 bg-slate-50 p-4"
+                className="rounded-xl border border-outline-variant/40 bg-slate-50 p-4"
                 key={channel.label}
               >
-                <div className="flex size-11 items-center justify-center rounded-2xl bg-white text-rose-600 shadow-sm">
+                <div className="flex size-11 items-center justify-center rounded-xl bg-white text-rose-600 shadow-sm">
                   <Icon className="size-5" />
                 </div>
                 <h3 className="mt-4 text-sm font-bold text-slate-950">
@@ -102,7 +102,7 @@ export function AdminSupportModal({ onClose }: AdminSupportModalProps) {
 
         <div className="border-t border-outline-variant/40 p-4 sm:p-6">
           <textarea
-            className="min-h-28 w-full resize-none rounded-[22px] border border-outline-variant/50 bg-white p-4 text-sm outline-none focus:border-blue-500 focus:ring-3 focus:ring-blue-500/20"
+            className="min-h-28 w-full resize-none rounded-lg border border-outline-variant/50 bg-white p-4 text-sm outline-none focus:border-role-admin-primary focus:ring-3 focus:ring-role-admin-primary/20"
             onChange={event => setMessage(event.target.value)}
             placeholder="Describe the support request..."
             value={message}

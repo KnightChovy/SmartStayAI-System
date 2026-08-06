@@ -15,13 +15,20 @@ interface AdminReportModalProps {
 
 type ReportType = 'overview' | 'growth' | 'payments';
 
-const reportTypes: Array<{ value: ReportType; icon: typeof TrendingUp; label: string }> = [
+const reportTypes: Array<{
+  value: ReportType;
+  icon: typeof TrendingUp;
+  label: string;
+}> = [
   { value: 'overview', icon: CheckCircle, label: 'Platform Overview' },
   { value: 'growth', icon: TrendingUp, label: 'User & Bookings Growth' },
   { value: 'payments', icon: CreditCard, label: 'Payments' },
 ];
 
-export function AdminReportModal({ currentTime, onClose }: AdminReportModalProps) {
+export function AdminReportModal({
+  currentTime,
+  onClose,
+}: AdminReportModalProps) {
   const [reportType, setReportType] = useState<ReportType>('overview');
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -48,7 +55,9 @@ export function AdminReportModal({ currentTime, onClose }: AdminReportModalProps
       if (reportType === 'overview') {
         const data = overview.data;
         if (!data) {
-          toast.error(errorMessage(overview.error, 'Overview data is not available yet.'));
+          toast.error(
+            errorMessage(overview.error, 'Overview data is not available yet.')
+          );
           return;
         }
         exportToCsv(
@@ -66,8 +75,14 @@ export function AdminReportModal({ currentTime, onClose }: AdminReportModalProps
             { label: 'Total bookings', value: data.bookings.total },
             { label: 'Bookings this month', value: data.bookings.thisMonth },
             { label: 'GMV', value: data.revenue.gmv },
-            { label: 'Commission pending', value: data.revenue.commissionPending },
-            { label: 'Commission settled', value: data.revenue.commissionSettled },
+            {
+              label: 'Commission pending',
+              value: data.revenue.commissionPending,
+            },
+            {
+              label: 'Commission settled',
+              value: data.revenue.commissionSettled,
+            },
           ]
         );
       } else if (reportType === 'growth') {
@@ -81,7 +96,10 @@ export function AdminReportModal({ currentTime, onClose }: AdminReportModalProps
           [
             { header: 'Period', value: row => row.period },
             { header: 'Bookings', value: row => row.bookings },
-            { header: 'Confirmed Bookings', value: row => row.confirmedBookings },
+            {
+              header: 'Confirmed Bookings',
+              value: row => row.confirmedBookings,
+            },
             { header: 'New Users', value: row => row.newUsers },
           ],
           rows
@@ -96,12 +114,24 @@ export function AdminReportModal({ currentTime, onClose }: AdminReportModalProps
           `payments-${Date.now()}`,
           [
             { header: 'Booking', value: row => row.bookingCode },
-            { header: 'Customer', value: row => row.customer.fullName ?? row.customer.email },
+            {
+              header: 'Customer',
+              value: row => row.customer.fullName ?? row.customer.email,
+            },
             { header: 'Hotel', value: row => row.hotel.name },
-            { header: 'Method', value: row => row.payment?.paymentMethod ?? 'unpaid' },
-            { header: 'Amount', value: row => row.payment?.amount ?? row.totalAmount },
+            {
+              header: 'Method',
+              value: row => row.payment?.paymentMethod ?? 'unpaid',
+            },
+            {
+              header: 'Amount',
+              value: row => row.payment?.amount ?? row.totalAmount,
+            },
             { header: 'Status', value: row => row.payment?.status ?? 'unpaid' },
-            { header: 'Created', value: row => row.payment?.createdAt ?? row.createdAt },
+            {
+              header: 'Created',
+              value: row => row.payment?.createdAt ?? row.createdAt,
+            },
           ],
           rows
         );
@@ -128,10 +158,12 @@ export function AdminReportModal({ currentTime, onClose }: AdminReportModalProps
         type="button"
       />
 
-      <section className="relative z-10 w-full max-w-xl overflow-hidden rounded-[28px] bg-white shadow-2xl">
+      <section className="relative z-10 w-full max-w-xl overflow-hidden rounded-xl bg-white shadow-2xl">
         <header className="flex items-center justify-between gap-4 border-b border-outline-variant/40 px-4 py-4 sm:px-6">
           <div>
-            <h2 className="text-xl font-bold text-slate-950">Generate Report</h2>
+            <h2 className="text-xl font-bold text-slate-950">
+              Generate Report
+            </h2>
             <p className="mt-1 text-xs font-semibold text-muted-foreground">
               {formatDateLong(currentTime)} | {formatTime(currentTime)}
             </p>
@@ -158,7 +190,7 @@ export function AdminReportModal({ currentTime, onClose }: AdminReportModalProps
                 return (
                   <button
                     className={cn(
-                      'flex flex-col items-center gap-2 rounded-[22px] border px-3 py-4 text-xs font-bold transition-colors',
+                      'flex flex-col items-center gap-2 rounded-lg border px-3 py-4 text-xs font-bold transition-colors',
                       reportType === type.value
                         ? 'border-blue-600 bg-blue-50 text-blue-600'
                         : 'border-outline-variant/40 bg-slate-50 text-slate-500 hover:bg-white'
@@ -175,13 +207,14 @@ export function AdminReportModal({ currentTime, onClose }: AdminReportModalProps
             </div>
           </div>
 
-          <p className="rounded-2xl bg-slate-50 p-3 text-xs text-muted-foreground">
-            Exports the data currently available for this platform as a CSV file. Growth covers
-            the last 12 months; payments cover the latest 100 transactions.
+          <p className="rounded-xl bg-slate-50 p-3 text-xs text-muted-foreground">
+            Exports the data currently available for this platform as a CSV
+            file. Growth covers the last 12 months; payments cover the latest
+            100 transactions.
           </p>
 
           <button
-            className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-blue-600 text-sm font-bold text-white shadow-lg shadow-blue-600/25 hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-role-admin-primary text-sm font-bold text-white shadow-lg shadow-role-admin-primary/25 hover:bg-role-admin-secondary disabled:cursor-not-allowed disabled:opacity-60"
             disabled={isGenerating || isLoading}
             onClick={handleGenerate}
             type="button"

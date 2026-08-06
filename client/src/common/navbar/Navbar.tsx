@@ -21,9 +21,13 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { ROUTES, getProfilePathForRole } from '@/constants/routes';
+import { ROLE_THEME, type PortalRole } from '@/constants/roleTheme';
+import { cn } from '@/lib/cn';
 import { useAuthStore } from '@/stores/authStore';
 
 export interface CommonNavbarProps {
+  /** Cổng đang render — quyết định bảng màu. Bắt buộc, khớp với `role` của CommonSidebar. */
+  role: PortalRole;
   currentTime?: Date;
   onDateClick?: () => void;
   searchPlaceholder?: string;
@@ -41,7 +45,7 @@ export interface CommonNavbarProps {
   userName?: string;
 }
 
-function SidebarToggleControl() {
+function SidebarToggleControl({ role }: { role: PortalRole }) {
   const { isMobile, openMobile, state, toggleSidebar } = useSidebar();
   const isExpanded = isMobile ? openMobile : state === 'expanded';
   const label = isExpanded ? 'Collapse sidebar' : 'Expand sidebar';
@@ -55,15 +59,23 @@ function SidebarToggleControl() {
       title={label}
       type="button"
     >
-      <span className="flex size-6 items-center justify-center rounded-lg bg-slate-100 text-slate-600 transition-colors group-hover:bg-blue-50 group-hover:text-blue-600">
+      <span
+        className={cn(
+          'flex size-6 items-center justify-center rounded-lg bg-slate-100 text-slate-600 transition-colors',
+          ROLE_THEME[role].toggleHover
+        )}
+      >
         <Icon className="size-4" />
       </span>
-      <span className="hidden sm:inline">{isExpanded ? 'Collapse' : 'Expand'}</span>
+      <span className="hidden sm:inline">
+        {isExpanded ? 'Collapse' : 'Expand'}
+      </span>
     </button>
   );
 }
 
 export default function CommonNavbar({
+  role,
   currentTime,
   onDateClick,
   searchPlaceholder = 'Search...',
@@ -104,12 +116,12 @@ export default function CommonNavbar({
     <header className="border-b border-outline-variant/40 bg-white px-5 py-2.5 lg:px-6 lg:py-3">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 lg:gap-4 ">
-          <SidebarToggleControl />
+          <SidebarToggleControl role={role} />
 
           {showDate &&
             (onDateClick ? (
               <button
-                className="hidden rounded-full px-3 py-1.5 text-xs font-medium text-slate-700 transition-colors hover:bg-surface-container-low xl:block"
+                className="hidden whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium text-slate-700 transition-colors hover:bg-surface-container-low xl:block"
                 onClick={onDateClick}
                 type="button"
               >
@@ -168,8 +180,11 @@ export default function CommonNavbar({
                     ) : null}
                     <AvatarFallback>{initials}</AvatarFallback>
                   </Avatar>
-                  <p className="text-sm font-semibold">{displayName}</p>
-                  <ChevronDown className="size-4 text-muted-foreground" />
+                  {/* Tên dài ("Quản trị hệ thống") xuống dòng làm navbar cao thêm — cắt thay vì wrap. */}
+                  <p className="hidden max-w-40 truncate text-sm font-semibold sm:block">
+                    {displayName}
+                  </p>
+                  <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-60">
                   <div className="flex items-center gap-3 px-2 py-2.5">

@@ -12,7 +12,11 @@ import {
 import { Input } from '@/components/ui/input';
 import { useAdminCalendarEvents } from '@/hooks/admin-tools';
 import { cn } from '@/lib/cn';
-import { formatDateLong, formatTime, toDateInputValue } from '@/utils/formatDate';
+import {
+  formatDateLong,
+  formatTime,
+  toDateInputValue,
+} from '@/utils/formatDate';
 
 interface AdminCalendarModalProps {
   currentTime: Date;
@@ -53,7 +57,10 @@ function isSameDate(firstDate: Date, secondDate: Date): boolean {
   );
 }
 
-export function AdminCalendarModal({ currentTime, onClose }: AdminCalendarModalProps) {
+export function AdminCalendarModal({
+  currentTime,
+  onClose,
+}: AdminCalendarModalProps) {
   const { events, addEvent, removeEvent, eventsOn } = useAdminCalendarEvents();
   const [visibleMonth, setVisibleMonth] = useState(
     () => new Date(currentTime.getFullYear(), currentTime.getMonth(), 1)
@@ -79,22 +86,31 @@ export function AdminCalendarModal({ currentTime, onClose }: AdminCalendarModalP
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
-  const calendarCells = useMemo(() => createCalendarCells(visibleMonth), [visibleMonth]);
+  const calendarCells = useMemo(
+    () => createCalendarCells(visibleMonth),
+    [visibleMonth]
+  );
   const monthLabel = new Intl.DateTimeFormat('en-US', {
     month: 'long',
     year: 'numeric',
   }).format(visibleMonth);
 
   const handlePreviousMonth = () => {
-    setVisibleMonth(month => new Date(month.getFullYear(), month.getMonth() - 1, 1));
+    setVisibleMonth(
+      month => new Date(month.getFullYear(), month.getMonth() - 1, 1)
+    );
   };
 
   const handleNextMonth = () => {
-    setVisibleMonth(month => new Date(month.getFullYear(), month.getMonth() + 1, 1));
+    setVisibleMonth(
+      month => new Date(month.getFullYear(), month.getMonth() + 1, 1)
+    );
   };
 
   const handleToday = () => {
-    setVisibleMonth(new Date(currentTime.getFullYear(), currentTime.getMonth(), 1));
+    setVisibleMonth(
+      new Date(currentTime.getFullYear(), currentTime.getMonth(), 1)
+    );
   };
 
   const handleAddEvent = () => {
@@ -107,7 +123,9 @@ export function AdminCalendarModal({ currentTime, onClose }: AdminCalendarModalP
   const todayKey = toDateInputValue(currentTime);
   const todaysEvents = eventsOn(todayKey);
   const filteredEvents = events.filter(event =>
-    `${event.title} ${event.label}`.toLowerCase().includes(search.trim().toLowerCase())
+    `${event.title} ${event.label}`
+      .toLowerCase()
+      .includes(search.trim().toLowerCase())
   );
 
   return (
@@ -123,13 +141,15 @@ export function AdminCalendarModal({ currentTime, onClose }: AdminCalendarModalP
         type="button"
       />
 
-      <section className="relative z-10 grid max-h-[92vh] w-full max-w-5xl overflow-hidden rounded-[28px] bg-white shadow-2xl lg:grid-cols-[1fr_310px]">
+      <section className="relative z-10 grid max-h-[92vh] w-full max-w-5xl overflow-hidden rounded-xl bg-white shadow-2xl lg:grid-cols-[1fr_310px]">
         <div className="min-w-0 overflow-y-auto p-4 sm:p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <div className="flex items-center gap-2">
                 <CalendarDays className="size-5 text-blue-600" />
-                <h2 className="text-xl font-bold text-slate-950">{monthLabel}</h2>
+                <h2 className="text-xl font-bold text-slate-950">
+                  {monthLabel}
+                </h2>
               </div>
               <p className="mt-1 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
                 <Clock className="size-3.5" />
@@ -198,13 +218,13 @@ export function AdminCalendarModal({ currentTime, onClose }: AdminCalendarModalP
                     className={cn(
                       'inline-flex size-7 items-center justify-center rounded-full text-xs font-bold',
                       isCurrentMonth ? 'text-slate-900' : 'text-slate-300',
-                      isToday && 'bg-blue-600 text-white'
+                      isToday && 'bg-role-admin-primary text-white'
                     )}
                   >
                     {date.getDate()}
                   </span>
                   {isToday ? (
-                    <div className="mt-2 rounded-full bg-blue-600 px-2 py-1 text-[10px] font-bold text-white">
+                    <div className="mt-2 rounded-full bg-role-admin-primary px-2 py-1 text-[10px] font-bold text-white">
                       Today
                     </div>
                   ) : dayEvents.length > 0 ? (
@@ -249,14 +269,16 @@ export function AdminCalendarModal({ currentTime, onClose }: AdminCalendarModalP
             )}
             {(search ? filteredEvents : todaysEvents).map(event => (
               <div
-                className="rounded-2xl border border-outline-variant/40 bg-white p-3"
+                className="rounded-xl border border-outline-variant/40 bg-white p-3"
                 key={event.id}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex gap-3">
-                    <span className="mt-1 size-2 rounded-full bg-blue-600" />
+                    <span className="mt-1 size-2 rounded-full bg-role-admin-primary" />
                     <div>
-                      <p className="text-xs font-bold text-slate-950">{event.title}</p>
+                      <p className="text-xs font-bold text-slate-950">
+                        {event.title}
+                      </p>
                       <p className="mt-1 text-[11px] text-muted-foreground">
                         {search ? `${event.date} · ` : ''}
                         {event.time}
@@ -282,45 +304,74 @@ export function AdminCalendarModal({ currentTime, onClose }: AdminCalendarModalP
           </div>
 
           {isAdding ? (
-            <div className="mt-4 space-y-3 rounded-2xl border border-outline-variant/40 bg-white p-3">
+            <div className="mt-4 space-y-3 rounded-xl border border-outline-variant/40 bg-white p-3">
               <div className="space-y-1">
-                <label className="text-[11px] font-bold uppercase text-slate-500" htmlFor="event-title">
+                <label
+                  className="text-[11px] font-bold uppercase text-slate-500"
+                  htmlFor="event-title"
+                >
                   Title
                 </label>
                 <Input
                   id="event-title"
-                  onChange={event => setForm(current => ({ ...current, title: event.target.value }))}
+                  onChange={event =>
+                    setForm(current => ({
+                      ...current,
+                      title: event.target.value,
+                    }))
+                  }
                   placeholder="Event title"
                   value={form.title}
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-[11px] font-bold uppercase text-slate-500" htmlFor="event-date">
+                <label
+                  className="text-[11px] font-bold uppercase text-slate-500"
+                  htmlFor="event-date"
+                >
                   Date
                 </label>
                 <Input
                   className="w-full"
                   id="event-date"
-                  onChange={event => setForm(current => ({ ...current, date: event.target.value }))}
+                  onChange={event =>
+                    setForm(current => ({
+                      ...current,
+                      date: event.target.value,
+                    }))
+                  }
                   type="date"
                   value={form.date}
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-[11px] font-bold uppercase text-slate-500" htmlFor="event-time">
+                <label
+                  className="text-[11px] font-bold uppercase text-slate-500"
+                  htmlFor="event-time"
+                >
                   Time
                 </label>
                 <Input
                   className="w-full"
                   id="event-time"
-                  onChange={event => setForm(current => ({ ...current, time: event.target.value }))}
+                  onChange={event =>
+                    setForm(current => ({
+                      ...current,
+                      time: event.target.value,
+                    }))
+                  }
                   type="time"
                   value={form.time}
                 />
               </div>
               <Input
                 aria-label="Event label"
-                onChange={event => setForm(current => ({ ...current, label: event.target.value }))}
+                onChange={event =>
+                  setForm(current => ({
+                    ...current,
+                    label: event.target.value,
+                  }))
+                }
                 placeholder="Label (e.g. Priority)"
                 value={form.label}
               />

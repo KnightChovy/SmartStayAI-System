@@ -68,7 +68,8 @@ export function AdminUserDetailModal({
       { userId: user.id, payload: { role } },
       {
         onSuccess: () => toast.success('Role updated'),
-        onError: err => toast.error(errorMessage(err, 'Could not update role.')),
+        onError: err =>
+          toast.error(errorMessage(err, 'Could not update role.')),
       }
     );
   };
@@ -79,7 +80,8 @@ export function AdminUserDetailModal({
       { userId: user.id, payload: { status } },
       {
         onSuccess: () => toast.success('Status updated'),
-        onError: err => toast.error(errorMessage(err, 'Could not update status.')),
+        onError: err =>
+          toast.error(errorMessage(err, 'Could not update status.')),
       }
     );
   };
@@ -111,13 +113,16 @@ export function AdminUserDetailModal({
         type="button"
       />
 
-      <section className="relative z-10 w-full max-w-2xl overflow-hidden rounded-[28px] bg-white shadow-2xl">
+      <section className="relative z-10 w-full max-w-2xl overflow-hidden rounded-xl bg-white shadow-2xl">
         <header className="flex items-start justify-between gap-4 border-b border-outline-variant/40 px-4 py-4 sm:px-6">
           <div>
             <h2 className="text-xl font-bold text-slate-950">
               {isLoading
                 ? 'Loading user...'
-                : (user?.fullName ?? user?.name ?? user?.email ?? 'User detail')}
+                : (user?.fullName ??
+                  user?.name ??
+                  user?.email ??
+                  'User detail')}
             </h2>
             {user && (
               <p className="mt-1 text-xs font-semibold text-muted-foreground">
@@ -147,12 +152,15 @@ export function AdminUserDetailModal({
 
           {user && (
             <div className="space-y-4">
-              <div className="rounded-2xl border bg-white p-4 shadow-sm">
+              <div className="rounded-xl border bg-white p-4 shadow-sm">
                 <h3 className="mb-3 text-sm font-semibold text-slate-900">
                   User information
                 </h3>
                 <div className="space-y-1">
-                  <Row label="Full name" value={user.fullName ?? user.name ?? '—'} />
+                  <Row
+                    label="Full name"
+                    value={user.fullName ?? user.name ?? '—'}
+                  />
                   <Row label="Email" value={user.email} />
                   <Row label="Phone" value={user.phone ?? '—'} />
                   <Row
@@ -161,18 +169,25 @@ export function AdminUserDetailModal({
                   />
                   <Row label="Joined" value={formatDateShort(user.createdAt)} />
                   {user.lastLoginAt && (
-                    <Row label="Last login" value={formatDateShort(user.lastLoginAt)} />
+                    <Row
+                      label="Last login"
+                      value={formatDateShort(user.lastLoginAt)}
+                    />
                   )}
                 </div>
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
-                <div className="rounded-2xl border bg-white p-4 shadow-sm">
-                  <h3 className="mb-3 text-sm font-semibold text-slate-900">Role</h3>
+                <div className="rounded-xl border bg-white p-4 shadow-sm">
+                  <h3 className="mb-3 text-sm font-semibold text-slate-900">
+                    Role
+                  </h3>
                   <select
                     className="h-9 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-ring focus:ring-3 focus:ring-ring/50"
                     disabled={updateRole.isPending}
-                    onChange={event => handleRoleChange(event.target.value as UserRole)}
+                    onChange={event =>
+                      handleRoleChange(event.target.value as UserRole)
+                    }
                     value={user.role}
                   >
                     {roleOptions.map(option => (
@@ -182,12 +197,15 @@ export function AdminUserDetailModal({
                     ))}
                   </select>
                   <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <ShieldCheck className="size-3.5" /> Current: {formatRole(user.role)}
+                    <ShieldCheck className="size-3.5" /> Current:{' '}
+                    {formatRole(user.role)}
                   </p>
                 </div>
 
-                <div className="rounded-2xl border bg-white p-4 shadow-sm">
-                  <h3 className="mb-3 text-sm font-semibold text-slate-900">Status</h3>
+                <div className="rounded-xl border bg-white p-4 shadow-sm">
+                  <h3 className="mb-3 text-sm font-semibold text-slate-900">
+                    Status
+                  </h3>
                   <select
                     className="h-9 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-ring focus:ring-3 focus:ring-ring/50"
                     disabled={updateStatus.isPending}

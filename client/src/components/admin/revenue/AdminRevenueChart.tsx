@@ -53,7 +53,10 @@ function ChartTooltip({
   );
 }
 
-export function AdminRevenueChart({ series, isLoading }: AdminRevenueChartProps) {
+export function AdminRevenueChart({
+  series,
+  isLoading,
+}: AdminRevenueChartProps) {
   const chartData = series.map(point => ({
     period: point.period,
     gmv: Number(point.gmv),
@@ -62,9 +65,11 @@ export function AdminRevenueChart({ series, isLoading }: AdminRevenueChartProps)
   const hasData = chartData.some(p => p.gmv > 0 || p.netPlatformRevenue > 0);
 
   return (
-    <div className="rounded-2xl border bg-white p-4 sm:p-6">
+    <div className="rounded-xl border bg-white p-4 sm:p-6">
       <div>
-        <h2 className="text-xl font-bold sm:text-2xl">GMV vs Net Platform Revenue</h2>
+        <h2 className="text-xl font-bold sm:text-2xl">
+          GMV vs Net Platform Revenue
+        </h2>
         <p className="text-sm text-muted-foreground sm:text-base">
           Booked value vs commission earned over time
         </p>
@@ -84,7 +89,11 @@ export function AdminRevenueChart({ series, isLoading }: AdminRevenueChartProps)
               data={chartData}
               margin={{ bottom: 0, left: -10, right: 8, top: 16 }}
             >
-              <CartesianGrid stroke="#dbeafe" strokeDasharray="4 4" vertical={false} />
+              <CartesianGrid
+                stroke="#dbeafe"
+                strokeDasharray="4 4"
+                vertical={false}
+              />
               <XAxis
                 axisLine={false}
                 dataKey="period"

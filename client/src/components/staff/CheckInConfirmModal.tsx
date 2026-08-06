@@ -1,5 +1,6 @@
-import { CalendarClock, LogIn, Loader2, X } from 'lucide-react';
+import { AlertTriangle, CalendarClock, LogIn, Loader2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/cn';
 import { formatDate } from '@/utils/formatDate';
 
 interface CheckInConfirmModalProps {
@@ -7,7 +8,7 @@ interface CheckInConfirmModalProps {
   onClose: () => void;
   onConfirm: () => void;
   isPending: boolean;
-  /** Trước cửa sổ check-in → không cho xác nhận. */
+  /** Ngoài cửa sổ check-in (chưa tới giờ, hoặc đã quá kỳ lưu trú) → không cho xác nhận. */
   disabled?: boolean;
   guestName: string;
   bookingCode: string;
@@ -16,8 +17,12 @@ interface CheckInConfirmModalProps {
   checkOutDate: string;
   numNights: number;
   voucherCode?: string | null;
-  /** Cảnh báo (vd ngày nhận phòng chưa tới). */
+  /** Phòng lễ tân đã chọn tay; bỏ trống = để BE tự gán phòng trống cùng loại. */
+  roomNumber?: string | null;
+  /** Cảnh báo (vd chưa tới ngày nhận phòng, hoặc đã quá kỳ lưu trú). */
   warning?: string | null;
+  /** `true` = cảnh báo là ngõ cụt (không bao giờ check-in được nữa) → tô đỏ thay vì vàng. */
+  blocking?: boolean;
 }
 
 /**
@@ -37,7 +42,9 @@ export function CheckInConfirmModal({
   checkOutDate,
   numNights,
   voucherCode,
+  roomNumber,
   warning,
+  blocking = false,
 }: CheckInConfirmModalProps) {
   if (!open) return null;
 
@@ -77,17 +84,29 @@ export function CheckInConfirmModal({
               value={`${formatDate(checkInDate)} → ${formatDate(checkOutDate)} (${numNights} night${numNights === 1 ? '' : 's'})`}
             />
             {voucherCode && <Row label="Voucher" value={voucherCode} mono />}
+            {roomNumber && <Row label="Room" value={roomNumber} />}
           </dl>
 
           {!disabled && (
             <p className="text-xs text-slate-500">
-              An available room of this type will be assigned automatically.
+              {roomNumber
+                ? `Room ${roomNumber} will be assigned to this guest.`
+                : 'An available room of this type will be assigned automatically.'}
             </p>
           )}
 
           {warning && (
-            <div className="flex items-start gap-2 rounded-lg bg-amber-50 p-2.5 text-xs text-amber-700">
-              <CalendarClock className="mt-0.5 size-3.5 shrink-0" />
+            <div
+              className={cn(
+                'flex items-start gap-2 rounded-lg p-2.5 text-xs',
+                blocking ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-700'
+              )}
+            >
+              {blocking ? (
+                <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
+              ) : (
+                <CalendarClock className="mt-0.5 size-3.5 shrink-0" />
+              )}
               {warning}
             </div>
           )}

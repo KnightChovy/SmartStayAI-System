@@ -1,3 +1,4 @@
+import { CalendarCheck } from 'lucide-react';
 import { AdminPageHeader } from '@/components/admin/shared/AdminPageHeader';
 import { AdminBookingsFilters } from '@/components/admin/bookings/AdminBookingsFilters';
 import { AdminBookingsTable } from '@/components/admin/bookings/AdminBookingsTable';
@@ -23,6 +24,7 @@ export function AdminBookingsPage() {
   return (
     <div className="space-y-6">
       <AdminPageHeader
+        icon={CalendarCheck}
         title="Bookings Management"
         description="Manage and track all property reservations."
       />

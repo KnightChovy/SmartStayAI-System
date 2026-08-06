@@ -1,8 +1,9 @@
 import { useLocation, useNavigate, useParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { CalendarDays, CheckCircle2, Download, MapPin } from 'lucide-react';
-import { useBooking } from '@/hooks/bookings';
+import { useBooking, usePaymentHold } from '@/hooks/bookings';
 import { ROUTES } from '@/constants/routes';
+import PayNowAction from '@/components/booking/PayNowAction';
 import QRVoucher from '@/components/shared/QRVoucher';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -17,13 +18,18 @@ export default function BookingSuccessPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Ưu tiên booking truyền qua state (vừa tạo xong), fallback fetch theo id
+  // Ưu tiên booking truyền qua state (vừa tạo xong), fallback fetch theo id.
+  // NGOẠI LỆ: đơn `pending` (khách bấm "Thanh toán sau" ở màn QR SePay) thì state là ảnh chụp
+  // lúc vừa tạo, không bao giờ biết webhook đã xác nhận chưa ⇒ vẫn phải fetch để nút thanh toán
+  // bên dưới biến mất đúng lúc tiền về.
   const stateBooking =
     (location.state as { booking?: Booking } | null)?.booking ?? null;
-  const { data: fetched, isLoading } = useBooking(
-    stateBooking ? '' : bookingId
-  );
-  const booking = stateBooking ?? fetched;
+  const needsFreshStatus = !stateBooking || stateBooking.status === 'pending';
+  const { data: fetched, isLoading } = useBooking(needsFreshStatus ? bookingId : '');
+  const booking = fetched ?? stateBooking;
+  // Gate cả khối bọc (có border-t) chứ không chỉ cái nút — nếu không, đơn đã thanh toán sẽ
+  // để lại một dải viền rỗng.
+  const { awaitingPayment } = usePaymentHold(booking);
 
   if (isLoading && !booking) {
     return (
@@ -87,6 +93,14 @@ export default function BookingSuccessPage() {
               label={booking?.bookingCode}
             />
           </div>
+
+          {/* "Thanh toán sau" ở màn QR SePay dẫn khách tới đây với đơn CHƯA trả tiền —
+              tự ẩn khi đơn đã được xác nhận hoặc hết hạn giữ chỗ. */}
+          {booking && awaitingPayment && (
+            <div className="border-t border-outline-variant/30 px-6 pt-6">
+              <PayNowAction booking={booking} className="justify-center sm:justify-start" />
+            </div>
+          )}
 
           <div className="flex flex-col gap-3 border-t border-outline-variant/30 p-6 sm:flex-row">
             <Button

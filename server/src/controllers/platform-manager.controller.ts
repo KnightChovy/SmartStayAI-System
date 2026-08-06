@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import type { User } from '@prisma/client';
 import pick from '../utils/pick';
 import catchAsync from '../utils/catchAsync';
 import { platformManagerService } from '../services';
@@ -9,6 +10,16 @@ export class PlatformManagerController {
     const filter = pick(req.query, ['search', 'status']);
     const options = pick(req.query, ['limit', 'page']);
     const result = await platformManagerService.listPartners(filter, options);
+    res.send(result);
+  });
+
+  // Đình chỉ / khôi phục một đối tác
+  setPartnerStatus = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const result = await platformManagerService.setPartnerStatus(
+      req.params.partnerId as string,
+      req.user as User,
+      req.body
+    );
     res.send(result);
   });
 
