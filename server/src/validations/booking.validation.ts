@@ -39,6 +39,20 @@ export const cancelBooking = {
   }),
   body: Joi.object().keys({
     reason: Joi.string().max(500).allow('', null),
+    // Lý do dạng enum quyết định CHÍNH SÁCH TIỀN (lỗi khách sạn / lỗi hệ thống ⇒ hoàn 100%, không
+    // trừ phí huỷ). Quyền gửi được kiểm ở service: khách tự khai thì ai cũng chọn "phòng hỏng".
+    reasonCode: Joi.string().valid(
+      'guest_request',
+      'guest_no_show',
+      'room_out_of_order',
+      'overbooking',
+      'hotel_force_majeure',
+      'payment_failed',
+      'hold_expired',
+      'partner_suspended',
+      'fraud_detected',
+      'policy_violation'
+    ),
     // Mặc định hoàn vào ví (nhận ngay). Chọn 'bank' thì BẮT BUỘC gửi tài khoản — không có thì
     // Platform Manager không biết chuyển đi đâu, nên Joi chặn ngay thay vì để lòi ra lúc chi tiền.
     refundMethod: Joi.string().valid('wallet', 'bank').default('wallet'),
