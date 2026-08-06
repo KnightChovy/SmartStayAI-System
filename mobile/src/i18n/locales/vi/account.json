@@ -45,6 +45,7 @@
     "pickHotel": "Chọn khách sạn",
     "searchHotel": "Tìm khách sạn…",
     "noHotels": "Không tìm thấy khách sạn.",
+    "hotelLoadError": "Không thể tải khách sạn. Kiểm tra kết nối rồi thử lại.",
     "loadError": "Không tải được tin nhắn. Vui lòng thử lại.",
     "threadError": "Không tải được hội thoại này.",
     "composerPlaceholder": "Nhập tin nhắn…",

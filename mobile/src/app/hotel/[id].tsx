@@ -133,6 +133,14 @@ export default function HotelDetailScreen() {
               <Ionicons name="arrow-back" size={20} color={GUEST_COLORS.white} />
             </Pressable>
             <View className="flex-row gap-2">
+              <Pressable
+                onPress={() => hotel && router.push({ pathname: '/(tabs)/chatbot', params: { hotelId: hotel.id, hotelName: hotel.name } })}
+                className="w-9 h-9 rounded-full bg-black/30 items-center justify-center"
+                accessibilityRole="button"
+                accessibilityLabel={t('hotel:chatWithHotel')}
+              >
+                <Ionicons name="chatbubble-ellipses-outline" size={18} color={GUEST_COLORS.white} />
+              </Pressable>
               <Pressable className="w-9 h-9 rounded-full bg-black/30 items-center justify-center">
                 <Ionicons name="share-outline" size={18} color={GUEST_COLORS.white} />
               </Pressable>

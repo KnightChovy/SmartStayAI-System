@@ -8,6 +8,13 @@
     "suggest": "Suggest a hotel"
   },
   "inputPlaceholder": "Type a message…",
+  "scope": {
+    "platform": "Platform",
+    "hotel": "This hotel",
+    "choose": "Choose a hotel",
+    "change": "Change hotel",
+    "pickerTitle": "Chat with a hotel"
+  },
   "history": {
     "title": "Chats",
     "open": "Chat history",
