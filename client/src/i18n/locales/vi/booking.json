@@ -37,7 +37,7 @@
     "walletBalanceLine": "Số dư ví: {{balance}}",
     "walletCovers": "Ví đủ trả toàn bộ đơn này. Tiền chỉ bị trừ khi bạn bấm Xác nhận ở bước cuối — bỏ chọn nếu bạn muốn giữ nguyên số dư.",
     "walletPartialSplit": "Ví trả được {{applied}}, còn {{remaining}} bạn thanh toán bằng cách chọn bên dưới — bỏ chọn nếu bạn muốn giữ nguyên số dư.",
-    "walletPartialWarn": "{{applied}} bị trừ khỏi ví ngay khi bấm Xác nhận. Hãy trả nốt phần còn lại trước khi hết hạn giữ chỗ, nếu không đơn sẽ tự huỷ.",
+    "walletPartialWarn": "{{applied}} bị trừ khỏi ví ngay khi bấm Xác nhận. Không trả nốt phần còn lại trước khi hết hạn giữ chỗ thì đơn tự huỷ và khoản này được hoàn ngay về ví, không mất phí.",
     "walletMethodSplit": "Ví StayHub ({{applied}}) + {{method}} ({{remaining}})",
     "payWithWalletPartial": "Trả {{balance}} bằng ví (còn {{remaining}})",
     "walletOnlyNote": "Toàn bộ đơn này sẽ trừ từ ví StayHub, không qua cổng thanh toán nào. Bỏ chọn ô trên nếu bạn muốn trả bằng VNPay hoặc QR.",

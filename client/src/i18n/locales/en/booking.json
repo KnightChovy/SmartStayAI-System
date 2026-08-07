@@ -37,7 +37,7 @@
     "walletBalanceLine": "Wallet balance: {{balance}}",
     "walletCovers": "Your wallet covers this booking in full. Nothing is taken until you confirm on the last step — untick to keep your balance.",
     "walletPartialSplit": "Your wallet covers {{applied}}; the remaining {{remaining}} is paid with the method you pick below — untick to keep your balance.",
-    "walletPartialWarn": "{{applied}} leaves your wallet as soon as you confirm. Pay the rest before the hold expires, otherwise the booking is cancelled automatically.",
+    "walletPartialWarn": "{{applied}} leaves your wallet as soon as you confirm. If the rest is not paid before the hold expires, the booking is cancelled and this amount goes straight back to your wallet, no fee.",
     "walletMethodSplit": "StayHub wallet ({{applied}}) + {{method}} ({{remaining}})",
     "payWithWalletPartial": "Pay {{balance}} from wallet ({{remaining}} left)",
     "walletOnlyNote": "This booking is paid entirely from your StayHub wallet — no payment gateway involved. Untick the box above to pay with VNPay or QR instead.",

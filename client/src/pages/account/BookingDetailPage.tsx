@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { Link, useNavigate, useParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import {
   AlertTriangle,
@@ -10,6 +10,7 @@ import {
   MapPin,
   PencilLine,
   Users,
+  Wallet,
   XCircle,
 } from 'lucide-react';
 import { useBooking, usePaymentHold } from '@/hooks/bookings';
@@ -27,6 +28,7 @@ import CancelBookingPanel from '@/components/account/CancelBookingPanel';
 import PayNowAction from '@/components/booking/PayNowAction';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
+import { formatCurrency } from '@/utils/formatCurrency';
 import { formatDateShort } from '@/utils/formatDate';
 
 /** Trạng thái còn cho phép hủy / đổi. */
@@ -78,6 +80,18 @@ export default function BookingDetailPage() {
   // Yêu cầu hoàn tiền do BE tự tạo lúc huỷ (theo chính sách của KS) — khách không tự gửi.
   const refunds = (booking.payments ?? []).flatMap(p => p.refunds ?? []);
   const hasPaid = (booking.payments ?? []).some(p => p.status === 'completed');
+  /**
+   * Ví đã được hệ thống hoàn TỰ ĐỘNG khi job dọn đơn quá hạn giữ chỗ (`releaseExpiredHolds`):
+   * payment `wallet` chuyển sang `refunded` và tiền vào thẳng ví, **không** sinh `Refund` nào để
+   * `RefundStatusCard` bám vào. Không nói ra thì khách nhìn thấy một đơn bị huỷ và không có dòng
+   * nào nhắc tới khoản đã trừ — phải mở trang Ví mới biết tiền đã về.
+   */
+  const walletAutoRefunded =
+    booking.status === 'cancelled' && refunds.length === 0
+      ? (booking.payments ?? [])
+          .filter(p => p.paymentMethod === 'wallet' && p.status === 'refunded')
+          .reduce((sum, p) => sum + Number(p.amount), 0)
+      : 0;
   // Huỷ muộn bị phạt hết ⇒ BE không tạo refund nào. Phải nói rõ, không để khách chờ tiền.
   const cancelledWithoutRefund =
     booking.status === 'cancelled' && hasPaid && refunds.length === 0;
@@ -247,6 +261,23 @@ export default function BookingDetailPage() {
           {refunds.map(refund => (
             <RefundStatusCard key={refund.id} refund={refund} />
           ))}
+
+          {walletAutoRefunded > 0 && (
+            <div className="flex gap-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-4 text-sm text-on-surface">
+              <Wallet className="mt-0.5 size-4 shrink-0 text-emerald-600" aria-hidden="true" />
+              <span>
+                {t('refund.walletAutoRefunded', {
+                  amount: formatCurrency(walletAutoRefunded),
+                })}{' '}
+                <Link
+                  to={ROUTES.accountWallet}
+                  className="font-semibold text-primary underline underline-offset-2"
+                >
+                  {t('refund.openWallet')}
+                </Link>
+              </span>
+            </div>
+          )}
 
           {cancelledWithoutRefund && (
             <div className="flex gap-2 rounded-2xl border border-outline-variant/30 bg-surface-container-low p-4 text-sm text-on-surface-variant">

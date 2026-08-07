@@ -70,6 +70,8 @@
     "amountLabel": "Số tiền hoàn: ",
     "reasonLabel": "Lý do: {{reason}}",
     "noneTitle": "Theo chính sách huỷ của khách sạn, đơn này không có khoản hoàn tiền.",
+    "walletAutoRefunded": "Đơn hết hạn giữ chỗ nên đã tự huỷ. {{amount}} bạn trả bằng ví đã được hoàn lại ngay, không mất phí.",
+    "openWallet": "Xem ví của tôi",
     "rejectedTitle": "Khách sạn đã từ chối yêu cầu hoàn tiền",
     "rejectedNoReason": "Khách sạn không nêu lý do. Vui lòng liên hệ chỗ nghỉ để biết thêm chi tiết.",
     "status": {

@@ -69,6 +69,8 @@
     "title": "Refund",
     "amountLabel": "Refund amount: ",
     "reasonLabel": "Reason: {{reason}}",
+    "walletAutoRefunded": "This booking was cancelled because the hold expired. The {{amount}} you paid from your wallet has already been returned in full, with no fee.",
+    "openWallet": "View my wallet",
     "noneTitle": "Under the property's cancellation policy, this booking has no refund.",
     "rejectedTitle": "The property rejected your refund request",
     "rejectedNoReason": "The property didn't give a reason. Please contact them for details.",
