@@ -63,6 +63,8 @@ router.get('/:hotelId/analytics', auth(), validate(revenueValidation.getHotelAna
 // Platform Manager là bên DUYỆT + chuyển khoản (xem routes/platform-manager.route.ts).
 router.post('/:hotelId/payouts', auth(), validate(payoutValidation.requestPayout), payoutController.requestPayout);
 router.get('/:hotelId/payouts', auth(), validate(payoutValidation.listHotelPayouts), payoutController.listHotelPayouts);
+// [Chủ KS] Đổi/tạo tài khoản nhận tiền (nơi tiền rút chuyển tới); owner-only kiểm trong service
+router.put('/:hotelId/payout-account', auth(), validate(payoutValidation.updatePayoutAccount), payoutController.updatePayoutAccount);
 
 // Mức hoa hồng nền tảng thu của khách sạn + đơn xin giảm (chủ KS; service kiểm qua getManagedHotel).
 // Đơn nộp ở đây, còn duyệt nằm bên /platform-manager/commission-requests.
