@@ -14,6 +14,8 @@ import type {
   AdminPaymentsParams,
   AdminPaymentsResponse,
   AdminPlatformRevenue,
+  AdminRevenueBreakdown,
+  AdminRevenueBreakdownParams,
   AdminRevenueParams,
   AdminReviewVerificationPayload,
   AdminUpdateHotelFlagsPayload,
@@ -51,6 +53,17 @@ export const adminService = {
     const { data } = await api.get<AdminPlatformRevenue>('/admin/revenue', {
       params: cleanParams(params),
     });
+    return data;
+  },
+
+  /** `GET /admin/revenue/breakdown` — doanh thu chi tiết theo đối tác / khách sạn / thành phố. */
+  async getRevenueBreakdown(
+    params: AdminRevenueBreakdownParams
+  ): Promise<AdminRevenueBreakdown> {
+    const { data } = await api.get<AdminRevenueBreakdown>(
+      '/admin/revenue/breakdown',
+      { params: cleanParams(params) }
+    );
     return data;
   },
 

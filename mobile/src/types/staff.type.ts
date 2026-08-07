@@ -52,6 +52,9 @@ export interface StaffBooking {
   numGuests: number;
   totalAmount: string;
   status: BookingStatus;
+  /** Hạn giữ chỗ cho đơn `pending` — quá hạn thì đơn không còn chiếm phòng nữa dù `status` chưa
+   *  kịp đổi (cron dọn theo lịch, không tức thời). `null`/không có = giữ chỗ không thời hạn. */
+  holdExpiresAt?: string | null;
   checkedInAt?: string | null;
   checkedOutAt?: string | null;
   createdAt: string;
@@ -62,7 +65,9 @@ export interface StaffBooking {
 }
 
 export interface StaffBookingsParams {
-  status?: BookingStatus;
+  // BE nhận cả 1 giá trị lẫn MẢNG (`.single()`) — mảng dùng để lọc "đang chiếm phòng đêm X"
+  // (confirmed + checked_in) trong một lượt cho bản đồ phòng theo ngày.
+  status?: BookingStatus | BookingStatus[];
   fromDate?: string;
   toDate?: string;
   page?: number;
@@ -122,6 +127,9 @@ export interface StaffRoom {
   roomNumber: string;
   floor?: number | null;
   status: RoomStatus;
+  /** Phòng đã "nghỉ bán" (rút khỏi biên chế) — vẫn tồn tại để tra cứu nhưng không phát cho khách
+   *  được nữa. Không có trong response cũ (kiểm `!== false` để coi thiếu field = còn hoạt động). */
+  isActive?: boolean;
   notes?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -196,6 +204,27 @@ export interface RoomBlockResult {
   roomTypeName: string;
   affectedBookings: RoomBlockAffectedBooking[];
   shortageNights: RoomBlockShortageNight[];
+}
+
+/** Một dòng "loại phòng × một đêm" từ `GET /hotels/:hotelId/inventory/calendar`. */
+export interface InventoryCalendarEntry {
+  roomTypeId: string;
+  roomTypeName: string;
+  /** ISO datetime — cắt 10 ký tự đầu để ra khoá `YYYY-MM-DD`. */
+  date: string;
+  totalRooms: number;
+  bookedRooms: number;
+  /** BE đã kẹp về 0 — không âm được, khác con số client tự suy để biết overbooking. */
+  availableRooms: number;
+  /** `'availability'` = đã có dòng chốt trong `room_availability` (đúng số khách nhìn thấy lúc
+   *  đặt); `'derived'` = chưa có dòng, BE tự suy từ bảng `rooms`. */
+  source: 'availability' | 'derived';
+}
+
+export interface InventoryCalendarResponse {
+  from: string;
+  to: string;
+  results: InventoryCalendarEntry[];
 }
 
 export type ConversationStatus =

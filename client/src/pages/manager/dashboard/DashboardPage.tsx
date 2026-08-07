@@ -101,7 +101,7 @@ export default function ManagerDashboardPage() {
       `dashboard-revenue-${range.from}_${range.to}`,
       [
         { header: 'Period', value: p => p.period },
-        { header: 'Gross booking value (VND)', value: p => p.gmv },
+        { header: 'Gross Revenue  (VND)', value: p => p.gmv },
         { header: 'Platform revenue (VND)', value: p => p.netRevenue },
         { header: 'Bookings', value: p => p.bookings },
       ],

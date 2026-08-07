@@ -34,6 +34,12 @@ export function addDays(value: string | Date, days: number): Date {
   return d;
 }
 
+/** Cộng/trừ `days` ngày vào một khoá `YYYY-MM-DD`, trả về khoá mới cùng dạng — dùng cho nút ‹ ›
+ *  đổi ngày xem lịch tồn kho, không phải chuyển qua `Date` rồi format lại ở nơi gọi. */
+export function shiftDateKey(dateKey: string, days: number): string {
+  return toDateKey(addDays(dateKey, days));
+}
+
 /** "Mon, 21 Aug" — hiển thị ngắn gọn cho UI. */
 export function formatDateShort(value: string | Date | null | undefined): string {
   const d = toDate(value);

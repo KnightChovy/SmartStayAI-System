@@ -2,6 +2,8 @@
   "title": "Hoàn tất đặt phòng",
   "emptyTitle": "Chưa chọn phòng",
   "emptyDesc": "Hãy bắt đầu bằng cách tìm chỗ nghỉ và chọn phòng để đặt.",
+  "invalidDatesTitle": "Khoảng ngày này không hợp lệ",
+  "invalidDatesDesc": "Một lượt đặt tối đa 30 đêm, và ngày trả phòng phải sau ngày nhận phòng. Hãy chọn lại khoảng ngày rồi thử lại.",
   "findStay": "Tìm chỗ nghỉ",
   "stepper": {
     "guestDetails": "Thông tin khách",

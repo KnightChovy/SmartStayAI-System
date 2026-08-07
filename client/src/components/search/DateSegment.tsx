@@ -15,6 +15,8 @@ interface DateSegmentProps {
   onChange: (value: string) => void;
   /** Chặn mọi ngày trước mốc này (`YYYY-MM-DD`). */
   min?: string;
+  /** Chặn mọi ngày sau mốc này (`YYYY-MM-DD`) — vd giới hạn số đêm tối đa của một booking. */
+  max?: string;
   placeholder: string;
   className?: string;
 }
@@ -29,12 +31,19 @@ export default function DateSegment({
   value,
   onChange,
   min,
+  max,
   placeholder,
   className,
 }: DateSegmentProps) {
   const [open, setOpen] = useState(false);
   const selected = parseDateValue(value);
   const minDate = parseDateValue(min);
+  const maxDate = parseDateValue(max);
+
+  const disabledMatchers = [
+    ...(minDate ? [{ before: minDate }] : []),
+    ...(maxDate ? [{ after: maxDate }] : []),
+  ];
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -52,7 +61,8 @@ export default function DateSegment({
           selected={selected}
           defaultMonth={selected ?? minDate ?? undefined}
           startMonth={minDate ?? undefined}
-          disabled={minDate ? { before: minDate } : undefined}
+          endMonth={maxDate ?? undefined}
+          disabled={disabledMatchers.length ? disabledMatchers : undefined}
           onSelect={day => {
             onChange(day ? toDateInputValue(day) : '');
             if (day) setOpen(false);

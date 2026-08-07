@@ -7,6 +7,7 @@ import { Text } from '@/components/ui/text';
 import { Heading } from '@/components/ui/heading';
 import { QuantityStepper } from '@/components/shared/QuantityStepper';
 import { toDateKey, nightsBetween, formatDateShort } from '@/utils/formatDate';
+import { MAX_BOOKING_NIGHTS } from '@/utils/stayDates';
 import { GUEST_COLORS } from '@/constants/guestTheme';
 
 const WEEKDAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -100,7 +101,14 @@ export function StayPickerSheet({
     const isStart = sameDay(day, checkIn);
     const isEnd = sameDay(day, checkOut);
     const inRange = checkIn && checkOut && day > checkIn && day < checkOut;
-    const disabled = day < today;
+    // Đang chọn ngày TRẢ (đã có ngày nhận, chưa chốt ngày trả) → khoá luôn trên lịch mọi ngày
+    // vượt quá `MAX_BOOKING_NIGHTS` đêm, không đợi bấm xong mới báo lỗi ở `bookingInputError`.
+    const tooFarForCheckOut =
+      !!checkIn &&
+      !checkOut &&
+      day > checkIn &&
+      Math.round((day.getTime() - checkIn.getTime()) / 86_400_000) > MAX_BOOKING_NIGHTS;
+    const disabled = day < today || tooFarForCheckOut;
     return { isStart, isEnd, inRange, disabled };
   }
 

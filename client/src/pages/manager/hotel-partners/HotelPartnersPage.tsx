@@ -44,6 +44,8 @@ import { ROUTES } from '@/constants/routes';
 import { cn } from '@/lib/cn';
 import { formatDate } from '@/utils/formatDate';
 import { errorMessage } from '@/utils/errorMessage';
+import AppPagination from '@/common/pagination/AppPagination';
+import { useClientPagination } from '@/common/pagination/useClientPagination';
 import {
   ActionMenu,
   type ActionItem,
@@ -64,6 +66,9 @@ import type { AdminManagedHotel } from '@/types/admin.types';
 
 type PartnerFilter = 'all' | PlatformPartnerStatus;
 type TabId = 'partners' | 'hotels' | 'performance' | 'bookings';
+
+/** Một cỡ trang cho mọi bảng trong khu Hotel Partners — đổi tab không đổi mật độ đọc. */
+const ROWS_PER_PAGE = 10;
 
 // ─── Trạng thái đối tác (người) ──────────────────────────────────────────────
 const partnerStatusConfig: Record<
@@ -360,6 +365,19 @@ function PartnersTab() {
     rejected: all.filter(p => p.status === 'rejected').length,
   };
 
+  const pagination = useClientPagination(filtered, ROWS_PER_PAGE);
+
+  // Đổi bộ lọc/tìm kiếm thì về trang 1: hook chỉ KẸP trang cho hợp lệ, nên đang ở trang 3 mà
+  // lọc còn 2 trang sẽ rơi về trang 2 — không phải chỗ người dùng muốn nhìn sau khi lọc.
+  const changeSearch = (value: string) => {
+    setSearch(value);
+    pagination.setPage(1);
+  };
+  const changeFilter = (value: PartnerFilter) => {
+    setFilter(value);
+    pagination.setPage(1);
+  };
+
   return (
     <div className="space-y-4">
       {SummaryCards([
@@ -386,7 +404,7 @@ function PartnersTab() {
             ).map(s => (
               <button
                 key={s}
-                onClick={() => setFilter(s)}
+                onClick={() => changeFilter(s)}
                 className={cn(
                   'px-4 py-1.5 rounded-full text-sm font-medium transition-all',
                   filter === s
@@ -412,7 +430,7 @@ function PartnersTab() {
               type="text"
               placeholder="Search partner or owner..."
               value={search}
-              onChange={e => setSearch(e.target.value)}
+              onChange={e => changeSearch(e.target.value)}
               className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg bg-slate-50 focus:outline-none focus:ring-2 focus:ring-role-manager-primary/30 focus:border-role-manager-primary"
             />
           </div>
@@ -466,7 +484,7 @@ function PartnersTab() {
                   <span className="text-slate-400">No partners found</span>
                 </TableStateRow>
               ) : (
-                filtered.map(p => {
+                pagination.pageItems.map(p => {
                   const cfg = partnerStatusConfig[p.status];
                   const StatusIcon = cfg.icon;
                   const items: ActionItem[] = [
@@ -568,11 +586,18 @@ function PartnersTab() {
             </tbody>
           </table>
         </div>
-        <div className="px-5 py-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
+        <div className="px-5 py-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-400">
           <span>
-            Showing {filtered.length} of {all.length} partners
+            Showing {pagination.from}–{pagination.to} of {pagination.total}
+            {pagination.total !== all.length && ` (filtered from ${all.length})`}{' '}
+            partners
             {isFetching && !isLoading ? ' · refreshing…' : ''}
           </span>
+          <AppPagination
+            currentPage={pagination.page}
+            totalPages={pagination.totalPages}
+            onPageChange={pagination.setPage}
+          />
         </div>
       </div>
 
@@ -637,6 +662,17 @@ function HotelsPartnerTab() {
     unlisted: all.filter(h => !h.isListed).length,
   };
 
+  const pagination = useClientPagination(filtered, ROWS_PER_PAGE);
+
+  const changeSearch = (value: string) => {
+    setSearch(value);
+    pagination.setPage(1);
+  };
+  const changeFilter = (value: HotelFilter) => {
+    setFilter(value);
+    pagination.setPage(1);
+  };
+
   const toggleListing = (hotel: AdminManagedHotel) => {
     updateFlags.mutate(
       { hotelId: hotel.id, payload: { isListed: !hotel.isListed } },
@@ -677,7 +713,7 @@ function HotelsPartnerTab() {
             {(['all', 'listed', 'unlisted'] as HotelFilter[]).map(s => (
               <button
                 key={s}
-                onClick={() => setFilter(s)}
+                onClick={() => changeFilter(s)}
                 className={cn(
                   'px-4 py-1.5 rounded-full text-sm font-medium transition-all',
                   filter === s
@@ -703,7 +739,7 @@ function HotelsPartnerTab() {
               type="text"
               placeholder="Search hotel, city or partner..."
               value={search}
-              onChange={e => setSearch(e.target.value)}
+              onChange={e => changeSearch(e.target.value)}
               className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg bg-slate-50 focus:outline-none focus:ring-2 focus:ring-role-manager-primary/30 focus:border-role-manager-primary"
             />
           </div>
@@ -749,7 +785,7 @@ function HotelsPartnerTab() {
                   <span className="text-slate-400">No hotels found</span>
                 </TableStateRow>
               ) : (
-                filtered.map(h => {
+                pagination.pageItems.map(h => {
                   const items: ActionItem[] = [
                     {
                       label: h.isListed
@@ -833,11 +869,18 @@ function HotelsPartnerTab() {
             </tbody>
           </table>
         </div>
-        <div className="px-5 py-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
+        <div className="px-5 py-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-400">
           <span>
-            Showing {filtered.length} of {all.length} verified hotels
+            Showing {pagination.from}–{pagination.to} of {pagination.total}
+            {pagination.total !== all.length && ` (filtered from ${all.length})`}{' '}
+            verified hotels
             {isFetching && !isLoading ? ' · refreshing…' : ''}
           </span>
+          <AppPagination
+            currentPage={pagination.page}
+            totalPages={pagination.totalPages}
+            onPageChange={pagination.setPage}
+          />
         </div>
       </div>
     </div>
@@ -1001,6 +1044,8 @@ function PlatformPerformanceTab() {
 
   const hotels = useMemo(() => data?.hotels ?? [], [data]);
   const rated = hotels.filter(h => h.score !== null);
+  // Bảng xếp hạng đã được BE sắp sẵn theo điểm giảm dần ⇒ cắt trang giữ nguyên thứ hạng.
+  const leaderboard = useClientPagination(hotels, ROWS_PER_PAGE);
 
   const avgOccupancy = avgOf(hotels.map(h => h.occupancyRate));
   const avgCancellation = avgOf(hotels.map(h => h.cancellationRate));
@@ -1235,14 +1280,16 @@ function PlatformPerformanceTab() {
                   </td>
                 </tr>
               ) : (
-                hotels.map((h, i) => (
+                leaderboard.pageItems.map((h, i) => (
                   <tr
                     key={h.hotelId}
                     className="hover:bg-slate-50/60 transition-colors cursor-pointer"
                     onClick={() => setSelectedHotelId(h.hotelId)}
                   >
+                    {/* Hạng phải là thứ hạng TOÀN SÀN, không phải chỉ số trong trang —
+                        `i + 1` sau khi cắt trang sẽ cho trang 2 bắt đầu lại từ #1. */}
                     <td className="px-5 py-3.5 text-slate-400 font-medium">
-                      {i + 1}
+                      {leaderboard.from + i}
                     </td>
                     <td className="px-5 py-3.5">
                       <p className="font-medium text-slate-800">
@@ -1330,6 +1377,19 @@ function PlatformPerformanceTab() {
             </tbody>
           </table>
         </div>
+        {leaderboard.total > 0 && (
+          <div className="px-5 py-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-400">
+            <span>
+              Showing {leaderboard.from}–{leaderboard.to} of {leaderboard.total}{' '}
+              hotels
+            </span>
+            <AppPagination
+              currentPage={leaderboard.page}
+              totalPages={leaderboard.totalPages}
+              onPageChange={leaderboard.setPage}
+            />
+          </div>
+        )}
       </div>
 
       {selectedHotelId && (

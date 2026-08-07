@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { DatePicker } from '@/components/ui/date-picker';
 import { cn } from '@/lib/cn';
 import { toDateInputValue } from '@/utils/formatDate';
-import { applyCheckIn, minCheckOut } from '@/utils/stayDates';
+import { applyCheckIn, maxCheckOut, minCheckOut } from '@/utils/stayDates';
 
 interface DateRangePickerProps {
   checkIn: string;
@@ -56,6 +56,7 @@ export default function DateRangePicker({
           value={checkOut}
           onChange={value => onChange({ checkIn, checkOut: value })}
           min={minCheckOut(checkIn, today)}
+          max={maxCheckOut(checkIn)}
           placeholder={t('checkOut')}
           clearLabel={t('clearDate')}
           className="rounded-xl border-outline-variant/40"

@@ -36,6 +36,7 @@ import GuestSelector from '@/components/shared/GuestSelector';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { toDateInputValue } from '@/utils/formatDate';
+import { isValidStayRange, maxCheckOut } from '@/utils/stayDates';
 import { formatAddress } from '@/utils/formatAddress';
 import { scoreColorClass } from '@/utils/reviewScore';
 import { cn } from '@/lib/cn';
@@ -76,14 +77,25 @@ export default function HotelDetailPage() {
 
   // Mở trang chi tiết mà chưa chọn ngày → mặc định hôm nay → mai và ghi vào URL,
   // để thấy ngay số phòng trống + tổng giá và luồng đặt phòng có sẵn ngày hợp lệ.
+  //
+  // `checkIn`/`checkOut` đọc thẳng từ URL — không đi qua `DateRangePicker` nên `min`/`max` trên
+  // lịch KHÔNG chặn được link tự sửa tay/link cũ (vd `?checkIn=2026-08-07&checkOut=2026-09-15`,
+  // 39 đêm). Có đủ cả hai mà khoảng ngày SAI luật (trả trước nhận, hoặc quá `MAX_BOOKING_NIGHTS`)
+  // thì kẹp lại về khoảng hợp lệ gần nhất, thay vì để bug âm thầm trôi tới tận lúc bấm Đặt phòng.
   useEffect(() => {
-    if (checkIn && checkOut) return;
+    if (checkIn && checkOut && isValidStayRange(checkIn, checkOut)) return;
     const today = new Date();
     const tomorrow = new Date();
     tomorrow.setDate(today.getDate() + 1);
     const next = new URLSearchParams(params);
-    next.set('checkIn', toDateInputValue(today));
-    next.set('checkOut', toDateInputValue(tomorrow));
+    if (checkIn && checkOut) {
+      // Có đủ ngày nhưng sai luật ⇒ giữ nguyên ngày nhận, kẹp ngày trả về đúng cận trên.
+      next.set('checkIn', checkIn);
+      next.set('checkOut', maxCheckOut(checkIn) ?? toDateInputValue(tomorrow));
+    } else {
+      next.set('checkIn', toDateInputValue(today));
+      next.set('checkOut', toDateInputValue(tomorrow));
+    }
     if (!params.get('adults')) next.set('adults', String(adults));
     if (!params.get('children')) next.set('children', String(children));
     setParams(next, { replace: true });

@@ -40,7 +40,12 @@ function RevenueTooltip({ active, payload, label }: ChartTooltipProps) {
  * Vẽ HAI đường vì đây là hai loại tiền khác hẳn nhau và chênh nhau nhiều lần:
  * GMV là tiền khách trả cho khách sạn, còn platform revenue là hoa hồng sàn thực thu.
  */
-export function RevenueTrendChart({ data, isLoading, isError, onRetry }: RevenueTrendChartProps) {
+export function RevenueTrendChart({
+  data,
+  isLoading,
+  isError,
+  onRetry,
+}: RevenueTrendChartProps) {
   const points = data?.points ?? [];
   const isEmpty = points.every(p => p.gmv === 0 && p.netRevenue === 0);
 
@@ -53,7 +58,10 @@ export function RevenueTrendChart({ data, isLoading, isError, onRetry }: Revenue
       onRetry={onRetry}
     >
       <ResponsiveContainer width="100%" height={260}>
-        <AreaChart data={points} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+        <AreaChart
+          data={points}
+          margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
+        >
           <defs>
             <linearGradient id="dashGmvGrad" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor="#94a3b8" stopOpacity={0.16} />
@@ -85,7 +93,7 @@ export function RevenueTrendChart({ data, isLoading, isError, onRetry }: Revenue
             stroke="#94a3b8"
             strokeWidth={2}
             fill="url(#dashGmvGrad)"
-            name="Gross booking value"
+            name="Gross Revenue "
           />
           <Area
             type="monotone"

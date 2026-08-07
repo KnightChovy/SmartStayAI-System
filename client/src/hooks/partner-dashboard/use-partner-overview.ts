@@ -5,15 +5,14 @@ import { hotelRevenueService } from '@/services/hotel-revenue.service';
 import { hotelRevenueKeys } from '@/hooks/hotel-revenue/keys';
 import type {
   HotelRevenueReport,
-  HotelWalletResponse,
   WalletTransactionType,
 } from '@/types/hotel-revenue.types';
 import type { HotelPerformance } from '@/types/platform-manager.types';
 
 /**
  * View-model tổng hợp cho Dashboard của Hotel Partner.
- * Gộp dữ liệu từ **tất cả** khách sạn của partner (mỗi khách sạn 3 endpoint:
- * `/hotels/:id/revenue`, `/hotels/:id/analytics`, `/hotels/:id/wallet`).
+ * Gộp dữ liệu từ **tất cả** khách sạn của partner (mỗi khách sạn 2 endpoint:
+ * `/hotels/:id/revenue` — kèm luôn sổ giao dịch — và `/hotels/:id/analytics`).
  * Field nào backend không cung cấp (top rooms / revenue target) sẽ để component tự bỏ trống.
  */
 export interface PartnerOverviewStats {
@@ -74,7 +73,14 @@ export function usePartnerOverview() {
   const { data: hotels = [], isLoading: hotelsLoading, isError: hotelsError } = usePartnerHotels();
   const ids = hotels.map(h => h.id);
 
-  const revenueParams = { from: range.from, to: range.to, groupBy: 'day' as const };
+  // `limit: 5` chỉ áp cho **sổ giao dịch** trả kèm (dùng cho feed hoạt động gần đây), không
+  // ảnh hưởng `summary`/`series` — `from`/`to` mới là thứ lọc hai phần đó.
+  const revenueParams = {
+    from: range.from,
+    to: range.to,
+    groupBy: 'day' as const,
+    limit: 5,
+  };
 
   const revenueQueries = useQueries({
     queries: ids.map(id => ({
@@ -90,22 +96,15 @@ export function usePartnerOverview() {
     })),
   });
 
-  const walletQueries = useQueries({
-    queries: ids.map(id => ({
-      queryKey: hotelRevenueKeys.wallet(id, { limit: 5 }),
-      queryFn: () => hotelRevenueService.getWallet(id, { limit: 5 }),
-    })),
-  });
-
+  // Trước đây phải gọi thêm `/wallet` cho mỗi khách sạn chỉ để lấy sổ giao dịch. Sổ đã chuyển
+  // vào chính response doanh thu ⇒ **bỏ hẳn một request/khách sạn**, và số liệu chắc chắn
+  // cùng một lần chốt thay vì hai lần gọi lệch nhau.
   const revenues = revenueQueries
     .map(q => q.data)
     .filter((d): d is HotelRevenueReport => !!d);
   const analytics = analyticsQueries
     .map(q => q.data)
     .filter((d): d is HotelPerformance => !!d);
-  const wallets = walletQueries
-    .map(q => q.data)
-    .filter((d): d is HotelWalletResponse => !!d);
 
   const stats = useMemo<PartnerOverviewStats>(() => {
     const monthlyBookings = revenues.reduce((s, r) => s + r.summary.bookingCount, 0);
@@ -149,7 +148,7 @@ export function usePartnerOverview() {
   const activities = useMemo<PartnerActivity[]>(() => {
     const hotelName = new Map(hotels.map(h => [h.id, h.name]));
     const all: PartnerActivity[] = [];
-    walletQueries.forEach((q, i) => {
+    revenueQueries.forEach((q, i) => {
       const data = q.data;
       const id = ids[i];
       if (!data) return;
@@ -165,7 +164,7 @@ export function usePartnerOverview() {
       }
     });
     return all.sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 6);
-  }, [wallets, hotels]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [revenues, hotels]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const isLoading =
     hotelsLoading ||

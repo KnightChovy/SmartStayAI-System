@@ -9,6 +9,12 @@ import type {
   RevenueTimeSeries,
   RevenueTimeSeriesParams,
 } from '@/types/revenue.types';
+import {
+  DAY_MS as DAY,
+  daysInclusive,
+  parseDateKey as parse,
+  pickRevenueBucket,
+} from '@/utils/revenueBucket';
 
 /**
  * Data layer trang Platform Revenue (`/manager/revenue`) — gọi `GET /admin/revenue`.
@@ -21,20 +27,8 @@ import type {
  * dòng, để nguyên thì chart nhảy cách quãng và overlay kỳ trước lệch cột.
  */
 
-const DAY = 86_400_000;
 const pad = (n: number) => String(n).padStart(2, '0');
-const parse = (d: string) => {
-  const [y, m, dd] = d.split('-').map(Number);
-  return Date.UTC(y, m - 1, dd);
-};
 const keyOf = (ms: number) => new Date(ms).toISOString().slice(0, 10);
-const daysInclusive = (from: string, to: string) =>
-  Math.max(0, Math.floor((parse(to) - parse(from)) / DAY) + 1);
-
-/** ≤ 45 ngày thì vẽ theo ngày, dài hơn gom theo tháng (2 giá trị `groupBy` BE nhận). */
-function pickBucket(from: string, to: string): RevenueBucket {
-  return daysInclusive(from, to) <= 45 ? 'day' : 'month';
-}
 
 /** Kỳ trước = khoảng ngay trước, cùng độ dài — đúng cách BE tính `comparison`. */
 function previousRange(from: string, to: string): DateRange {
@@ -48,9 +42,21 @@ function changePct(cur: number, prev: number): number | null {
   return Math.round(((cur - prev) / prev) * 1000) / 10;
 }
 
-/** Tỷ lệ hoa hồng bình quân (%) — cùng công thức hint trên KPI card. */
-function commissionRate(commission: number, gmv: number): number {
-  return gmv > 0 ? Math.round((commission / gmv) * 1000) / 10 : 0;
+/**
+ * Take rate của KỲ TRƯỚC — chỉ dùng để suy ra % thay đổi.
+ *
+ * Kỳ hiện tại đọc thẳng `summary.takeRatePct` của BE; riêng kỳ trước thì `comparison.previous`
+ * chỉ có `gmv` + `netPlatformRevenue` nên phải tự chia. Đây đúng công thức BE dùng cho
+ * `takeRatePct` (khác hẳn `commission / gmv` ở bảng breakdown — chỗ đó cấm tự tính vì hoàn
+ * tiền làm hai vế lệch mẫu số). `null` khi kỳ trước chưa có GMV.
+ */
+function previousTakeRate(commission: number, gmv: number): number | null {
+  return gmv > 0 ? Math.round((commission / gmv) * 10000) / 100 : null;
+}
+
+function changeBetween(cur: number | null, prev: number | null): number | null {
+  if (cur === null || prev === null) return null;
+  return changePct(cur, prev);
 }
 
 /** Liệt kê đủ bucket trong [from,to] để lấp kỳ BE không trả (không có booking). */
@@ -85,19 +91,18 @@ export const revenueService = {
     const res = await adminService.getPlatformRevenue({ from, to, groupBy: 'month' });
     const { summary, comparison } = res;
 
-    const gmv = Number(summary.gmv);
-    const commission = Number(summary.netPlatformRevenue);
-    const curRate = commissionRate(commission, gmv);
-    const preRate = comparison
-      ? commissionRate(
+    const prevRate = comparison
+      ? previousTakeRate(
           Number(comparison.previous.netPlatformRevenue),
           Number(comparison.previous.gmv)
         )
-      : 0;
+      : null;
 
     return {
       range: { from, to },
       previousRange: previousRange(from, to),
+      asOf: res.asOf,
+      currency: res.currency,
       kpis: {
         grossRevenue: {
           value: summary.gmv,
@@ -107,15 +112,18 @@ export const revenueService = {
           value: summary.netPlatformRevenue,
           changePct: comparison?.change.netRevenuePct ?? null,
         },
-        avgCommissionRate: {
-          value: curRate,
-          changePct: comparison ? changePct(curRate, preRate) : null,
+        takeRate: {
+          // Số của BE, KHÔNG tự chia lại — `null` nghĩa là chưa có GMV, không phải 0%.
+          value: summary.takeRatePct,
+          changePct: changeBetween(summary.takeRatePct, prevRate),
         },
         // BE không trả số booking kỳ trước ⇒ không suy được % thay đổi (badge hiện "—").
         bookings: { value: summary.bookingCount, changePct: null },
       },
+      avgBookingValue: summary.avgBookingValue,
       commissionPending: summary.commissionPending,
       commissionSettled: summary.commissionSettled,
+      commissionDisputed: summary.commissionDisputed,
       refunded: summary.refunded,
     };
   },
@@ -123,7 +131,7 @@ export const revenueService = {
   /** Chuỗi thời gian Revenue vs Commission; `compare` gọi thêm một lần cho kỳ trước để overlay. */
   async getTimeSeries(params: RevenueTimeSeriesParams): Promise<RevenueTimeSeries> {
     const { from, to, compare } = params;
-    const bucket = pickBucket(from, to);
+    const bucket = pickRevenueBucket(from, to);
     const prevRange = previousRange(from, to);
 
     const [cur, prev] = await Promise.all([
