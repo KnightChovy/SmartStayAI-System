@@ -1,7 +1,15 @@
 import { useState } from 'react';
 import { Download, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
-import { useRevenueSummary, useRevenueTimeSeries } from '@/hooks/revenue';
+import {
+  useRevenueBreakdown,
+  useRevenueSummary,
+  useRevenueTimeSeries,
+} from '@/hooks/revenue';
+import type {
+  RevenueBreakdownGroupBy,
+  RevenueBreakdownSortBy,
+} from '@/types/admin.types';
 import { exportToCsv } from '@/utils/exportCsv';
 import type { DateRange } from '@/types/revenue.types';
 import { RevenueDateRangePicker } from '@/components/manager/revenue/RevenueDateRangePicker';
@@ -12,19 +20,66 @@ import {
 import { RevenueKpiCards } from '@/components/manager/revenue/RevenueKpiCards';
 import { RevenueVsCommissionChart } from '@/components/manager/revenue/RevenueVsCommissionChart';
 import { RevenueCommissionSplit } from '@/components/manager/revenue/RevenueCommissionSplit';
+import { RevenueBreakdownTable } from '@/components/manager/revenue/RevenueBreakdownTable';
+
+const BREAKDOWN_PAGE_SIZE = 10;
 
 export default function RevenuePage() {
-  const [range, setRange] = useState<DateRange>(() => resolvePreset('thisMonth'));
+  const [range, setRange] = useState<DateRange>(() =>
+    resolvePreset('thisMonth')
+  );
   const [preset, setPreset] = useState<RangePreset>('thisMonth');
   const [compare, setCompare] = useState(false);
 
+  // ─── Breakdown (drill-down của KPI phía trên) ───
+  const [groupBy, setGroupBy] = useState<RevenueBreakdownGroupBy>('partner');
+  const [sortBy, setSortBy] = useState<RevenueBreakdownSortBy>('commission');
+  const [page, setPage] = useState(1);
+  const [partnerFilter, setPartnerFilter] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+
   const summary = useRevenueSummary(range);
   const timeSeries = useRevenueTimeSeries({ ...range, compare });
+  const breakdown = useRevenueBreakdown({
+    ...range,
+    groupBy,
+    sortBy,
+    page,
+    limit: BREAKDOWN_PAGE_SIZE,
+    // `partnerId` chỉ có nghĩa khi gộp theo khách sạn — gửi kèm ở chiều khác thì backend
+    // sẽ lọc luôn danh sách đối tác/thành phố xuống còn một dòng, không phải ý người dùng.
+    ...(groupBy === 'hotel' && partnerFilter
+      ? { partnerId: partnerFilter.id }
+      : {}),
+  });
 
   const handleRangeChange = (next: DateRange, nextPreset: RangePreset) => {
     setRange(next);
     setPreset(nextPreset);
+    setPage(1);
   };
+
+  const handleGroupByChange = (next: RevenueBreakdownGroupBy) => {
+    setGroupBy(next);
+    setPage(1);
+    if (next !== 'hotel') setPartnerFilter(null);
+  };
+
+  const handleDrillIntoPartner = (partner: { id: string; name: string }) => {
+    setPartnerFilter(partner);
+    setGroupBy('hotel');
+    setPage(1);
+  };
+
+  const totals = summary.data
+    ? {
+        gmv: summary.data.kpis.grossRevenue.value,
+        commission: summary.data.kpis.totalCommission.value,
+        bookingCount: summary.data.kpis.bookings.value,
+      }
+    : undefined;
 
   // Xuất chính chuỗi thời gian đang hiển thị — không gọi lại API, không xuất số khác trên màn hình.
   const handleExport = () => {
@@ -56,12 +111,20 @@ export default function RevenuePage() {
               <TrendingUp className="w-6 h-6 text-role-manager-primary" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-slate-900">Platform Revenue</h1>
-              <p className="text-slate-500 text-sm">Platform-wide revenue & commission over time</p>
+              <h1 className="text-2xl font-bold text-slate-900">
+                Platform Revenue
+              </h1>
+              <p className="text-slate-500 text-sm">
+                Platform-wide revenue & commission over time
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <RevenueDateRangePicker value={range} preset={preset} onChange={handleRangeChange} />
+            <RevenueDateRangePicker
+              value={range}
+              preset={preset}
+              onChange={handleRangeChange}
+            />
             <button
               type="button"
               onClick={handleExport}
@@ -100,6 +163,30 @@ export default function RevenuePage() {
           onRetry={() => summary.refetch()}
         />
       </div>
+
+      {/* Drill-down: KPI phía trên cho TỔNG, khối này cho biết tổng đó đến từ đâu. */}
+      <RevenueBreakdownTable
+        data={breakdown.data}
+        isLoading={breakdown.isLoading}
+        isError={breakdown.isError}
+        onRetry={() => breakdown.refetch()}
+        groupBy={groupBy}
+        onGroupByChange={handleGroupByChange}
+        sortBy={sortBy}
+        onSortByChange={next => {
+          setSortBy(next);
+          setPage(1);
+        }}
+        page={page}
+        onPageChange={setPage}
+        partnerFilter={partnerFilter}
+        onDrillIntoPartner={handleDrillIntoPartner}
+        onClearPartnerFilter={() => {
+          setPartnerFilter(null);
+          setPage(1);
+        }}
+        totals={totals}
+      />
     </div>
   );
 }

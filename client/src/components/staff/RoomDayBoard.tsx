@@ -22,7 +22,12 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { ConfirmDialog } from '@/components/hotel-partner/shared/ConfirmDialog';
-import { useResolveRoomBlock, useUpdateHousekeeping } from '@/hooks/staff';
+import {
+  useAssignRoom,
+  useReleaseAssignedRoom,
+  useResolveRoomBlock,
+  useUpdateHousekeeping,
+} from '@/hooks/staff';
 import type {
   BookingStatus,
   HkStatus,
@@ -206,15 +211,23 @@ export function RoomDayBoard({
   const [blockTarget, setBlockTarget] = useState<{
     room: StaffRoom;
     blockType: RoomBlockType;
+    /** Có giá trị ⇒ sửa đợt đang mở (gia hạn/rút ngắn) thay vì tạo đợt mới. */
+    block?: RoomBlockListItem;
   } | null>(null);
   const [unblockTarget, setUnblockTarget] = useState<{
     room: StaffRoom;
     block: RoomBlockListItem;
   } | null>(null);
+  const [releaseTarget, setReleaseTarget] = useState<{
+    room: StaffRoom;
+    booking: HotelBooking;
+  } | null>(null);
   const [pendingRoomId, setPendingRoomId] = useState<string | null>(null);
 
   const resolveBlock = useResolveRoomBlock(hotelId);
   const updateHk = useUpdateHousekeeping(hotelId);
+  const assignRoom = useAssignRoom(hotelId);
+  const releaseRoom = useReleaseAssignedRoom(hotelId);
 
   const factualEntries: RoomDayEntry[] = useMemo(() => {
     // `includeHousekeeping` chỉ bật cho hôm nay ⇒ ngày tương lai không bao giờ có ô "Cleaning",
@@ -289,9 +302,15 @@ export function RoomDayBoard({
       .map(floor => ({ floor, rooms: byFloor.get(floor) ?? [] }));
   }, [visible]);
 
-  // Đếm theo `booking` chứ không theo `state === 'occupied'`: phòng vừa có khách vừa dính đợt chặn
-  // được xếp nhãn Maintenance (theo đúng thứ tự của BE), nhưng nó VẪN là một đơn đã có phòng.
-  const assigned = entries.filter(entry => entry.booking).length;
+  // Đếm theo đơn ĐÃ CÓ PHÒNG THẬT chứ không theo `state`: phòng vừa có khách vừa dính đợt chặn
+  // được xếp nhãn Maintenance (theo đúng thứ tự của BE) nhưng vẫn là một đơn đã có phòng, và đơn
+  // chốt trước phòng (`holdKind === 'assigned'`) cũng vậy dù chưa check-in.
+  const assigned = entries.filter(
+    entry => entry.booking || (entry.heldBy && entry.holdKind === 'assigned')
+  ).length;
+
+  const assignedHeld = entries.filter(entry => entry.holdKind === 'assigned').length;
+  const provisionalHeld = entries.filter(entry => entry.holdKind === 'provisional').length;
 
   // Chốt chặn: nếu số của lưới vẫn lệch sau khi đã liệt kê hết (dữ liệu ngoài khung tải, đơn gán
   // phòng của loại khác…) thì vẫn nói ra phần còn thiếu chứ không im lặng.
@@ -336,6 +355,37 @@ export function RoomDayBoard({
       return;
     }
     if (isToday) void changeHk(entry.room, 'clean');
+  };
+
+  /**
+   * Biến một ô **Held dự kiến** thành phòng chốt thật (`POST .../assign-room`).
+   * Sau khi gán, số phòng nói được với khách và check-in sẽ dùng đúng phòng này.
+   */
+  const confirmHold = async (room: StaffRoom, booking: HotelBooking) => {
+    setPendingRoomId(room.id);
+    try {
+      await assignRoom.mutateAsync({ bookingId: booking.id, roomId: room.id });
+      toast.success(`Room ${room.roomNumber} is now assigned to ${booking.customer.fullName}.`);
+    } catch (err) {
+      toast.error(errorMessage(err, 'Could not assign this room.'));
+    } finally {
+      setPendingRoomId(null);
+    }
+  };
+
+  const releaseHold = async () => {
+    if (!releaseTarget) return;
+    const { room, booking } = releaseTarget;
+    setReleaseTarget(null);
+    setPendingRoomId(room.id);
+    try {
+      await releaseRoom.mutateAsync({ bookingId: booking.id });
+      toast.success(`Room ${room.roomNumber} released — the booking has no room picked now.`);
+    } catch (err) {
+      toast.error(errorMessage(err, 'Could not release this room.'));
+    } finally {
+      setPendingRoomId(null);
+    }
   };
 
   const changeHk = async (room: StaffRoom, hkStatus: HkStatus) => {
@@ -454,12 +504,20 @@ export function RoomDayBoard({
 
       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
         <h3 className="text-sm font-semibold text-slate-700">Rooms</h3>
-        {/* Nói rõ ô "Held" là dự kiến của FE, không phải phòng BE đã chốt. */}
-        {counts.held > 0 && (
+        {/*
+          Phân biệt rõ hai loại Held: chốt thật thì nói được số phòng với khách, còn phần FE xếp
+          tạm thì chưa. Gộp làm một là hoặc giấu mất thông tin chắc chắn, hoặc hứa nhầm.
+        */}
+        {assignedHeld > 0 && (
           <span className="text-xs text-slate-400">
-            {counts.held} room{counts.held === 1 ? '' : 's'} marked <b>Held</b> — kept for a booking
-            that has not checked in. The final room is decided at check-in, so do not quote it to
-            the guest yet.
+            {assignedHeld} <b>Held</b> room{assignedHeld === 1 ? '' : 's'} already assigned to an
+            arrival — check-in hands over exactly that room.
+          </span>
+        )}
+        {provisionalHeld > 0 && (
+          <span className="text-xs text-slate-400">
+            {provisionalHeld} more kept for arrivals with <b>no room picked yet</b> — the room shown
+            is only a guess, so do not quote it to the guest until you assign it.
           </span>
         )}
       </div>
@@ -511,8 +569,13 @@ export function RoomDayBoard({
                 pending={pendingRoomId === entry.room.id}
                 highlighted={entry.room.roomNumber === highlightRoom}
                 onBlock={blockType => setBlockTarget({ room: entry.room, blockType })}
+                onEditBlock={block =>
+                  setBlockTarget({ room: entry.room, blockType: block.blockType, block })
+                }
                 onSetAvailable={() => setAvailable(entry)}
                 onChangeHk={changeHk}
+                onConfirmHold={booking => void confirmHold(entry.room, booking)}
+                onReleaseHold={booking => setReleaseTarget({ room: entry.room, booking })}
               />
             ))}
           </div>
@@ -526,6 +589,7 @@ export function RoomDayBoard({
         room={blockTarget?.room ?? null}
         date={date}
         initialBlockType={blockTarget?.blockType ?? 'ooo'}
+        block={blockTarget?.block ?? null}
         rooms={rooms}
         blocks={blocks}
         bookings={bookings}
@@ -546,6 +610,20 @@ export function RoomDayBoard({
             ? `This ends the whole block (${isoDayMonth(unblockTarget.block.startDate)} → ${isoDayMonth(
                 unblockTarget.block.endDate
               )}), not just ${dayMonthLabel(date)}. The room goes back on sale for every remaining day.`
+            : ''
+        }
+      />
+
+      <ConfirmDialog
+        open={Boolean(releaseTarget)}
+        onClose={() => setReleaseTarget(null)}
+        onConfirm={() => void releaseHold()}
+        loading={releaseRoom.isPending}
+        title={releaseTarget ? `Release room ${releaseTarget.room.roomNumber}?` : ''}
+        confirmLabel="Unassign"
+        message={
+          releaseTarget
+            ? `${releaseTarget.booking.customer.fullName} (${releaseTarget.booking.bookingCode}) keeps the booking and its place in inventory — it just goes back to having no room picked, and check-in will choose any free room of this type.`
             : ''
         }
       />
@@ -664,18 +742,24 @@ function RoomDayTile({
   pending,
   highlighted,
   onBlock,
+  onEditBlock,
   onSetAvailable,
   onChangeHk,
+  onConfirmHold,
+  onReleaseHold,
 }: {
   entry: RoomDayEntry;
   isToday: boolean;
   pending: boolean;
   highlighted?: boolean;
   onBlock: (blockType: RoomBlockType) => void;
+  onEditBlock: (block: RoomBlockListItem) => void;
   onSetAvailable: () => void;
   onChangeHk: (room: StaffRoom, hkStatus: HkStatus) => void | Promise<void>;
+  onConfirmHold: (booking: HotelBooking) => void;
+  onReleaseHold: (booking: HotelBooking) => void;
 }) {
-  const { room, block, booking, heldBy, state } = entry;
+  const { room, block, booking, heldBy, holdKind, state } = entry;
   const meta = STATE_META[state];
   const Icon = meta.icon;
 
@@ -713,13 +797,43 @@ function RoomDayTile({
       <div className="mt-2 mb-3 space-y-1.5">
         {booking && <GuestLine booking={booking} />}
 
-        {/* Phòng giữ tạm: nêu rõ ai giữ VÀ rằng số phòng chưa chốt. */}
+        {/*
+          Hai kiểu "Held" khác nhau về độ tin cậy nên phải nói khác nhau:
+          - `assigned` = lễ tân đã chốt thật qua `assign-room` ⇒ nói được số phòng với khách.
+          - `provisional` = FE xếp tạm để phòng không nằm lẫn trong nhóm phát ra được ⇒ chưa chốt.
+        */}
         {heldBy && (
           <>
             <GuestLine booking={heldBy} action="check in" />
-            <p className="text-[11px] leading-snug text-sky-700">
-              Kept free for this arrival · room confirmed at check-in
-            </p>
+            {holdKind === 'assigned' ? (
+              <>
+                <p className="text-[11px] leading-snug text-sky-700">
+                  Assigned to this booking · check-in will hand over this room
+                </p>
+                <button
+                  type="button"
+                  onClick={() => onReleaseHold(heldBy)}
+                  disabled={pending}
+                  className="text-[11px] font-medium text-slate-500 underline underline-offset-2 transition-colors hover:text-slate-900 disabled:opacity-50"
+                >
+                  Unassign this room
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="text-[11px] leading-snug text-sky-700">
+                  Kept free for this arrival · room not confirmed yet
+                </p>
+                <button
+                  type="button"
+                  onClick={() => onConfirmHold(heldBy)}
+                  disabled={pending}
+                  className="text-[11px] font-medium text-sky-700 underline underline-offset-2 transition-colors hover:text-sky-900 disabled:opacity-50"
+                >
+                  Assign this room for real
+                </button>
+              </>
+            )}
           </>
         )}
 
@@ -738,6 +852,19 @@ function RoomDayTile({
                 A guest is still assigned to this blocked room.
               </p>
             )}
+            {/*
+              Gia hạn / rút ngắn đợt này. Khác hẳn "Available" trong menu (gỡ SẠCH cả đợt và trả
+              phòng về kho bán) — ở đây đợt chặn vẫn còn, chỉ đổi ngày dự kiến xong, nên lịch sử
+              chi phí sự cố giữ nguyên.
+            */}
+            <button
+              type="button"
+              onClick={() => onEditBlock(block)}
+              disabled={pending}
+              className="mt-1 text-[11px] font-medium text-slate-500 underline underline-offset-2 transition-colors hover:text-slate-900 disabled:opacity-50"
+            >
+              Change end date or reason
+            </button>
           </div>
         )}
 
@@ -778,9 +905,11 @@ function RoomDayTile({
                 booking
                   ? 'Guest is checked in — check out from Front desk'
                   : block
-                    ? `Ends the block (${isoDayMonth(block.startDate)} → ${isoDayMonth(block.endDate)})`
+                    ? `Ends the whole block (${isoDayMonth(block.startDate)} → ${isoDayMonth(block.endDate)}) — to only move the end day, use "Change end date" above`
                     : heldBy
-                      ? 'Kept for an arrival — check that booking in, or cancel it, to free the room'
+                      ? holdKind === 'assigned'
+                        ? 'Assigned to an arrival — unassign it above to free the room'
+                        : 'Kept for an arrival — check that booking in, or cancel it, to free the room'
                       : undefined
               }
               onSelect={onSetAvailable}
@@ -805,7 +934,11 @@ function RoomDayTile({
               state="maintenance"
               current={state}
               disabled={Boolean(block)}
-              hint={block ? 'Already blocked — set it back to Available first' : undefined}
+              hint={
+                block
+                  ? 'Already blocked — change its dates above, or set it back to Available first'
+                  : undefined
+              }
               onSelect={() => onBlock('ooo')}
             />
 
@@ -813,7 +946,11 @@ function RoomDayTile({
               state="out_of_service"
               current={state}
               disabled={Boolean(block)}
-              hint={block ? 'Already blocked — set it back to Available first' : undefined}
+              hint={
+                block
+                  ? 'Already blocked — change its dates above, or set it back to Available first'
+                  : undefined
+              }
               onSelect={() => onBlock('oos')}
             />
 

@@ -4,7 +4,6 @@ import type {
   AdminAuditLogsParams,
   AdminAuditLogsResponse,
   AdminBooking,
-  AdminCommission,
   AdminCommissionsParams,
   AdminCommissionsResponse,
   AdminCreateUserPayload,
@@ -15,6 +14,8 @@ import type {
   AdminPaymentsParams,
   AdminPaymentsResponse,
   AdminPlatformRevenue,
+  AdminRevenueBreakdown,
+  AdminRevenueBreakdownParams,
   AdminRevenueParams,
   AdminReviewVerificationPayload,
   AdminUpdateHotelFlagsPayload,
@@ -55,6 +56,17 @@ export const adminService = {
     return data;
   },
 
+  /** `GET /admin/revenue/breakdown` — doanh thu chi tiết theo đối tác / khách sạn / thành phố. */
+  async getRevenueBreakdown(
+    params: AdminRevenueBreakdownParams
+  ): Promise<AdminRevenueBreakdown> {
+    const { data } = await api.get<AdminRevenueBreakdown>(
+      '/admin/revenue/breakdown',
+      { params: cleanParams(params) }
+    );
+    return data;
+  },
+
   async listCommissions(
     params: AdminCommissionsParams = {}
   ): Promise<AdminCommissionsResponse> {
@@ -63,13 +75,6 @@ export const adminService = {
       {
         params: cleanParams(params),
       }
-    );
-    return data;
-  },
-
-  async settleCommission(commissionId: string): Promise<AdminCommission> {
-    const { data } = await api.patch<AdminCommission>(
-      `/admin/commissions/${commissionId}/settle`
     );
     return data;
   },

@@ -33,11 +33,6 @@ export class AdminController {
     res.send(result);
   });
 
-  settleCommission = catchAsync(async (req: Request, res: Response): Promise<void> => {
-    const commission = await adminService.settleCommission(req.params.commissionId as string, req.user as User);
-    res.send(commission);
-  });
-
   // ===== Pha 4 — Giám sát khách sạn toàn sàn =====
   listHotels = catchAsync(async (req: Request, res: Response): Promise<void> => {
     const filter = pick(req.query, ['search', 'isListed', 'isActive']);

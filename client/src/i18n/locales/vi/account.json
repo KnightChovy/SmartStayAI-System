@@ -5,6 +5,7 @@
   "nav": {
     "profile": "Hồ sơ",
     "bookings": "Đặt phòng của tôi",
+    "wallet": "Ví của tôi",
     "messages": "Tin nhắn",
     "reviews": "Đánh giá của tôi",
     "notifications": "Thông báo",
@@ -203,6 +204,25 @@
       "imageLimit": "Tối đa {{max}} ảnh mỗi đánh giá."
     }
   },
+  "wallet": {
+    "title": "Ví của tôi",
+    "balanceLabel": "Số dư khả dụng",
+    "balanceHint": "Dùng để thanh toán cho lần đặt phòng sau. Số dư ví không rút ra ngân hàng được — nếu muốn nhận tiền mặt, hãy chọn hoàn về tài khoản ngân hàng khi huỷ đơn.",
+    "useOnBooking": "Dùng cho đơn đang chờ thanh toán",
+    "historyTitle": "Lịch sử giao dịch",
+    "historyLimit": "Chỉ hiển thị 50 giao dịch gần nhất.",
+    "balanceAfter": "Số dư: {{amount}}",
+    "viewBooking": "Xem đơn",
+    "emptyTitle": "Ví của bạn chưa có giao dịch nào",
+    "emptyDesc": "Khi bạn huỷ một đơn đã thanh toán và chọn nhận tiền hoàn vào ví, số tiền sẽ xuất hiện ở đây.",
+    "loadError": "Không tải được ví. Vui lòng thử lại.",
+    "retry": "Thử lại",
+    "txn": {
+      "refund": "Tiền hoàn từ đơn đã huỷ",
+      "spend": "Thanh toán bằng ví",
+      "adjustment": "Điều chỉnh"
+    }
+  },
   "messages": {
     "empty": "Bạn chưa nhắn với khách sạn nào. Chọn một khách sạn để bắt đầu trao đổi với lễ tân.",
     "newChat": "Nhắn với khách sạn",
@@ -213,5 +233,40 @@
     "selectPrompt": "Chọn một khách sạn bên trái để xem cuộc trò chuyện.",
     "close": "Đóng",
     "showingCount": "Đang hiện {{shown}}/{{total}} khách sạn. Gõ tên thành phố để thu hẹp."
+  },
+  "cancel": {
+    "previewError": "Chưa tính được số tiền hoàn. Vui lòng thử lại trước khi huỷ.",
+    "notPaid": "Đơn này chưa thanh toán nên không có khoản nào để hoàn.",
+    "youGetBack": "Bạn được hoàn",
+    "ofPaid": "{{percent}}% của {{paid}} đã thanh toán",
+    "hotelKeeps": "Khách sạn giữ lại",
+    "nextTierWarning": "Sau {{at}}, mức hoàn giảm còn {{percent}}%. Huỷ trước mốc này nếu bạn đã quyết định.",
+    "policyLadder": "Xem bảng chính sách huỷ",
+    "refundPercent": "hoàn {{percent}}%",
+    "currentTier": "đang áp dụng",
+    "tierUntilCheckIn": "Tới sát giờ nhận phòng",
+    "tierDays_one": "Trước {{count}} ngày",
+    "tierDays_other": "Trước {{count}} ngày",
+    "tierHours_one": "Trước {{count}} giờ",
+    "tierHours_other": "Trước {{count}} giờ",
+    "refundMethodTitle": "Nhận tiền hoàn vào đâu?",
+    "methodWallet": "Ví StayHub",
+    "methodWalletHint": "Nhận ngay khi khách sạn duyệt, dùng được cho lần đặt sau (xem ở mục Ví của tôi).",
+    "sentToWallet": "Đã gửi yêu cầu hoàn {{amount}}. Khách sạn duyệt xong là tiền vào Ví của tôi ngay.",
+    "sentToBank": "Đã gửi yêu cầu hoàn {{amount}}. Khách sạn duyệt xong, StayHub sẽ chuyển về tài khoản của bạn.",
+    "methodBank": "Tài khoản ngân hàng",
+    "methodBankHint": "Chuyển khoản về tài khoản của bạn — mất thêm vài ngày làm việc.",
+    "accountNumber": "Số tài khoản",
+    "bankName": "Tên ngân hàng",
+    "accountHolder": "Tên chủ tài khoản",
+    "errors": {
+      "accountNumberRequired": "Vui lòng nhập số tài khoản.",
+      "accountNumberTooLong": "Số tài khoản tối đa 30 chữ số.",
+      "accountNumberDigits": "Số tài khoản chỉ gồm chữ số.",
+      "bankNameRequired": "Vui lòng nhập tên ngân hàng.",
+      "bankNameTooLong": "Tên ngân hàng tối đa 100 ký tự.",
+      "accountHolderRequired": "Vui lòng nhập tên chủ tài khoản.",
+      "accountHolderTooLong": "Tên chủ tài khoản tối đa 100 ký tự."
+    }
   }
 }

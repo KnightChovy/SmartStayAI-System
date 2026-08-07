@@ -37,7 +37,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { toDateInputValue } from '@/utils/formatDate';
 import { formatAddress } from '@/utils/formatAddress';
-import { getFreeCancellationHours } from '@/utils/cancellationPolicy';
 import { scoreColorClass } from '@/utils/reviewScore';
 import { cn } from '@/lib/cn';
 import type { HotelSearchResult, RoomType } from '@/types/hotel.types';
@@ -468,10 +467,7 @@ export default function HotelDetailPage() {
                 onSelect={handleSelectRoom}
                 bestValue={roomTypes.length > 1 && rt.id === bestValueRoomId}
                 detailHref={`${ROUTES.roomTypeDetail(rt.hotelId, rt.id)}?${roomQuery}`}
-                freeUntilHours={
-                  hotel?.cancellationRule?.freeUntilHours ??
-                  getFreeCancellationHours(hotel?.settings)
-                }
+                cancellationRule={hotel?.cancellationRule}
               />
             ))
           )}

@@ -2,7 +2,6 @@ export { adminKeys } from './keys';
 export { useAdminOverview } from './use-admin-overview';
 export { useAdminRevenue } from './use-admin-revenue';
 export { useAdminCommissions } from './use-admin-commissions';
-export { useSettleAdminCommission } from './use-settle-admin-commission';
 export { useAdminHotels } from './use-admin-hotels';
 export { useUpdateAdminHotelFlags } from './use-update-admin-hotel-flags';
 export { useAdminAuditLogs } from './use-admin-audit-logs';

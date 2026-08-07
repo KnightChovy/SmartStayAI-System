@@ -295,8 +295,10 @@ paths:
       description: >
         viewPlatformStats. Platform-wide revenue over [from, to], on a single recognition-date basis:
         GMV (sum of totalAmount of bookings recognized by PAYMENT date — commission.createdAt),
-        commission pending/settled, total refunded (by refund request date), and
-        netPlatformRevenue (= pending + settled commission — the platform's actual earnings).
+        commission pending/settled/disputed, total refunded, and netPlatformRevenue
+        (= pending + settled commission — the platform's actual earnings).
+        `refunded` counts ONLY refunds already in status 'processed' (money has actually left),
+        dated by refund request date; pending/rejected requests are not refunds.
         Includes a day/month time series and, when BOTH from and to are given, a % comparison against
         the immediately preceding period of equal length. All money values are strings.
       tags: [Admin]
@@ -322,15 +324,34 @@ paths:
               schema:
                 type: object
                 properties:
+                  currency: { type: string, example: 'VND' }
+                  asOf:
+                    type: string
+                    format: date-time
+                    description: When these figures were computed.
                   summary:
                     type: object
                     properties:
                       gmv: { type: string, example: '125000000' }
                       commissionPending: { type: string, example: '5000000' }
                       commissionSettled: { type: string, example: '13750000' }
+                      commissionDisputed:
+                        type: string
+                        example: '500000'
+                        description: Excluded from netPlatformRevenue; returned so disputes stay visible.
                       refunded: { type: string, example: '2000000' }
                       netPlatformRevenue: { type: string, example: '18750000' }
                       bookingCount: { type: integer, example: 250 }
+                      takeRatePct:
+                        type: number
+                        nullable: true
+                        example: 15
+                        description: netPlatformRevenue / gmv × 100. null when there is no GMV yet.
+                      avgBookingValue:
+                        type: string
+                        nullable: true
+                        example: '500000.00'
+                        description: gmv / bookingCount. null when no booking was recognized.
                   groupBy: { type: string, example: month }
                   series:
                     type: array
@@ -368,9 +389,17 @@ paths:
       description: >
         Requires `viewPlatformStats`. Detailed revenue for EACH partner, hotel, or city — the drill-down
         for `/admin/revenue` (which only gives the platform total). Same recognition basis: `gmv` +
-        `commission` by PAYMENT date (commission.createdAt), `refunded` by refund request date.
+        `commission` by PAYMENT date (commission.createdAt), `refunded` by refund request date and
+        limited to refunds already 'processed'.
         `commission` is the platform's actual revenue for that group (excludes 'disputed'). The sum of
         every group's `gmv`/`commission`/`refunded` equals the `/admin/revenue` total for the same range.
+
+
+        `commissionRatePct` is the booking-value-weighted average commission rate actually charged in
+        the period, taken from the rate frozen on each commission record. Do NOT derive it as
+        `commission / gmv`: a refund recomputes `commission_amount` while `total_amount` stays put, so
+        the two have different denominators. For the same reason `gmv × commissionRatePct` need not
+        equal `commission` — the rate includes 'disputed' records, `commission` excludes them.
 
 
         Drill flow: `groupBy=partner` (list all partners) → click one → `groupBy=hotel&partnerId=` (that
@@ -413,12 +442,30 @@ paths:
                 type: object
                 properties:
                   groupBy: { type: string, enum: [partner, hotel, city] }
+                  currency: { type: string, example: 'VND' }
+                  asOf:
+                    type: string
+                    format: date-time
+                    description: When these figures were computed.
+                  totals:
+                    type: object
+                    description: >
+                      Totals across EVERY group in the range, not just the current page — use these for
+                      share-of-total columns and pie charts. `refunded` only counts groups that appear
+                      in `results` for the range.
+                    properties:
+                      gmv: { type: string, example: '125000000' }
+                      commission: { type: string, example: '18750000' }
+                      refunded: { type: string, example: '2000000' }
+                      bookingCount: { type: integer, example: 250 }
                   results:
                     type: array
                     description: >
-                      partner → { partnerId, name, gmv, commission, refunded, bookingCount, hotelCount };
-                      hotel → { hotelId, name, city, partnerId, partnerName, gmv, commission, refunded, bookingCount };
-                      city → { city, gmv, commission, refunded, bookingCount, hotelCount }
+                      Every row carries gmv, commission, commissionRatePct, refunded, bookingCount and
+                      sharePct. Identity fields differ by groupBy —
+                      partner → { partnerId, name, hotelCount };
+                      hotel → { hotelId, name, city, partnerId, partnerName };
+                      city → { city, hotelCount }
                     items:
                       type: object
                       properties:
@@ -429,9 +476,19 @@ paths:
                         partnerName: { type: string, nullable: true }
                         gmv: { type: string, example: '20638000.00' }
                         commission: { type: string, example: '3095700.00' }
+                        commissionRatePct:
+                          type: string
+                          example: '15.00'
+                          description: >
+                            Booking-value-weighted average commission rate charged in the period.
+                            '0' when the group has no booking value to weigh.
                         refunded: { type: string, example: '0' }
                         bookingCount: { type: integer, example: 5 }
                         hotelCount: { type: integer, nullable: true, example: 1 }
+                        sharePct:
+                          type: number
+                          example: 16.51
+                          description: This group's share of totals.commission, in percent.
                   page: { type: integer }
                   limit: { type: integer }
                   totalPages: { type: integer }
@@ -482,41 +539,6 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         "403":
           $ref: '#/components/responses/Forbidden'
-
-  /admin/commissions/{commissionId}/settle:
-    patch:
-      summary: Mark a commission as settled / paid out (admin)
-      description: >
-        Sets a commission's status to settled (payout done) and stamps settledAt. Rejected if already
-        settled. Writes an audit log entry.
-      tags: [Admin]
-      security:
-        - bearerAuth: []
-      parameters:
-        - in: path
-          name: commissionId
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        "200":
-          description: Updated commission
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/Commission' }
-        "400":
-          description: Already settled
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        "401":
-          $ref: '#/components/responses/Unauthorized'
-        "403":
-          $ref: '#/components/responses/Forbidden'
-        "404":
-          $ref: '#/components/responses/NotFound'
 
   /admin/hotels:
     get:
@@ -2241,17 +2263,29 @@ paths:
               properties:
                 settings:
                   type: object
-                  description: 'Hotel settings. Only `cancellation` is accepted today; both of its keys are required together'
+                  description: 'Hotel settings. Only `cancellation` (tiered refund policy) is accepted today.'
                   required: [cancellation]
                   additionalProperties: false
                   properties:
                     cancellation:
                       type: object
-                      required: [freeUntilHours, latePenalty]
+                      required: [tiers]
                       additionalProperties: false
                       properties:
-                        freeUntilHours: { type: integer, minimum: 0, maximum: 2160, example: 24, description: 'Hours before check-in that still get a full refund. 0 = never free; max 2160 (90 days)' }
-                        latePenalty: { type: string, enum: [first_night, full] }
+                        tiers:
+                          type: array
+                          minItems: 1
+                          description: >
+                            Bậc thang (percent-only): huỷ trước ≥ minHoursBefore giờ ⇒ hoàn refundPercent%.
+                            Phải sắp minHoursBefore GIẢM DẦN, không trùng, CÓ bậc minHoursBefore:0 (phủ kín),
+                            và refundPercent không tăng khi minHoursBefore giảm (huỷ muộn hoàn ≤).
+                          items:
+                            type: object
+                            required: [minHoursBefore, refundPercent]
+                            properties:
+                              minHoursBefore: { type: integer, minimum: 0, maximum: 2160, example: 168 }
+                              refundPercent: { type: integer, minimum: 0, maximum: 100, example: 50 }
+                        noShowRefundPercent: { type: integer, minimum: 0, maximum: 100, default: 0 }
                 name: { type: string }
                 description: { type: string, nullable: true }
                 address: { type: string }
@@ -2528,8 +2562,9 @@ paths:
                   wallet:
                     type: object
                     properties:
-                      balanceAvailable: { type: string, example: '10625000' }
-                      balancePending: { type: string, example: '0' }
+                      balanceAvailable: { type: string, description: '"Trong ví" — rút được ngay', example: '10625000' }
+                      balancePending: { type: string, description: '"Chờ tất toán" — khách chưa ở xong, chưa rút được', example: '0' }
+                      pendingPayout: { type: string, description: '"Chờ payout" — Σ yêu cầu rút đang pending (đã trừ khỏi available), PM chi trả xong về 0', example: '0' }
                       currency: { type: string, example: VND }
                   transactions:
                     type: object
@@ -2539,11 +2574,21 @@ paths:
                         items:
                           type: object
                           properties:
-                            id: { type: string, format: uuid }
-                            type: { type: string, example: earning }
-                            amount: { type: string, example: '850000' }
+                            id: { type: string, format: uuid, description: 'Mã giao dịch' }
+                            type:
+                              type: string
+                              enum: [earning, commission, payout, settlement, refund, adjustment, spend]
+                              description: 'Loại bút toán (dùng để hiển thị ghi nhận/tất toán/rút/hoàn/điều chỉnh)'
+                            status: { type: string, example: completed, description: 'Trạng thái bút toán — đã ghi sổ nên luôn completed' }
+                            amount: { type: string, example: '850000', description: 'Có dấu: + earning, − payout/refund' }
                             balanceAfter: { type: string, example: '850000' }
                             bookingId: { type: string, format: uuid, nullable: true }
+                            bookingCode: { type: string, nullable: true, example: 'BKSEED005', description: '"Từ đâu" — mã booking (kể cả GD settlement, tra qua commission). null nếu payout/adjustment' }
+                            paymentMethods:
+                              type: array
+                              items: { type: string, enum: [vnpay, sepay, stripe, cash, wallet] }
+                              description: 'Phương thức khách đã trả cho booking đó (đơn trả kết hợp có nhiều). Rỗng nếu GD không gắn booking'
+                              example: [vnpay]
                             commissionId: { type: string, format: uuid, nullable: true }
                             description: { type: string, nullable: true }
                             createdAt: { type: string, format: date-time }
@@ -2657,6 +2702,37 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
+
+  /hotels/cancellation-presets:
+    get:
+      summary: List cancellation-policy presets (public)
+      description: >
+        5 ready-made tiered cancellation policies a partner can pick from (Flexible / Moderate /
+        Firm / Strict / Non-refundable). Moderate is the recommended default for VN hotels.
+      tags: [Hotels]
+      responses:
+        "200":
+          description: Preset list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  presets:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        key: { type: string, example: moderate }
+                        name: { type: string, example: 'Vừa phải' }
+                        tiers:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              minHoursBefore: { type: integer, example: 168 }
+                              refundPercent: { type: integer, example: 50 }
+                        noShowRefundPercent: { type: integer, example: 0 }
 
   /hotels/mine:
     get:

@@ -5,6 +5,7 @@
   "nav": {
     "profile": "Profile",
     "bookings": "My bookings",
+    "wallet": "My wallet",
     "messages": "Messages",
     "reviews": "My reviews",
     "notifications": "Notifications",
@@ -203,6 +204,25 @@
       "imageLimit": "Up to {{max}} photos per review."
     }
   },
+  "wallet": {
+    "title": "My wallet",
+    "balanceLabel": "Available balance",
+    "balanceHint": "Use it to pay for your next stay. Wallet credit cannot be withdrawn to a bank account — if you want the cash back, choose a bank refund when you cancel.",
+    "useOnBooking": "Use it on a booking awaiting payment",
+    "historyTitle": "Transaction history",
+    "historyLimit": "Only the 50 most recent transactions are shown.",
+    "balanceAfter": "Balance: {{amount}}",
+    "viewBooking": "View booking",
+    "emptyTitle": "No wallet activity yet",
+    "emptyDesc": "When you cancel a paid booking and choose to be refunded to your wallet, the money shows up here.",
+    "loadError": "Could not load your wallet. Please try again.",
+    "retry": "Try again",
+    "txn": {
+      "refund": "Refund from a cancelled booking",
+      "spend": "Paid with wallet",
+      "adjustment": "Adjustment"
+    }
+  },
   "messages": {
     "empty": "You haven't messaged any hotel yet. Pick a hotel to start chatting with its front desk.",
     "newChat": "Message a hotel",
@@ -213,5 +233,40 @@
     "selectPrompt": "Pick a hotel on the left to view the conversation.",
     "close": "Close",
     "showingCount": "Showing {{shown}} of {{total}} hotels. Type a city to narrow down."
+  },
+  "cancel": {
+    "previewError": "We couldn't work out your refund. Please try again before cancelling.",
+    "notPaid": "Nothing has been paid for this booking, so there is nothing to refund.",
+    "youGetBack": "You get back",
+    "ofPaid": "{{percent}}% of the {{paid}} you paid",
+    "hotelKeeps": "The property keeps",
+    "nextTierWarning": "After {{at}} the refund drops to {{percent}}%. Cancel before then if you've made up your mind.",
+    "policyLadder": "See the cancellation policy",
+    "refundPercent": "{{percent}}% refunded",
+    "currentTier": "applies now",
+    "tierUntilCheckIn": "Up to check-in time",
+    "tierDays_one": "{{count}} day before",
+    "tierDays_other": "{{count}} days before",
+    "tierHours_one": "{{count}} hour before",
+    "tierHours_other": "{{count}} hours before",
+    "refundMethodTitle": "Where should we send the refund?",
+    "methodWallet": "StayHub wallet",
+    "methodWalletHint": "Arrives as soon as the property approves it, and you can spend it on your next stay (see My wallet).",
+    "sentToWallet": "Refund request for {{amount}} sent. It lands in My wallet as soon as the property approves it.",
+    "sentToBank": "Refund request for {{amount}} sent. Once the property approves it, StayHub transfers it to your bank account.",
+    "methodBank": "Bank account",
+    "methodBankHint": "Transferred to your account — takes a few extra working days.",
+    "accountNumber": "Account number",
+    "bankName": "Bank name",
+    "accountHolder": "Account holder",
+    "errors": {
+      "accountNumberRequired": "Please enter the account number.",
+      "accountNumberTooLong": "Account number can be at most 30 digits.",
+      "accountNumberDigits": "Account number can only contain digits.",
+      "bankNameRequired": "Please enter the bank name.",
+      "bankNameTooLong": "Bank name can be at most 100 characters.",
+      "accountHolderRequired": "Please enter the account holder name.",
+      "accountHolderTooLong": "Account holder can be at most 100 characters."
+    }
   }
 }

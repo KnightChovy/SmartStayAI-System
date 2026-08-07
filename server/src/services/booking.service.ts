@@ -14,7 +14,15 @@ import ApiError from '../utils/ApiError';
 import { roleRights } from '../config/roles';
 import { toUtcDate, eachNightOfStay, todayInVietnamDate } from '../utils/dates';
 import { availabilityService } from './availability.service';
-import { hotelService, readCancellationPolicy } from './hotel.service';
+import {
+  hotelService,
+  readCancellationPolicy,
+  parseCancellationPolicy,
+  refundPercentForHours,
+  appliedTierForHours,
+  nextTierAfter,
+  freeUntilHoursOf,
+} from './hotel.service';
 import type { CancellationPolicy } from './hotel.service';
 import type {
   CreateBookingDto,
@@ -146,20 +154,29 @@ const checkInMomentOf = (checkInDate: Date, checkInTime: string | null): Date =>
   return moment;
 };
 
-/** Số tiền hoàn theo chính sách: huỷ sớm ⇒ 100%; huỷ muộn ⇒ trừ phí phạt (1 đêm hoặc toàn bộ). */
+/**
+ * Số tiền hoàn theo chính sách BẬC THANG: tìm bậc áp dụng cho "còn bao nhiêu giờ tới check-in" rồi
+ * hoàn `refundPercent%` của số đã trả. Làm tròn 2 chữ số (đồng bộ phần tiền còn lại của hệ thống).
+ */
 const computeRefundAmount = (
   policy: CancellationPolicy,
   hoursBeforeCheckIn: number,
-  totalPaid: Prisma.Decimal,
-  firstNightPrice: Prisma.Decimal
-): Prisma.Decimal => {
-  if (hoursBeforeCheckIn >= policy.freeUntilHours) {
-    return totalPaid;
-  }
-  const penalty = policy.latePenalty === 'full' ? totalPaid : firstNightPrice;
-  const refund = totalPaid.sub(penalty);
-  return refund.isNegative() ? new Prisma.Decimal(0) : refund;
-};
+  totalPaid: Prisma.Decimal
+): Prisma.Decimal =>
+  totalPaid.mul(refundPercentForHours(policy, hoursBeforeCheckIn)).div(100).toDecimalPlaces(2);
+
+/**
+ * Chính sách áp cho một booking = SNAPSHOT đóng băng lúc đặt (booking.cancellationPolicy) nếu có,
+ * ngược lại đọc policy SỐNG của khách sạn (booking cũ chưa có snapshot). Nhờ snapshot, KS đổi chính
+ * sách sau khi khách đặt KHÔNG làm đổi điều khoản của đơn cũ.
+ */
+const resolveBookingPolicy = (booking: {
+  cancellationPolicy: Prisma.JsonValue | null;
+  hotel: { settings: Prisma.JsonValue | null };
+}): CancellationPolicy =>
+  booking.cancellationPolicy
+    ? parseCancellationPolicy(booking.cancellationPolicy)
+    : readCancellationPolicy(booking.hotel.settings);
 
 export class BookingService {
   /**
@@ -253,10 +270,13 @@ export class BookingService {
         isActive: true,
         hotel: { isActive: true, isListed: true, deletedAt: null },
       },
+      include: { hotel: { select: { settings: true } } }, // để snapshot chính sách huỷ lúc đặt
     });
     if (!roomType) {
       throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy loại phòng trong khách sạn này');
     }
+    // Đóng băng chính sách huỷ HIỆN TẠI của KS vào booking (xem resolveBookingPolicy)
+    const cancellationSnapshot = readCancellationPolicy(roomType.hotel.settings);
     // Số khách: nhận cách mới (numAdults/numChildren) hoặc cũ (numGuests). Chỉ có numGuests ⇒ coi tất
     // cả là người lớn (tương thích ngược). Tiền vẫn tính theo TỔNG khách, không phân biệt trẻ em.
     const numAdults = payload.numAdults ?? payload.numGuests ?? 1;
@@ -350,6 +370,8 @@ export class BookingService {
           source: 'website',
           specialRequests: payload.specialRequests || null,
           holdExpiresAt: isCash ? null : new Date(Date.now() + holdMinutes * 60 * 1000),
+          // đóng băng chính sách huỷ lúc đặt (cast: CancellationPolicy là JSON thuần nhưng thiếu index signature)
+          cancellationPolicy: cancellationSnapshot as unknown as Prisma.InputJsonValue,
         },
         include: bookingInclude,
       });
@@ -438,7 +460,7 @@ export class BookingService {
       throw new ApiError(httpStatus.FORBIDDEN, 'Chỉ nhân viên khách sạn mới được chọn lý do huỷ có tính chính sách');
     }
 
-    const policy = readCancellationPolicy(booking.hotel.settings);
+    const policy = resolveBookingPolicy(booking); // snapshot của đơn (fallback policy sống của KS)
     const checkInMoment = checkInMomentOf(booking.checkInDate, booking.hotel.checkInTime);
     const hoursBeforeCheckIn = (checkInMoment.getTime() - Date.now()) / (1000 * 60 * 60);
 
@@ -453,7 +475,7 @@ export class BookingService {
       ? new Prisma.Decimal(0)
       : reasonCode && FULL_REFUND_REASON_CODES.includes(reasonCode)
         ? paidTotal
-        : computeRefundAmount(policy, hoursBeforeCheckIn, paidTotal, booking.basePricePerNight);
+        : computeRefundAmount(policy, hoursBeforeCheckIn, paidTotal);
 
     return { booking, policy, checkInMoment, hoursBeforeCheckIn, paidPayment, paidTotal, refundAmount };
   };
@@ -470,6 +492,9 @@ export class BookingService {
 
     // Tiền đã trả = TỔNG các payment (booking có thể trả ghép), không phải một payment
     const paidAmount = paidTotal;
+    const appliedTier = appliedTierForHours(policy, hoursBeforeCheckIn);
+    const nextTier = nextTierAfter(policy, appliedTier);
+    const freeUntilHours = freeUntilHoursOf(policy);
     const canCancel =
       toUtcDate(booking.checkInDate) > todayInVietnamDate() &&
       (booking.status === 'pending' || booking.status === 'confirmed');
@@ -490,13 +515,23 @@ export class BookingService {
       refundAmount,
       // Phần bị giữ lại nếu huỷ ngay bây giờ
       penaltyAmount: paidAmount.sub(refundAmount),
-      // Chính sách đang áp + mốc thời gian, để FE giải thích "vì sao chỉ được hoàn ngần này"
-      freeUntilHours: policy.freeUntilHours,
-      latePenalty: policy.latePenalty,
-      isFreeCancellation: hoursBeforeCheckIn >= policy.freeUntilHours,
       hoursBeforeCheckIn: Math.round(hoursBeforeCheckIn * 10) / 10,
-      // Huỷ trước mốc này thì hoàn 100%
-      freeUntilMoment: new Date(checkInMoment.getTime() - policy.freeUntilHours * 60 * 60 * 1000),
+      // Bậc thang: bậc đang áp + % hoàn + toàn bộ bậc để FE vẽ bảng
+      appliedTier,
+      refundPercent: appliedTier?.refundPercent ?? 0,
+      tiers: policy.tiers,
+      // Cảnh báo bậc kế: sau `changesAt` thì % hoàn tụt xuống `refundPercent` (null nếu đã ở bậc thấp nhất)
+      nextTier:
+        appliedTier && nextTier
+          ? {
+              changesAt: new Date(checkInMoment.getTime() - appliedTier.minHoursBefore * 60 * 60 * 1000),
+              refundPercent: nextTier.refundPercent,
+            }
+          : null,
+      // Dẫn xuất để FE cũ không vỡ (CancellationLine đọc freeUntilHours)
+      freeUntilHours,
+      isFreeCancellation: (appliedTier?.refundPercent ?? 0) === 100,
+      freeUntilMoment: freeUntilHours != null ? new Date(checkInMoment.getTime() - freeUntilHours * 60 * 60 * 1000) : null,
       checkInMoment,
     };
   };

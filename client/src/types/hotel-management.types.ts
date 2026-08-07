@@ -135,6 +135,15 @@ export interface ManagedHotel {
   securityDepositAmount?: string | null;
   languagesSpoken?: string[] | null;
   maxLengthOfStay?: number | null;
+  /**
+   * JSON tự do của khách sạn. Chứa `cancellation.tiers` — chính sách huỷ THẬT (quyết định tiền
+   * hoàn), khác `cancellationPolicy` ở trên (chỉ là đoạn văn cho khách đọc).
+   *
+   * ⚠️ Endpoint quản trị (`GET /hotels/:id/manage`) trả **JSON thô**, KHÔNG parse sẵn như
+   * `cancellationRule` của endpoint công khai — nên phía partner phải tự bóc (xem
+   * `readCancellationTiers`).
+   */
+  settings?: Record<string, unknown> | null;
   createdAt: string;
   updatedAt: string;
   images: HotelImage[];

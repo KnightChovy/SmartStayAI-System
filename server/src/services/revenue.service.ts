@@ -1,5 +1,5 @@
 import { Prisma } from '@prisma/client';
-import type { User, WalletTransactionType } from '@prisma/client';
+import type { User, WalletTransactionType, PaymentMethod } from '@prisma/client';
 import prisma from '../config/prisma';
 import { hotelService } from './hotel.service';
 import { platformManagerService } from './platform-manager.service';
@@ -16,7 +16,9 @@ export class RevenueService {
    * - gross/commission tính theo NGÀY THANH TOÁN. Mỗi booking trả đủ tiền tạo ĐÚNG một
    *   PlatformCommission (cả cổng, ví lẫn tiền mặt), nên `commission.createdAt` = mốc thanh toán;
    *   gross = tổng `booking.totalAmount` của các booking đã ghi nhận trong kỳ.
-   * - refunded tính theo NGÀY TẠO yêu cầu hoàn (`refund.createdAt`).
+   * - refunded tính theo NGÀY TẠO yêu cầu hoàn (`refund.createdAt`), và CHỈ gồm yêu cầu đã
+   *   `processed` — tiền chỉ thực sự rời ví ở bước đó, nên yêu cầu đang chờ duyệt hoặc bị từ chối
+   *   không được trừ vào doanh thu khách sạn.
    *
    * net = gross − commission (GIỮ NGUYÊN cho FE cũ). netAfterRefund = net − refunded (MỚI, phản ánh
    * doanh thu THỰC sau hoàn tiền — net cũ không trừ refund nên phóng đại). Tiền trả dạng chuỗi.
@@ -44,7 +46,7 @@ export class RevenueService {
       }),
       prisma.refund.aggregate({
         _sum: { amount: true },
-        where: { payment: { booking: { hotelId } }, ...dateWhere },
+        where: { payment: { booking: { hotelId } }, ...dateWhere, status: 'processed' },
       }),
     ]);
 
@@ -106,7 +108,8 @@ export class RevenueService {
       fromParam,
       toParam
     );
-    // refunded theo NGÀY TẠO yêu cầu hoàn (r.created_at)
+    // refunded theo NGÀY TẠO yêu cầu hoàn (r.created_at), CHỈ tính yêu cầu đã 'processed' —
+    // cùng cơ sở với summary ở trên, nếu không chart và KPI sẽ lệch nhau.
     const refundRows = await prisma.$queryRawUnsafe<{ period: string; refunded: string }[]>(
       `SELECT to_char(date_trunc('${trunc}', r.created_at), '${fmt}') AS period,
               coalesce(sum(r.amount), 0)::text AS refunded
@@ -114,6 +117,7 @@ export class RevenueService {
        JOIN payments p ON p.id = r.payment_id
        JOIN bookings b ON b.id = p.booking_id
        WHERE b.hotel_id = $1::uuid
+         AND r.status = 'processed'
          AND ($2::timestamptz IS NULL OR r.created_at >= $2)
          AND ($3::timestamptz IS NULL OR r.created_at < $3)
        GROUP BY 1`,
@@ -158,7 +162,7 @@ export class RevenueService {
     const wallet = await prisma.wallet.findUnique({ where: { hotelId } });
     if (!wallet) {
       return {
-        wallet: { balanceAvailable: '0', balancePending: '0', currency: 'VND' },
+        wallet: { balanceAvailable: '0', balancePending: '0', pendingPayout: '0', currency: 'VND' },
         transactions: { results: [], page, limit, totalPages: 0, totalResults: 0 },
       };
     }
@@ -166,7 +170,7 @@ export class RevenueService {
     const where: Prisma.WalletTransactionWhereInput = { walletId: wallet.id };
     if (query.type) where.type = query.type;
 
-    const [rows, totalResults] = await prisma.$transaction([
+    const [rows, totalResults, payoutAgg] = await prisma.$transaction([
       prisma.walletTransaction.findMany({
         where,
         skip: (page - 1) * limit,
@@ -174,25 +178,72 @@ export class RevenueService {
         orderBy: { createdAt: 'desc' },
       }),
       prisma.walletTransaction.count({ where }),
+      // Tiền đang CHỜ PAYOUT = tổng yêu cầu rút đang pending (đã trừ khỏi available lúc tạo yêu cầu).
+      // Payout paid → hết pending → số này về 0; reject → phần đó cộng lại available.
+      prisma.payout.aggregate({ _sum: { amount: true }, where: { hotelId, status: 'pending' } }),
     ]);
+
+    // Làm giàu "lịch sử giao dịch": gắn mã booking (từ đâu) + phương thức khách đã trả để đọc được
+    // nguồn tiền. Giao dịch gắn thẳng booking (earning/refund) tra theo bookingId; giao dịch tất toán
+    // (settlement) gắn commission nên tra booking QUA commissionId; payout/adjustment không gắn booking
+    // ⇒ để trống. Gộp truy vấn theo lô (IN) — mỗi trang tối đa `limit` dòng nên chi phí nhỏ.
+    const commissionIds = [...new Set(rows.map((t) => t.commissionId).filter((v): v is string => !!v))];
+    const commissionToBooking = new Map<string, string>();
+    if (commissionIds.length > 0) {
+      const commissions = await prisma.platformCommission.findMany({
+        where: { id: { in: commissionIds } },
+        select: { id: true, bookingId: true },
+      });
+      for (const c of commissions) commissionToBooking.set(c.id, c.bookingId);
+    }
+    const resolveBookingId = (t: (typeof rows)[number]): string | null =>
+      t.bookingId ?? (t.commissionId ? commissionToBooking.get(t.commissionId) ?? null : null);
+
+    const bookingIds = [...new Set(rows.map(resolveBookingId).filter((v): v is string => !!v))];
+    const bookingInfo = new Map<string, { bookingCode: string; paymentMethods: PaymentMethod[] }>();
+    if (bookingIds.length > 0) {
+      const bookings = await prisma.booking.findMany({
+        where: { id: { in: bookingIds } },
+        select: {
+          id: true,
+          bookingCode: true,
+          // Chỉ lấy phương thức của khoản ĐÃ trả (đơn trả kết hợp có thể có 'wallet' + cổng)
+          payments: { where: { status: 'completed' }, select: { paymentMethod: true } },
+        },
+      });
+      for (const b of bookings) {
+        bookingInfo.set(b.id, {
+          bookingCode: b.bookingCode,
+          paymentMethods: [...new Set(b.payments.map((p) => p.paymentMethod))],
+        });
+      }
+    }
 
     return {
       wallet: {
-        balanceAvailable: wallet.balanceAvailable.toString(),
-        balancePending: wallet.balancePending.toString(),
+        balanceAvailable: wallet.balanceAvailable.toString(), // "trong ví" — rút được
+        balancePending: wallet.balancePending.toString(), // "chờ tất toán" — khách chưa ở xong, chưa rút được
+        pendingPayout: (payoutAgg._sum.amount ?? new Prisma.Decimal(0)).toString(), // "chờ payout" — đợi PM chi trả
         currency: wallet.currency,
       },
       transactions: {
-        results: rows.map((t) => ({
-          id: t.id,
-          type: t.type,
-          amount: t.amount.toString(),
-          balanceAfter: t.balanceAfter.toString(),
-          bookingId: t.bookingId,
-          commissionId: t.commissionId,
-          description: t.description,
-          createdAt: t.createdAt,
-        })),
+        results: rows.map((t) => {
+          const bid = resolveBookingId(t);
+          const info = bid ? bookingInfo.get(bid) : undefined;
+          return {
+            id: t.id, // mã giao dịch (uuid)
+            type: t.type, // loại: earning/settlement/payout/refund/adjustment/commission/spend
+            status: t.status, // trạng thái bút toán (luôn 'completed' khi đã ghi sổ)
+            amount: t.amount.toString(),
+            balanceAfter: t.balanceAfter.toString(),
+            bookingId: t.bookingId,
+            bookingCode: info?.bookingCode ?? null, // "từ đâu" — mã booking để hiển thị
+            paymentMethods: info?.paymentMethods ?? [], // phương thức khách đã trả (rỗng nếu payout/adjustment)
+            commissionId: t.commissionId,
+            description: t.description,
+            createdAt: t.createdAt,
+          };
+        }),
         page,
         limit,
         totalPages: Math.ceil(totalResults / limit),

@@ -245,6 +245,86 @@ export interface AdminPlatformRevenue {
   comparison: AdminRevenueComparison | null;
 }
 
+// ===== Revenue breakdown (GET /admin/revenue/breakdown) =====
+
+/**
+ * Drill-down của `/admin/revenue` (endpoint kia chỉ cho TỔNG toàn sàn).
+ * Cùng mốc ghi nhận: `gmv` + `commission` theo NGÀY THANH TOÁN (`commission.createdAt`),
+ * `refunded` theo NGÀY TẠO yêu cầu hoàn — nên tổng mọi nhóm ở đây **bằng đúng** số tổng
+ * của `/admin/revenue` trong cùng khoảng, dùng làm mẫu số tính tỷ trọng được.
+ *
+ * `commission` đã LOẠI các khoản `disputed` (là doanh thu thật của sàn cho nhóm đó).
+ */
+export type RevenueBreakdownGroupBy = 'partner' | 'hotel' | 'city';
+export type RevenueBreakdownSortBy = 'commission' | 'gmv' | 'bookingCount';
+
+export interface AdminRevenueBreakdownParams {
+  /** Bắt buộc — backend không có giá trị mặc định. */
+  groupBy: RevenueBreakdownGroupBy;
+  /** YYYY-MM-DD, bỏ trống = all-time. */
+  from?: string;
+  to?: string;
+  /** Lọc drill-down: chỉ các khách sạn của 1 đối tác (dùng kèm `groupBy=hotel`). */
+  partnerId?: string;
+  /** Mặc định `commission`. Backend luôn sắp GIẢM DẦN, không có chiều tăng. */
+  sortBy?: RevenueBreakdownSortBy;
+  limit?: number;
+  page?: number;
+}
+
+interface RevenueBreakdownMoney {
+  gmv: string;
+  commission: string;
+  refunded: string;
+  bookingCount: number;
+}
+
+export interface RevenueBreakdownPartnerRow extends RevenueBreakdownMoney {
+  partnerId: string;
+  name: string | null;
+  hotelCount: number | null;
+}
+
+export interface RevenueBreakdownHotelRow extends RevenueBreakdownMoney {
+  hotelId: string;
+  name: string | null;
+  city: string | null;
+  partnerId: string | null;
+  partnerName: string | null;
+}
+
+export interface RevenueBreakdownCityRow extends RevenueBreakdownMoney {
+  city: string | null;
+  hotelCount: number | null;
+}
+
+/** Hình dạng dòng ĐỔI theo `groupBy` — backend trả 3 shape khác nhau trên cùng một field. */
+export type RevenueBreakdownRow =
+  | RevenueBreakdownPartnerRow
+  | RevenueBreakdownHotelRow
+  | RevenueBreakdownCityRow;
+
+/**
+ * Type guard theo field có mặt, KHÔNG ép kiểu bằng `as` (quy ước 5.1).
+ * Thứ tự kiểm quan trọng: dòng khách sạn **cũng có** `partnerId`, nên phải loại nó trước.
+ */
+export function isHotelRow(row: RevenueBreakdownRow): row is RevenueBreakdownHotelRow {
+  return 'hotelId' in row;
+}
+
+export function isPartnerRow(row: RevenueBreakdownRow): row is RevenueBreakdownPartnerRow {
+  return !isHotelRow(row) && 'partnerId' in row;
+}
+
+export interface AdminRevenueBreakdown {
+  groupBy: RevenueBreakdownGroupBy;
+  results: RevenueBreakdownRow[];
+  page: number;
+  limit: number;
+  totalPages: number;
+  totalResults: number;
+}
+
 export type AdminCommissionStatus = 'pending' | 'settled' | 'disputed';
 
 export interface AdminCommissionsParams {

@@ -1,6 +1,8 @@
 import type {
   HotelBooking,
   InventoryCalendar,
+  InventoryCalendarEntry,
+  InventoryCalendarResponse,
   InventoryDayCell,
   InventoryTypeRow,
   RoomBlockListItem,
@@ -11,13 +13,13 @@ import type {
 import { toUtcDateKey } from '@/utils/formatDate';
 
 /**
- * Tính tồn kho theo TỪNG ĐÊM cho lịch phòng của staff.
+ * Phần tính toán còn lại của màn "Rooms & inventory".
  *
- * ⚠️ Đây là bản MÔ PHỎNG công thức của BE ở phía client — BE chưa có endpoint trả tồn kho theo ngày
- * (`availabilityService.getStayQuotes` chỉ trả MIN của cả kỳ ở). Mỗi luật dưới đây bám đúng một chỗ
- * cụ thể trong `server/src/services/availability.service.ts` (`countSellableRoomsPerDate`) và
- * `room-block.service.ts` (`computeShortage`). Sửa ở đây thì phải đối chiếu lại bên đó, nếu không
- * số trên lịch sẽ khác số khách thấy lúc đặt phòng.
+ * ⚠️ **Con số trên lưới KHÔNG còn tính ở đây** — nó đến từ `GET /hotels/:id/inventory/calendar`
+ * (xem `buildInventoryGrid`, chỉ đổi hình dạng dữ liệu). Những gì còn lại dưới đây là phần BE không
+ * trả: bản đồ phòng của MỘT ngày và bản xem trước hậu quả của một đợt chặn. Chúng vẫn mô phỏng luật
+ * của BE (`availability.service.countSellableRoomsPerDate`, `room-block.service.computeShortage`)
+ * nên sửa ở đây thì phải đối chiếu lại bên đó.
  */
 
 /** Đơn ở trạng thái này KHÔNG chiếm phòng nữa. */
@@ -42,17 +44,6 @@ export function occupiesInventory(
   if (!booking.holdExpiresAt) return true; // không có hạn giữ chỗ ⇒ vẫn đang giữ phòng
   const expiry = new Date(booking.holdExpiresAt);
   return Number.isNaN(expiry.getTime()) ? true : expiry.getTime() > now.getTime();
-}
-
-/**
- * Phòng còn thuộc biên chế khách sạn — mirror `ACTIVE_ROOM_WHERE` của BE.
- *
- * CỐ Ý không lọc theo `status`: đó là tình trạng của HÔM NAY. Phòng đang có khách hoặc đang dọn vẫn
- * bán được cho những đêm sau (và lượt khách đó đã nằm trong `booked` rồi — trừ thêm là trừ hai lần).
- * Phần phụ thuộc ngày (phòng đang bị chặn để sửa) xử lý riêng ở `blockedRoomIdsOn`.
- */
-export function isActiveRoom(room: Pick<StaffRoom, 'isActive'>): boolean {
-  return room.isActive;
 }
 
 /**
@@ -147,17 +138,34 @@ export function buildRoomDayView({
 
   return rooms.map(room => {
     const block = blockByRoom.get(room.id) ?? null;
-    const booking = bookingByRoom.get(room.id) ?? null;
+    const linked = bookingByRoom.get(room.id) ?? null;
+    // Có bản ghi phòng KHÔNG còn đồng nghĩa với "khách đang ở": từ khi có `POST .../assign-room`,
+    // một đơn `confirmed` cũng chốt được phòng từ hôm trước. Phân biệt hai ca này, nếu không thì
+    // phòng vừa gán cho khách mai sẽ hiện "Occupied" trong khi tối nay vẫn phát ra được.
+    const checkedIn = linked?.status === 'checked_in';
+    const booking = checkedIn ? linked : null;
+    const heldBy = linked && !checkedIn ? linked : null;
+
     let state: RoomDayState = 'available';
     if (block) {
       // Đợt chặn đè lên tất cả: phòng hỏng thì sạch hay bẩn, có khách hay không cũng không bán được.
       state = block.blockType === 'ooo' ? 'maintenance' : 'out_of_service';
     } else if (booking) {
       state = 'occupied';
+    } else if (heldBy) {
+      state = 'held';
     } else if (includeHousekeeping && (room.hkStatus === 'dirty' || room.hkStatus === 'cleaning')) {
       state = 'cleaning';
     }
-    return { room, date, state, block, booking, heldBy: null };
+    return {
+      room,
+      date,
+      state,
+      block,
+      booking,
+      heldBy,
+      holdKind: heldBy ? ('assigned' as const) : null,
+    };
   });
 }
 
@@ -165,8 +173,9 @@ export function buildRoomDayView({
  * Xếp TẠM mỗi đơn chưa check-in vào một phòng còn trống cùng loại, để phòng đó không nằm lẫn trong
  * nhóm "còn trống phát được".
  *
- * ⚠️ **Đây là phỏng đoán của FE.** BE không có endpoint gán phòng trước — phòng vật lý chỉ được
- * chọn lúc check-in (`booking.service.checkIn` quét phòng `available` đúng loại). Vì vậy:
+ * ⚠️ **Đây là phỏng đoán của FE**, chỉ dùng cho đơn CHƯA được gán phòng. BE đã có
+ * `POST .../assign-room` để lễ tân chốt phòng thật (ô đó ra `holdKind: 'assigned'`); phần còn lại
+ * dưới đây là những đơn chưa ai chốt, phòng vật lý sẽ do check-in chọn. Vì vậy:
  * - Xếp theo **số phòng tăng dần** và theo thứ tự đơn cố định (ngày nhận phòng, rồi mã đơn) để
  *   cùng một dữ liệu luôn ra cùng kết quả — nếu không, mỗi lần tải lại một phòng khác bị đánh dấu.
  * - Phòng được xếp tạm vẫn là phòng **trống thật**, nên UI phải ghi rõ "dự kiến" và không được để
@@ -220,7 +229,12 @@ export function applyProvisionalHolds({
     }
     cursor.set(booking.roomTypeId, at + 1);
     const index = candidates[at];
-    next[index] = { ...next[index], state: 'held', heldBy: booking };
+    next[index] = {
+      ...next[index],
+      state: 'held',
+      heldBy: booking,
+      holdKind: 'provisional',
+    };
   }
 
   return { entries: next, unplaced };
@@ -327,81 +341,65 @@ export function shiftDateKey(dateKey: string, days: number): string {
   return new Date(base.getTime() + days * 86_400_000).toISOString().slice(0, 10);
 }
 
-interface BuildInventoryCalendarInput {
-  rooms: StaffRoom[];
-  blocks: RoomBlockListItem[];
-  bookings: HotelBooking[];
+interface BuildInventoryGridInput {
+  /** Nguyên response của `GET /hotels/:hotelId/inventory/calendar`. */
+  response: InventoryCalendarResponse;
   /** Giá gốc mỗi đêm theo loại phòng — chỉ để xếp hàng theo phân khúc giá. */
   basePriceByType?: Map<string, number>;
   /** Ngày đầu lịch `YYYY-MM-DD`. */
   from: string;
   /** Ngày cuối lịch `YYYY-MM-DD` (bao gồm). */
   to: string;
-  /** Có booking bị cắt vì chạm trần phân trang không. */
-  truncated?: boolean;
-  /** Mốc "bây giờ" để xét hạn giữ chỗ — tách ra để test được. */
-  now?: Date;
 }
 
 /**
- * Ghép `rooms` + `blocks` + `bookings` thành lưới tồn kho.
+ * Gom các dòng (loại phòng × đêm) của BE thành lưới theo hàng để render.
  *
- * Loại phòng lấy từ chính danh sách phòng: loại nào không có phòng vật lý nào thì cũng không có gì
- * để bán nên không cần hiện.
+ * ĐÂY CHỈ LÀ BƯỚC ĐỔI HÌNH DẠNG — mọi con số đều của BE. Bản trước tự đếm phòng/booking ở client
+ * nên không đọc được bảng `room_availability` và lệch ngay khi đối tác chỉnh tay `totalRooms`.
+ *
+ * Ngày lấy từ `from..to` chứ không từ response: đêm nào BE không trả dòng (loại phòng mới thêm,
+ * chưa có dữ liệu) vẫn phải có ô để lưới không bị thủng cột.
  */
-export function buildInventoryCalendar({
-  rooms,
-  blocks,
-  bookings,
+export function buildInventoryGrid({
+  response,
   basePriceByType,
   from,
   to,
-  truncated = false,
-  now = new Date(),
-}: BuildInventoryCalendarInput): InventoryCalendar {
+}: BuildInventoryGridInput): InventoryCalendar {
   const dates = eachDateKey(from, to);
 
-  // Gom phòng còn dùng được theo loại.
-  const typeMeta = new Map<string, { name: string; roomIds: string[] }>();
-  for (const room of rooms) {
-    const entry = typeMeta.get(room.roomTypeId);
-    if (entry) {
-      if (isActiveRoom(room)) entry.roomIds.push(room.id);
-    } else {
-      typeMeta.set(room.roomTypeId, {
-        name: room.roomType.name,
-        roomIds: isActiveRoom(room) ? [room.id] : [],
-      });
+  const typeMeta = new Map<string, { name: string; byDate: Map<string, InventoryCalendarEntry> }>();
+  for (const entry of response.results) {
+    const dateKey = toUtcDateKey(entry.date);
+    if (!dateKey) continue;
+    let meta = typeMeta.get(entry.roomTypeId);
+    if (!meta) {
+      meta = { name: entry.roomTypeName, byDate: new Map() };
+      typeMeta.set(entry.roomTypeId, meta);
     }
+    meta.byDate.set(dateKey, entry);
   }
 
-  // Phòng bị chặn OOO của từng ngày — tính một lần cho cả lưới.
-  const blockedByDate = new Map(dates.map(date => [date, blockedRoomIdsOn(blocks, date)]));
-
-  // Số phòng bị đơn đặt chiếm theo (loại phòng, đêm).
-  const bookedByTypeAndDate = new Map<string, number>();
-  for (const booking of bookings) {
-    if (!occupiesInventory(booking, now)) continue;
-    // Một đêm bị chiếm khi checkIn <= đêm < checkOut — ĐÊM CUỐI KHÔNG TÍNH, vì khách trả phòng
-    // sáng hôm đó nên phòng bán lại được cho chính đêm ấy.
-    const checkIn = toUtcDateKey(booking.checkInDate);
-    const checkOut = toUtcDateKey(booking.checkOutDate);
-    if (!checkIn || !checkOut) continue;
-    for (const date of dates) {
-      if (date >= checkIn && date < checkOut) {
-        const key = `${booking.roomTypeId}:${date}`;
-        bookedByTypeAndDate.set(key, (bookedByTypeAndDate.get(key) ?? 0) + 1);
-      }
-    }
-  }
+  let hasDerivedCells = false;
 
   const rows: InventoryTypeRow[] = [...typeMeta.entries()]
     .map(([roomTypeId, meta]) => {
       const days: InventoryDayCell[] = dates.map(date => {
-        const blocked = blockedByDate.get(date) ?? new Set<string>();
-        const sellable = meta.roomIds.filter(roomId => !blocked.has(roomId)).length;
-        const booked = bookedByTypeAndDate.get(`${roomTypeId}:${date}`) ?? 0;
-        return { date, sellable, booked, available: sellable - booked };
+        const entry = meta.byDate.get(date);
+        if (!entry) {
+          return { date, sellable: 0, booked: 0, available: 0, source: 'derived' as const };
+        }
+        if (entry.source === 'derived') hasDerivedCells = true;
+        return {
+          date,
+          sellable: entry.totalRooms,
+          booked: entry.bookedRooms,
+          // KHÔNG dùng `availableRooms` của BE: nó đã bị kẹp về 0 nên overbooking biến mất. Ô đỏ
+          // "thừa N đơn" là thứ lễ tân cần thấy nhất, nên tự trừ để giữ lại dấu âm.
+          available: entry.totalRooms - entry.bookedRooms,
+          source: entry.source,
+        };
       });
       return {
         roomTypeId,
@@ -424,5 +422,5 @@ export function buildInventoryCalendar({
       });
     });
 
-  return { from, to, rows, truncated };
+  return { from, to, rows, hasDerivedCells };
 }

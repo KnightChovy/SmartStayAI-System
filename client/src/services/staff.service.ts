@@ -1,11 +1,13 @@
 import { api } from '@/lib/api';
 import type {
+  AssignRoomPayload,
   CheckInPayload,
   CheckOutPayload,
   CheckOutResponse,
   CreateRoomBlockPayload,
   CreateRoomBlockResult,
   HkStatus,
+  InventoryCalendarResponse,
   HotelBooking,
   HotelBookingDetail,
   HotelBookingsParams,
@@ -18,6 +20,8 @@ import type {
   StaffRoom,
   StaffRoomsParams,
   StaffRoomsResponse,
+  UpdateRoomBlockPayload,
+  UpdateRoomBlockResult,
 } from '@/types/staff.types';
 
 /** Drop empty fields from the query string. */
@@ -49,7 +53,13 @@ export const staffService = {
 
   // ----- Booking / front desk -----
 
-  /** Hotel booking list (`GET /hotels/:hotelId/bookings`). */
+  /**
+   * Hotel booking list (`GET /hotels/:hotelId/bookings`).
+   *
+   * `status` nhận cả mảng ⇒ phải serialize thành **khoá lặp lại không ngoặc**
+   * (`status=confirmed&status=checked_in`). Mặc định axios sinh `status[]=…`; Express parse được cả
+   * hai, nhưng dạng lặp là dạng được chấp nhận rộng nhất — không phụ thuộc query parser của server.
+   */
   async listBookings(
     hotelId: string,
     params: HotelBookingsParams = {}
@@ -58,6 +68,7 @@ export const staffService = {
       `/hotels/${hotelId}/bookings`,
       {
         params: cleanParams(params),
+        paramsSerializer: { indexes: null },
       }
     );
     return data;
@@ -84,6 +95,36 @@ export const staffService = {
       {
         params: { voucherCode },
       }
+    );
+    return data;
+  },
+
+  /**
+   * Chốt TRƯỚC phòng vật lý cho một đơn đã xác nhận (`POST .../bookings/:bookingId/assign-room`).
+   *
+   * Trước khi có endpoint này, phòng chỉ được chọn lúc check-in ⇒ một đơn `confirmed` cho đêm nay
+   * chiếm một suất trong kho nhưng không gắn với phòng nào, và bản đồ phòng phải **đoán**. Gọi lại
+   * với `roomId` khác = đổi phòng (BE thay bản ghi cũ), không cần gỡ trước.
+   */
+  async assignRoom(
+    hotelId: string,
+    bookingId: string,
+    payload: AssignRoomPayload
+  ): Promise<HotelBooking> {
+    const { data } = await api.post<HotelBooking>(
+      `/hotels/${hotelId}/bookings/${bookingId}/assign-room`,
+      payload
+    );
+    return data;
+  },
+
+  /**
+   * Gỡ phòng đã gán trước (`DELETE .../bookings/:bookingId/assign-room`).
+   * Chỉ dùng được khi đơn còn `confirmed` — khách đã nhận phòng thì phải đi qua Front desk.
+   */
+  async releaseAssignedRoom(hotelId: string, bookingId: string): Promise<HotelBooking> {
+    const { data } = await api.delete<HotelBooking>(
+      `/hotels/${hotelId}/bookings/${bookingId}/assign-room`
     );
     return data;
   },
@@ -233,6 +274,47 @@ export const staffService = {
     const { data } = await api.post<CreateRoomBlockResult>(
       `/hotels/${hotelId}/rooms/${roomId}/blocks`,
       cleanParams(payload)
+    );
+    return data;
+  },
+
+  /**
+   * Gia hạn / rút ngắn / sửa lý do một đợt chặn đang mở (`PATCH .../blocks/:blockId`).
+   *
+   * Trước khi có endpoint này, muốn dời ngày xong việc thì phải gỡ đợt cũ rồi tạo đợt mới — mất
+   * lịch sử chi phí sự cố, mà `createBlock` lại từ chối hai đợt `ooo` chồng nhau nên thao tác còn
+   * vòng vèo. BE chỉ nhận `endDate`/`reason`/`estimatedCost` (xem `UpdateRoomBlockPayload`).
+   */
+  async updateRoomBlock(
+    hotelId: string,
+    roomId: string,
+    blockId: string,
+    payload: UpdateRoomBlockPayload
+  ): Promise<UpdateRoomBlockResult> {
+    const { data } = await api.patch<UpdateRoomBlockResult>(
+      `/hotels/${hotelId}/rooms/${roomId}/blocks/${blockId}`,
+      cleanParams(payload)
+    );
+    return data;
+  },
+
+  /**
+   * Lịch tồn kho theo TỪNG ĐÊM (`GET /hotels/:hotelId/inventory/calendar?from&to`).
+   *
+   * Nguồn DUY NHẤT cho lưới tồn kho. Trước đây FE tự ghép `rooms` + `room-blocks` + `bookings` rồi
+   * **nhân bản công thức của BE** — cách đó không đọc được bảng `room_availability` nên lệch ngay
+   * khi đối tác chỉnh tay `totalRooms`, và trôi mỗi lần BE đổi công thức.
+   *
+   * ⚠️ BE chặn tối đa **92 ngày** một lượt.
+   */
+  async getInventoryCalendar(
+    hotelId: string,
+    from: string,
+    to: string
+  ): Promise<InventoryCalendarResponse> {
+    const { data } = await api.get<InventoryCalendarResponse>(
+      `/hotels/${hotelId}/inventory/calendar`,
+      { params: { from, to } }
     );
     return data;
   },

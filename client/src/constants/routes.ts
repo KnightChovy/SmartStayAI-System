@@ -76,6 +76,7 @@ export const ROUTES = {
   accountProfile: '/account/profile',
   accountBookings: '/account/bookings',
   accountBookingDetail: (bookingId: string = ':bookingId') => `/account/bookings/${bookingId}`,
+  accountWallet: '/account/wallet',
   accountMessages: '/account/messages',
   accountReviews: '/account/reviews',
   accountNotifications: '/account/notifications',

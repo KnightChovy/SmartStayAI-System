@@ -1,12 +1,18 @@
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
-import { CreditCard, Loader2, QrCode, Timer } from 'lucide-react';
+import { CreditCard, Loader2, QrCode, Timer, Wallet } from 'lucide-react';
 import { toast } from 'sonner';
 import { usePaymentHold } from '@/hooks/bookings';
-import { useCreateSepayPayment, useCreateVnpayPayment } from '@/hooks/payments';
+import {
+  useCreateSepayPayment,
+  useCreateVnpayPayment,
+  usePayWithWallet,
+} from '@/hooks/payments';
+import { useMyWallet } from '@/hooks/wallet';
 import { queryKeys } from '@/constants/queryKeys';
 import { errorMessage } from '@/utils/errorMessage';
+import { formatCurrency } from '@/utils/formatCurrency';
 import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/button';
 import {
@@ -53,8 +59,13 @@ export default function PayNowAction({
   const queryClient = useQueryClient();
   const createVnpay = useCreateVnpayPayment();
   const createSepay = useCreateSepayPayment();
+  const payWallet = usePayWithWallet();
   const [sepayInfo, setSepayInfo] = useState<SepayPaymentInfo | null>(null);
   const { awaitingPayment, countdown } = usePaymentHold(booking);
+  // Chỉ hỏi ví khi đơn thật sự đang chờ tiền — component này được nhúng ở mọi chỗ hiện booking
+  // (kể cả đơn đã xong), gọi vô điều kiện là bắn thừa một request trên mỗi dòng danh sách.
+  const { data: wallet } = useMyWallet({ enabled: awaitingPayment });
+  const walletBalance = Number(wallet?.balanceAvailable ?? 0);
 
   const handleConfirmed = useCallback(() => {
     setSepayInfo(null);
@@ -66,7 +77,34 @@ export default function PayNowAction({
     return null;
   }
 
-  const busy = createVnpay.isPending || createSepay.isPending;
+  const busy = createVnpay.isPending || createSepay.isPending || payWallet.isPending;
+
+  /**
+   * Trả bằng số dư ví. KHÔNG phải all-or-nothing: ví thiếu thì BE vẫn trừ hết phần ví lo được và
+   * giữ đơn ở `pending` để trả nốt qua cổng ⇒ phải đọc `remainingToPay` chứ không coi 201 là xong.
+   */
+  const payFromWallet = async () => {
+    try {
+      const res = await payWallet.mutateAsync(booking.id);
+      if (Number(res.remainingToPay) > 0) {
+        toast.info(
+          t('payment.walletPaidPartial', {
+            amount: formatCurrency(res.walletApplied),
+            remaining: formatCurrency(res.remainingToPay),
+          })
+        );
+        // Đơn vẫn `pending` nên nút ở nguyên đó cho khách chọn tiếp cổng — không gọi `onPaid`.
+        return;
+      }
+      toast.success(
+        t('payment.walletPaidFull', { amount: formatCurrency(res.walletApplied) })
+      );
+      onPaid?.();
+    } catch (err) {
+      toast.error(errorMessage(err, t('payment.payError')));
+      queryClient.invalidateQueries({ queryKey: queryKeys.bookings.all });
+    }
+  };
 
   const pay = async (method: 'vnpay' | 'sepay') => {
     try {
@@ -100,6 +138,15 @@ export default function PayNowAction({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
+            {/* Ví chỉ hiện khi thật sự có tiền — mời trả bằng ví rỗng là dẫn thẳng vào lỗi 400. */}
+            {walletBalance > 0 && (
+              <DropdownMenuItem onSelect={() => payFromWallet()}>
+                <Wallet className="size-4" />
+                {t('payment.payWithWallet', {
+                  balance: formatCurrency(wallet?.balanceAvailable),
+                })}
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem onSelect={() => pay('vnpay')}>
               <CreditCard className="size-4" />
               {t('payment.payWithVnpay')}

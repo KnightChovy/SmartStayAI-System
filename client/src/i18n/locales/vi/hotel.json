@@ -117,7 +117,10 @@
     "balcony": "Ban công",
     "bedsLabel": "Giường",
     "bestValue": "Đáng tiền nhất",
-    "viewDetails": "Xem chi tiết phòng"
+    "viewDetails": "Xem chi tiết phòng",
+    "freeCancellationDays_one": "Huỷ miễn phí trước {{count}} ngày",
+    "freeCancellationDays_other": "Huỷ miễn phí trước {{count}} ngày",
+    "partialRefund": "Hoàn tới {{percent}}% nếu huỷ trước {{hours}} giờ"
   },
   "gallery": {
     "close": "Đóng thư viện ảnh",

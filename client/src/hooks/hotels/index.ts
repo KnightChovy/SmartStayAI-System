@@ -11,3 +11,4 @@ export { useDeleteHotelImage } from './use-delete-hotel-image';
 export { useSetPrimaryHotelImage } from './use-set-primary-hotel-image';
 export { useHotelAmenities } from './use-hotel-amenities';
 export { useSetHotelAmenities } from './use-set-hotel-amenities';
+export { useCancellationPresets } from './use-cancellation-presets';
