@@ -3,6 +3,7 @@ import { Request, Response } from 'express';
 import type { User } from '@prisma/client';
 import pick from '../utils/pick';
 import catchAsync from '../utils/catchAsync';
+import { isTrue } from '../utils/query';
 import { roomService, roomBlockService } from '../services';
 
 export class RoomController {
@@ -25,6 +26,15 @@ export class RoomController {
     const filter = pick(req.query, ['status', 'roomTypeId', 'isActive']);
     const options = pick(req.query, ['sortBy', 'limit', 'page']);
     const result = await roomService.listRooms(req.params.hotelId as string, req.user as User, filter, options);
+    res.send(result);
+  });
+
+  // Lịch tồn kho theo từng đêm (mỗi loại phòng × mỗi ngày còn bao nhiêu phòng bán được)
+  getInventoryCalendar = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const result = await roomService.getInventoryCalendar(req.params.hotelId as string, req.user as User, {
+      from: req.query.from as unknown as Date,
+      to: req.query.to as unknown as Date,
+    });
     res.send(result);
   });
 
@@ -63,13 +73,27 @@ export class RoomController {
   createBlock = catchAsync(async (req: Request, res: Response): Promise<void> => {
     const hotelId = req.params.hotelId as string;
     const roomId = req.params.roomId as string;
-    if (req.query.dryRun === 'true') {
+    // isTrue chứ không so với chuỗi: Joi đã convert `dryRun` thành boolean trước khi tới đây
+    // (xem utils/query.ts) — so chuỗi làm nhánh xem trước không bao giờ chạy và ghi block thật.
+    if (isTrue(req.query.dryRun)) {
       const preview = await roomBlockService.previewBlock(hotelId, roomId, req.user as User, req.body);
       res.send(preview);
       return;
     }
     const result = await roomBlockService.createBlock(hotelId, roomId, req.user as User, req.body);
     res.status(httpStatus.CREATED).send(result);
+  });
+
+  // Sửa đợt chặn đang mở (gia hạn / rút ngắn / sửa lý do, chi phí) — trả kèm hậu quả như lúc tạo
+  updateBlock = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const result = await roomBlockService.updateBlock(
+      req.params.hotelId as string,
+      req.params.roomId as string,
+      req.params.blockId as string,
+      req.user as User,
+      req.body
+    );
+    res.send(result);
   });
 
   // Đánh dấu đã sửa xong — trả phòng về kho bán cho những ngày còn lại của đợt chặn
@@ -88,7 +112,7 @@ export class RoomController {
     const blocks = await roomBlockService.listBlocks(
       req.params.hotelId as string,
       req.user as User,
-      req.query.includeResolved === 'true'
+      isTrue(req.query.includeResolved)
     );
     res.send(blocks);
   });
