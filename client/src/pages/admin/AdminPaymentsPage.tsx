@@ -267,9 +267,14 @@ export function AdminPaymentsPage() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-bold text-slate-950">
-          Commission Settlement
-        </h2>
+        <h2 className="text-lg font-bold text-slate-950">Commission Settlement</h2>
+        {/* Nói rõ đây là bảng CHỈ XEM: tất toán từng khoản giờ do cron chạy tự động sau khi
+            khách trả phòng và qua kỳ giữ tiền — endpoint duyệt tay từng khoản đã bị gỡ, điểm
+            duyệt tay duy nhất còn lại là Payouts. Không ghi ra thì người dùng đi tìm nút. */}
+        <p className="-mt-1 text-sm text-slate-500">
+          Read-only. Commissions settle automatically once the stay is closed and
+          the hold period passes; the only manual approval left is a hotel payout.
+        </p>
         {isCommissionsLoading && (
           <p className="text-sm text-muted-foreground">
             Loading commissions...

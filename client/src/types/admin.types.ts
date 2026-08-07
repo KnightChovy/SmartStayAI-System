@@ -214,9 +214,21 @@ export interface AdminRevenueSummary {
   gmv: string;
   commissionPending: string;
   commissionSettled: string;
+  /**
+   * Hoa hồng đang tranh chấp. **KHÔNG** nằm trong `netPlatformRevenue` — cộng vào là thổi
+   * phồng doanh thu sàn. Trước đây BE không trả nên tiền này biến mất khỏi mọi báo cáo.
+   */
+  commissionDisputed: string;
   refunded: string;
   netPlatformRevenue: string;
   bookingCount: number;
+  /**
+   * `netPlatformRevenue / gmv × 100` (đã làm tròn 2 chữ số ở BE).
+   * `null` = **chưa có GMV để chia**, không phải 0 ⇒ UI hiện `—`, đừng hiện `0%`.
+   */
+  takeRatePct: number | null;
+  /** `gmv / bookingCount`. `null` = chưa có booking nào (khác "bằng không"). */
+  avgBookingValue: string | null;
 }
 
 export interface AdminRevenueSeriesPoint {
@@ -239,10 +251,123 @@ export interface AdminRevenueComparison {
 }
 
 export interface AdminPlatformRevenue {
+  /** Luôn `"VND"` — nằm ở TOP-LEVEL vì áp cho mọi số tiền trong response. */
+  currency: string;
+  /** ISO — thời điểm BE chốt số, để hiện "Số liệu tính đến …". */
+  asOf: string;
   summary: AdminRevenueSummary;
   groupBy: 'day' | 'month';
   series: AdminRevenueSeriesPoint[];
   comparison: AdminRevenueComparison | null;
+}
+
+// ===== Revenue breakdown (GET /admin/revenue/breakdown) =====
+
+/**
+ * Drill-down của `/admin/revenue` (endpoint kia chỉ cho TỔNG toàn sàn).
+ * Cùng mốc ghi nhận: `gmv` + `commission` theo NGÀY THANH TOÁN (`commission.createdAt`),
+ * `refunded` theo NGÀY TẠO yêu cầu hoàn — nên tổng mọi nhóm ở đây **bằng đúng** số tổng
+ * của `/admin/revenue` trong cùng khoảng, dùng làm mẫu số tính tỷ trọng được.
+ *
+ * `commission` đã LOẠI các khoản `disputed` (là doanh thu thật của sàn cho nhóm đó).
+ */
+export type RevenueBreakdownGroupBy = 'partner' | 'hotel' | 'city';
+export type RevenueBreakdownSortBy = 'commission' | 'gmv' | 'bookingCount';
+
+export interface AdminRevenueBreakdownParams {
+  /** Bắt buộc — backend không có giá trị mặc định. */
+  groupBy: RevenueBreakdownGroupBy;
+  /** YYYY-MM-DD, bỏ trống = all-time. */
+  from?: string;
+  to?: string;
+  /** Lọc drill-down: chỉ các khách sạn của 1 đối tác (dùng kèm `groupBy=hotel`). */
+  partnerId?: string;
+  /** Mặc định `commission`. Backend luôn sắp GIẢM DẦN, không có chiều tăng. */
+  sortBy?: RevenueBreakdownSortBy;
+  limit?: number;
+  page?: number;
+}
+
+interface RevenueBreakdownMoney {
+  gmv: string;
+  commission: string;
+  /**
+   * % hoa hồng **bình quân gia quyền trong kỳ**, lấy thẳng từ mức đã đóng băng trong
+   * `platform_commissions` lúc thanh toán. Luôn có giá trị (`"0"` khi nhóm không có doanh thu).
+   *
+   * ⚠️ KHÔNG tự tính bằng `commission / gmv`: khi có hoàn tiền, BE tính lại `commission` trên
+   * phần khách sạn thực giữ nhưng `gmv` giữ nguyên ⇒ hai số khác mẫu số, chia ra ra sai
+   * (15% thật hiện thành 11.3%). Vì lý do đó `gmv × commissionRatePct ≠ commission` là đúng
+   * thiết kế, không phải bug.
+   */
+  commissionRatePct: string;
+  refunded: string;
+  bookingCount: number;
+  /** Tỉ trọng doanh thu sàn của nhóm này, tính trên `totals.commission` (toàn bộ nhóm, không riêng trang). */
+  sharePct: number;
+}
+
+export interface RevenueBreakdownPartnerRow extends RevenueBreakdownMoney {
+  partnerId: string;
+  name: string | null;
+  hotelCount: number | null;
+}
+
+export interface RevenueBreakdownHotelRow extends RevenueBreakdownMoney {
+  hotelId: string;
+  name: string | null;
+  city: string | null;
+  partnerId: string | null;
+  partnerName: string | null;
+}
+
+export interface RevenueBreakdownCityRow extends RevenueBreakdownMoney {
+  city: string | null;
+  hotelCount: number | null;
+}
+
+/** Hình dạng dòng ĐỔI theo `groupBy` — backend trả 3 shape khác nhau trên cùng một field. */
+export type RevenueBreakdownRow =
+  | RevenueBreakdownPartnerRow
+  | RevenueBreakdownHotelRow
+  | RevenueBreakdownCityRow;
+
+/**
+ * Type guard theo field có mặt, KHÔNG ép kiểu bằng `as` (quy ước 5.1).
+ * Thứ tự kiểm quan trọng: dòng khách sạn **cũng có** `partnerId`, nên phải loại nó trước.
+ */
+export function isHotelRow(row: RevenueBreakdownRow): row is RevenueBreakdownHotelRow {
+  return 'hotelId' in row;
+}
+
+export function isPartnerRow(row: RevenueBreakdownRow): row is RevenueBreakdownPartnerRow {
+  return !isHotelRow(row) && 'partnerId' in row;
+}
+
+/**
+ * Tổng của **TOÀN BỘ** nhóm trong kỳ, không phải riêng trang hiện tại ⇒ dùng làm mẫu số
+ * tính tỉ trọng được. `refunded` chỉ cộng những nhóm CÓ xuất hiện trong `results` (nhóm chỉ
+ * có hoàn tiền mà không có hoa hồng không thành dòng nào) để tổng luôn khớp tổng các dòng.
+ */
+export interface RevenueBreakdownTotals {
+  gmv: string;
+  commission: string;
+  refunded: string;
+  bookingCount: number;
+}
+
+export interface AdminRevenueBreakdown {
+  groupBy: RevenueBreakdownGroupBy;
+  /** Luôn `"VND"` — áp cho mọi số tiền trong response. */
+  currency: string;
+  /** ISO — thời điểm BE chốt số. */
+  asOf: string;
+  totals: RevenueBreakdownTotals;
+  results: RevenueBreakdownRow[];
+  page: number;
+  limit: number;
+  totalPages: number;
+  totalResults: number;
 }
 
 export type AdminCommissionStatus = 'pending' | 'settled' | 'disputed';
