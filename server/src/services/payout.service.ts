@@ -5,7 +5,7 @@ import prisma from '../config/prisma';
 import ApiError from '../utils/ApiError';
 import { hotelService } from './hotel.service';
 import { walletService } from './wallet.service';
-import { decrypt } from '../utils/encryption';
+import { decrypt, encrypt } from '../utils/encryption';
 
 // Rút tối thiểu 100.000đ để tránh chi trả vụn vặt tốn phí chuyển khoản.
 const MIN_PAYOUT_AMOUNT = new Prisma.Decimal(100_000);
@@ -52,6 +52,76 @@ export class PayoutService {
       await walletService.holdForPayout(tx, hotelId, amount, payout.id);
       return payout;
     });
+  };
+
+  /**
+   * [Chủ KS] Đổi/tạo tài khoản nhận tiền CHÍNH của khách sạn. CHỈ chủ KS (owner) được đổi — đây là
+   * nơi tiền rút được chuyển tới, nên nhất quán với payout owner-only. Số TK lưu MÃ HOÁ (encrypt).
+   *
+   * Đã có tài khoản chính ⇒ cập nhật TẠI CHỖ (giữ nguyên id để yêu cầu rút đang trỏ tới không hỏng);
+   * chưa có ⇒ tạo mới. Field tuỳ chọn KHÔNG gửi (undefined) ⇒ giữ nguyên giá trị cũ; gửi rỗng ⇒ null.
+   *
+   * ⚠️ Không chặn khi đang có yêu cầu rút pending: đổi tài khoản lúc đó khiến PM chi trả vào tài khoản
+   * MỚI (cùng bản ghi). Chủ KS tự quyết cả hai thao tác nên đây là hành vi mong muốn.
+   */
+  updatePayoutAccount = async (
+    hotelId: string,
+    currentUser: User,
+    body: {
+      accountHolder: string;
+      bankName: string;
+      accountNumber: string;
+      bankBranch?: string;
+      swiftCode?: string;
+      taxIdVatNumber?: string;
+      registeredBusinessAddress?: string;
+    }
+  ) => {
+    const hotel = await prisma.hotel.findFirst({
+      where: { id: hotelId, deletedAt: null },
+      include: { partner: { select: { id: true, ownerId: true } } },
+    });
+    if (!hotel) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy khách sạn');
+    }
+    if (hotel.partner.ownerId !== currentUser.id) {
+      throw new ApiError(httpStatus.FORBIDDEN, 'Chỉ chủ khách sạn được đổi tài khoản nhận tiền');
+    }
+
+    // undefined ⇒ không đụng tới (giữ giá trị cũ khi update); '' ⇒ null
+    const clean = (v?: string): string | null | undefined => (v === undefined ? undefined : v.trim() || null);
+    const data = {
+      accountHolder: body.accountHolder.trim(),
+      bankName: body.bankName.trim(),
+      accountNumber: encrypt(body.accountNumber.trim()), // lưu ciphertext, KHÔNG bao giờ lưu plaintext
+      bankBranch: clean(body.bankBranch),
+      swiftCode: clean(body.swiftCode),
+      taxIdVatNumber: clean(body.taxIdVatNumber),
+      registeredBusinessAddress: clean(body.registeredBusinessAddress),
+    };
+
+    const existing = await prisma.hotelPayoutAccount.findFirst({
+      where: { hotelId, isPrimary: true },
+      orderBy: { createdAt: 'desc' },
+    });
+    const account = existing
+      ? await prisma.hotelPayoutAccount.update({ where: { id: existing.id }, data })
+      : await prisma.hotelPayoutAccount.create({
+          data: { ...data, hotelId, partnerId: hotel.partner.id, isPrimary: true },
+        });
+
+    // Trả kèm số ĐẦY ĐỦ (chủ KS vừa nhập) — cùng shape với payoutAccount ở GET /wallet để FE tái dùng
+    return {
+      id: account.id,
+      accountHolder: account.accountHolder,
+      bankName: account.bankName,
+      bankBranch: account.bankBranch,
+      swiftCode: account.swiftCode,
+      taxIdVatNumber: account.taxIdVatNumber,
+      registeredBusinessAddress: account.registeredBusinessAddress,
+      isPrimary: account.isPrimary,
+      accountNumber: decrypt(account.accountNumber),
+    };
   };
 
   /** [Chủ KS / manager] Lịch sử yêu cầu rút của MỘT khách sạn (KHÔNG lộ số tài khoản). */
