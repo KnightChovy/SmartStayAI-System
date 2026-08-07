@@ -519,15 +519,39 @@ export class BookingService {
     // mọi phép tính tiền hoàn đi theo tổng đã trả của booking.
     const paidPayment = booking.payments[0] ?? null;
     const paidTotal = booking.payments.reduce((sum, p) => sum.add(p.amount), new Prisma.Decimal(0));
+
+    /**
+     * Đơn CHƯA XÁC NHẬN và CHƯA TRẢ ĐỦ ⇒ hoàn nguyên 100%, KHÔNG áp phí huỷ bậc thang.
+     *
+     * Bậc thang tồn tại để bù cho khách sạn khi phòng bị giữ rồi nhả sát ngày. Đơn `pending` chưa
+     * trả đủ thì chưa bao giờ được xác nhận, và khách sạn CHƯA NHẬN một đồng nào (recordEarning chỉ
+     * chạy trong finalizeConfirmedBooking) — không có gì để bù.
+     *
+     * Quan trọng hơn: chính hệ thống sẽ tự huỷ đơn này khi hết hạn giữ chỗ và hoàn 100% (xem
+     * releaseExpiredHolds). Áp phí ở đây tạo ra nghịch lý "bấm huỷ thì mất tiền, ngồi im thì được
+     * hoàn đủ" — phạt đúng người chủ động nhả phòng sớm cho khách khác.
+     */
+    const isUnpaidPending = booking.status === 'pending' && paidTotal.lessThan(booking.totalAmount);
+
     // Lỗi khách sạn hoặc lỗi hệ thống thì hoàn nguyên tiền, KHÔNG trừ phí huỷ theo chính sách —
     // khách không làm gì sai thì không có lý do gì để họ mất tiền.
-    const refundAmount = !paidPayment
-      ? new Prisma.Decimal(0)
-      : reasonCode && FULL_REFUND_REASON_CODES.includes(reasonCode)
-        ? paidTotal
-        : computeRefundAmount(policy, hoursBeforeCheckIn, paidTotal);
+    const refundAmount =
+      !paidPayment || paidTotal.lessThanOrEqualTo(0)
+        ? new Prisma.Decimal(0)
+        : isUnpaidPending || (reasonCode && FULL_REFUND_REASON_CODES.includes(reasonCode))
+          ? paidTotal
+          : computeRefundAmount(policy, hoursBeforeCheckIn, paidTotal);
 
-    return { booking, policy, checkInMoment, hoursBeforeCheckIn, paidPayment, paidTotal, refundAmount };
+    return {
+      booking,
+      policy,
+      checkInMoment,
+      hoursBeforeCheckIn,
+      paidPayment,
+      paidTotal,
+      refundAmount,
+      isUnpaidPending,
+    };
   };
 
   /**
@@ -537,7 +561,7 @@ export class BookingService {
    * freeUntilMoment để FE đếm ngược).
    */
   getRefundPreview = async (bookingId: string, currentUser: User) => {
-    const { booking, policy, checkInMoment, hoursBeforeCheckIn, paidPayment, paidTotal, refundAmount } =
+    const { booking, policy, checkInMoment, hoursBeforeCheckIn, paidPayment, paidTotal, refundAmount, isUnpaidPending } =
       await this.loadBookingForCancel(bookingId, currentUser);
 
     // Tiền đã trả = TỔNG các payment (booking có thể trả ghép), không phải một payment
@@ -566,13 +590,19 @@ export class BookingService {
       // Phần bị giữ lại nếu huỷ ngay bây giờ
       penaltyAmount: paidAmount.sub(refundAmount),
       hoursBeforeCheckIn: Math.round(hoursBeforeCheckIn * 10) / 10,
+      /**
+       * Đơn chưa xác nhận & chưa trả đủ ⇒ bậc thang KHÔNG áp dụng, hoàn 100% (xem loadBookingForCancel).
+       * Phải nói ra để FE khỏi vẽ bảng bậc thang + cảnh báo "sau mốc X chỉ còn hoàn 30%" bên cạnh một
+       * con số hoàn 100% — hai thứ đó mâu thuẫn nhau ngay trên cùng một panel.
+       */
+      isUnpaidPending,
       // Bậc thang: bậc đang áp + % hoàn + toàn bộ bậc để FE vẽ bảng
-      appliedTier,
-      refundPercent: appliedTier?.refundPercent ?? 0,
+      appliedTier: isUnpaidPending ? null : appliedTier,
+      refundPercent: isUnpaidPending ? 100 : (appliedTier?.refundPercent ?? 0),
       tiers: policy.tiers,
       // Cảnh báo bậc kế: sau `changesAt` thì % hoàn tụt xuống `refundPercent` (null nếu đã ở bậc thấp nhất)
       nextTier:
-        appliedTier && nextTier
+        !isUnpaidPending && appliedTier && nextTier
           ? {
               changesAt: new Date(checkInMoment.getTime() - appliedTier.minHoursBefore * 60 * 60 * 1000),
               refundPercent: nextTier.refundPercent,
@@ -588,7 +618,7 @@ export class BookingService {
 
   cancelBooking = async (bookingId: string, currentUser: User, payload: CancelBookingDto = {}) => {
     const { reason, reasonCode, bankAccount } = payload;
-    const { booking, paidPayment, refundAmount } = await this.loadBookingForCancel(
+    const { booking, paidPayment, refundAmount, isUnpaidPending } = await this.loadBookingForCancel(
       bookingId,
       currentUser,
       reasonCode
@@ -632,15 +662,46 @@ export class BookingService {
         data: { bookedRooms: { decrement: 1 } },
       });
 
+      // Đơn chưa xác nhận & chưa trả đủ: phần đã trừ VÍ hoàn THẲNG vào ví ngay, không qua bước khách
+      // sạn duyệt. Tiền ví là bút toán nội bộ (không ai phải đi chuyển khoản), khách sạn chưa nhận
+      // đồng nào cho đơn này, nên chẳng có gì để duyệt — bắt khách chờ chỉ là giam tiền vô cớ.
+      // Cùng cách xử lý với nhánh hết hạn giữ chỗ ở releaseExpiredHolds, để hai đường ra của cùng
+      // một đơn không cho hai kết quả khác nhau.
+      let walletRefunded = new Prisma.Decimal(0);
+      if (isUnpaidPending) {
+        const walletPayments = await tx.payment.findMany({
+          where: { bookingId, paymentMethod: 'wallet', status: 'completed' },
+          select: { id: true, amount: true },
+        });
+        for (const payment of walletPayments) {
+          // eslint-disable-next-line no-await-in-loop
+          await walletService.creditCustomer(
+            tx,
+            booking.customerId,
+            payment.amount,
+            bookingId,
+            // Tiếng Anh vì chuỗi này hiển thị nguyên văn trong sổ ví của khách
+            `Refund for cancelled booking ${booking.bookingCode}`
+          );
+          // eslint-disable-next-line no-await-in-loop
+          await tx.payment.update({ where: { id: payment.id }, data: { status: 'refunded' } });
+          walletRefunded = walletRefunded.add(payment.amount);
+        }
+      }
+
+      // Phần CÒN LẠI mới cần yêu cầu hoàn: tiền qua cổng phải có người thật đi chuyển khoản.
+      // Trừ đi phần ví vừa hoàn thẳng ở trên để KHÔNG hoàn hai lần cùng một khoản.
+      const refundToRequest = refundAmount.sub(walletRefunded);
+
       // Chỉ tạo yêu cầu hoàn khi THỰC SỰ có tiền để hoàn. Huỷ muộn bị phạt hết (0đ) thì không có gì
       // để khách sạn duyệt — vết đối soát đã nằm ở cancelledAt/cancellationReason của booking.
       let refund: { id: string; amount: Prisma.Decimal; status: RefundStatus } | null = null;
-      if (paidPayment && refundAmount.greaterThan(0)) {
+      if (paidPayment && refundToRequest.greaterThan(0)) {
         refund = await tx.refund.create({
           data: {
             paymentId: paidPayment.id,
             requestedBy: currentUser.id,
-            amount: refundAmount,
+            amount: refundToRequest,
             reason: reason || 'Guest cancelled the booking',
             status: 'pending',
             refundMethod,
@@ -656,7 +717,10 @@ export class BookingService {
       }
 
       const result = await tx.booking.findUniqueOrThrow({ where: { id: bookingId }, include: bookingInclude });
-      return { ...withPaymentBalance(result), refund };
+      // `walletRefunded` BẮT BUỘC phải ra tới client: hoàn thẳng vào ví thì KHÔNG có bản ghi Refund,
+      // nên `refund: null` ở đây mang HAI nghĩa hoàn toàn khác nhau — "không được hoàn đồng nào" và
+      // "đã hoàn xong ngay vào ví". Thiếu số này thì màn huỷ báo nhầm là khách mất trắng.
+      return { ...withPaymentBalance(result), refund, walletRefunded };
     });
   };
 
