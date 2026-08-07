@@ -8,6 +8,15 @@ This file tracks the accomplished tasks, resolved user requests, and structural/
 
 ## Completed Tasks Checklist
 
+### August 7, 2026 (continued 4)
+
+- [x] **Nâng `LinkifiedText` lên khớp bản đầy đủ bên client (`ChatMessageText`) — nút thanh toán VNPay + ảnh QR SePay, không chỉ link/in đậm**:
+  - **Bối cảnh**: đồng thời với đợt sửa ở mobile, một đồng đội bên client làm đúng vấn đề này nhưng đi xa hơn — nhận host `vnpayment.vn`/`vnpay.vn` để nâng link VNPay thành **nút bấm thật**, và host `qr.sepay.vn` để render URL ảnh QR SePay thành **ảnh** ngay trong bong bóng chat thay vì một chuỗi URL không quét được. Đồng bộ nốt cho mobile theo đúng bản đó.
+  - **`components/shared/LinkifiedText/LinkifiedText.tsx` viết lại**: thêm phân loại URL theo `hostname` đã parse (`PAYMENT_HOSTS`/`QR_IMAGE_HOSTS`, không `includes()` chuỗi thô để tránh mạo danh kiểu `vnpayment.vn.ke-gian.com`). Token `pay` → `<Text>` in đậm nền `bronze` bấm được (mô phỏng nút, vì RN không nhét được `Pressable`/`View` block vào giữa dòng `Text`). Token `qr` → nhúng **`Image` gốc của `react-native`** (KHÔNG phải `expo-image` như quy ước chung — chỉ core `Image` mới nhúng nội tuyến được vào trong `Text` trên cả iOS/Android), bọc `\n` trước/sau để tự xuống dòng riêng, bấm vào mở ảnh gốc.
+  - Thêm prop bắt buộc `payLabel`/`qrLabel` (mỗi màn tự truyền theo ngôn ngữ) — cập nhật cả 3 nơi gọi: `MessageBubble.tsx` (thêm `useTranslation('chat')`, trước đây file này chưa dùng i18n), `HotelConversationThread.tsx` (`ThreadBubble` tự gọi `useTranslation('chat')`), `(staff)/conversation/[id].tsx` (staff chưa i18n hoá nên giữ nhãn tiếng Anh cứng, khớp quy ước cổng đó).
+  - **i18n**: thêm `chat.payNow`/`chat.qrAlt` vào `locales/{en,vi}/chat.json`.
+  - **Verify**: `tsc --noEmit` giữ nguyên baseline 63 lỗi pre-existing (`components/ui/*` gluestack, không phát sinh lỗi mới), `eslint` sạch trên 4 file sửa. ⚠️ Chưa chạy được app ⇒ nhờ bạn thử: link VNPay hiện thành nút "Thanh toán ngay" nổi bật, ảnh QR SePay hiện thẳng thành ảnh quét được.
+
 ### August 7, 2026 (continued 3)
 
 - [x] **Link thanh toán VNPay/SePay AI gửi trong chat giờ bấm được (đồng bộ với fix bên client)**:

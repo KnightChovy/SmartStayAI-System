@@ -29,6 +29,8 @@ function TypingIndicatorRow({ label }: { label: string }) {
 }
 
 function ThreadBubble({ message, aiLabel, staffLabel }: { message: ConversationMessage; aiLabel: string; staffLabel: string }) {
+  const { t } = useTranslation('chat');
+
   if (message.senderType === 'system') {
     return (
       <View className="items-center my-2">
@@ -62,6 +64,8 @@ function ThreadBubble({ message, aiLabel, staffLabel }: { message: ConversationM
           size="sm"
           className={cn('font-bevi leading-5', outgoing ? 'text-white' : 'text-on-surface')}
           linkClassName={cn('font-bevi-bold underline', outgoing ? 'text-white' : 'text-bronze')}
+          payLabel={t('payNow')}
+          qrLabel={t('qrAlt')}
           text={message.content}
         />
       </View>

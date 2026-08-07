@@ -58,10 +58,13 @@ function MessageBubble({ message }: { message: Message }) {
             : 'bg-white border border-gray-100 rounded-t-2xl rounded-br-2xl rounded-bl-md'
         )}
       >
+        {/* Cổng staff chưa i18n hoá nên nhãn để tiếng Anh, khớp phần còn lại của portal. */}
         <LinkifiedText
           size="sm"
           className={outgoing ? 'text-white leading-5' : 'text-gray-800 leading-5'}
           linkClassName={outgoing ? 'text-white underline font-bold' : 'text-staff-700 underline font-bold'}
+          payLabel="Open payment link"
+          qrLabel="Bank transfer QR code"
           text={message.content}
         />
       </View>

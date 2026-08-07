@@ -2,6 +2,13 @@
 
 This file tracks the accomplished tasks, resolved user requests, and visual/functional refactoring completed in the client application.
 
+## August 7, 2026 (continued 5)
+
+- [x] **Sửa merge conflict resolve lộn — dùng lại `ChatMessageText` của đồng đội thay cho `LinkifiedText` tự viết (mất cả nút thanh toán lẫn ảnh QR SePay)**:
+  - **Bối cảnh**: một đồng đội khác (nhánh `fix/chat-payment-link-button`, PR #257) làm **song song đúng vấn đề y hệt** — nút thanh toán + `**in đậm**` — nhưng đi xa hơn: `components/chat/ChatMessageText.tsx` còn nhận diện host `vnpayment.vn`/`vnpay.vn` để nâng link VNPay thành **nút bấm thật** ("Thanh toán ngay", có icon) thay vì chỉ gạch chân, và host `qr.sepay.vn` để render thẳng URL ảnh QR SePay thành **`<img>`** (bọc link phóng to) — khách quét được ngay trong khung chat thay vì nhận một chuỗi URL. Khi merge `develop` vào nhánh đang làm, user tự resolve tay và **lỡ bỏ luôn phần tích hợp ở cả 2 bên**: 3 màn (`floating-chat-widget-shadcnui.tsx`, `MessagesPage.tsx`, `ConversationThread.tsx`) revert về `{item.text}`/`{message.content}` thô, chỉ còn sót lại `import { LinkifiedText }` không dùng tới (import chết) — kèm bug phụ: 2/3 nơi còn bị **mất luôn class `whitespace-pre-wrap`** (bản của đồng đội chuyển class này vào bên trong `ChatMessageText`, xoá ở `<div>` cha), nên tin nhắn xuống dòng sẽ dồn lại thành một dòng.
+  - **Quyết định**: dùng `ChatMessageText` (bản đầy đủ hơn — có cả nút thanh toán + ảnh QR mà bản `LinkifiedText` của mình không có), xoá hẳn `components/shared/LinkifiedText.tsx` để khỏi tồn tại 2 cách làm cùng một việc. Nối lại đúng theo commit gốc của đồng đội (`5b152c2` + `aaa605f`): cả 3 màn đều `<ChatMessageText text={...} payLabel={...} qrLabel={...} onDarkBubble={isGuest|isStaff} />`; `payLabel`/`qrLabel` lấy qua i18n (`t('chat.payNow')`/`t('chat.qrAlt')`, key đã có sẵn từ merge) ở 2 màn khách, còn `ConversationThread.tsx` (staff, chưa i18n hoá) giữ nhãn tiếng Anh cứng `"Open payment link"`/`"Bank transfer QR code"` đúng quy ước sẵn có của cổng đó.
+  - **Verify**: `tsc -p tsconfig.app.json --noEmit` + `eslint` sạch trên 3 file sửa; grep xác nhận `LinkifiedText` không còn tham chiếu nào trong `client/src`.
+
 ## August 7, 2026 (continued 4)
 
 - [x] **Link thanh toán VNPay/SePay do AI đặt phòng tự động gửi trong chat giờ bấm được**:
