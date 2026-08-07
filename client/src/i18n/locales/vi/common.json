@@ -60,6 +60,8 @@
     "close": "Đóng khung chat",
     "error": "Xin lỗi, hiện chưa kết nối được với trợ lý. Bạn thử lại giúp nhé.",
     "switchError": "Xin lỗi, hiện chưa chuyển được cuộc trò chuyện. Bạn thử lại giúp nhé.",
+    "payNow": "Thanh toán ngay",
+    "qrAlt": "Mã QR chuyển khoản",
     "quick": {
       "stays": "Chỗ nghỉ ở Đà Nẵng",
       "hanoi": "Khách sạn ở Hà Nội",

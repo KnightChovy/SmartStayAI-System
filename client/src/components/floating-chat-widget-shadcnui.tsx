@@ -18,7 +18,7 @@ import { useTranslation } from 'react-i18next';
 import { useMatch } from 'react-router';
 import { toast } from 'sonner';
 
-import { ConversationModeToggle } from '@/components/chat';
+import { ChatMessageText, ConversationModeToggle } from '@/components/chat';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -635,9 +635,12 @@ export function FloatingChatWidget() {
                               'rounded-tl-none border border-emerald-500/25 bg-emerald-500/10 text-foreground'
                           )}
                         >
-                          <p className="whitespace-pre-wrap wrap-break-word">
-                            {item.text}
-                          </p>
+                          <ChatMessageText
+                            text={item.text}
+                            payLabel={t('chat.payNow')}
+                            qrLabel={t('chat.qrAlt')}
+                            onDarkBubble={isGuest}
+                          />
                         </div>
 
                         {isAi &&
