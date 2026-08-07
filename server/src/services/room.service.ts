@@ -2,7 +2,7 @@ import httpStatus from 'http-status';
 import type { Prisma, User, HkStatus, RoomStatus } from '@prisma/client';
 import prisma from '../config/prisma';
 import ApiError from '../utils/ApiError';
-import { toUtcDate } from '../utils/dates';
+import { todayInVietnamDate } from '../utils/dates';
 import { cleaningSlaLevel } from '../utils/room-status';
 import { hotelService } from './hotel.service';
 import { roomBlockService } from './room-block.service';
@@ -42,7 +42,7 @@ export class RoomService {
    * trừ hai lần cho cùng một sự việc.
    */
   private shiftFutureInventory = async (tx: Prisma.TransactionClient, roomTypeId: string, delta: 1 | -1) => {
-    const today = toUtcDate(new Date());
+    const today = todayInVietnamDate();
     await tx.roomAvailability.updateMany({
       where: { roomTypeId, date: { gte: today }, ...(delta === -1 && { totalRooms: { gt: 0 } }) },
       data: { totalRooms: delta === 1 ? { increment: 1 } : { decrement: 1 } },
@@ -155,7 +155,7 @@ export class RoomService {
 
   /** Bắc cầu cho lối vào cũ: bấm Maintenance mà không nhập ngày ⇒ chặn OOO có hạn LEGACY_BLOCK_DAYS. */
   private blockForLegacyMaintenance = async (hotelId: string, roomId: string, currentUser: User) => {
-    const startDate = toUtcDate(new Date());
+    const startDate = todayInVietnamDate();
     const endDate = new Date(startDate);
     endDate.setUTCDate(endDate.getUTCDate() + LEGACY_BLOCK_DAYS);
     return roomBlockService.createBlock(hotelId, roomId, currentUser, {

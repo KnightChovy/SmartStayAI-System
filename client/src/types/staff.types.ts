@@ -246,6 +246,54 @@ export interface RoomBlockListItem extends RoomBlock {
   room: { id: string; roomNumber: string; floor: number | null };
 }
 
+/**
+ * Payload chặn phòng theo KHOẢNG NGÀY (`POST /hotels/:hotelId/rooms/:roomId/blocks`).
+ *
+ * Đây là cơ chế DUY NHẤT của BE cho "đổi tình trạng phòng theo ngày" — cột `rooms.status` là trạng
+ * thái tức thời của hôm nay, không có chiều thời gian.
+ */
+export interface CreateRoomBlockPayload {
+  blockType: RoomBlockType;
+  /** `YYYY-MM-DD`. */
+  startDate: string;
+  /** `YYYY-MM-DD` — ngày cuối **CÒN BỊ CHẶN** (tính cả ngày này). */
+  endDate: string;
+  /** BE bắt buộc, tối đa 500 ký tự: chặn phòng là rút một phòng khỏi kho bán. */
+  reason: string;
+  estimatedCost?: number;
+}
+
+/** Đơn đã được gán ĐÚNG phòng sắp bị chặn ⇒ chắc chắn phải xếp lại phòng khác. */
+export interface AffectedBooking {
+  id: string;
+  bookingCode: string;
+  checkInDate: string;
+  checkOutDate: string;
+  status: BookingStatus;
+  guestName: string;
+}
+
+/** Đêm mà sau khi chặn sẽ KHÔNG đủ phòng cho số đơn đã nhận (`booked > sellable`). */
+export interface ShortageNight {
+  date: string;
+  sellable: number;
+  booked: number;
+  shortage: number;
+}
+
+/** Kết quả `?dryRun=true` — xem trước hậu quả, BE không ghi gì. */
+export interface RoomBlockPreview {
+  roomNumber: string;
+  roomTypeName: string;
+  affectedBookings: AffectedBooking[];
+  shortageNights: ShortageNight[];
+}
+
+/** Response khi chặn thật — kèm luôn preview để staff thấy đúng thứ mình vừa gây ra. */
+export interface CreateRoomBlockResult extends RoomBlockPreview {
+  block: RoomBlock;
+}
+
 export interface StaffRoom {
   id: string;
   hotelId: string;
@@ -310,6 +358,44 @@ export interface InventoryTypeRow {
   basePrice: number | null;
   /** Đúng thứ tự ngày từ `from` tới `to`. */
   days: InventoryDayCell[];
+}
+
+/**
+ * Tình trạng của MỘT phòng trong MỘT ngày cụ thể.
+ *
+ * Dùng đúng 4 nhãn của room map (`RoomStatus`) để lễ tân không phải học từ mới, cộng thêm
+ * `out_of_service`: BE gộp cả `ooo` lẫn `oos` vào một nhãn `maintenance`, nhưng chỉ `ooo` mới rút
+ * phòng khỏi kho bán — gộp tiếp ở đây thì nhìn lịch sẽ tưởng đếm sai số phòng.
+ *
+ * ⚠️ `cleaning` CHỈ có nghĩa với hôm nay: trạng thái buồng phòng là tình trạng của lúc này, phòng
+ * đang dọn sáng nay không nói gì về tuần sau (xem `includeHousekeeping` của `buildRoomDayView`).
+ */
+export type RoomDayState =
+  | 'available'
+  | 'held'
+  | 'occupied'
+  | 'cleaning'
+  | 'maintenance'
+  | 'out_of_service';
+
+export interface RoomDayEntry {
+  room: StaffRoom;
+  /** Ngày đang xét (`YYYY-MM-DD`). */
+  date: string;
+  state: RoomDayState;
+  /** Đợt chặn phủ đúng ngày này — `null` nếu không có. */
+  block: RoomBlockListItem | null;
+  /** Đơn đã được GÁN đúng phòng này và chiếm đêm này — `null` nếu không có. */
+  booking: HotelBooking | null;
+  /**
+   * Đơn đã đặt nhưng CHƯA check-in, được FE xếp TẠM vào phòng này để nó không nằm trong nhóm
+   * "còn trống phát được".
+   *
+   * ⚠️ **Là phỏng đoán của FE, không phải dữ liệu của BE**: BE chỉ chọn phòng vật lý lúc check-in.
+   * Xếp theo số phòng tăng dần nên ổn định giữa các lần tải, nhưng phòng thật có thể khác —
+   * UI phải nói rõ điều đó trước khi lễ tân đọc số phòng cho khách.
+   */
+  heldBy: HotelBooking | null;
 }
 
 export interface InventoryCalendar {

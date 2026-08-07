@@ -28,9 +28,10 @@ const GUIDE = [
   },
   {
     icon: BedDouble,
-    title: 'Room map',
-    detail: 'Live status per room. Change a status when a room goes out of service.',
-    to: ROUTES.staffRooms,
+    title: 'Rooms & inventory',
+    detail:
+      'Click a day to see every room for that night. Blocking a room only affects the dates you pick.',
+    to: ROUTES.staffInventory,
   },
 ];
 

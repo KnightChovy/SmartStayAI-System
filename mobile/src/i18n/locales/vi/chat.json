@@ -8,6 +8,13 @@
     "suggest": "Gợi ý một khách sạn"
   },
   "inputPlaceholder": "Nhập tin nhắn…",
+  "scope": {
+    "platform": "Toàn sàn",
+    "hotel": "Khách sạn này",
+    "choose": "Chọn khách sạn",
+    "change": "Đổi khách sạn",
+    "pickerTitle": "Nhắn tin với khách sạn"
+  },
   "history": {
     "title": "Đoạn chat",
     "open": "Lịch sử trò chuyện",

@@ -45,6 +45,7 @@
     "pickHotel": "Choose a hotel",
     "searchHotel": "Search hotels…",
     "noHotels": "No hotels found.",
+    "hotelLoadError": "We couldn't load hotels. Check your connection and try again.",
     "loadError": "Couldn't load your messages. Please try again.",
     "threadError": "Couldn't load this conversation.",
     "composerPlaceholder": "Type a message…",

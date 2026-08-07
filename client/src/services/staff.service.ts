@@ -3,14 +3,17 @@ import type {
   CheckInPayload,
   CheckOutPayload,
   CheckOutResponse,
+  CreateRoomBlockPayload,
+  CreateRoomBlockResult,
+  HkStatus,
   HotelBooking,
   HotelBookingDetail,
   HotelBookingsParams,
   HotelBookingsResponse,
   HousekeepingTask,
   HousekeepingTaskStatus,
+  RoomBlock,
   RoomBlockListItem,
-  RoomStatus,
   StaffHotel,
   StaffRoom,
   StaffRoomsParams,
@@ -191,17 +194,60 @@ export const staffService = {
     return data;
   },
 
-  /** Quickly change a room's status (`PATCH .../status`). */
-  async updateRoomStatus(
+  /*
+   * CỐ Ý KHÔNG nối `PATCH .../rooms/:roomId/status` (lối vào cũ của Room map): endpoint đó **không
+   * có chiều thời gian** — BE dịch `maintenance` thành một đợt chặn cứng 7 ngày kể từ hôm nay và
+   * `available` thành "gỡ MỌI đợt chặn còn hiệu lực". Đổi tình trạng theo ngày dùng
+   * `createRoomBlock` / `resolveRoomBlock`; đổi trạng thái dọn của hôm nay dùng `updateHousekeeping`.
+   */
+
+  /**
+   * Đổi trạng thái buồng phòng (`PATCH .../housekeeping`).
+   * Đây là trạng thái **của lúc này**, không gắn ngày — chỉ có nghĩa với ngày hôm nay.
+   */
+  async updateHousekeeping(
     hotelId: string,
     roomId: string,
-    status: RoomStatus
+    hkStatus: HkStatus
   ): Promise<StaffRoom> {
     const { data } = await api.patch<StaffRoom>(
-      `/hotels/${hotelId}/rooms/${roomId}/status`,
-      {
-        status,
-      }
+      `/hotels/${hotelId}/rooms/${roomId}/housekeeping`,
+      { hkStatus }
+    );
+    return data;
+  },
+
+  /*
+   * CỐ Ý KHÔNG nối `POST .../blocks?dryRun=true`: nhánh "xem trước" của BE **không bao giờ chạy**
+   * (middleware `validate` convert `dryRun` thành boolean, controller lại so với chuỗi `'true'`)
+   * nên mỗi lần xem trước là chặn thật một phòng — đã tái hiện trên deploy. Bản xem trước của FE
+   * tính tại client bằng `previewRoomBlockLocally`, dùng đúng dữ liệu đang hiện trên lịch.
+   */
+
+  /** Chặn một phòng theo khoảng ngày (`POST .../blocks`). */
+  async createRoomBlock(
+    hotelId: string,
+    roomId: string,
+    payload: CreateRoomBlockPayload
+  ): Promise<CreateRoomBlockResult> {
+    const { data } = await api.post<CreateRoomBlockResult>(
+      `/hotels/${hotelId}/rooms/${roomId}/blocks`,
+      cleanParams(payload)
+    );
+    return data;
+  },
+
+  /**
+   * Đánh dấu đợt chặn đã xử lý xong (`DELETE .../blocks/:blockId`).
+   * BE không xoá dòng, chỉ set `resolvedAt` và trả phòng về kho bán cho những ngày CÒN LẠI.
+   */
+  async resolveRoomBlock(
+    hotelId: string,
+    roomId: string,
+    blockId: string
+  ): Promise<RoomBlock> {
+    const { data } = await api.delete<RoomBlock>(
+      `/hotels/${hotelId}/rooms/${roomId}/blocks/${blockId}`
     );
     return data;
   },

@@ -7,6 +7,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { cn } from '@/lib/cn';
+import { RoomDayBoard } from '@/components/staff/RoomDayBoard';
 import { useInventoryCalendar } from '@/hooks/staff';
 import { useStaffHotelStore } from '@/stores/staffHotelStore';
 import type { InventoryDayCell } from '@/types/staff.types';
@@ -43,6 +44,14 @@ function isWeekend(dateKey: string): boolean {
   return weekday === 0 || weekday === 6;
 }
 
+/**
+ * Lịch tồn kho + bản đồ phòng **theo từng ngày** (gộp trang Room map cũ vào đây).
+ *
+ * Vì sao gộp: Room map cũ chỉ nói được tình trạng của HÔM NAY (`rooms.status` không có chiều thời
+ * gian), nên đổi trạng thái ở đó là đổi cho mọi ngày cùng lúc — bấm "Maintenance" là BE chặn phòng
+ * suốt 7 ngày kể từ hôm nay, bấm "Available" là gỡ sạch mọi đợt chặn đang có. Giờ bấm vào một ô
+ * trên lịch sẽ mở đúng các phòng của ngày đó, và thao tác chặn phòng chỉ ảnh hưởng ngày đã chọn.
+ */
 export default function InventoryCalendarPage() {
   const hotel = useStaffHotelStore(state => state.hotel);
   const [params, setParams] = useSearchParams();
@@ -54,18 +63,57 @@ export default function InventoryCalendarPage() {
   const days: WindowSize = isWindowSize(daysParam) ? daysParam : DEFAULT_WINDOW;
   const to = shiftDateKey(from, days - 1);
 
-  const { data, isLoading, isFetching, isError, error } = useInventoryCalendar(
-    hotel?.id,
-    from,
-    to
-  );
+  // Điều hướng từ ô tìm kiếm toàn cục ("Room 101") — mở luôn bản đồ phòng của hôm nay.
+  const highlightRoom = params.get('room');
+  const selectedDate = params.get('date') ?? (highlightRoom ? today : null);
+  const selectedTypeId = params.get('type');
+
+  const { data, rooms, blocks, bookings, isLoading, isFetching, isError, error } =
+    useInventoryCalendar(hotel?.id, from, to);
 
   const setRange = (nextFrom: string, nextDays: WindowSize) => {
+    const nextTo = shiftDateKey(nextFrom, nextDays - 1);
     setParams(
       prev => {
         const next = new URLSearchParams(prev);
         next.set('from', nextFrom);
         next.set('days', String(nextDays));
+        // Ngày đang chọn rơi ra ngoài khung mới thì bỏ chọn — giữ lại sẽ hiện bản đồ phòng của một
+        // ngày không còn ô nào trên lưới, không đối chiếu được với gì.
+        const current = next.get('date');
+        if (current && (current < nextFrom || current > nextTo)) {
+          next.delete('date');
+          next.delete('type');
+        }
+        return next;
+      },
+      { replace: true }
+    );
+  };
+
+  /** Chọn một ô (ngày + loại phòng) hoặc cả một ngày (`roomTypeId = null`). */
+  const selectDay = (date: string, roomTypeId: string | null) => {
+    setParams(
+      prev => {
+        const next = new URLSearchParams(prev);
+        next.set('date', date);
+        if (roomTypeId) next.set('type', roomTypeId);
+        else next.delete('type');
+        // Ô lịch được bấm là chủ đích mới của người dùng ⇒ bỏ highlight cũ từ ô tìm kiếm.
+        next.delete('room');
+        return next;
+      },
+      { replace: true }
+    );
+  };
+
+  const clearSelection = () => {
+    setParams(
+      prev => {
+        const next = new URLSearchParams(prev);
+        next.delete('date');
+        next.delete('type');
+        next.delete('room');
         return next;
       },
       { replace: true }
@@ -74,13 +122,16 @@ export default function InventoryCalendarPage() {
 
   const dates = useMemo(() => data?.rows[0]?.days.map(d => d.date) ?? [], [data]);
 
+  const selectedRow = data?.rows.find(row => row.roomTypeId === selectedTypeId);
+  const selectedCell = selectedRow?.days.find(day => day.date === selectedDate);
+
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold text-slate-900">Inventory calendar</h1>
+          <h1 className="text-xl font-semibold text-slate-900">Rooms &amp; inventory</h1>
           <p className="text-sm text-slate-500">
-            Rooms left to sell per night, cheapest room type first · {hotel?.name}
+            Rooms left to sell per night · click any day to open its room map · {hotel?.name}
           </p>
         </div>
 
@@ -189,20 +240,32 @@ export default function InventoryCalendarPage() {
                   <th
                     key={date}
                     className={cn(
-                      'min-w-14 border-b border-slate-200 px-1 py-2 text-center text-[11px] font-medium',
+                      'min-w-14 border-b border-slate-200 p-0 text-center text-[11px] font-medium',
                       isWeekend(date) ? 'bg-slate-50 text-slate-500' : 'text-slate-500',
                       date === today && 'border-x border-x-slate-900/20 bg-slate-100'
                     )}
                   >
-                    <span className="block">{weekdayLabel(date)}</span>
-                    <span
+                    {/* Bấm vào đầu cột = xem MỌI loại phòng của ngày đó. */}
+                    <button
+                      type="button"
+                      onClick={() => selectDay(date, null)}
+                      aria-label={`Show every room on ${dayMonthLabel(date)}`}
                       className={cn(
-                        'block text-slate-700',
-                        date === today && 'font-semibold text-slate-900'
+                        'w-full cursor-pointer px-1 py-2 transition-colors hover:bg-slate-100',
+                        date === selectedDate && 'bg-slate-900/5'
                       )}
                     >
-                      {dayMonthLabel(date)}
-                    </span>
+                      <span className="block">{weekdayLabel(date)}</span>
+                      <span
+                        className={cn(
+                          'block text-slate-700',
+                          date === today && 'font-semibold text-slate-900',
+                          date === selectedDate && 'font-semibold underline underline-offset-2'
+                        )}
+                      >
+                        {dayMonthLabel(date)}
+                      </span>
+                    </button>
                   </th>
                 ))}
               </tr>
@@ -231,6 +294,11 @@ export default function InventoryCalendarPage() {
                       cell={cell}
                       roomTypeName={row.roomTypeName}
                       isToday={cell.date === today}
+                      selected={
+                        cell.date === selectedDate &&
+                        (selectedTypeId === null || selectedTypeId === row.roomTypeId)
+                      }
+                      onSelect={() => selectDay(cell.date, row.roomTypeId)}
                     />
                   ))}
                 </tr>
@@ -238,6 +306,31 @@ export default function InventoryCalendarPage() {
             </tbody>
           </table>
         </div>
+      )}
+
+      {/* Bản đồ phòng của ngày đang chọn — thay cho trang Room map cũ. */}
+      {selectedDate && !isLoading && !isError && rooms && blocks && bookings && (
+        <RoomDayBoard
+          hotelId={hotel?.id}
+          date={selectedDate}
+          isToday={selectedDate === today}
+          rooms={rooms}
+          blocks={blocks}
+          bookings={bookings}
+          dataTo={to}
+          roomTypeId={selectedTypeId}
+          roomTypeName={selectedRow?.roomTypeName}
+          cell={selectedCell}
+          highlightRoom={highlightRoom}
+          onClearRoomType={() => selectDay(selectedDate, null)}
+          onClose={clearSelection}
+        />
+      )}
+
+      {!selectedDate && !isLoading && !isError && data && data.rows.length > 0 && (
+        <p className="text-center text-sm text-slate-400">
+          Pick a day above to see every room for that night and block rooms for that date only.
+        </p>
       )}
 
       <p className="text-xs text-slate-400">
@@ -252,15 +345,19 @@ function DayCell({
   cell,
   roomTypeName,
   isToday,
+  selected,
+  onSelect,
 }: {
   cell: InventoryDayCell;
   roomTypeName: string;
   isToday: boolean;
+  selected: boolean;
+  onSelect: () => void;
 }) {
   const soldOut = cell.available === 0;
   const overbooked = cell.available < 0;
   // Cho cả trình đọc màn hình — tooltip của Radix chỉ hiện khi rê chuột, mà ô thì chỉ có mỗi con số.
-  const summary = `${roomTypeName} ${dayMonthLabel(cell.date)}: ${cell.available} left, ${cell.booked} booked of ${cell.sellable} sellable`;
+  const summary = `${roomTypeName} ${dayMonthLabel(cell.date)}: ${cell.available} left, ${cell.booked} booked of ${cell.sellable} sellable. Open the room map for this day.`;
 
   return (
     <td
@@ -274,11 +371,20 @@ function DayCell({
       )}
     >
       <Tooltip>
-        {/* Trigger là span phủ kín ô để rê chuột ở đâu trong ô cũng hiện, không riêng con số. */}
+        {/* Trigger là nút phủ kín ô để rê/bấm ở đâu trong ô cũng ăn, không riêng con số. */}
         <TooltipTrigger asChild>
-          <span className="block cursor-default px-1 py-2" aria-label={summary}>
+          <button
+            type="button"
+            onClick={onSelect}
+            aria-label={summary}
+            aria-pressed={selected}
+            className={cn(
+              'block w-full cursor-pointer px-1 py-2 transition-colors hover:bg-slate-900/5',
+              selected && 'bg-slate-900/10 ring-2 ring-slate-900 ring-inset'
+            )}
+          >
             {cell.available}
-          </span>
+          </button>
         </TooltipTrigger>
         <TooltipContent className="flex-col items-start gap-0.5 py-2">
           <span className="font-medium">
@@ -295,6 +401,7 @@ function DayCell({
             </span>
           )}
           {soldOut && <span className="font-semibold text-amber-300">Fully booked</span>}
+          <span className="mt-0.5 opacity-70">Click to see the rooms for this night</span>
         </TooltipContent>
       </Tooltip>
     </td>
