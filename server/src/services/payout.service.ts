@@ -47,8 +47,9 @@ export class PayoutService {
       const payout = await tx.payout.create({
         data: { hotelId, partnerId: hotel.partner.id, payoutAccountId: account.id, amount, status: 'pending' },
       });
-      // Giữ tiền ngay; ném lỗi (rollback cả payout) nếu số dư không đủ
-      await walletService.holdForPayout(tx, hotelId, amount);
+      // Giữ tiền ngay; ném lỗi (rollback cả payout) nếu số dư không đủ. Bút toán ví gắn payout.id
+      // để sổ ví tra được yêu cầu này đã duyệt hay chưa.
+      await walletService.holdForPayout(tx, hotelId, amount, payout.id);
       return payout;
     });
   };
@@ -176,7 +177,7 @@ export class PayoutService {
         if (done.count === 0) {
           throw new ApiError(httpStatus.BAD_REQUEST, 'Yêu cầu rút này vừa được xử lý');
         }
-        await walletService.releasePayoutHold(tx, payout.hotelId, payout.amount);
+        await walletService.releasePayoutHold(tx, payout.hotelId, payout.amount, payout.id);
       });
     }
     return prisma.payout.findUniqueOrThrow({
