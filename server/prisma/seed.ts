@@ -997,7 +997,6 @@ const main = async (): Promise<void> => {
     { code: 'BKSEED003', customerId: customer2.id, hotel: danang, roomTypeIdx: 2, fromDay: -5, nights: 2, guests: 2, status: 'checked_out', paid: true },
     { code: 'BKSEED004', customerId: customer3.id, hotel: danang, roomTypeIdx: 1, fromDay: -12, nights: 3, guests: 4, status: 'checked_out', paid: true, review: { by: customer3.id, rating: 5, title: 'Wonderful resort', content: 'Spacious room with a balcony looking straight out to the sea. Friendly staff and a breakfast with plenty of choice. We will come back.' } },
     { code: 'BKSEED005', customerId: customer2.id, hotel: danang, roomTypeIdx: 0, fromDay: -20, nights: 2, guests: 2, status: 'checked_out', paid: true, review: { by: customer2.id, rating: 4, title: 'Worth the money', content: 'The beachfront location is very convenient. The pool gets a bit crowded in the afternoon, but overall a great stay.' } },
-    { code: 'BKSEED006', customerId: customer1.id, hotel: danang, roomTypeIdx: 2, fromDay: 20, nights: 1, guests: 2, status: 'cancelled', paid: false },
     // Sài Gòn
     { code: 'BKSEED007', customerId: customer1.id, hotel: saigon, roomTypeIdx: 1, fromDay: -8, nights: 2, guests: 2, status: 'checked_out', paid: true, review: { by: customer1.id, rating: 5, title: 'Right in the centre', content: 'A 5-minute walk to Ben Thanh Market. Clean room with good sound insulation even facing the street.' } },
     { code: 'BKSEED008', customerId: customer2.id, hotel: saigon, roomTypeIdx: 0, fromDay: 5, nights: 3, guests: 1, status: 'confirmed', paid: true },
@@ -1101,7 +1100,7 @@ const main = async (): Promise<void> => {
           balanceAfter: pendingAfterEarning,
           bookingId: booking.id,
           status: 'completed',
-          description: 'Net doanh thu booking (chờ tất toán)',
+          description: 'Booking net revenue (pending settlement)',
         },
       });
       if (settled) {
@@ -1114,7 +1113,7 @@ const main = async (): Promise<void> => {
             balanceAfter: availableAfterSettle,
             commissionId: commission.id,
             status: 'completed',
-            description: 'Chuyển pending → available (đã tất toán)',
+            description: 'Settled — moved from pending to available',
           },
         });
         // Đơn đã chốt sổ: net rời pending, vào available (đúng net effect earning + settle)
@@ -1153,18 +1152,18 @@ const main = async (): Promise<void> => {
   console.log(`  ✓ ${BOOKINGS.length} booking (kèm thanh toán, hoa hồng, ví + giao dịch earning/settlement, voucher, đánh giá)`);
 
   // ----- Ví khách: nạp sẵn số dư để demo thanh toán bằng ví ngay, khỏi phải huỷ đơn trước -----
-  // customer@gmail.com: đủ trả trọn một đơn rẻ ⇒ demo "ví trả hết, booking confirmed ngay"
+  // customer@gmail.com: 10 triệu — đủ trả trọn cả đơn đắt ⇒ demo "ví trả hết, booking confirmed ngay"
   // customer2@gmail.com: cố tình để ÍT ⇒ demo "ví trả một phần, cổng trả phần còn lại"
   // customer3@gmail.com: không có ví ⇒ demo trạng thái ví rỗng
   await prisma.wallet.create({
     data: {
       customerId: customer1.id,
-      balanceAvailable: 2_000_000,
+      balanceAvailable: 10_000_000,
       transactions: {
         create: {
           type: 'adjustment',
-          amount: 2_000_000,
-          balanceAfter: 2_000_000,
+          amount: 10_000_000,
+          balanceAfter: 10_000_000,
           status: 'completed',
           description: 'Sample balance for the wallet payment demo',
         },
@@ -1186,7 +1185,7 @@ const main = async (): Promise<void> => {
       },
     },
   });
-  console.log('  ✓ ví khách: customer@ 2.000.000đ (trả trọn đơn), customer2@ 300.000đ (trả kết hợp)');
+  console.log('  ✓ ví khách: customer@ 10.000.000đ (trả trọn đơn), customer2@ 300.000đ (trả kết hợp)');
 
   // Lưu ý: trang /deals KHÔNG còn dùng model Promotion — deal được suy ra từ pricing rule GIẢM GIÁ
   // (xem các rule âm ở trên + promotion.service.ts). Không seed Promotion nữa.
