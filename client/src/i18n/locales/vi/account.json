@@ -63,7 +63,11 @@
     "tax": "Thuế",
     "fee": "Phí dịch vụ",
     "totalPaid": "Tổng đã thanh toán",
-    "evoucher": "Voucher điện tử của bạn"
+    "evoucher": "Voucher điện tử của bạn",
+    "holdExpiredPill": "Quá hạn giữ chỗ",
+    "holdExpiredTitle": "Đơn này đã quá hạn giữ chỗ",
+    "holdExpiredBody": "Phòng đã được nhả lại. Hệ thống sẽ tự huỷ đơn trong ít phút — bạn đặt lại giúp nhé.",
+    "holdExpiredWallet": "Phòng đã được nhả lại. Hệ thống sẽ tự huỷ đơn trong ít phút và hoàn {{amount}} bạn trả bằng ví về lại ví, không mất phí."
   },
   "refund": {
     "title": "Hoàn tiền",
@@ -93,7 +97,8 @@
         "title": "Đã hoàn tiền",
         "desc": "Tiền đã được chuyển, có thể mất vài ngày làm việc để về tài khoản"
       }
-    }
+    },
+    "walletRefundedOnCancel": "Đã huỷ đơn. {{amount}} bạn trả bằng ví đã được hoàn lại ngay, không mất phí."
   },
   "notifications": {
     "title": "Thông báo",
@@ -243,6 +248,9 @@
     "ofPaid": "{{percent}}% của {{paid}} đã thanh toán",
     "hotelKeeps": "Khách sạn giữ lại",
     "nextTierWarning": "Sau {{at}}, mức hoàn giảm còn {{percent}}%. Huỷ trước mốc này nếu bạn đã quyết định.",
+    "unconfirmedFullRefund": "Đơn này chưa được khách sạn xác nhận nên huỷ bây giờ bạn nhận lại toàn bộ số tiền đã trả, không mất phí.",
+    "unconfirmedWalletBack": "{{amount}} bạn trả bằng ví sẽ về thẳng Ví StayHub ngay khi huỷ, không phải chờ khách sạn duyệt.",
+    "refundMethodRemainingOnly": "Chỉ áp dụng cho {{amount}} bạn đã trả qua cổng thanh toán — phần trả bằng ví về ví ngay.",
     "policyLadder": "Xem bảng chính sách huỷ",
     "refundPercent": "hoàn {{percent}}%",
     "currentTier": "đang áp dụng",

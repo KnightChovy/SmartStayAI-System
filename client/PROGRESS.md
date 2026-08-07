@@ -2,6 +2,19 @@
 
 This file tracks the accomplished tasks, resolved user requests, and visual/functional refactoring completed in the client application.
 
+## August 8, 2026 (continued 5)
+
+- [x] **Bắt kịp 2 đợt BE mới (`fb948a7`, `ba218b0`) + sửa 3 chỗ FE nói SAI**:
+  - **`remainingAmount` / `amountPaid` (BE `fb948a7`)**: `PayNowAction` bỏ hẳn phép tự cộng `payments[]` để suy số còn nợ, đọc thẳng field của BE. Comment BE nói đúng lý do: booking trả GHÉP nên `totalAmount` không còn là số cổng sắp thu, mà mỗi màn tự cộng một kiểu là chắc chắn trôi lệch. Trang chi tiết đơn thêm **"Đã trả −X / Còn phải trả Y"** vào bảng giá (tái dùng `footer` của `PriceSummary` từ checkout). **Cố ý giữ** 2 chỗ `reduce` còn lại (`walletAutoRefunded`, `walletAwaitingRefund`) — chúng lọc riêng phần **ví**, hai field mới không phân biệt phương thức nên không thay được.
+  - **🔴 Nhãn tổng nói sai**: trang chi tiết ghi *"Tổng đã thanh toán"* cho **cả đơn còn nợ tiền**. Đổi sang *"Tổng cộng"* khi mới trả một phần.
+  - **`isUnpaidPending` (BE `ba218b0`)**: đơn `pending` chưa trả đủ ⇒ BE hoàn **100%**, không áp bậc thang. `CancelBookingPanel` **ẩn bảng bậc thang + ẩn cảnh báo mốc kế tiếp** khi cờ bật — để cạnh con số 100% thì hai thứ nói ngược nhau trong cùng một khung nhìn (chính BE cũng cảnh báo điều này trong comment).
+  - **🔴 Hỏi một thứ không tồn tại**: ở nhánh đó BE hoàn thẳng mọi payment **ví** vào ví rồi **chỉ tạo `Refund` cho phần còn lại**; ví trả trọn thì `refund === null`. Panel vẫn hỏi "nhận tiền hoàn vào đâu" là hỏi một khoản không có. Nay chỉ hỏi khi còn `amountNeedingApproval > 0`, áp cho cả 3 chỗ (render bộ chọn · validate STK · payload). Ca trả ghép ví + cổng thì bộ chọn vẫn hiện kèm dòng phụ ghi rõ nó **chỉ áp cho phần trả qua cổng**. `CancelBookingPanel` nhận `payments` qua **prop** thay vì tự `useBooking` — trang cha đã có sẵn dữ liệu, mở observer thứ hai chỉ tốn một request lặp.
+  - **🔴 Nói sai nguyên nhân huỷ**: khối "đã hoàn về ví" ghi cứng *"Đơn hết hạn giữ chỗ nên đã tự huỷ"*, nhưng sau bản vá BE thì **khách tự bấm huỷ** đơn chưa xác nhận cũng rơi vào đúng khối đó ⇒ vừa bấm huỷ xong lại đọc thành đơn tự hết hạn. Thêm `cancelledByRole` vào type `Booking` (BE trả sẵn — `bookingInclude` là `include` nên mọi scalar đều về) và tách câu theo `system` vs người thật.
+  - **Verify**: `tsc` **0 lỗi**, `eslint` **0 vấn đề** trên toàn bộ file đụng tới, i18n **account 232/232 · booking 118/118** cân bằng.
+  - ⚠️ **Chưa drive browser cho phần huỷ đơn**: BE local đang để hạn giữ chỗ **30 giây** (theo yêu cầu, để test tay cho nhanh) nên đơn `pending` tự huỷ trước khi kịp mở panel huỷ. Giá trị gốc cần trả lại: `HOLD_MINUTES = 15`, `SEPAY_HOLD_MINUTES = 30`, cron `release-holds` `*/5 * * * *`.
+  - ⚠️ **Đã ĐO trên BE local (13/13)** đúng kịch bản "trả ghép rồi bỏ dở ở cổng": ví bị trừ khi Xác nhận → đơn nằm lại `pending` → hết hạn → cron huỷ đơn → **ví được hoàn đủ**, payment ví → `refunded`, sổ ví có dòng `Refund for expired booking …`. **Nhưng deploy vẫn chưa có bản vá** — xem `server/docs/wallet-expired-backfill.md`.
+
+
 ## August 8, 2026 (continued 4)
 
 - [x] **Bắt kịp bản vá BE `93e3d2a` (hoàn ví khi đơn quá hạn giữ chỗ bị tự huỷ) — sửa 1 câu copy nói SAI và bịt 1 chỗ FE im lặng**:

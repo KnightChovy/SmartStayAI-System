@@ -81,10 +81,28 @@ export interface Booking {
   feeAmount: string;
   /** = subtotal − discountAmount + taxAmount + feeAmount. Đây là số khách thực trả. */
   totalAmount: string;
+  /**
+   * Đã trả được bao nhiêu — tổng các payment `completed` (BE tính sẵn, `withPaymentBalance`).
+   * Booking trả GHÉP (ví một phần + cổng phần còn lại) nên `totalAmount` KHÔNG còn là số sắp bị
+   * thu ở cổng.
+   */
+  amountPaid: string;
+  /**
+   * Còn phải trả — dùng ĐÚNG luật `outstandingAmount` của BE (chỉ đếm payment `completed`, kẹp về
+   * 0 khi lỡ trả dư). **Luôn đọc field này thay vì tự cộng `payments[]`**: mỗi nơi một công thức
+   * là chắc chắn trôi lệch với số cổng thực thu.
+   */
+  remainingAmount: string;
   status: BookingStatus;
   source: BookingSource;
   specialRequests?: string | null;
   cancellationReason?: string | null;
+  /**
+   * Ai huỷ đơn. `system` = cron dọn đơn quá hạn giữ chỗ; các giá trị còn lại là người thật.
+   * Cần để nói ĐÚNG nguyên nhân khi báo đã hoàn tiền — cùng một khối hiển thị phục vụ cả đơn
+   * hệ thống tự huỷ lẫn đơn khách tự bấm huỷ, ghi cứng một câu là nói sai cho nửa số ca.
+   */
+  cancelledByRole?: 'customer' | 'hotel_staff' | 'hotel_partner' | 'platform_manager' | 'admin' | 'system' | null;
   checkedInAt?: string | null;
   checkedOutAt?: string | null;
   cancelledAt?: string | null;
@@ -181,6 +199,19 @@ export interface RefundPreview {
   cannotCancelReason: string | null;
   /** `false` = chưa trả đồng nào ⇒ không có gì để hoàn. */
   isPaid: boolean;
+  /**
+   * Đơn còn `pending` và CHƯA trả đủ ⇒ BE hoàn **100%**, KHÔNG áp bậc thang.
+   *
+   * Lý do (theo comment của BE): bậc thang tồn tại để bù cho khách sạn khi phòng bị giữ rồi nhả
+   * sát ngày, mà đơn chưa xác nhận thì khách sạn chưa nhận đồng nào. Hơn nữa hệ thống cũng sẽ tự
+   * huỷ đơn này khi hết hạn giữ chỗ và hoàn 100% — áp phí ở đây tạo nghịch lý "bấm huỷ thì mất
+   * tiền, ngồi im thì được hoàn đủ".
+   *
+   * ⚠️ Khi cờ này bật, BE trả `appliedTier: null` + `refundPercent: 100` + `nextTier: null`.
+   * FE **không được** vẽ bảng bậc thang / cảnh báo "sau mốc X còn 30%" cạnh con số hoàn 100% —
+   * hai thứ đó mâu thuẫn nhau ngay trên cùng một panel.
+   */
+  isUnpaidPending: boolean;
   paidAmount: string;
   /** Số tiền hoàn NẾU huỷ ngay bây giờ. */
   refundAmount: string;

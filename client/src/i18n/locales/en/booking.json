@@ -97,6 +97,7 @@
     "fee": "Service fee",
     "discount": "Discount",
     "walletApplied": "Paid from StayHub wallet",
+    "amountPaid": "Paid so far",
     "dueNow": "Due now",
     "checkInFrom": "Check in from {{time}}",
     "checkOutUntil": "out by {{time}}",

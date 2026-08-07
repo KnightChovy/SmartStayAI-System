@@ -1,9 +1,10 @@
 import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { Banknote, CalendarDays, MapPin } from 'lucide-react';
+import { Banknote, CalendarDays, MapPin, TimerOff } from 'lucide-react';
 import type { Booking } from '@/types/booking.types';
 import { ROUTES } from '@/constants/routes';
 import { useMoney } from '@/hooks/currency';
+import { usePaymentHold } from '@/hooks/bookings';
 import { formatDateShort } from '@/utils/formatDate';
 import BookingStatusBadge from '@/components/shared/BookingStatusBadge';
 import PayNowAction from '@/components/booking/PayNowAction';
@@ -14,6 +15,9 @@ export default function BookingListItem({ booking }: { booking: Booking }) {
   const { format } = useMoney();
   // Hoàn tiền mới nhất (BE sort desc) — đơn đã huỷ thì đây là thứ khách quan tâm nhất.
   const refund = (booking.payments ?? []).flatMap(p => p.refunds ?? [])[0];
+  // Quá hạn giữ chỗ nhưng cron 5 phút/lần chưa quét tới ⇒ nút thanh toán đã ẩn. Không nói ra thì
+  // dòng này chỉ còn badge "Chờ xác nhận" và không một manh mối nào về việc phải làm gì.
+  const { expired } = usePaymentHold(booking);
   return (
     // Cả dòng vẫn bấm được, nhưng KHÔNG còn là một <Link> bọc ngoài: dòng nay chứa nút thanh
     // toán, mà <button> lồng trong <a> là HTML không hợp lệ. Thay bằng "stretched link" —
@@ -43,6 +47,12 @@ export default function BookingListItem({ booking }: { booking: Booking }) {
           <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-surface-container-low px-2.5 py-1 text-xs font-medium text-on-surface-variant">
             <Banknote className="size-3.5" />
             {t('refund.title')} · {t(`refund.status.${refund.status}`)}
+          </p>
+        )}
+        {expired && (
+          <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-700">
+            <TimerOff className="size-3.5" aria-hidden="true" />
+            {t('detail.holdExpiredPill')}
           </p>
         )}
       </div>

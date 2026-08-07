@@ -67,15 +67,12 @@ export default function PayNowAction({
   const { data: wallet } = useMyWallet({ enabled: awaitingPayment });
   const walletBalance = Number(wallet?.balanceAvailable ?? 0);
   /**
-   * Số còn thiếu — mirror `outstandingAmount` của BE (tổng đơn trừ các payment đã `completed`).
-   * Đơn có thể đã trả một phần từ trước, nên so ví với `totalAmount` là so nhầm mốc.
+   * Số còn thiếu lấy thẳng từ BE. Đơn trả GHÉP (ví một phần + cổng phần còn lại) khiến
+   * `totalAmount` không còn là số sắp bị thu, mà tự cộng lại `payments[]` ở đây thì mỗi màn một
+   * công thức — lệch với số cổng thực thu là chuyện sớm muộn.
    */
-  const outstanding =
-    Number(booking.totalAmount) -
-    (booking.payments ?? [])
-      .filter(p => p.status === 'completed')
-      .reduce((sum, p) => sum + Number(p.amount), 0);
-  const walletCoversAll = walletBalance >= outstanding;
+  const remaining = Number(booking.remainingAmount);
+  const walletCoversAll = walletBalance >= remaining;
 
   const handleConfirmed = useCallback(() => {
     setSepayInfo(null);
@@ -159,7 +156,7 @@ export default function PayNowAction({
                     })
                   : t('payment.payWithWalletPartial', {
                       balance: formatCurrency(walletBalance),
-                      remaining: formatCurrency(outstanding - walletBalance),
+                      remaining: formatCurrency(remaining - walletBalance),
                     })}
               </DropdownMenuItem>
             )}

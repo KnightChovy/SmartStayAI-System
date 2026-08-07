@@ -97,6 +97,7 @@
     "fee": "Phí dịch vụ",
     "discount": "Giảm giá",
     "walletApplied": "Trả bằng ví StayHub",
+    "amountPaid": "Đã trả",
     "dueNow": "Còn phải trả",
     "checkInFrom": "Nhận từ {{time}}",
     "checkOutUntil": "trả trước {{time}}",

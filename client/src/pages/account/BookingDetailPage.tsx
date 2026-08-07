@@ -9,6 +9,7 @@ import {
   Info,
   MapPin,
   PencilLine,
+  TimerOff,
   Users,
   Wallet,
   XCircle,
@@ -92,6 +93,24 @@ export default function BookingDetailPage() {
           .filter(p => p.paymentMethod === 'wallet' && p.status === 'refunded')
           .reduce((sum, p) => sum + Number(p.amount), 0)
       : 0;
+  /**
+   * Phần ví ĐANG chờ được hoàn: đơn quá hạn giữ chỗ nhưng cron `release-holds` (5 phút/lần) chưa
+   * quét tới, nên payment ví vẫn `completed`. Nói ra để khách biết tiền sẽ tự về, khỏi đi khiếu nại.
+   */
+  const walletAwaitingRefund = hold.expired
+    ? (booking.payments ?? [])
+        .filter(p => p.paymentMethod === 'wallet' && p.status === 'completed')
+        .reduce((sum, p) => sum + Number(p.amount), 0)
+    : 0;
+  /**
+   * Đơn trả GHÉP: ví đã gánh một phần, phần còn lại vẫn nợ ở cổng. Bảng giá chỉ có tổng đơn nên
+   * khách không cách nào biết mình còn nợ bao nhiêu — mà đúng số đó mới là thứ phải trả trước khi
+   * hết hạn giữ chỗ. Hai số lấy thẳng của BE (`amountPaid` / `remainingAmount`), không tự cộng
+   * `payments[]`, để khớp từng đồng với số cổng sắp thu.
+   */
+  const amountPaid = Number(booking.amountPaid);
+  const remainingAmount = Number(booking.remainingAmount);
+  const partiallyPaid = amountPaid > 0 && remainingAmount > 0;
   // Huỷ muộn bị phạt hết ⇒ BE không tạo refund nào. Phải nói rõ, không để khách chờ tiền.
   const cancelledWithoutRefund =
     booking.status === 'cancelled' && hasPaid && refunds.length === 0;
@@ -262,13 +281,37 @@ export default function BookingDetailPage() {
             <RefundStatusCard key={refund.id} refund={refund} />
           ))}
 
+          {/* Quá hạn nhưng cron chưa quét: nút thanh toán đã ẩn, banner hạn giữ chỗ cũng ẩn ⇒
+              nếu không có khối này thì khách chỉ thấy một đơn "chờ xác nhận" bất động. */}
+          {hold.expired && (
+            <div className="flex gap-3 rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4">
+              <TimerOff className="mt-0.5 size-5 shrink-0 text-amber-700" aria-hidden="true" />
+              <div>
+                <p className="font-semibold text-on-surface">{t('detail.holdExpiredTitle')}</p>
+                <p className="mt-0.5 text-sm text-on-surface-variant">
+                  {walletAwaitingRefund > 0
+                    ? t('detail.holdExpiredWallet', {
+                        amount: formatCurrency(walletAwaitingRefund),
+                      })
+                    : t('detail.holdExpiredBody')}
+                </p>
+              </div>
+            </div>
+          )}
+
           {walletAutoRefunded > 0 && (
             <div className="flex gap-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-4 text-sm text-on-surface">
               <Wallet className="mt-0.5 size-4 shrink-0 text-emerald-600" aria-hidden="true" />
               <span>
-                {t('refund.walletAutoRefunded', {
-                  amount: formatCurrency(walletAutoRefunded),
-                })}{' '}
+                {/* Cùng một khối phục vụ hai nguyên nhân huỷ khác hẳn nhau: cron dọn đơn quá hạn
+                    (`system`) và khách tự bấm huỷ đơn chưa xác nhận. Ghi cứng "hết hạn giữ chỗ"
+                    là nói sai cho nửa số ca — khách vừa tự bấm huỷ mà đọc thành đơn tự hết hạn. */}
+                {t(
+                  booking.cancelledByRole === 'system'
+                    ? 'refund.walletAutoRefunded'
+                    : 'refund.walletRefundedOnCancel',
+                  { amount: formatCurrency(walletAutoRefunded) }
+                )}{' '}
                 <Link
                   to={ROUTES.accountWallet}
                   className="font-semibold text-primary underline underline-offset-2"
@@ -293,6 +336,7 @@ export default function BookingDetailPage() {
           {showCancel && (
             <CancelBookingPanel
               bookingId={booking.id}
+              payments={booking.payments}
               onClose={() => setShowCancel(false)}
               onCancelled={() => setShowCancel(false)}
             />
@@ -343,7 +387,23 @@ export default function BookingDetailPage() {
                     : []),
                 ]}
                 total={booking.totalAmount}
-                totalLabel={t('detail.totalPaid')}
+                /* Đơn còn nợ thì "Tổng đã thanh toán" là nói sai — số đó mới là giá đơn. */
+                totalLabel={partiallyPaid ? t('common:total') : t('detail.totalPaid')}
+                footer={
+                  partiallyPaid
+                    ? {
+                        lines: [
+                          {
+                            label: t('booking:summary.amountPaid'),
+                            value: amountPaid,
+                            negative: true,
+                          },
+                        ],
+                        label: t('booking:summary.dueNow'),
+                        total: remainingAmount,
+                      }
+                    : undefined
+                }
               />
             </div>
 
