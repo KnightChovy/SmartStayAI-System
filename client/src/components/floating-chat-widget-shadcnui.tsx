@@ -19,6 +19,7 @@ import { useMatch } from 'react-router';
 import { toast } from 'sonner';
 
 import { ConversationModeToggle } from '@/components/chat';
+import { LinkifiedText } from '@/components/shared/LinkifiedText';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -635,9 +636,17 @@ export function FloatingChatWidget() {
                               'rounded-tl-none border border-emerald-500/25 bg-emerald-500/10 text-foreground'
                           )}
                         >
-                          <p className="whitespace-pre-wrap wrap-break-word">
-                            {item.text}
-                          </p>
+                          <LinkifiedText
+                            text={item.text}
+                            className={cn(
+                              'block',
+                              isGuest && 'underline-offset-2'
+                            )}
+                            linkClassName={cn(
+                              'font-medium underline',
+                              isGuest ? 'text-primary-foreground' : 'text-primary'
+                            )}
+                          />
                         </div>
 
                         {isAi &&

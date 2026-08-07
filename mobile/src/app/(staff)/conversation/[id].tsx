@@ -12,6 +12,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { LinkifiedText } from '@/components/shared/LinkifiedText';
 import { Spinner } from '@/components/ui/spinner';
 import { Text } from '@/components/ui/text';
 import { StaffScreenHeader, StaffEmptyState } from '@/components/staff';
@@ -57,9 +58,12 @@ function MessageBubble({ message }: { message: Message }) {
             : 'bg-white border border-gray-100 rounded-t-2xl rounded-br-2xl rounded-bl-md'
         )}
       >
-        <Text size="sm" className={outgoing ? 'text-white leading-5' : 'text-gray-800 leading-5'}>
-          {message.content}
-        </Text>
+        <LinkifiedText
+          size="sm"
+          className={outgoing ? 'text-white leading-5' : 'text-gray-800 leading-5'}
+          linkClassName={outgoing ? 'text-white underline font-bold' : 'text-staff-700 underline font-bold'}
+          text={message.content}
+        />
       </View>
     </View>
   );

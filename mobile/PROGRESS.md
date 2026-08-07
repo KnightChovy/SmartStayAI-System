@@ -8,6 +8,14 @@ This file tracks the accomplished tasks, resolved user requests, and structural/
 
 ## Completed Tasks Checklist
 
+### August 7, 2026 (continued 3)
+
+- [x] **Link thanh toán VNPay/SePay AI gửi trong chat giờ bấm được (đồng bộ với fix bên client)**:
+  - **Bối cảnh**: AI đặt phòng tự động (`server/src/services/conversation.service.ts`, tool `confirm_action`) chèn `paymentUrl` VNPay **nguyên văn dạng chuỗi** vào câu trả lời (chỉ thị LLM "gửi NGUYÊN VẸN, không bọc trong cú pháp nào"). Mọi nơi render tin nhắn chat trên mobile trước đây chỉ có `<Text>{message.content}</Text>` — người dùng phải tự bôi đen rồi copy/paste URL sang trình duyệt.
+  - **`components/shared/LinkifiedText/`** (mới): bọc `Text` (`@/components/ui/text`), tách chuỗi theo URL regex (`split` với capturing group — xét vị trí LẺ là URL, không dùng `.test()` trên regex `g` vì stateful `lastIndex` sai khi gọi lặp trong `.map`), URL render thành `<Text onPress={() => Linking.openURL(...)}>` gạch chân.
+  - Áp cho 3 nơi render tin nhắn AI/chat: `components/chat/MessageBubble.tsx` (tab "Toàn sàn"), `components/chat/HotelConversationThread.tsx` (scope "Khách sạn này" + `profile/messages/[hotelId]`), và `(staff)/conversation/[id].tsx` (view nhân viên xem cùng hội thoại).
+  - **Verify**: `tsc --noEmit` không phát sinh lỗi mới (giữ nguyên baseline lỗi có sẵn của `components/ui/*` gluestack), `eslint` sạch trên 4 file mới/sửa. ⚠️ Chưa chạy được app trong phiên này ⇒ nhờ bạn thử: AI hoàn thành đặt phòng gửi link VNPay → bấm thẳng vào chữ link phải mở trình duyệt, không cần copy/paste.
+
 ### August 7, 2026 (continued 2) — Gán phòng trước check-in + block phòng khẩn cấp (theo API server mới)
 
 - [x] **Đối chiếu 5 commit mới nhất của server (`develop`) với mobile — 2 tính năng khớp scope staff mobile, làm cả hai**:

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { ArrowLeft, Bot, Check, Loader2, Mail, Phone } from 'lucide-react';
 
+import { LinkifiedText } from '@/components/shared/LinkifiedText';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/cn';
 import type {
@@ -77,7 +78,7 @@ function MessageBubble({ message }: { message: StaffConversationMessage }) {
         )}
         <div
           className={cn(
-            'rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-wrap wrap-break-word',
+            'rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed',
             isStaff && 'rounded-br-sm bg-slate-900 text-white',
             isBot &&
               'rounded-bl-sm border border-slate-200 bg-slate-50 text-slate-600',
@@ -86,7 +87,13 @@ function MessageBubble({ message }: { message: StaffConversationMessage }) {
               'rounded-bl-sm border border-slate-200 bg-white text-slate-900'
           )}
         >
-          {message.content}
+          <LinkifiedText
+            text={message.content}
+            linkClassName={cn(
+              'font-medium underline',
+              isStaff ? 'text-white' : 'text-slate-900'
+            )}
+          />
         </div>
         <span className="text-[10px] text-slate-400">
           {messageTime(message.createdAt)}

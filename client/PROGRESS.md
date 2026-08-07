@@ -2,6 +2,15 @@
 
 This file tracks the accomplished tasks, resolved user requests, and visual/functional refactoring completed in the client application.
 
+## August 7, 2026 (continued 4)
+
+- [x] **Link thanh toán VNPay/SePay do AI đặt phòng tự động gửi trong chat giờ bấm được**:
+  - **Bug**: `server/src/services/conversation.service.ts` (tool `confirm_action`, nhánh VNPay) chỉ thị LLM chèn `paymentUrl` **nguyên văn dạng chuỗi trần** vào câu trả lời ("gửi NGUYÊN VẸN, không bọc trong cú pháp nào"). Mọi nơi render tin nhắn chat ở client đều `{message.content}`/`{item.text}` thô trong `<p>`/`<div>` — người dùng phải tự bôi đen rồi Ctrl+C/Ctrl+V URL sang trình duyệt.
+  - **`components/shared/LinkifiedText.tsx`** (mới): tách chuỗi theo URL regex (`split` với capturing group, xét vị trí LẺ = URL — không dùng `.test()` trên regex `g` vì `lastIndex` stateful sẽ sai khi gọi lặp trong `.map`), URL render thành `<a target="_blank" rel="noopener noreferrer">` gạch chân.
+  - Áp cho 3 nơi render tin nhắn: `components/floating-chat-widget-shadcnui.tsx` (khung chat nổi của khách), `pages/account/MessagesPage.tsx` (`/account/messages`), `components/staff/chat/ConversationThread.tsx` (chat lễ tân).
+  - **Bổ sung ngay sau đó — user báo `**...**` hiện nguyên dấu sao**: AI (Gemini) tự chèn cú pháp Markdown `**in đậm**` dù không ai yêu cầu, khung chat chỉ render text thô nên khách thấy nguyên `**Loại phòng:**` thay vì chữ đậm. `LinkifiedText` viết lại dùng bộ token chung (`parseTokens` — 1 vòng `regex.exec` thay vì `split`, giữ đúng thứ tự URL/bold/text) để nhận diện thêm `**...**` → `<strong>`.
+  - **Verify**: `tsc -p tsconfig.app.json --noEmit` + `eslint` sạch trên 4 file mới/sửa + bản viết lại.
+
 ## August 7, 2026 (continued 3)
 
 - [x] **VÍ CỦA KHÁCH (role customer) — nối `GET /users/me/wallet` + `POST /payments/bookings/:id/wallet`; trước đây tiền vào ví mà khách KHÔNG có chỗ nào nhìn thấy và KHÔNG có đường tiêu**:
