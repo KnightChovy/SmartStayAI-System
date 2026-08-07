@@ -209,7 +209,7 @@ export class BookingService {
             cancelledAt: now,
             cancelledByRole: 'system',
             cancellationReasonCode: 'hold_expired',
-            cancellationReason: 'Quá hạn thanh toán',
+            cancellationReason: 'Payment deadline expired',
           },
         });
         if (cancelled.count === 0) {
@@ -263,7 +263,7 @@ export class BookingService {
     if (!customer?.phone?.trim()) {
       throw new ApiError(
         httpStatus.BAD_REQUEST,
-        'Vui lòng cập nhật số điện thoại trong hồ sơ trước khi đặt phòng'
+        'Please update the phone number in your profile before booking'
       );
     }
 
@@ -278,14 +278,14 @@ export class BookingService {
     const checkOut = toUtcDate(payload.checkOutDate);
     const today = todayInVietnamDate();
     if (checkIn < today) {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Ngày nhận phòng không được ở quá khứ');
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Check-in date cannot be in the past');
     }
     const nights = eachNightOfStay(checkIn, checkOut);
     if (nights.length === 0) {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Ngày trả phòng phải sau ngày nhận phòng');
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Check-out date must be after check-in date');
     }
     if (nights.length > MAX_NIGHTS) {
-      throw new ApiError(httpStatus.BAD_REQUEST, `Chỉ đặt được tối đa ${MAX_NIGHTS} đêm`);
+      throw new ApiError(httpStatus.BAD_REQUEST, `You can book at most ${MAX_NIGHTS} nights`);
     }
 
     const roomType = await prisma.roomType.findFirst({
@@ -298,7 +298,7 @@ export class BookingService {
       include: { hotel: { select: { settings: true } } }, // để snapshot chính sách huỷ lúc đặt
     });
     if (!roomType) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy loại phòng trong khách sạn này');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Room type not found in this hotel');
     }
     // Đóng băng chính sách huỷ HIỆN TẠI của KS vào booking (xem resolveBookingPolicy)
     const cancellationSnapshot = readCancellationPolicy(roomType.hotel.settings);
@@ -308,14 +308,14 @@ export class BookingService {
     const numChildren = payload.numChildren ?? 0;
     const numGuests = numAdults + numChildren;
     if (numGuests > roomType.maxOccupancy) {
-      throw new ApiError(httpStatus.BAD_REQUEST, `Loại phòng này chỉ chứa tối đa ${roomType.maxOccupancy} khách`);
+      throw new ApiError(httpStatus.BAD_REQUEST, `This room type can hold at most ${roomType.maxOccupancy} guests`);
     }
     // maxAdults/maxChildren tuỳ chọn: chỉ chặn khi khách sạn có khai để tránh chặn oan loại phòng cũ chưa cấu hình
     if (roomType.maxAdults !== null && numAdults > roomType.maxAdults) {
-      throw new ApiError(httpStatus.BAD_REQUEST, `Loại phòng này chỉ chứa tối đa ${roomType.maxAdults} người lớn`);
+      throw new ApiError(httpStatus.BAD_REQUEST, `This room type can hold at most ${roomType.maxAdults} adults`);
     }
     if (roomType.maxChildren !== null && numChildren > roomType.maxChildren) {
-      throw new ApiError(httpStatus.BAD_REQUEST, `Loại phòng này chỉ chứa tối đa ${roomType.maxChildren} trẻ em`);
+      throw new ApiError(httpStatus.BAD_REQUEST, `This room type can hold at most ${roomType.maxChildren} children`);
     }
 
     // Giá từng đêm áp pricing rule giống hệt lúc search (xem availability.service.priceForNight)
@@ -330,7 +330,7 @@ export class BookingService {
     // tạo với totalRooms thừa và khách đặt được cả phòng đang sửa.
     const sellablePerNight = await availabilityService.countSellableRoomsPerDate([roomType.id], nights);
     if (nights.every((night) => (sellablePerNight.get(`${roomType.id}:${night.getTime()}`) ?? 0) === 0)) {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Loại phòng này chưa mở bán');
+      throw new ApiError(httpStatus.BAD_REQUEST, 'This room type is not open for sale yet');
     }
 
     return prisma.$transaction(async (tx) => {
@@ -356,7 +356,7 @@ export class BookingService {
           data: { bookedRooms: { increment: 1 } },
         });
         if (reserved.count === 0) {
-          throw new ApiError(httpStatus.BAD_REQUEST, `Đã hết phòng đêm ${night.toISOString().slice(0, 10)}`);
+          throw new ApiError(httpStatus.BAD_REQUEST, `No rooms left for the night of ${night.toISOString().slice(0, 10)}`);
         }
 
         subtotal = subtotal.add(availabilityService.priceForNight(priceInput, night, row, pricingRules, today));
@@ -433,10 +433,10 @@ export class BookingService {
         data: {
           userId: customerId,
           type: 'booking_confirmed',
-          title: isCash ? 'Đặt phòng thành công' : 'Đã tạo đơn — vui lòng thanh toán',
+          title: isCash ? 'Booking successful' : 'Booking created — please complete payment',
           body: isCash
-            ? `Đơn ${booking.bookingCode} tại ${booking.hotel.name} đã được xác nhận. Bạn thanh toán khi nhận phòng.`
-            : `Đơn ${booking.bookingCode} tại ${booking.hotel.name} đang giữ chỗ trong ${holdMinutes} phút. Hoàn tất thanh toán để xác nhận.`,
+            ? `Booking ${booking.bookingCode} at ${booking.hotel.name} has been confirmed. You will pay at check-in.`
+            : `Booking ${booking.bookingCode} at ${booking.hotel.name} is held for ${holdMinutes} minutes. Complete payment to confirm.`,
           data: { bookingId: booking.id, bookingCode: booking.bookingCode },
           channel: 'in_app',
           status: 'sent',
@@ -472,7 +472,7 @@ export class BookingService {
       },
     });
     if (!booking) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy booking');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Booking not found');
     }
     const isOwner = booking.customerId === currentUser.id;
     const canManage = (roleRights.get(currentUser.role) || []).includes('manageBookings');
@@ -482,7 +482,7 @@ export class BookingService {
     // Lý do dạng enum là thứ quyết định có hoàn 100% hay không ⇒ khách KHÔNG được tự khai,
     // nếu không thì ai cũng chọn "phòng hỏng" để né phí huỷ.
     if (reasonCode && !canManage) {
-      throw new ApiError(httpStatus.FORBIDDEN, 'Chỉ nhân viên khách sạn mới được chọn lý do huỷ có tính chính sách');
+      throw new ApiError(httpStatus.FORBIDDEN, 'Only hotel staff can select a policy-based cancellation reason');
     }
 
     const policy = resolveBookingPolicy(booking); // snapshot của đơn (fallback policy sống của KS)
@@ -533,8 +533,8 @@ export class BookingService {
       cannotCancelReason: canCancel
         ? null
         : toUtcDate(booking.checkInDate) <= todayInVietnamDate()
-          ? 'Chỉ được huỷ trước ngày nhận phòng'
-          : 'Chỉ huỷ được booking đang chờ hoặc đã xác nhận',
+          ? 'Cancellation is only allowed before the check-in date'
+          : 'Only pending or confirmed bookings can be cancelled',
       isPaid: paidPayment !== null,
       paidAmount,
       refundAmount,
@@ -571,14 +571,14 @@ export class BookingService {
 
     const today = todayInVietnamDate();
     if (toUtcDate(booking.checkInDate) <= today) {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Chỉ được huỷ trước ngày nhận phòng');
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Cancellation is only allowed before the check-in date');
     }
 
     // Mặc định hoàn vào ví: khách nhận được ngay, không phải chờ ai chuyển khoản. Muốn tiền về
     // ngân hàng thì phải gửi kèm tài khoản — không có thì Platform Manager chẳng biết chuyển đi đâu.
     const refundMethod = payload.refundMethod ?? 'wallet';
     if (refundMethod === 'bank' && !bankAccount) {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Chọn hoàn về ngân hàng thì phải cung cấp tài khoản nhận tiền');
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Choosing a bank refund requires providing the receiving account');
     }
 
     const nights = eachNightOfStay(booking.checkInDate, booking.checkOutDate);
@@ -599,7 +599,7 @@ export class BookingService {
         },
       });
       if (cancelled.count === 0) {
-        throw new ApiError(httpStatus.BAD_REQUEST, 'Chỉ huỷ được booking đang chờ hoặc đã xác nhận');
+        throw new ApiError(httpStatus.BAD_REQUEST, 'Only pending or confirmed bookings can be cancelled');
       }
 
       await tx.roomAvailability.updateMany({
@@ -616,7 +616,7 @@ export class BookingService {
             paymentId: paidPayment.id,
             requestedBy: currentUser.id,
             amount: refundAmount,
-            reason: reason || 'Khách huỷ booking',
+            reason: reason || 'Guest cancelled the booking',
             status: 'pending',
             refundMethod,
             // Số tài khoản MÃ HOÁ như HotelPayoutAccount — chỉ giải mã cho người đi chuyển tiền
@@ -731,7 +731,7 @@ export class BookingService {
       include: bookingInclude,
     });
     if (!booking) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy booking');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Booking not found');
     }
     const isOwner = booking.customerId === currentUser.id;
     const canManage = (roleRights.get(currentUser.role) || []).includes('manageBookings');
@@ -808,7 +808,7 @@ export class BookingService {
       },
     });
     if (!booking) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy booking trong khách sạn này');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Booking not found in this hotel');
     }
     const invoice = await prisma.invoice.findUnique({ where: { bookingId } });
     return { ...booking, invoice };
@@ -826,7 +826,7 @@ export class BookingService {
       include: { booking: { include: staffBookingInclude } },
     });
     if (!voucher || voucher.booking.hotelId !== hotelId) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy booking với mã voucher này trong khách sạn');
+      throw new ApiError(httpStatus.NOT_FOUND, 'No booking found with this voucher code in the hotel');
     }
     return voucher.booking;
   };
@@ -841,13 +841,13 @@ export class BookingService {
       select: { id: true, roomNumber: true, roomTypeId: true, isActive: true },
     });
     if (!room) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy phòng trong khách sạn này');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Room not found in this hotel');
     }
     if (room.roomTypeId !== roomTypeId) {
-      throw new ApiError(httpStatus.BAD_REQUEST, `Phòng ${room.roomNumber} không đúng loại phòng của đơn`);
+      throw new ApiError(httpStatus.BAD_REQUEST, `Room ${room.roomNumber} does not match the booking's room type`);
     }
     if (!room.isActive) {
-      throw new ApiError(httpStatus.BAD_REQUEST, `Phòng ${room.roomNumber} đã ngừng sử dụng`);
+      throw new ApiError(httpStatus.BAD_REQUEST, `Room ${room.roomNumber} is no longer in use`);
     }
     return room;
   };
@@ -867,12 +867,12 @@ export class BookingService {
     await hotelService.getOperableHotel(hotelId, currentUser);
     const booking = await prisma.booking.findFirst({ where: { id: bookingId, hotelId } });
     if (!booking) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy booking trong khách sạn này');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Booking not found in this hotel');
     }
     if (booking.status !== 'confirmed') {
       throw new ApiError(
         httpStatus.BAD_REQUEST,
-        'Chỉ gán phòng trước cho booking đã xác nhận — đơn đang lưu trú thì đổi phòng ở mục Front desk'
+        'Rooms can only be pre-assigned to confirmed bookings — for staying bookings, change the room in the Front desk section'
       );
     }
 
@@ -897,8 +897,8 @@ export class BookingService {
     if (block) {
       throw new ApiError(
         httpStatus.BAD_REQUEST,
-        `Phòng ${room.roomNumber} đang bị chặn ${block.startDate.toISOString().slice(0, 10)} → ` +
-          `${block.endDate.toISOString().slice(0, 10)}, trùng kỳ ở của đơn`
+        `Room ${room.roomNumber} is blocked ${block.startDate.toISOString().slice(0, 10)} → ` +
+          `${block.endDate.toISOString().slice(0, 10)}, overlapping the booking's stay`
       );
     }
 
@@ -926,7 +926,7 @@ export class BookingService {
       if (conflict) {
         throw new ApiError(
           httpStatus.CONFLICT,
-          `Phòng ${room.roomNumber} đã gán cho đơn ${conflict.booking.bookingCode} ` +
+          `Room ${room.roomNumber} is already assigned to booking ${conflict.booking.bookingCode} ` +
             `(${conflict.booking.checkInDate.toISOString().slice(0, 10)} → ` +
             `${conflict.booking.checkOutDate.toISOString().slice(0, 10)})`
         );
@@ -951,12 +951,12 @@ export class BookingService {
     await hotelService.getOperableHotel(hotelId, currentUser);
     const booking = await prisma.booking.findFirst({ where: { id: bookingId, hotelId } });
     if (!booking) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy booking trong khách sạn này');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Booking not found in this hotel');
     }
     if (booking.status !== 'confirmed') {
       throw new ApiError(
         httpStatus.BAD_REQUEST,
-        'Chỉ gỡ được phòng gán trước của booking đã xác nhận — khách đã nhận phòng thì trả phòng ở mục Front desk'
+        'Pre-assigned rooms can only be released for confirmed bookings — once the guest has checked in, check out in the Front desk section'
       );
     }
     await prisma.bookingRoom.deleteMany({ where: { bookingId } });
@@ -975,23 +975,23 @@ export class BookingService {
       include: { voucher: { select: { voucherCode: true } } },
     });
     if (!booking) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy booking trong khách sạn này');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Booking not found in this hotel');
     }
     if (booking.status !== 'confirmed') {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Chỉ check-in được booking đã xác nhận (đã thanh toán)');
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Only confirmed (paid) bookings can be checked in');
     }
     // Chỉ cho check-in trong cửa sổ ở thực tế: từ ngày nhận phòng đến trước ngày trả phòng.
     // (checkInDate <= hôm nay < checkOutDate) — chặn check-in quá sớm và check-in khi kỳ ở đã kết thúc.
     const today = todayInVietnamDate();
     if (toUtcDate(booking.checkInDate) > today) {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Chưa tới ngày nhận phòng, không thể check-in');
+      throw new ApiError(httpStatus.BAD_REQUEST, 'The check-in date has not arrived yet, cannot check in');
     }
     if (toUtcDate(booking.checkOutDate) <= today) {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Đã quá kỳ lưu trú — booking này nên được xử lý là no-show');
+      throw new ApiError(httpStatus.BAD_REQUEST, 'The stay period has passed — this booking should be handled as a no-show');
     }
     // Nếu staff quét/nhập mã voucher thì phải khớp đúng voucher của booking
     if (payload.voucherCode && booking.voucher && booking.voucher.voucherCode !== payload.voucherCode) {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Mã voucher không khớp với booking');
+      throw new ApiError(httpStatus.BAD_REQUEST, 'The voucher code does not match the booking');
     }
 
     return prisma.$transaction(async (tx) => {
@@ -1000,7 +1000,7 @@ export class BookingService {
         data: { status: 'checked_in', checkedInAt: new Date() },
       });
       if (moved.count === 0) {
-        throw new ApiError(httpStatus.BAD_REQUEST, 'Booking không còn ở trạng thái xác nhận');
+        throw new ApiError(httpStatus.BAD_REQUEST, 'The booking is no longer in confirmed status');
       }
 
       // Thứ tự ưu tiên khi chọn phòng vật lý:
@@ -1022,8 +1022,8 @@ export class BookingService {
         throw new ApiError(
           httpStatus.BAD_REQUEST,
           desiredRoomId
-            ? 'Phòng đã chọn chưa sẵn sàng bàn giao (đang có khách / đang dọn / đang bị chặn) — chọn phòng khác'
-            : 'Không còn phòng trống đúng loại để bàn giao'
+            ? 'The selected room is not ready for handover (occupied / being cleaned / blocked) — choose another room'
+            : 'No available room of the right type left to hand over'
         );
       }
       // Giành phòng có điều kiện: chỉ thành công khi phòng vẫn 'available'.
@@ -1034,7 +1034,7 @@ export class BookingService {
         data: { status: 'occupied', foStatus: 'occupied' },
       });
       if (claimed.count === 0) {
-        throw new ApiError(httpStatus.BAD_REQUEST, 'Phòng vừa được nhận, vui lòng thử phòng khác');
+        throw new ApiError(httpStatus.BAD_REQUEST, 'The room was just taken, please try another room');
       }
       // Dọn bản ghi gán trước (nếu có) rồi ghi lại: staff có thể vừa đổi sang phòng khác ở quầy,
       // và bookingRoom không giữ dữ liệu gì ngoài mốc gán nên xoá đi không mất lịch sử.
@@ -1053,8 +1053,8 @@ export class BookingService {
         data: {
           userId: booking.customerId,
           type: 'alert',
-          title: 'Nhận phòng thành công',
-          body: `Bạn đã nhận phòng ${room.roomNumber} cho đơn ${booking.bookingCode}. Chúc bạn có kỳ nghỉ vui vẻ!`,
+          title: 'Check-in successful',
+          body: `You have checked in to room ${room.roomNumber} for booking ${booking.bookingCode}. Enjoy your stay!`,
           data: { bookingId, bookingCode: booking.bookingCode, roomNumber: room.roomNumber },
           channel: 'in_app',
           status: 'sent',
@@ -1078,10 +1078,10 @@ export class BookingService {
       include: { bookingRooms: { select: { roomId: true } } },
     });
     if (!booking) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy booking trong khách sạn này');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Booking not found in this hotel');
     }
     if (booking.status !== 'checked_in') {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Chỉ check-out được booking đang lưu trú');
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Only staying bookings can be checked out');
     }
 
     const extra = new Prisma.Decimal(payload.extraCharge ?? 0);
@@ -1092,7 +1092,7 @@ export class BookingService {
         data: { status: 'checked_out', checkedOutAt: new Date() },
       });
       if (moved.count === 0) {
-        throw new ApiError(httpStatus.BAD_REQUEST, 'Booking không còn đang lưu trú');
+        throw new ApiError(httpStatus.BAD_REQUEST, 'The booking is no longer staying');
       }
 
       // Nhả tồn kho các đêm CHƯA NGỦ (từ hôm nay trở đi) — khách trả phòng sớm thì những đêm còn
@@ -1147,8 +1147,8 @@ export class BookingService {
         data: {
           userId: booking.customerId,
           type: 'review_request',
-          title: 'Trả phòng thành công — kỳ nghỉ của bạn thế nào?',
-          body: `Đơn ${booking.bookingCode} đã hoàn tất, hoá đơn ${invoice.invoiceNumber}. Chia sẻ trải nghiệm của bạn để giúp khách sau nhé!`,
+          title: 'Check-out successful — how was your stay?',
+          body: `Booking ${booking.bookingCode} is complete, invoice ${invoice.invoiceNumber}. Share your experience to help future guests!`,
           data: { bookingId, bookingCode: booking.bookingCode, invoiceNumber: invoice.invoiceNumber },
           channel: 'in_app',
           status: 'sent',
@@ -1176,14 +1176,14 @@ export class BookingService {
       },
     });
     if (!booking) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy booking trong khách sạn này');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Booking not found in this hotel');
     }
     if (booking.status === 'cancelled') {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Booking đã huỷ, không thể thu tiền');
+      throw new ApiError(httpStatus.BAD_REQUEST, 'The booking is already cancelled, cannot collect payment');
     }
     const cashPayment = booking.payments[0] ?? null;
     if (!cashPayment) {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Không có khoản tiền mặt nào đang chờ thu cho booking này');
+      throw new ApiError(httpStatus.BAD_REQUEST, 'There is no cash payment pending collection for this booking');
     }
 
     return prisma.$transaction(async (tx) => {
@@ -1192,7 +1192,7 @@ export class BookingService {
         data: { status: 'completed', paidAt: new Date() },
       });
       if (paid.count === 0) {
-        throw new ApiError(httpStatus.BAD_REQUEST, 'Khoản tiền mặt này vừa được ghi nhận');
+        throw new ApiError(httpStatus.BAD_REQUEST, 'This cash payment was just recorded');
       }
 
       // Tiền mặt vừa thu xong ⇒ tra mức hoa hồng theo ĐÚNG hôm nay, giống hệt đường thanh toán online
@@ -1229,13 +1229,13 @@ export class BookingService {
       include: { payments: { where: { paymentMethod: 'cash', status: 'pending' }, take: 1 } },
     });
     if (!booking) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy booking trong khách sạn này');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Booking not found in this hotel');
     }
     if (booking.status !== 'confirmed') {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Chỉ đánh dấu no-show cho booking đã xác nhận chưa nhận phòng');
+      throw new ApiError(httpStatus.BAD_REQUEST, 'No-show can only be marked for confirmed bookings that have not checked in');
     }
     if (toUtcDate(booking.checkInDate) > todayInVietnamDate()) {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Chưa tới ngày nhận phòng, chưa thể đánh dấu no-show');
+      throw new ApiError(httpStatus.BAD_REQUEST, 'The check-in date has not arrived yet, cannot mark no-show');
     }
 
     const cashPending = booking.payments[0] ?? null;
@@ -1247,11 +1247,11 @@ export class BookingService {
           cancelledByRole: cancelledByRoleOf(currentUser.role),
           cancelledByUserId: currentUser.id,
           cancellationReasonCode: 'guest_no_show',
-          cancellationReason: 'Khách không đến nhận phòng (no-show)',
+          cancellationReason: 'Guest did not arrive for check-in (no-show)',
         },
       });
       if (moved.count === 0) {
-        throw new ApiError(httpStatus.BAD_REQUEST, 'Booking không còn ở trạng thái xác nhận');
+        throw new ApiError(httpStatus.BAD_REQUEST, 'The booking is no longer in confirmed status');
       }
       // Tiền mặt chưa thu sẽ không bao giờ thu ⇒ failed. VNPay đã trả thì giữ nguyên (forfeit, không hoàn).
       if (cashPending) {
@@ -1297,7 +1297,7 @@ export class BookingService {
             status: 'no_show',
             cancelledByRole: 'system',
             cancellationReasonCode: 'guest_no_show',
-            cancellationReason: 'Quá kỳ lưu trú, khách không nhận phòng (no-show tự động)',
+            cancellationReason: 'Stay period elapsed, guest did not check in (automatic no-show)',
           },
         });
         if (moved.count === 0) {

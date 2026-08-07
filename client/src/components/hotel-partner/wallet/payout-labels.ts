@@ -34,6 +34,16 @@ export const PAYOUT_STATUS_CONFIG: Record<
   },
 };
 
+/**
+ * `0071000123456` → `•••• •••• 3456`. Giữ 4 số cuối — vừa đủ để đối chiếu, không lộ cả số.
+ *
+ * Dùng chung cho thẻ Bank Account và ô số TK trong modal đổi tài khoản: hai chỗ che khác kiểu
+ * thì đối tác tưởng là hai con số khác nhau.
+ */
+export function maskAccount(value: string): string {
+  return `•••• •••• ${value.slice(-4)}`;
+}
+
 export const PAYOUT_STATUS_OPTIONS: { value: PayoutStatus; label: string }[] =
   Object.entries(PAYOUT_STATUS_CONFIG).map(([value, { label }]) => ({
     // `Object.entries` làm mất kiểu khoá; danh sách nguồn là chính `PAYOUT_STATUS_CONFIG`

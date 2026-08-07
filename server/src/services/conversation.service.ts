@@ -47,7 +47,7 @@ const MAX_HISTORY = 20;
 
 // Khi hội thoại đã 'escalated' (chờ người thật): bot NGỪNG tự trả lời, chỉ báo khách chờ nhân viên,
 // để không "nói chen" trong lúc lễ tân đang xử lý (S04). Bot trả lời lại sau khi nhân viên reply (→ active).
-const HANDOFF_NOTICE = 'Cảm ơn bạn, yêu cầu đang được chuyển tới nhân viên. Nhân viên sẽ phản hồi trong giây lát.';
+const HANDOFF_NOTICE = 'Thank you. Your request is being transferred to a staff member. They will respond shortly.';
 
 // Trần CỨNG số tin gọi AI mỗi ngày cho một khách — chốt chặn cuối chống lạm dụng đốt quota API key,
 // đúng cả khi khách cố "bẻ" lời nhắc hệ thống (vì nó chặn theo SỐ LƯỢT, không phụ thuộc nội dung).
@@ -749,7 +749,7 @@ export class ConversationService {
           // cancel_booking — hoàn vào ví: chatbot không phải chỗ để khách đọc/nhập số tài khoản,
           // và vào ví thì khách nhận được ngay. Muốn về ngân hàng thì huỷ ở trang booking.
           const result = await bookingService.cancelBooking(String(action.payload.bookingId), currentUser, {
-            reason: 'Khách huỷ qua trợ lý AI',
+            reason: 'Guest cancelled via AI assistant',
             refundMethod: 'wallet',
           });
           const refundText = result.refund
@@ -958,7 +958,7 @@ export class ConversationService {
       include: { faqKnowledge: { where: { isActive: true }, select: { question: true, answer: true } } },
     });
     if (!hotel) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy khách sạn');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Hotel not found');
     }
     return hotel;
   };
@@ -997,7 +997,7 @@ export class ConversationService {
       if (usedToday >= DAILY_AI_MESSAGE_LIMIT) {
         throw new ApiError(
           httpStatus.TOO_MANY_REQUESTS,
-          'Bạn đã đạt giới hạn tin nhắn với trợ lý trong hôm nay. Vui lòng thử lại vào ngày mai hoặc liên hệ lễ tân.'
+          'You have reached your daily message limit with the assistant. Please try again tomorrow or contact the front desk.'
         );
       }
       return;
@@ -1012,7 +1012,7 @@ export class ConversationService {
     if (usedInConversation >= GUEST_CONVERSATION_MESSAGE_LIMIT) {
       throw new ApiError(
         httpStatus.TOO_MANY_REQUESTS,
-        'Cuộc trò chuyện đã đạt giới hạn tin nhắn cho khách chưa đăng nhập. Vui lòng ĐĂNG NHẬP để tiếp tục hoặc liên hệ lễ tân.'
+        'This conversation has reached the message limit for guests who are not logged in. Please LOG IN to continue or contact the front desk.'
       );
     }
   };
@@ -1091,7 +1091,7 @@ export class ConversationService {
       reply = await aiProvider.chatWithTools(systemPrompt, messages, tools);
     } catch (err) {
       logger.error(`[Chatbot] LLM lỗi: ${(err as Error).message}`);
-      reply = 'Xin lỗi, trợ lý đang bận. Bạn vui lòng thử lại sau ít phút, hoặc liên hệ lễ tân giúp em nhé.';
+      reply = 'Sorry, the assistant is busy. Please try again in a few minutes, or contact the front desk.';
     }
 
     // (6) Lưu câu trả lời của bot
@@ -1183,7 +1183,7 @@ export class ConversationService {
         // stream đã có câu chốt sẵn trong provider; ở đây phải tự bù, nếu không khách nhìn khung chat
         // trống còn DB lưu lại một tin rỗng.
         if (!full.trim()) {
-          full = 'Xin lỗi, tôi chưa hoàn tất được yêu cầu. Bạn liên hệ lễ tân giúp em nhé.';
+          full = 'Sorry, I could not complete your request. Please contact the front desk.';
           yield full;
         }
       } catch (err) {
@@ -1191,8 +1191,8 @@ export class ConversationService {
         // KHÔNG ghi đè `full`: phần chữ đã đẩy ra thì khách ĐÃ ĐỌC rồi — xoá khỏi bản lưu là làm lịch sử
         // lệch với cái khách nhìn thấy. Chỉ NỐI thêm lời xin lỗi vào sau.
         const notice = full
-          ? '\n\n(Xin lỗi, trợ lý bị gián đoạn giữa chừng. Bạn thử lại giúp em nhé.)'
-          : 'Xin lỗi, trợ lý đang bận. Bạn thử lại sau ít phút giúp em nhé.';
+          ? '\n\n(Sorry, the assistant was interrupted midway. Please try again.)'
+          : 'Sorry, the assistant is busy. Please try again in a few minutes.';
         full += notice;
         yield notice;
       } finally {
@@ -1245,7 +1245,7 @@ export class ConversationService {
       ? await prisma.conversation.findFirst({ where: { id: conversationId, userId: currentUser.id } })
       : null;
     if (!conversation) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy hội thoại của bạn');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Conversation not found');
     }
     return conversation;
   };
@@ -1335,13 +1335,13 @@ export class ConversationService {
       if (conversation.hotelId === null) {
         throw new ApiError(
           httpStatus.BAD_REQUEST,
-          'Cuộc trò chuyện này không gắn khách sạn nào nên chưa có nhân viên phụ trách. Vui lòng mở trang một khách sạn cụ thể để được hỗ trợ.'
+          'This conversation is not linked to any hotel, so no staff member is assigned to it. Please open a specific hotel page to get support.'
         );
       }
       if (isHumanHandling(conversation)) {
         return { ...conversation, handoff: true }; // đã là người thật → no-op
       }
-      const note = `[Hệ thống] ${reason ?? 'Khách yêu cầu gặp nhân viên.'}`;
+      const note = `[System] ${reason ?? 'Guest requested to speak with staff.'}`;
       const message = await prisma.message.create({
         data: { conversationId, senderType: 'system', content: note, messageType: 'text' },
       });
@@ -1350,7 +1350,7 @@ export class ConversationService {
         data: { status: 'escalated', lastMessageAt: new Date() },
       });
       emitMessageToConversation(conversationId, message);
-      emitConversationEscalated(conversation.hotelId, { conversationId, reason: reason ?? 'Khách yêu cầu gặp nhân viên' });
+      emitConversationEscalated(conversation.hotelId, { conversationId, reason: reason ?? 'Guest requested to speak with staff' });
       return { ...updated, handoff: true };
     }
 
@@ -1359,7 +1359,7 @@ export class ConversationService {
       return { ...conversation, handoff: false }; // đã là AI → no-op
     }
     const message = await prisma.message.create({
-      data: { conversationId, senderType: 'system', content: '[Hệ thống] Khách đã chuyển về trợ lý AI.', messageType: 'text' },
+      data: { conversationId, senderType: 'system', content: '[System] Guest switched back to the AI assistant.', messageType: 'text' },
     });
     const updated = await prisma.conversation.update({
       where: { id: conversationId },
@@ -1432,7 +1432,7 @@ export class ConversationService {
       include: { messages: { orderBy: { createdAt: 'asc' } } },
     });
     if (!conversation) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy hội thoại trong khách sạn này');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Conversation not found in this hotel');
     }
     const customer = conversation.userId
       ? await prisma.user.findUnique({
@@ -1451,10 +1451,10 @@ export class ConversationService {
     await hotelService.getOperableHotel(hotelId, currentUser);
     const conversation = await prisma.conversation.findFirst({ where: { id: conversationId, hotelId } });
     if (!conversation) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy hội thoại trong khách sạn này');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Conversation not found in this hotel');
     }
     if (conversation.status === 'closed') {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Hội thoại đã đóng, không thể trả lời');
+      throw new ApiError(httpStatus.BAD_REQUEST, 'This conversation is closed and cannot be replied to');
     }
 
     const saved = await prisma.message.create({
@@ -1475,7 +1475,7 @@ export class ConversationService {
     await hotelService.getOperableHotel(hotelId, currentUser);
     const conversation = await prisma.conversation.findFirst({ where: { id: conversationId, hotelId } });
     if (!conversation) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy hội thoại trong khách sạn này');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Conversation not found in this hotel');
     }
     return prisma.conversation.update({
       where: { id: conversationId },

@@ -90,7 +90,7 @@ export class HotelService {
       include: { partner: { select: { ownerId: true, status: true } } },
     });
     if (!hotel) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy khách sạn');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Hotel not found');
     }
     const isOwner = hotel.partner.ownerId === currentUser.id;
     const canManage = (roleRights.get(currentUser.role) || []).includes('manageHotels');
@@ -102,7 +102,7 @@ export class HotelService {
     if (isOwner && !canManage && hotel.partner.status === 'suspended') {
       throw new ApiError(
         httpStatus.FORBIDDEN,
-        'Tài khoản đối tác đang bị đình chỉ — vui lòng liên hệ quản trị nền tảng'
+        'Partner account is suspended — please contact platform administration'
       );
     }
     return hotel;
@@ -120,7 +120,7 @@ export class HotelService {
       include: { partner: { select: { ownerId: true } } },
     });
     if (!hotel) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy khách sạn');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Hotel not found');
     }
     const isOwner = hotel.partner.ownerId === currentUser.id;
     const canManage = (roleRights.get(currentUser.role) || []).includes('manageBookings');
@@ -210,13 +210,13 @@ export class HotelService {
     const hotel = await this.getManagedHotel(hotelId, currentUser);
     if (isListed) {
       if (!hotel.isActive) {
-        throw new ApiError(httpStatus.BAD_REQUEST, 'Khách sạn chưa được duyệt nên chưa thể mở bán');
+        throw new ApiError(httpStatus.BAD_REQUEST, 'The hotel has not been approved yet, so it cannot be listed for sale');
       }
       const activeRoomTypes = await prisma.roomType.count({ where: { hotelId, isActive: true } });
       if (activeRoomTypes === 0) {
         throw new ApiError(
           httpStatus.BAD_REQUEST,
-          'Cần có ít nhất một loại phòng đang bật (đã điền giá) trước khi mở bán'
+          'At least one active room type (with a price set) is required before listing for sale'
         );
       }
     }
@@ -271,7 +271,7 @@ export class HotelService {
     await this.getManagedHotel(hotelId, currentUser);
     const image = await prisma.hotelImage.findFirst({ where: { id: imageId, hotelId } });
     if (!image) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy ảnh trong khách sạn này');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Image not found in this hotel');
     }
     await prisma.hotelImage.delete({ where: { id: imageId } });
   };
@@ -281,7 +281,7 @@ export class HotelService {
     await this.getManagedHotel(hotelId, currentUser);
     const image = await prisma.hotelImage.findFirst({ where: { id: imageId, hotelId } });
     if (!image) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy ảnh trong khách sạn này');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Image not found in this hotel');
     }
     return prisma.$transaction(async (tx) => {
       await tx.hotelImage.updateMany({ where: { hotelId }, data: { isPrimary: false } });
@@ -310,7 +310,7 @@ export class HotelService {
     if (amenityIds.length > 0) {
       const existingCount = await prisma.amenity.count({ where: { id: { in: amenityIds } } });
       if (existingCount !== amenityIds.length) {
-        throw new ApiError(httpStatus.BAD_REQUEST, 'Có tiện nghi không tồn tại trong danh sách gửi lên');
+        throw new ApiError(httpStatus.BAD_REQUEST, 'Some amenities in the submitted list do not exist');
       }
     }
 
@@ -656,7 +656,7 @@ export class HotelService {
       },
     });
     if (!hotel) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy khách sạn');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Hotel not found');
     }
     // Điểm đánh giá dùng chung một cách tính với danh sách ⇒ thẻ KS và trang chi tiết luôn khớp nhau.
     // Bảng phân tích chi tiết (5 tiêu chí + phân bố sao) nằm ở GET /hotels/:hotelId/review-stats.
@@ -682,7 +682,7 @@ export class HotelService {
       where: { id: hotelId, isActive: true, isListed: true, deletedAt: null },
     });
     if (!hotel) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy khách sạn');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Hotel not found');
     }
 
     const where: Prisma.RoomTypeWhereInput = { hotelId, isActive: true };
@@ -785,7 +785,7 @@ export class HotelService {
       },
     });
     if (!roomType) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy loại phòng');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Room type not found');
     }
 
     // Không có khoảng ngày ⇒ trả chi tiết loại phòng, chưa kèm tồn kho/giá kỳ ở

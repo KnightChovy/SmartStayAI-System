@@ -125,15 +125,15 @@ export class PlatformManagerService {
       select: { id: true, businessName: true, status: true, ownerId: true },
     });
     if (!partner) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy đối tác');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Partner not found');
     }
 
     const suspending = payload.action === 'suspend';
     if (suspending && partner.status !== 'approved') {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Chỉ đình chỉ được đối tác đang hoạt động');
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Only active partners can be suspended');
     }
     if (!suspending && partner.status !== 'suspended') {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Đối tác này không ở trạng thái bị đình chỉ');
+      throw new ApiError(httpStatus.BAD_REQUEST, 'This partner is not in a suspended state');
     }
 
     const now = new Date();
@@ -158,11 +158,11 @@ export class PlatformManagerService {
         data: {
           userId: partner.ownerId,
           type: 'alert',
-          title: suspending ? 'Tài khoản đối tác bị đình chỉ' : 'Tài khoản đối tác đã được khôi phục',
+          title: suspending ? 'Partner account suspended' : 'Partner account reactivated',
           body: suspending
-            ? `${partner.businessName} đã bị tạm dừng hoạt động. Lý do: ${payload.reason ?? 'không nêu'}. ` +
-              `${unlisted} khách sạn đã được gỡ khỏi trang bán.`
-            : `${partner.businessName} đã được khôi phục. Bạn cần tự mở bán lại từng khách sạn trong phần quản lý.`,
+            ? `${partner.businessName} has been suspended. Reason: ${payload.reason ?? 'not specified'}. ` +
+              `${unlisted} hotel(s) have been removed from sale.`
+            : `${partner.businessName} has been reactivated. You need to re-list each hotel yourself in the management section.`,
           data: { partnerId, action: payload.action },
           channel: 'in_app',
           status: 'sent',
@@ -277,7 +277,7 @@ export class PlatformManagerService {
       select: { id: true, name: true, city: true },
     });
     if (!hotel) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy khách sạn');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Hotel not found');
     }
     const { from, to } = resolveWindow(query);
 

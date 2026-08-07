@@ -15,7 +15,7 @@ export class PricingRuleService {
   private assertRoomTypeInHotel = async (hotelId: string, roomTypeId: string) => {
     const roomType = await prisma.roomType.findFirst({ where: { id: roomTypeId, hotelId } });
     if (!roomType) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy loại phòng trong khách sạn này');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Room type not found in this hotel');
     }
   };
 
@@ -64,7 +64,7 @@ export class PricingRuleService {
     await hotelService.getManagedHotel(hotelId, currentUser);
     const rule = await prisma.pricingRule.findFirst({ where: { id: ruleId, hotelId } });
     if (!rule) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy pricing rule trong khách sạn này');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Pricing rule not found in this hotel');
     }
     if (payload.roomTypeId) {
       await this.assertRoomTypeInHotel(hotelId, payload.roomTypeId);
@@ -74,7 +74,7 @@ export class PricingRuleService {
     const startDate = payload.startDate ? toUtcDate(payload.startDate) : rule.startDate;
     const endDate = payload.endDate ? toUtcDate(payload.endDate) : rule.endDate;
     if (endDate < startDate) {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'endDate phải lớn hơn hoặc bằng startDate');
+      throw new ApiError(httpStatus.BAD_REQUEST, 'endDate must be greater than or equal to startDate');
     }
 
     return prisma.pricingRule.update({
@@ -88,7 +88,7 @@ export class PricingRuleService {
     await hotelService.getManagedHotel(hotelId, currentUser);
     const rule = await prisma.pricingRule.findFirst({ where: { id: ruleId, hotelId } });
     if (!rule) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy pricing rule trong khách sạn này');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Pricing rule not found in this hotel');
     }
     await prisma.pricingRule.delete({ where: { id: ruleId } });
   };

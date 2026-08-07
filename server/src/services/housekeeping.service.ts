@@ -32,10 +32,10 @@ export class HousekeepingService {
     await hotelService.getOperableHotel(hotelId, currentUser);
     const task = await prisma.housekeepingTask.findFirst({ where: { id: taskId, hotelId } });
     if (!task) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy task dọn phòng');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Housekeeping task not found');
     }
     if (task.status === 'done') {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Task đã hoàn thành');
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Task already completed');
     }
 
     return prisma.$transaction(async (tx) => {

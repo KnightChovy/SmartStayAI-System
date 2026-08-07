@@ -16,7 +16,7 @@ const upload = multer({
       cb(null, true);
       return;
     }
-    cb(new ApiError(httpStatus.BAD_REQUEST, 'Chỉ chấp nhận ảnh JPEG/PNG/WEBP hoặc file PDF'));
+    cb(new ApiError(httpStatus.BAD_REQUEST, 'Only JPEG/PNG/WEBP images or PDF files are accepted'));
   },
 });
 

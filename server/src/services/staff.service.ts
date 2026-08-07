@@ -26,7 +26,7 @@ export class StaffService {
     // Email ĐÃ có tài khoản → GÁN LẠI (không tạo mới, giữ nguyên thông tin/mật khẩu tài khoản cũ)
     if (existing) {
       if (existing.role !== 'staff') {
-        throw new ApiError(httpStatus.BAD_REQUEST, 'Email này đã thuộc một tài khoản không phải nhân viên');
+        throw new ApiError(httpStatus.BAD_REQUEST, 'This email already belongs to a non-staff account');
       }
       // Luật 1 nhân viên = 1 khách sạn: chặn nếu đang có phân công còn hiệu lực
       const active = await prisma.hotelStaffAssignment.findFirst({
@@ -36,8 +36,8 @@ export class StaffService {
         throw new ApiError(
           httpStatus.BAD_REQUEST,
           active.hotelId === hotelId
-            ? 'Nhân viên này đang làm việc tại khách sạn này'
-            : 'Nhân viên này đang làm việc tại một khách sạn khác (mỗi nhân viên chỉ làm 1 khách sạn)'
+            ? 'This staff member is already working at this hotel'
+            : 'This staff member is already working at another hotel (each staff member works at only one hotel)'
         );
       }
       const assignment = await prisma.hotelStaffAssignment.create({
@@ -49,7 +49,7 @@ export class StaffService {
 
     // Chưa có tài khoản → TẠO MỚI (cần name + password) rồi gán
     if (!payload.name || !payload.password) {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Cần họ tên và mật khẩu để tạo tài khoản nhân viên mới');
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Full name and password are required to create a new staff account');
     }
     const user = await userService.createUser({
       name: payload.name,
@@ -97,7 +97,7 @@ export class StaffService {
       },
     });
     if (!assignment) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Nhân viên này không đang làm việc tại khách sạn');
+      throw new ApiError(httpStatus.NOT_FOUND, 'This staff member is not working at this hotel');
     }
     return assignment;
   };
@@ -109,7 +109,7 @@ export class StaffService {
       where: { hotelId, userId, unassignedAt: null },
     });
     if (!assignment) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Nhân viên này không đang làm việc tại khách sạn');
+      throw new ApiError(httpStatus.NOT_FOUND, 'This staff member is not working at this hotel');
     }
     return prisma.hotelStaffAssignment.update({
       where: { id: assignment.id },

@@ -114,7 +114,7 @@ export class WalletService {
       data: { balanceAvailable: { decrement: amount } },
     });
     if (count === 0) {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Số dư khả dụng không đủ để rút');
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Insufficient available balance for payout');
     }
     const after = wallet.balanceAvailable.sub(amount);
     await this.writeTxn(tx, {
@@ -178,7 +178,7 @@ export class WalletService {
       data: { balanceAvailable: { decrement: amount } },
     });
     if (count === 0) {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Số dư ví không đủ');
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Insufficient wallet balance');
     }
     const after = wallet.balanceAvailable.sub(amount);
     await this.writeTxn(tx, {

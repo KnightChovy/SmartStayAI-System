@@ -8,6 +8,7 @@
  */
 import type { Paginated } from '@/types/api.types';
 import type { PaymentMethod } from '@/types/staff.types';
+import type { PayoutStatus } from '@/types/payout.types';
 
 // ─── Revenue report (GET /hotels/:id/revenue) ────────────────────────────────
 
@@ -93,11 +94,6 @@ export interface HotelWalletBalance {
 export interface WalletTransaction {
   id: string;
   type: WalletTransactionType;
-  /**
-   * Trạng thái bút toán — sổ ví chỉ ghi khi tiền đã chuyển xong nên **luôn `completed`**.
-   * Muốn trạng thái thanh toán cổng thật (kể cả `failed`) thì phải xem `GET /admin/payments`.
-   */
-  status: string;
   /** Có dấu sẵn: `+` earning, `−` payout/refund. Đừng suy dấu từ `type`. */
   amount: string;
   balanceAfter: string;
@@ -107,11 +103,60 @@ export interface WalletTransaction {
   /** Phương thức khách đã trả. **Mảng** vì đơn trả kết hợp có `wallet` + cổng. `[]` với payout. */
   paymentMethods: PaymentMethod[];
   commissionId: string | null;
+  /** Yêu cầu rút đã sinh ra bút toán này. `null` với giao dịch không thuộc luồng rút. */
+  payoutId: string | null;
+  /**
+   * Trạng thái THẬT của khoản rút.
+   *
+   * ⚠️ ĐỪNG suy trạng thái từ `type`: `type: 'payout'` chỉ nói "đây là bút toán rút", **không**
+   * nói đã duyệt hay chưa — cả `pending`/`paid`/`failed` đều mang `type: 'payout'`.
+   *
+   * Thay cho field `status` cũ (luôn `'completed'`) mà BE đã bỏ.
+   */
+  payoutStatus: PayoutStatus | null;
+  /**
+   * Câu mô tả **tiếng Anh** do BE backfill. Chỉ dùng làm phương án chót — UI nên tự sinh câu
+   * theo `type` + `payoutStatus` để đọc đúng ngôn ngữ và đúng ngữ cảnh.
+   */
   description: string | null;
   createdAt: string;
 }
 
-/** ⚠️ Ví giờ CHỈ trả số dư — sổ giao dịch đã chuyển sang `GET /hotels/:id/revenue`. */
+/**
+ * Tài khoản nhận tiền chính của khách sạn.
+ *
+ * ⚠️ `accountNumber` **chỉ trả đầy đủ cho CHỦ khách sạn**; staff/manager nhận `null`. Nghĩa là
+ * không được coi `null` là "chưa khai số tài khoản" — có thể chỉ là người đang xem không đủ quyền.
+ */
+export interface HotelPayoutAccountSummary {
+  id: string;
+  accountHolder: string;
+  bankName: string;
+  bankBranch: string | null;
+  isPrimary: boolean;
+  accountNumber: string | null;
+}
+
+/** ⚠️ Ví giờ CHỈ trả số dư + tài khoản nhận tiền — sổ giao dịch đã sang `GET /hotels/:id/revenue`. */
 export interface HotelWalletResponse {
   wallet: HotelWalletBalance;
+  /** `null` khi khách sạn chưa khai tài khoản nào. */
+  payoutAccount: HotelPayoutAccountSummary | null;
+}
+
+/**
+ * Payload đổi tài khoản nhận tiền (`PUT /hotels/:id/payout-account`, owner-only).
+ *
+ * ⚠️ Field tuỳ chọn **không gửi ⇒ BE giữ nguyên** giá trị cũ; gửi `''` ⇒ xoá về `null`.
+ * Vì vậy form phải phân biệt "không đụng tới" và "cố ý xoá".
+ */
+export interface UpdatePayoutAccountDto {
+  accountHolder: string;
+  bankName: string;
+  /** 6–30 **chữ số** — BE từ chối chữ cái/khoảng trắng. */
+  accountNumber: string;
+  bankBranch?: string | null;
+  swiftCode?: string | null;
+  taxIdVatNumber?: string | null;
+  registeredBusinessAddress?: string | null;
 }

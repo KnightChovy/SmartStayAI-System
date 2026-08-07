@@ -20,7 +20,7 @@ import {
   Receipt,
   MapPinned,
   CalendarX,
-  Settings2,
+  ChevronRight,
 } from 'lucide-react';
 import { useManagedHotel } from '@/hooks/hotels';
 import { HotelProfileFormModal } from '@/components/hotel-partner/hotel-management/HotelProfileFormModal';
@@ -263,34 +263,36 @@ export default function HotelDetailPage() {
       {/* Property information (contacts / policies / charges / nearby) */}
       <div className="mt-6">
         <Section title="Property information">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <PropertyCard
+          {/* Xếp theo nhóm nghĩa, không phải theo thứ tự ngẫu nhiên: hai mục khách ĐỌC trước,
+              rồi tới ba mục quyết định TIỀN. */}
+          <div className="divide-y divide-slate-100 overflow-hidden rounded-lg border border-slate-200">
+            <PropertyRow
               icon={Contact}
               label="Contacts"
               description="Phone, email & departments"
               onClick={() => setContactsOpen(true)}
             />
-            <PropertyCard
-              icon={ScrollText}
-              label="Policies"
-              description="Written terms guests read"
-              onClick={() => setPoliciesOpen(true)}
-            />
-            <PropertyCard
-              icon={Receipt}
-              label="Taxes & fees"
-              description="Added on top of the room price"
-              onClick={() => setChargesOpen(true)}
-            />
-            <PropertyCard
+            <PropertyRow
               icon={MapPinned}
               label="Nearby places"
               description="Attractions, airport, transport"
               onClick={() => setNearbyOpen(true)}
             />
+            <PropertyRow
+              icon={ScrollText}
+              label="Policies"
+              description="Written terms guests read"
+              onClick={() => setPoliciesOpen(true)}
+            />
+            <PropertyRow
+              icon={Receipt}
+              label="Taxes & fees"
+              description="Added on top of the room price"
+              onClick={() => setChargesOpen(true)}
+            />
             {/* Khác hẳn "Policies" bên trên: chỗ đó là chữ cho khách đọc, chỗ này là con số
                 quyết định tiền hoàn khi khách huỷ. */}
-            <PropertyCard
+            <PropertyRow
               icon={CalendarX}
               label="Cancellation policy"
               description="How much a guest gets back"
@@ -388,7 +390,18 @@ export default function HotelDetailPage() {
   );
 }
 
-function PropertyCard({
+/**
+ * Một mục trong danh sách "Property information".
+ *
+ * Là DÒNG chứ không phải thẻ rời: năm mục này đều là "bấm để mở modal chỉnh" — cùng một loại
+ * hành động, nên đọc thành một danh sách thì đúng bản chất hơn là năm ô ngang hàng. Lưới cũ
+ * `lg:grid-cols-4` còn để lại **một thẻ mồ côi** ở hàng hai; danh sách thì không có mép lởm chởm
+ * dù số mục là mấy.
+ *
+ * Nhãn và mô tả nằm CÙNG một dòng (không xếp chồng) nên hàng thấp lại và phần trống ở giữa
+ * được lấp — dòng full-width mà chữ dồn hết về trái nhìn rất rỗng.
+ */
+function PropertyRow({
   icon: Icon,
   label,
   description,
@@ -403,16 +416,22 @@ function PropertyCard({
     <button
       type="button"
       onClick={onClick}
-      className="flex items-center gap-3 rounded-xl border border-slate-200 p-3 text-left transition-colors hover:border-role-partner-primary hover:bg-role-partner-light/50"
+      className="group flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-role-partner-light/50 focus-visible:bg-role-partner-light/50 focus-visible:outline-none"
     >
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-role-partner-light">
-        <Icon className="h-5 w-5 text-role-partner-primary" />
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-role-partner-light">
+        <Icon className="h-4 w-4 text-role-partner-primary" />
       </div>
-      <div className="min-w-0">
-        <p className="text-sm font-semibold text-slate-800">{label}</p>
-        <p className="truncate text-xs text-slate-400">{description}</p>
-      </div>
-      <Settings2 className="ml-auto h-4 w-4 shrink-0 text-slate-300" />
+
+      <span className="shrink-0 text-sm font-semibold text-slate-800">
+        {label}
+      </span>
+      <span className="min-w-0 truncate text-xs text-slate-400">
+        {description}
+      </span>
+
+      {/* Chevron chứ không phải icon "sliders": mọi mục ở đây đều là cài đặt, nên icon cài đặt
+          không phân biệt được gì — thứ cần báo là "bấm vào sẽ mở ra". */}
+      <ChevronRight className="ml-auto h-4 w-4 shrink-0 text-slate-300 transition-colors group-hover:text-role-partner-primary" />
     </button>
   );
 }

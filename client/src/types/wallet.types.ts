@@ -26,7 +26,8 @@ export interface CustomerWalletTransaction {
   balanceAfter: string;
   bookingId: string | null;
   commissionId: string | null;
-  status: string;
+  // ⚠️ CỐ Ý không có `status`: BE đã bỏ field này khỏi ví khách (trước luôn `'completed'`),
+  // khai lại là đọc ra `undefined`.
   description: string | null;
   createdAt: string;
 }
