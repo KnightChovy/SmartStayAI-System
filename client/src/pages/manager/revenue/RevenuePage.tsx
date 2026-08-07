@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Download, TrendingUp } from 'lucide-react';
+import { Download, Info, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   useRevenueBreakdown,
@@ -11,6 +11,7 @@ import type {
   RevenueBreakdownSortBy,
 } from '@/types/admin.types';
 import { exportToCsv } from '@/utils/exportCsv';
+import { formatDate, toDateInputValue } from '@/utils/formatDate';
 import type { DateRange } from '@/types/revenue.types';
 import { RevenueDateRangePicker } from '@/components/manager/revenue/RevenueDateRangePicker';
 import {
@@ -19,10 +20,21 @@ import {
 } from '@/components/shared/date-range-presets';
 import { RevenueKpiCards } from '@/components/manager/revenue/RevenueKpiCards';
 import { RevenueVsCommissionChart } from '@/components/manager/revenue/RevenueVsCommissionChart';
-import { RevenueCommissionSplit } from '@/components/manager/revenue/RevenueCommissionSplit';
-import { RevenueBreakdownTable } from '@/components/manager/revenue/RevenueBreakdownTable';
+import {
+  RevenueBreakdownTable,
+  type HotelDrillTarget,
+} from '@/components/manager/revenue/RevenueBreakdownTable';
+import { RevenueHotelDetailModal } from '@/components/manager/revenue/RevenueHotelDetailModal';
 
 const BREAKDOWN_PAGE_SIZE = 10;
+
+/** "Số liệu tính đến HH:mm" — giờ máy người xem, đủ để biết số có mới hay không. */
+function formatAsOf(iso: string | undefined): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
 
 export default function RevenuePage() {
   const [range, setRange] = useState<DateRange>(() =>
@@ -39,6 +51,7 @@ export default function RevenuePage() {
     id: string;
     name: string;
   } | null>(null);
+  const [hotelDrill, setHotelDrill] = useState<HotelDrillTarget | null>(null);
 
   const summary = useRevenueSummary(range);
   const timeSeries = useRevenueTimeSeries({ ...range, compare });
@@ -73,13 +86,13 @@ export default function RevenuePage() {
     setPage(1);
   };
 
-  const totals = summary.data
-    ? {
-        gmv: summary.data.kpis.grossRevenue.value,
-        commission: summary.data.kpis.totalCommission.value,
-        bookingCount: summary.data.kpis.bookings.value,
-      }
-    : undefined;
+  // `asOf` của summary và của breakdown là hai lần chốt số khác nhau (hai request), nhưng
+  // chênh nhau vài giây nên chỉ hiện một mốc ở header là đủ.
+  const asOf = formatAsOf(summary.data?.asOf);
+
+  // Kỳ đang chọn kéo qua tương lai ⇒ số liệu chỉ tới hôm nay. `null` khi kỳ đã trọn vẹn.
+  const today = toDateInputValue(new Date());
+  const partialTo = range.to > today ? today : null;
 
   // Xuất chính chuỗi thời gian đang hiển thị — không gọi lại API, không xuất số khác trên màn hình.
   const handleExport = () => {
@@ -115,7 +128,10 @@ export default function RevenuePage() {
                 Platform Revenue
               </h1>
               <p className="text-slate-500 text-sm">
-                Platform-wide revenue & commission over time
+                What guests paid, and how much of it the platform kept
+                {asOf && (
+                  <span className="text-slate-400"> · data as of {asOf}</span>
+                )}
               </p>
             </div>
           </div>
@@ -136,6 +152,17 @@ export default function RevenuePage() {
             </button>
           </div>
         </div>
+
+        {/* Preset như "This quarter" kéo tới hết quý (30/09) trong khi hôm nay mới 07/08 ⇒
+            mọi con số trên trang chỉ tính tới hôm nay. Không nói ra thì người đọc so kỳ này
+            với một kỳ ĐÃ TRỌN VẸN và kết luận nhầm là doanh thu đang giảm. */}
+        {partialTo && (
+          <p className="mt-4 flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+            <Info className="h-3.5 w-3.5 shrink-0" />
+            This period runs to {formatDate(range.to)} — figures below only
+            cover up to today ({formatDate(partialTo)}).
+          </p>
+        )}
       </div>
 
       {/* KPI Cards */}
@@ -146,25 +173,15 @@ export default function RevenuePage() {
         onRetry={() => summary.refetch()}
       />
 
-      {/* Revenue vs Commission + commission status */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <RevenueVsCommissionChart
-          data={timeSeries.data}
-          isLoading={timeSeries.isLoading}
-          isError={timeSeries.isError}
-          onRetry={() => timeSeries.refetch()}
-          compare={compare}
-          onToggleCompare={() => setCompare(c => !c)}
-        />
-        <RevenueCommissionSplit
-          data={summary.data}
-          isLoading={summary.isLoading}
-          isError={summary.isError}
-          onRetry={() => summary.refetch()}
-        />
-      </div>
+      <RevenueVsCommissionChart
+        data={timeSeries.data}
+        isLoading={timeSeries.isLoading}
+        isError={timeSeries.isError}
+        onRetry={() => timeSeries.refetch()}
+        compare={compare}
+        onToggleCompare={() => setCompare(c => !c)}
+      />
 
-      {/* Drill-down: KPI phía trên cho TỔNG, khối này cho biết tổng đó đến từ đâu. */}
       <RevenueBreakdownTable
         data={breakdown.data}
         isLoading={breakdown.isLoading}
@@ -185,7 +202,13 @@ export default function RevenuePage() {
           setPartnerFilter(null);
           setPage(1);
         }}
-        totals={totals}
+        onOpenHotel={setHotelDrill}
+      />
+
+      <RevenueHotelDetailModal
+        hotel={hotelDrill}
+        range={range}
+        onClose={() => setHotelDrill(null)}
       />
     </div>
   );

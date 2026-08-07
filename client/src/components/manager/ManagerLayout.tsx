@@ -9,6 +9,7 @@ import {
   Users,
   TrendingUp,
   Banknote,
+  HandCoins,
   Percent,
   BarChart2,
   Settings,
@@ -18,7 +19,9 @@ const navItems = [
   { name: 'Dashboard', href: '/manager/dashboard', icon: LayoutDashboard },
   { name: 'Verifications', href: '/manager/verification', icon: ShieldCheck },
   { name: 'Hotel Partners', href: '/manager/hotel-partners', icon: Users },
+  // Hai hàng chờ CHUYỂN TIỀN đặt cạnh nhau: Refunds trả khách, Payouts trả khách sạn.
   { name: 'Refunds', href: '/manager/refunds', icon: Banknote },
+  { name: 'Payouts', href: '/manager/payouts', icon: HandCoins },
   { name: 'Commission', href: '/manager/commission', icon: Percent },
   { name: 'Revenue', href: '/manager/revenue', icon: TrendingUp },
   { name: 'Analytics', href: '/manager/analytics', icon: BarChart2 },

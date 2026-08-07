@@ -36,4 +36,7 @@ export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   sepay: 'SePay',
   stripe: 'Stripe',
   cash: 'Cash',
+  // Khách trả bằng số dư ví CỦA KHÁCH (không phải ví khách sạn). Đơn trả kết hợp có 2 dòng
+  // payment: `wallet` cho phần ví lo được + cổng cho phần còn lại.
+  wallet: 'Guest wallet',
 };

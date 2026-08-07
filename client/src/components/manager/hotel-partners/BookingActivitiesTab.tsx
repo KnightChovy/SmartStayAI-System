@@ -5,6 +5,8 @@ import { cn } from '@/lib/cn';
 import { formatDate } from '@/utils/formatDate';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { usePlatformBookings } from '@/hooks/platform-manager';
+import AppPagination from '@/common/pagination/AppPagination';
+import { useClientPagination } from '@/common/pagination/useClientPagination';
 import { TableSkeleton } from '@/components/shared/skeletons';
 import type {
   PlatformBooking,
@@ -36,6 +38,9 @@ const summaryCards: {
 ];
 
 type StatusFilter = 'all' | PlatformBookingStatus;
+
+/** Cùng cỡ trang với các bảng khác trong khu Hotel Partners. */
+const ROWS_PER_PAGE = 10;
 
 function guestName(b: PlatformBooking): string {
   return b.customer?.fullName ?? b.customer?.email ?? '—';
@@ -88,6 +93,22 @@ export function BookingActivitiesTab() {
     return acc;
   }, [all]);
 
+  const pagination = useClientPagination(filtered, ROWS_PER_PAGE);
+
+  // Đổi bộ lọc thì về trang 1 — hook chỉ kẹp trang cho hợp lệ, không tự đưa về đầu.
+  const changeSearch = (value: string) => {
+    setSearch(value);
+    pagination.setPage(1);
+  };
+  const changeStatus = (value: StatusFilter) => {
+    setStatusFilter(value);
+    pagination.setPage(1);
+  };
+  const changeHotel = (value: string) => {
+    setHotelFilter(value);
+    pagination.setPage(1);
+  };
+
   return (
     <div className="space-y-4">
       {/* Booking Stats */}
@@ -112,13 +133,13 @@ export function BookingActivitiesTab() {
               type="text"
               placeholder="Search booking ID, guest, hotel..."
               value={search}
-              onChange={e => setSearch(e.target.value)}
+              onChange={e => changeSearch(e.target.value)}
               className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg bg-slate-50 focus:outline-none focus:ring-2 focus:ring-role-manager-primary/30 focus:border-role-manager-primary"
             />
           </div>
           <select
             value={statusFilter}
-            onChange={e => setStatusFilter(e.target.value as StatusFilter)}
+            onChange={e => changeStatus(e.target.value as StatusFilter)}
             className="text-sm border border-slate-200 rounded-lg px-3 py-2 bg-slate-50 text-slate-600 focus:outline-none focus:ring-2 focus:ring-role-manager-primary/30"
           >
             <option value="all">All statuses</option>
@@ -132,7 +153,7 @@ export function BookingActivitiesTab() {
           </select>
           <select
             value={hotelFilter}
-            onChange={e => setHotelFilter(e.target.value)}
+            onChange={e => changeHotel(e.target.value)}
             className="text-sm border border-slate-200 rounded-lg px-3 py-2 bg-slate-50 text-slate-600 focus:outline-none focus:ring-2 focus:ring-role-manager-primary/30"
           >
             <option value="all">All hotels</option>
@@ -207,7 +228,7 @@ export function BookingActivitiesTab() {
                       </td>
                     </tr>
                   ) : (
-                    filtered.map(b => {
+                    pagination.pageItems.map(b => {
                       const cfg = bookingStatusConfig[b.status];
                       return (
                         <tr
@@ -254,10 +275,18 @@ export function BookingActivitiesTab() {
                 </tbody>
               </table>
             </div>
-            <div className="px-5 py-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
+            <div className="px-5 py-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-400">
               <span>
-                Showing {filtered.length} of {all.length} bookings
+                Showing {pagination.from}–{pagination.to} of {pagination.total}
+                {pagination.total !== all.length &&
+                  ` (filtered from ${all.length})`}{' '}
+                bookings
               </span>
+              <AppPagination
+                currentPage={pagination.page}
+                totalPages={pagination.totalPages}
+                onPageChange={pagination.setPage}
+              />
             </div>
           </>
         )}

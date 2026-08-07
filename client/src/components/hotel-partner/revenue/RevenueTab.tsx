@@ -25,6 +25,7 @@ import type {
   HotelRevenueSummary,
 } from '@/types/hotel-revenue.types';
 import { RevenueTrendChart } from './RevenueTrendChart';
+import { TransactionLedgerCard } from './TransactionLedgerCard';
 
 const PARTNER_PRESETS: RangePreset[] = [
   'today',
@@ -158,6 +159,10 @@ export function RevenueTab({ hotelId }: RevenueTabProps) {
           </div>
         </>
       )}
+
+      {/* Sổ giao dịch — backend đã dời từ endpoint ví sang chính response doanh thu.
+          Đặt NGOÀI nhánh `summary` để kỳ không có doanh thu vẫn xem được lịch sử bút toán. */}
+      <TransactionLedgerCard hotelId={hotelId} />
     </div>
   );
 }

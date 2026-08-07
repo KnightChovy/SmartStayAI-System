@@ -2,7 +2,6 @@ import { api } from '@/lib/api';
 import type {
   HotelRevenueParams,
   HotelRevenueReport,
-  HotelWalletParams,
   HotelWalletResponse,
 } from '@/types/hotel-revenue.types';
 import type {
@@ -29,14 +28,14 @@ export const hotelRevenueService = {
     return data;
   },
 
-  /** Số dư ví + sổ giao dịch phân trang của 1 khách sạn — `GET /hotels/:id/wallet` (owner/manager). */
-  async getWallet(
-    hotelId: string,
-    params: HotelWalletParams = {}
-  ): Promise<HotelWalletResponse> {
-    const { data } = await api.get<HotelWalletResponse>(`/hotels/${hotelId}/wallet`, {
-      params: cleanParams(params),
-    });
+  /**
+   * `GET /hotels/:id/wallet` — **chỉ số dư** (available / pending / pendingPayout).
+   *
+   * ⚠️ Endpoint này KHÔNG còn trả `transactions` và không còn nhận `type`/`page`/`limit`.
+   * Sổ giao dịch đã chuyển sang `getRevenue` (field `transactions`).
+   */
+  async getWallet(hotelId: string): Promise<HotelWalletResponse> {
+    const { data } = await api.get<HotelWalletResponse>(`/hotels/${hotelId}/wallet`);
     return data;
   },
 

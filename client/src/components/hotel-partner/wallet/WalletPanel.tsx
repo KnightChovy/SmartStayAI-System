@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { HandCoins } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -6,6 +7,11 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useHotelWallet } from '@/hooks/hotel-revenue';
+import { UserRole } from '@/constants/roles';
+import { useAuthStore } from '@/stores/authStore';
+import { formatCurrency } from '@/utils/formatCurrency';
+import { MIN_PAYOUT_AMOUNT } from '@/types/payout.types';
+import { RequestPayoutModal } from './RequestPayoutModal';
 import { WalletBalanceCard } from './WalletBalanceCard';
 import { WithdrawalHistoryCard } from './WithdrawalHistoryCard';
 
@@ -14,23 +20,28 @@ interface WalletPanelProps {
 }
 
 /**
- * Ví của MỘT khách sạn: số dư · lịch sử rút tiền.
+ * Ví của MỘT khách sạn: 3 số dư + yêu cầu rút + lịch sử yêu cầu.
  *
- * Sổ giao dịch đầy đủ đã gỡ khỏi đây — sắp chuyển sang màn Revenue. Component
- * `TransactionHistoryCard` + `labels.ts` giữ nguyên tại chỗ để bên đó dùng lại,
- * hiện chưa file nào import.
- *
- * ⚠️ Nút "Request withdrawal" CỐ Ý bị vô hiệu hoá: backend **chưa có endpoint** nào cho
- * đối tác tự tạo yêu cầu rút tiền. Bảng `payouts` có trong `schema.prisma` (kèm enum
- * `PayoutStatus`) nhưng không service/controller/route nào chạm tới — và mô hình của nó là
- * đợt chi trả do NỀN TẢNG tạo theo kỳ (`periodStart`/`periodEnd` + `commissions[]`),
- * không phải đơn do đối tác gửi. Ship một nút bấm-không-làm-gì là mời người dùng
- * bấm vào chỗ trống, nên hiển thị rõ trạng thái thay vì giả vờ.
+ * Sổ giao dịch KHÔNG còn ở đây — backend đã dời sang `GET /hotels/:id/revenue`, và trang
+ * Revenue là nơi hiển thị nó.
  */
 export function WalletPanel({ hotelId }: WalletPanelProps) {
-  // Chỉ lấy số dư ở đây (limit 1) — endpoint luôn trả kèm `wallet` bất kể `limit`;
-  // bảng rút tiền bên dưới tự query danh sách của riêng nó.
-  const { data, isLoading } = useHotelWallet(hotelId, { page: 1, limit: 1 });
+  const [requestOpen, setRequestOpen] = useState(false);
+  const { data, isLoading } = useHotelWallet(hotelId);
+  const role = useAuthStore(s => s.user?.role);
+
+  const available = Number(data?.wallet.balanceAvailable ?? 0);
+  // Backend chỉ cho **chủ khách sạn** rút (kiểm `partner.ownerId`), staff/manager gọi vào là 403.
+  // Khoá ở đây kèm lý do thay vì để họ bấm rồi ăn lỗi.
+  const isOwner = role === UserRole.HOTEL_PARTNER;
+  const belowMinimum = available < MIN_PAYOUT_AMOUNT;
+  const disabled = isLoading || !isOwner || belowMinimum;
+
+  const blockedReason = !isOwner
+    ? 'Only the hotel owner account can request a payout.'
+    : belowMinimum
+      ? `You need at least ${formatCurrency(MIN_PAYOUT_AMOUNT)} available to request a payout.`
+      : null;
 
   return (
     <div className="space-y-6">
@@ -40,42 +51,55 @@ export function WalletPanel({ hotelId }: WalletPanelProps) {
             Balance &amp; payouts
           </h2>
           <p className="text-sm text-slate-500">
-            Track your balance and every payout made against it
+            Where your money is right now, and every payout you have requested
           </p>
         </div>
 
-        <Tooltip>
-          <TooltipTrigger asChild>
-            {/* Nút disabled không bắn sự kiện chuột ⇒ bọc span để tooltip vẫn hiện. */}
-            <span tabIndex={0}>
-              <Button
-                disabled
-                className="bg-role-partner-primary text-white hover:bg-role-partner-secondary"
-              >
-                <HandCoins className="mr-1.5 h-4 w-4" />
-                Request Payout
-              </Button>
-            </span>
-          </TooltipTrigger>
-          <TooltipContent side="bottom" className="max-w-xs">
-            Self-service payout requests are not available yet. The platform
-            issues payouts against your settled balance.
-          </TooltipContent>
-        </Tooltip>
+        {blockedReason ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              {/* Nút disabled không bắn sự kiện chuột ⇒ bọc span để tooltip vẫn hiện. */}
+              <span tabIndex={0}>
+                <Button
+                  disabled
+                  className="bg-role-partner-primary text-white hover:bg-role-partner-secondary"
+                >
+                  <HandCoins className="mr-1.5 h-4 w-4" />
+                  Request payout
+                </Button>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="max-w-xs">
+              {blockedReason}
+            </TooltipContent>
+          </Tooltip>
+        ) : (
+          <Button
+            onClick={() => setRequestOpen(true)}
+            disabled={disabled}
+            className="bg-role-partner-primary text-white hover:bg-role-partner-secondary"
+          >
+            <HandCoins className="mr-1.5 h-4 w-4" />
+            Request payout
+          </Button>
+        )}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-1">
-          <WalletBalanceCard
-            hotelId={hotelId}
-            wallet={data?.wallet}
-            isLoading={isLoading}
-          />
+          <WalletBalanceCard wallet={data?.wallet} isLoading={isLoading} />
         </div>
         <div className="lg:col-span-2">
           <WithdrawalHistoryCard hotelId={hotelId} />
         </div>
       </div>
+
+      <RequestPayoutModal
+        open={requestOpen}
+        onClose={() => setRequestOpen(false)}
+        hotelId={hotelId}
+        available={data?.wallet.balanceAvailable}
+      />
     </div>
   );
 }

@@ -37,7 +37,18 @@ export type HousekeepingTaskStatus = 'pending' | 'in_progress' | 'done';
 
 export type PaymentStatus = 'pending' | 'completed' | 'failed' | 'refunded';
 
-export type PaymentMethod = 'vnpay' | 'sepay' | 'stripe' | 'cash';
+/**
+ * ⚠️ MỘT nguồn duy nhất — re-export từ `payment.types`.
+ *
+ * Trước đây file này khai bản riêng thiếu `'wallet'`, trong khi enum BE có và một booking trả
+ * kết hợp sinh **hai** dòng payment (`wallet` + cổng). Hệ quả: mọi `Record<PaymentMethod, …>`
+ * dựng từ đây (nhãn phương thức ở bảng booking của partner, bộ lọc `/admin/payments`) đều
+ * thiếu khoá `wallet` — tra vào là `undefined`, đúng kiểu lỗi đã làm vỡ trang ví partner
+ * hồi thiếu `settlement`.
+ */
+import type { PaymentMethod } from '@/types/payment.types';
+
+export type { PaymentMethod };
 
 /** @deprecated dùng `PaymentMethod` — giữ alias để không vỡ code cũ. */
 export type StaffPaymentMethod = PaymentMethod;

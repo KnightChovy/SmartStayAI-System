@@ -26,7 +26,7 @@ export interface RevenueRangeParams {
 // ===== 1. Summary (KPI cards) =====
 
 /** Một KPI kèm % thay đổi so kỳ trước. */
-export interface RevenueKpi<TValue extends string | number = string> {
+export interface RevenueKpi<TValue extends string | number | null = string> {
   value: TValue;
   /** % thay đổi so kỳ trước; null khi BE không trả kỳ trước hoặc kỳ trước = 0. */
   changePct: number | null;
@@ -35,17 +35,29 @@ export interface RevenueKpi<TValue extends string | number = string> {
 export interface RevenueSummary {
   range: DateRange;
   previousRange: DateRange;
+  /** Thời điểm BE chốt số (ISO) — hiển thị "Data as of …". */
+  asOf: string;
+  /** Đơn vị tiền của mọi số trong khối này (BE luôn trả "VND"). */
+  currency: string;
   kpis: {
     /** GMV — tổng giá trị booking confirmed / checked-in / checked-out. */
     grossRevenue: RevenueKpi<string>;
     /** Hoa hồng ghi nhận = pending + settled (disputed không tính). */
     totalCommission: RevenueKpi<string>;
-    avgCommissionRate: RevenueKpi<number>;
+    /**
+     * Take rate của sàn (`netPlatformRevenue / gmv × 100`) — lấy THẲNG `takeRatePct` của BE.
+     * `null` = chưa có GMV để chia ⇒ hiện `—`, không hiện `0%`.
+     */
+    takeRate: RevenueKpi<number | null>;
     bookings: RevenueKpi<number>;
   };
+  /** Giá trị booking bình quân; `null` = chưa có booking nào. */
+  avgBookingValue: string | null;
   /** Tách hoa hồng theo trạng thái + tiền hoàn (BE trả sẵn trong `summary`). */
   commissionPending: string;
   commissionSettled: string;
+  /** Hoa hồng đang tranh chấp — nằm NGOÀI `totalCommission`. */
+  commissionDisputed: string;
   refunded: string;
 }
 
