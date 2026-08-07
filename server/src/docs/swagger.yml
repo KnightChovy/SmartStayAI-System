@@ -2587,6 +2587,64 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
 
+  /hotels/{hotelId}/payout-account:
+    put:
+      summary: Change the hotel's payout bank account (hotel owner)
+      description: >
+        Auth. The HOTEL OWNER sets/updates the PRIMARY payout bank account (where withdrawals are
+        transferred). Owner only — not staff/manager. The account number is stored ENCRYPTED. If a
+        primary account already exists it is updated in place (same id, so pending payouts stay valid);
+        otherwise one is created. Optional fields omitted keep their previous value. Note: changing the
+        account while a payout is pending makes the Platform Manager transfer to the NEW account.
+      tags: [Payouts]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [accountHolder, bankName, accountNumber]
+              properties:
+                accountHolder: { type: string, maxLength: 255, example: 'CONG TY TNHH BIEN XANH' }
+                bankName: { type: string, maxLength: 255, example: 'Vietcombank' }
+                accountNumber: { type: string, pattern: '^\d{6,30}$', description: '6–30 chữ số; lưu mã hoá', example: '0123456789' }
+                bankBranch: { type: string, maxLength: 255, nullable: true, example: 'CN Đà Nẵng' }
+                swiftCode: { type: string, maxLength: 50, nullable: true }
+                taxIdVatNumber: { type: string, maxLength: 50, nullable: true }
+                registeredBusinessAddress: { type: string, maxLength: 500, nullable: true }
+      responses:
+        '200':
+          description: Updated payout account (accountNumber returned in full to the owner)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string, format: uuid }
+                  accountHolder: { type: string }
+                  bankName: { type: string }
+                  bankBranch: { type: string, nullable: true }
+                  swiftCode: { type: string, nullable: true }
+                  taxIdVatNumber: { type: string, nullable: true }
+                  registeredBusinessAddress: { type: string, nullable: true }
+                  isPrimary: { type: boolean }
+                  accountNumber: { type: string, example: '0123456789' }
+        '400':
+          description: Validation error (e.g. account number not 6–30 digits)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
   /hotels/{hotelId}/wallet:
     get:
       summary: Hotel wallet balances + payout account (owner/manager)
