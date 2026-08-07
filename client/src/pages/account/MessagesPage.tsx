@@ -411,6 +411,7 @@ export default function MessagesPage() {
                           <ChatMessageText
                             text={message.content}
                             payLabel={t('chat.payNow')}
+                            qrLabel={t('chat.qrAlt')}
                             onDarkBubble={isGuest}
                           />
                         </div>

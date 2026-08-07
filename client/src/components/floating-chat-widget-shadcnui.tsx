@@ -638,6 +638,7 @@ export function FloatingChatWidget() {
                           <ChatMessageText
                             text={item.text}
                             payLabel={t('chat.payNow')}
+                            qrLabel={t('chat.qrAlt')}
                             onDarkBubble={isGuest}
                           />
                         </div>

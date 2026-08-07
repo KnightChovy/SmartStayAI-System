@@ -61,6 +61,7 @@
     "error": "Sorry, I could not reach the concierge right now. Please try again.",
     "switchError": "Sorry, I could not switch the conversation right now. Please try again.",
     "payNow": "Pay now",
+    "qrAlt": "Bank transfer QR code",
     "quick": {
       "stays": "Stays in Da Nang",
       "hanoi": "Hotels in Hanoi",

@@ -91,6 +91,7 @@ function MessageBubble({ message }: { message: StaffConversationMessage }) {
           <ChatMessageText
             text={message.content}
             payLabel="Open payment link"
+            qrLabel="Bank transfer QR code"
             onDarkBubble={isStaff}
           />
         </div>

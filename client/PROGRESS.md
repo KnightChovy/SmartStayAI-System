@@ -13,8 +13,10 @@ This file tracks the accomplished tasks, resolved user requests, and visual/func
   - **VERIFY 2 lớp — 16/16 render thật + 11/11 trên trình duyệt**:
     - **Render thật** (`react-dom/server` qua vite SSR build, script tạm đã xoá): `href` **khớp từng ký tự** với URL gốc (không cắt cụt `&`/`%2C`), không còn in URL thô, có `target="_blank"` + `rel="noopener noreferrer"`, vùng bấm `min-h-11` (44px), host mạo danh bị chặn, dấu chấm/ngoặc cuối câu nằm ngoài `href`, tin không có link thì không sinh thẻ `<a>` nào.
     - **Trình duyệt thật** (Chrome + playwright-core): đăng nhập khách → mở widget → **chặn response `/conversations/messages` ở tầng mạng** để bot "trả lời" đúng câu có link. Làm vậy để **không tạo booking thật** (chat thật là đặt phòng thật, giữ tồn kho thật) mà vẫn đo được app thật: nút hiện đúng trong bong bóng, `href` nguyên vẹn, cao **≥44px**, nằm gọn trong khung, **không còn `vpcpay.html` thô** trên màn hình, không tràn ngang, 0 lỗi console.
-  - ⚠️ **Chưa làm (nằm ngoài yêu cầu)**: bot còn trả **markdown thô** — `**Tổng thanh toán:**` hiện nguyên hai dấu sao vì khung chat render text thuần. Sửa được ngay trong cùng component này nếu muốn.
-  - ⚠️ **Ảnh QR SePay** hiện là link bấm được (mở ảnh ở tab mới), **chưa render thành `<img>`** ngay trong khung chat. Đặt cùng chỗ nếu bạn muốn làm tiếp.
+  - **Làm nốt 2 thứ thấy trong cùng ảnh chụp**:
+    - **`**đậm**` hết lòi dấu sao**: bot viết markdown mà khung chat render text thuần nên `**Tổng thanh toán:**` hiện nguyên hai dấu sao. Nay thành `<strong>`. **CỐ Ý chỉ làm mỗi in đậm** — dựng cả bộ markdown cho văn xuôi tiếng Việt là mời lỗi (dấu `*` giữa câu, `_` trong mã booking); chuỗi không khớp thì trả nguyên văn nên không bao giờ mất chữ (đã kiểm `giá 2*3` vẫn còn nguyên).
+    - **Ảnh QR SePay render thành `<img>`** ngay trong bong bóng, bọc trong link để bấm ra ảnh gốc. Một URL ảnh thô thì khách **không quét được** — mà BE lại dặn bot gửi thẳng URL đó (`conversation.service.ts:626`). Cũng chỉ nhận đúng host `qr.sepay.vn` để không biến link lạ thành ảnh.
+  - **VERIFY sau khi thêm 2 mục trên — 25/25 render thật + 16/16 trên Chrome**: `**...**` ra `<strong>` và **không còn dấu sao nào trên màn hình**, nhiều cụm đậm trong một dòng đều đúng, in đậm vẫn chạy ở đoạn chữ **sau** link; ảnh QR ra `<img>` có `alt`, có kích thước thật, nằm gọn trong khung, và **không còn in `qr.sepay.vn` thô**.
 
 ## August 7, 2026 (continued 3)
 

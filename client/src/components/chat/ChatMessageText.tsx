@@ -9,8 +9,14 @@ import { cn } from '@/lib/cn';
  */
 const PAYMENT_HOSTS = ['vnpayment.vn', 'vnpay.vn'];
 
+/** Host trả về ẢNH QR chuyển khoản (SePay dựng sẵn ảnh VietQR) — render thẳng thành `<img>`. */
+const QR_IMAGE_HOSTS = ['qr.sepay.vn'];
+
 /** Bắt URL http(s) trong văn bản. Dấu câu dính đuôi được cắt riêng ở `splitTrailingPunctuation`. */
 const URL_PATTERN = /https?:\/\/[^\s<>"']+/g;
+
+/** `**đậm**` — thứ duy nhất của markdown mà bot hay dùng và đang lòi dấu sao ra màn hình. */
+const BOLD_PATTERN = /\*\*(.+?)\*\*/g;
 
 /**
  * Dấu câu người viết đặt SAU link (`...vpcpay.html?a=1).` hay `..., rồi`) sẽ bị regex nuốt vào URL.
@@ -34,37 +40,61 @@ function splitTrailingPunctuation(url: string): [string, string] {
   return [url.slice(0, end), url.slice(end)];
 }
 
-function isPaymentUrl(url: string): boolean {
+function hostMatches(url: string, hosts: string[]): boolean {
   try {
     const { hostname } = new URL(url);
-    return PAYMENT_HOSTS.some(h => hostname === h || hostname.endsWith(`.${h}`));
+    return hosts.some(h => hostname === h || hostname.endsWith(`.${h}`));
   } catch {
     return false;
   }
+}
+
+/**
+ * Đổi `**...**` thành `<strong>`. CỐ Ý chỉ làm mỗi in đậm: bot viết văn xuôi tiếng Việt, dựng cả
+ * bộ markdown ở đây là mời lỗi (dấu `*` giữa câu, `_` trong mã booking…). Chuỗi không khớp thì
+ * trả nguyên văn nên không bao giờ mất chữ.
+ */
+function renderBold(text: string, keyPrefix: string): React.ReactNode[] {
+  const nodes: React.ReactNode[] = [];
+  let cursor = 0;
+  let i = 0;
+
+  for (const match of text.matchAll(BOLD_PATTERN)) {
+    const start = match.index;
+    if (start > cursor) nodes.push(text.slice(cursor, start));
+    nodes.push(<strong key={`${keyPrefix}-b${i++}`}>{match[1]}</strong>);
+    cursor = start + match[0].length;
+  }
+  if (cursor < text.length) nodes.push(text.slice(cursor));
+  return nodes;
 }
 
 interface ChatMessageTextProps {
   text: string;
   /** Nhãn nút thanh toán — mỗi cổng tự truyền theo ngôn ngữ của mình (staff portal để tiếng Anh). */
   payLabel: string;
+  /** Nhãn/alt của ảnh QR chuyển khoản. */
+  qrLabel: string;
   /** Bong bóng nền tối/đậm (tin của khách) cần link sáng màu để còn đọc được. */
   onDarkBubble?: boolean;
   className?: string;
 }
 
 /**
- * Nội dung một tin nhắn chat, có nhận diện đường dẫn.
+ * Nội dung một tin nhắn chat, có nhận diện đường dẫn + in đậm.
  *
  * Vì sao cần: khi khách đặt phòng qua trợ lý AI, backend nhét **link thanh toán VNPay nguyên vẹn**
  * vào lời đáp (`conversation.service.ts` — "gửi link này NGUYÊN VẸN, không rút gọn"). Link đó dài
  * hơn 300 ký tự và trước đây render bằng `<p>` thuần ⇒ khách phải **bôi đen copy tay** một chuỗi
  * xuống mấy dòng, trong khi đơn chỉ được giữ chỗ 15 phút. Nay nó thành **một nút bấm là đi**.
  *
- * Các link khác (ảnh QR SePay, trang chi tiết…) vẫn thành thẻ `<a>` bấm được — vẫn hơn hẳn text thô.
+ * Tương tự với **ảnh QR SePay**: BE dặn bot gửi thẳng URL ảnh, mà một URL thô thì khách không quét
+ * được — nay hiện luôn thành ảnh trong khung chat.
  */
 export default function ChatMessageText({
   text,
   payLabel,
+  qrLabel,
   onDarkBubble = false,
   className,
 }: ChatMessageTextProps) {
@@ -72,20 +102,24 @@ export default function ChatMessageText({
   let cursor = 0;
   let key = 0;
 
+  const pushText = (chunk: string) => {
+    if (chunk) parts.push(...renderBold(chunk, `t${key++}`));
+  };
+
   for (const match of text.matchAll(URL_PATTERN)) {
     const raw = match[0];
     const start = match.index;
     const [url, trailing] = splitTrailingPunctuation(raw);
 
-    if (start > cursor) parts.push(text.slice(cursor, start));
+    if (start > cursor) pushText(text.slice(cursor, start));
     cursor = start + raw.length;
 
     if (!url) {
-      parts.push(raw);
+      pushText(raw);
       continue;
     }
 
-    if (isPaymentUrl(url)) {
+    if (hostMatches(url, PAYMENT_HOSTS)) {
       parts.push(
         <a
           key={`pay-${key++}`}
@@ -96,6 +130,24 @@ export default function ChatMessageText({
         >
           <ExternalLink className="size-4 shrink-0" aria-hidden="true" />
           {payLabel}
+        </a>
+      );
+    } else if (hostMatches(url, QR_IMAGE_HOSTS)) {
+      // Ảnh QR là THỨ khách phải quét — bọc trong link để bấm ra ảnh gốc phóng to được.
+      parts.push(
+        <a
+          key={`qr-${key++}`}
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="my-1.5 block w-fit rounded-xl border border-outline-variant/40 bg-white p-2"
+        >
+          <img
+            src={url}
+            alt={qrLabel}
+            className="block h-auto w-full max-w-52 rounded-lg"
+            loading="lazy"
+          />
         </a>
       );
     } else {
@@ -115,10 +167,10 @@ export default function ChatMessageText({
       );
     }
 
-    if (trailing) parts.push(trailing);
+    if (trailing) pushText(trailing);
   }
 
-  if (cursor < text.length) parts.push(text.slice(cursor));
+  if (cursor < text.length) pushText(text.slice(cursor));
 
   return (
     <span className={cn('whitespace-pre-wrap wrap-break-word', className)}>
