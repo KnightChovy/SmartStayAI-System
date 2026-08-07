@@ -2,6 +2,24 @@
 
 This file tracks the accomplished tasks, resolved user requests, and visual/functional refactoring completed in the client application.
 
+## August 8, 2026 (continued)
+
+- [x] **Mở lại trả ghép bằng ví (đảo quyết định ở mục ngay dưới, theo yêu cầu): ví ít hơn tiền phòng vẫn dùng được, bảng giá bên phải bày rõ phép chia, chọn cổng trả phần còn thiếu**:
+  - **Bối cảnh**: đợt trước tôi chặn hẳn ví khi số dư < tiền phòng để bịt lỗ hổng "tiền rời ví trong khi đơn chưa thanh toán xong". User yêu cầu **không chặn nữa** — cứ cho dùng, chỉ cần **ghi rõ ra ở bảng giá bên phải** và cho chọn phương thức trả phần thiếu.
+  - **Phần fix gốc GIỮ NGUYÊN**: ví vẫn **chỉ bị trừ đúng lúc bấm Xác nhận**, không phải lúc tick ô — đó mới là bug ban đầu. Đã đo lại: tick ô → số dư 900.000 → 900.000.
+  - **Bỏ chặn**: `useWallet = useWalletCredit && walletBalance > 0`; thêm `walletApplied = min(số dư, tổng đơn)` và `remainingToPay = tổng − walletApplied`. Ô chọn ví hết `disabled`, hint đổi sang nói thẳng phép chia bằng số thật — _"Ví trả được 900.000 VNĐ, còn 600.000 VNĐ bạn thanh toán bằng cách chọn bên dưới."_
+  - **Bảng giá bên phải (đúng chỗ user chỉ)**: `footer` của `PriceSummary` giờ nhận số thật thay vì luôn 0 — `Trả bằng ví StayHub −900.000` rồi `Còn phải trả 600.000`. Ví đủ thì "Còn phải trả" = 0 như cũ.
+  - **Bộ chọn cổng chỉ ẩn khi ví trả TRỌN đơn**; trả ghép thì vẫn hiện để khách chọn VNPay/SePay cho phần thiếu. `handleConfirm` sau khi trừ ví mà `remainingToPay > 0` thì **đi tiếp sang cổng** (trước đó `return`).
+  - **🔴 Nói thẳng rủi ro trên UI thay vì trấn an sai**: ca trả ghép là ca DUY NHẤT tiền rời tài khoản khách trước khi đơn xong, nên khối ghi chú đổi từ tông xanh "bạn chưa bị trừ tiền" sang **tông amber**: _"900.000 VNĐ bị trừ khỏi ví ngay khi bấm Xác nhận. Hãy trả nốt phần còn lại trước khi hết hạn giữ chỗ, nếu không đơn sẽ tự huỷ."_ Bước Xác nhận cũng ghi **đủ hai vế** `Ví StayHub (900.000 VNĐ) + VNPAY (600.000 VNĐ)` thay vì chỉ nói "Ví StayHub".
+  - **`PayNowAction`** áp cùng luật: mục ví hiện lại khi `balance > 0`, nhãn đổi theo — đủ thì `Trả bằng ví (900.000 VNĐ)`, thiếu thì `Trả 900.000 VNĐ bằng ví (còn 600.000 VNĐ)`. Vẫn so với `outstanding` (tổng đơn − payment đã `completed`) chứ không phải tổng đơn.
+  - **Bỏ ô ghi chú "ví trả một phần…" đặt giữa checkbox và bộ chọn cổng** sau khi xem ảnh render: nó lặp lại đúng câu hint ngay phía trên nó và dòng "Còn phải trả" bên phải — một điều nói ba lần trong cùng một khung nhìn.
+  - **VERIFY trên app thật + BE local — 16/16 (trả ghép) + 14/14 (ví đủ) + 8/8 (nút Thanh toán ngay)**, số dư đo từ `GET /users/me/wallet`:
+    - **Trả ghép** (ví 900.000, phòng 1.500.000): ô tick **không bị khoá**, hint ghi đúng `900.000 / 600.000`, bảng giá ra `−900.000` + `Còn phải trả 600.000`, cổng vẫn còn, có cảnh báo amber; **qua tới bước cuối vẫn chưa trừ ví**; bấm Xác nhận → trừ **đúng 900.000** → **chuyển tiếp sang `vnpayment.vn`**; đơn còn `pending`, ledger đúng **1 payment `wallet` = 900.000**.
+    - **Ví đủ**: giữ nguyên hành vi cũ — ẩn cổng, vào thẳng trang thành công, đơn `confirmed`.
+    - **0 lỗi console**. `tsc` **0 lỗi**, `eslint` **0 vấn đề**, `npm run build` **pass**, i18n vi/en **cân bằng 116/116**.
+  - ⚠️ **LỖ HỔNG BE — trả ghép rồi bỏ ngang là MẤT TIỀN THẬT**: `booking.service.ts:193` `releaseExpiredHolds` huỷ đơn quá hạn giữ chỗ và nhả tồn kho, **nhưng không hoàn lại phần đã trừ ví** — không sinh dòng `refund` nào, cũng không có `adjustment` trả về ví. Nghĩa là khách trả ghép rồi không kịp thanh toán phần còn thiếu trong 15 phút (VNPay) / 30 phút (SePay) sẽ **mất trắng phần đã trừ**. FE hiện đã cảnh báo trước khi bấm, nhưng chỉ BE mới bịt được (hoàn ví trong chính transaction huỷ đơn).
+  - ⚠️ Đã bỏ khoá `payment.walletInsufficient` (không còn nhánh chặn nào để hiện).
+
 ## August 8, 2026
 
 - [x] **🔴 Ví khách bị TRỪ TIỀN TRƯỚC khi thanh toán xong — bỏ hẳn trả ghép, chỉ trừ ví đúng lúc bấm Xác nhận, và hiện khoản trừ ngay trên bảng giá**:

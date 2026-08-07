@@ -218,19 +218,22 @@ export default function BookingCheckoutPage() {
     ? Number(actualTotals.totalAmount)
     : (estimate?.total ?? subtotal);
   /**
-   * Ví chỉ dùng được khi trả ĐỦ cả đơn — cố ý KHÔNG cho trả một phần.
+   * Ví dùng được cả khi KHÔNG đủ trả trọn đơn: BE trừ hết phần ví lo được rồi giữ đơn ở `pending`
+   * để thu nốt phần còn thiếu ở cổng (`outstandingAmount`). Vì thế phải trừ ví TRƯỚC khi ra cổng,
+   * nếu không VNPay/SePay sẽ thu đủ cả đơn và ví vẫn còn nguyên.
    *
-   * BE vẫn cho trả ghép (trừ hết phần ví lo được rồi thu nốt ở cổng), nhưng làm vậy ở đây thì
-   * tiền rời ví NGAY trong khi khách còn chưa qua nổi cổng thanh toán — bỏ ngang ở VNPay là ví
-   * đã mất tiền mà phòng thì chưa có. Trả đủ bằng ví thì booking `confirmed` ngay trong cùng
-   * một transaction, không có khoảng hở đó.
+   * Bảng giá bên phải phải bày rõ phép chia này (ví trả bao nhiêu / còn phải trả bao nhiêu) TRƯỚC
+   * khi khách bấm, vì phần ví bị trừ ngay lúc Xác nhận trong khi đơn còn chưa thanh toán xong.
    *
-   * Trước khi tạo booking thì `displayTotal` mới là ƯỚC TÍNH; số chốt được kiểm lại ở
-   * `handleConfirm` bằng chính `totalAmount` server trả về.
+   * Trước khi tạo booking thì `displayTotal` mới là ƯỚC TÍNH; số chốt tính lại theo `totalAmount`
+   * server trả về (đã đổ vào `actualTotals`) rồi mới gọi ví.
    */
-  const walletCoversAll = walletBalance > 0 && walletBalance >= displayTotal;
-  // Giá đổi sau khi tạo booking có thể làm ví hết đủ ⇒ kẹp ngay trong render, không dùng effect.
-  const useWallet = useWalletCredit && walletCoversAll;
+  const useWallet = useWalletCredit && walletBalance > 0;
+  /** Phần ví thực sự gánh được — BE cũng lấy `min(số dư, còn thiếu)`, không bao giờ thu dư. */
+  const walletApplied = useWallet ? Math.min(walletBalance, displayTotal) : 0;
+  /** Phần phải trả qua cổng sau khi trừ ví. `0` ⇒ khỏi đụng tới cổng thanh toán. */
+  const remainingToPay = displayTotal - walletApplied;
+  const walletCoversAll = useWallet && remainingToPay <= 0;
 
   // Thiếu dữ liệu phòng (vào thẳng URL) → mời quay lại tìm phòng
   if (!roomType || !checkIn || !checkOut) {
@@ -341,40 +344,30 @@ export default function BookingCheckoutPage() {
       // Ví lo hết ⇒ không đụng tới cổng thanh toán, nên không có cảnh "tiền đã trừ mà thanh toán
       // chưa xong". Số dư đối chiếu với `totalAmount` THẬT của server (`displayTotal` lúc này đã
       // là số của booking vừa tạo), không phải ước tính lúc khách tick ô.
-      if (useWalletCredit && !walletCharged) {
-        if (!walletCoversAll) {
-          // Giá server chốt cao hơn ước tính tới mức ví không còn đủ — dừng lại để khách chọn
-          // lại cách trả, tuyệt đối không âm thầm trừ một phần ví.
-          toast.error(
-            t('payment.walletInsufficient', {
-              balance: formatCurrency(walletBalance),
-              total: formatCurrency(displayTotal),
-            })
-          );
-          return;
-        }
+      if (useWalletCredit && walletBalance > 0 && !walletCharged) {
         try {
           const res = await payWallet.mutateAsync(bookingId);
           setWalletCharged(true);
           if (Number(res.remainingToPay) > 0) {
-            // Không nên xảy ra (đã chặn ở trên), nhưng nếu số dư vừa đổi ở tab khác thì BE vẫn
-            // có thể chỉ trừ một phần — nói thật số còn thiếu thay vì báo đặt phòng thành công.
+            // Trả ghép: ví gánh một phần, đơn vẫn `pending` để thu nốt ở cổng ngay bên dưới.
             toast.info(
               t('payment.walletPaidPartial', {
                 amount: formatCurrency(res.walletApplied),
                 remaining: formatCurrency(res.remainingToPay),
               })
             );
+          } else {
+            toast.success(
+              t('payment.walletPaidFull', { amount: formatCurrency(res.walletApplied) })
+            );
+            // Booking đã `confirmed` ⇒ KHÔNG được đẩy sang cổng nữa (BE trả 400 "Booking này đã
+            // được thanh toán đủ" và khách tưởng đặt phòng thất bại).
+            navigate(ROUTES.bookingSuccess(bookingId));
             return;
           }
-          toast.success(t('payment.walletPaidFull', { amount: formatCurrency(res.walletApplied) }));
-          // Booking đã `confirmed` ⇒ KHÔNG được đẩy sang cổng nữa (BE trả 400 "Booking này đã
-          // được thanh toán đủ" và khách tưởng đặt phòng thất bại).
-          navigate(ROUTES.bookingSuccess(bookingId));
-          return;
         } catch (err) {
           // Ví CHƯA bị trừ (BE chạy trong một transaction) ⇒ dừng lại cho khách quyết định, thay
-          // vì lẳng lặng đẩy sang cổng và thu tiền theo một cách họ không chọn.
+          // vì lẳng lặng đẩy sang cổng và thu ĐỦ cả đơn theo một cách họ không chọn.
           toast.error(errorMessage(err, t('payment.payError')));
           return;
         }
@@ -521,45 +514,29 @@ export default function BookingCheckoutPage() {
                   hành động chủ động chứ không phải mặc định âm thầm.
                 */}
                 {walletBalance > 0 && (
-                  <label
-                    className={cn(
-                      'flex items-start gap-3 rounded-xl border p-4',
-                      walletCoversAll
-                        ? 'cursor-pointer border-outline-variant/60 bg-surface-container-low'
-                        : 'cursor-not-allowed border-outline-variant/40 bg-surface-container-low/50'
-                    )}
-                  >
+                  <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-outline-variant/60 bg-surface-container-low p-4">
                     <Checkbox
                       checked={useWallet}
-                      // Ví thiếu thì khoá hẳn: StayHub không cho trả một phần bằng ví.
-                      disabled={!walletCoversAll}
                       onCheckedChange={v => setUseWalletCredit(v === true)}
                       className="mt-0.5"
                     />
                     <span className="min-w-0">
-                      <span
-                        className={cn(
-                          'flex items-center gap-1.5 text-sm font-semibold',
-                          walletCoversAll ? 'text-on-surface' : 'text-on-surface-variant'
-                        )}
-                      >
-                        <Wallet
-                          className={cn(
-                            'size-4 shrink-0',
-                            walletCoversAll ? 'text-primary' : 'text-on-surface-variant'
-                          )}
-                          aria-hidden="true"
-                        />
+                      <span className="flex items-center gap-1.5 text-sm font-semibold text-on-surface">
+                        <Wallet className="size-4 shrink-0 text-primary" aria-hidden="true" />
                         {t('payment.walletUse', {
                           balance: formatCurrency(wallet?.balanceAvailable),
                         })}
                       </span>
+                      {/* Ví không đủ vẫn dùng được — nói thẳng phép chia bằng SỐ THẬT để khách
+                          biết trước mình còn phải trả bao nhiêu ở cổng. */}
                       <span className="mt-0.5 block text-xs text-on-surface-variant">
-                        {walletCoversAll
+                        {walletBalance >= displayTotal
                           ? t('payment.walletCovers')
-                          : t('payment.walletInsufficient', {
-                              balance: formatCurrency(walletBalance),
-                              total: formatCurrency(displayTotal),
+                          : t('payment.walletPartialSplit', {
+                              applied: formatCurrency(Math.min(walletBalance, displayTotal)),
+                              remaining: formatCurrency(
+                                Math.max(displayTotal - walletBalance, 0)
+                              ),
                             })}
                       </span>
                     </span>
@@ -567,29 +544,50 @@ export default function BookingCheckoutPage() {
                 )}
 
                 {/* Ví trả hết thì không đồng nào đi qua cổng — bày cổng ra chỉ khiến khách tưởng
-                    mình vẫn bị charge ở đó. */}
-                {useWallet ? (
+                    mình vẫn bị charge ở đó. Trả ghép thì vẫn phải chọn cổng cho phần còn thiếu. */}
+                {walletCoversAll ? (
                   <p className="rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm text-on-surface">
                     {t('payment.walletOnlyNote')}
                   </p>
                 ) : (
+                  /* Trả ghép KHÔNG cần ô ghi chú riêng: chính hint của ô chọn ví đã ghi "còn X
+                     thanh toán bằng cách chọn bên dưới", và bảng giá bên phải đã có dòng "Còn
+                     phải trả". Thêm nữa là nói một điều ba lần trong cùng một khung nhìn. */
                   <PaymentMethodSelect value={payment} onChange={setPayment} />
                 )}
-                <div className="space-y-1.5 rounded-xl bg-emerald-500/5 p-3">
+                <div
+                  className={cn(
+                    'space-y-1.5 rounded-xl p-3',
+                    // Trả ghép là ca DUY NHẤT tiền rời tài khoản khách trước khi đơn xong ⇒ đổi
+                    // tông sang cảnh báo thay vì trấn an "bạn chưa bị trừ tiền".
+                    useWallet && !walletCoversAll ? 'bg-amber-500/10' : 'bg-emerald-500/5'
+                  )}
+                >
                   {/* Ghi chú phải khớp phương thức đã chọn: VNPay redirect, SePay hiện QR */}
                   <p className="flex items-center gap-1.5 text-xs text-on-surface-variant">
                     <ShieldCheck className="size-4 shrink-0 text-primary" aria-hidden="true" />
-                    {useWallet
+                    {walletCoversAll
                       ? t('payment.walletSecureNote')
                       : payment === 'sepay'
                         ? t('payment.sepayNote')
                         : t('payment.secureNote')}
                   </p>
-                  {/* Đảo ngược rủi ro: nói rõ chưa bị trừ tiền ở bước này. Câu mặc định nhắc tới
-                      "cổng thanh toán" nên phải đổi khi trả bằng ví — không có cổng nào ở đó. */}
-                  <p className="flex items-center gap-1.5 text-xs font-medium text-emerald-700">
-                    <Lock className="size-4 shrink-0" aria-hidden="true" />
-                    {useWallet ? t('payment.walletNotCharged') : t('payment.notCharged')}
+                  {/* Đảo ngược rủi ro: nói rõ tiền bị trừ lúc nào. Câu mặc định nhắc tới "cổng
+                      thanh toán" nên sai ở cả 2 nhánh có ví. */}
+                  <p
+                    className={cn(
+                      'flex items-start gap-1.5 text-xs font-medium',
+                      useWallet && !walletCoversAll ? 'text-amber-700' : 'text-emerald-700'
+                    )}
+                  >
+                    <Lock className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+                    {walletCoversAll
+                      ? t('payment.walletNotCharged')
+                      : useWallet
+                        ? t('payment.walletPartialWarn', {
+                            applied: formatCurrency(walletApplied),
+                          })
+                        : t('payment.notCharged')}
                   </p>
                 </div>
                 <div className="flex gap-3">
@@ -644,12 +642,21 @@ export default function BookingCheckoutPage() {
                   <div>
                     <dt className="text-on-surface-variant">{t('confirm.payment')}</dt>
                     <dd className="font-medium text-on-surface">
-                      {useWallet
-                        ? t('payment.walletMethod', { amount: formatCurrency(displayTotal) })
-                        : {
-                            vnpay: t('methods.vnpay.label'),
-                            sepay: t('methods.sepay.label'),
-                          }[payment]}
+                      {/* Trả ghép phải ghi ĐỦ hai vế, không thì khách tưởng chỉ trả bằng ví. */}
+                      {walletCoversAll
+                        ? t('payment.walletMethod', { amount: formatCurrency(walletApplied) })
+                        : useWallet
+                          ? t('payment.walletMethodSplit', {
+                              applied: formatCurrency(walletApplied),
+                              method: { vnpay: t('methods.vnpay.label'), sepay: t('methods.sepay.label') }[
+                                payment
+                              ],
+                              remaining: formatCurrency(remainingToPay),
+                            })
+                          : {
+                              vnpay: t('methods.vnpay.label'),
+                              sepay: t('methods.sepay.label'),
+                            }[payment]}
                     </dd>
                   </div>
                   <div className="sm:col-span-2">
@@ -839,16 +846,20 @@ export default function BookingCheckoutPage() {
                   ]}
                   total={displayTotal}
                   /* Chọn ví thì phải THẤY khoản trừ ngay ở bảng giá, ngay lúc chọn — chứ không
-                     phải tới lúc bấm Xác nhận mới biết tiền đi đâu. Ví luôn lo trọn đơn (không
-                     có trả ghép) nên "còn phải trả" chắc chắn về 0. */
+                     phải tới lúc bấm Xác nhận mới biết tiền đi đâu. Ví không đủ thì "còn phải
+                     trả" chính là số sẽ bị thu ở cổng. */
                   footer={
                     useWallet
                       ? {
                           lines: [
-                            { label: t('summary.walletApplied'), value: displayTotal, negative: true },
+                            {
+                              label: t('summary.walletApplied'),
+                              value: walletApplied,
+                              negative: true,
+                            },
                           ],
                           label: t('summary.dueNow'),
-                          total: 0,
+                          total: remainingToPay,
                         }
                       : undefined
                   }
