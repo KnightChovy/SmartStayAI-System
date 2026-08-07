@@ -8,6 +8,20 @@ This file tracks the accomplished tasks, resolved user requests, and structural/
 
 ## Completed Tasks Checklist
 
+### August 8, 2026 (continued 3)
+
+- [x] **Chi tiết đặt phòng — hiện trạng thái hoàn tiền nếu có (port từ client)**:
+  - Mobile trước đây **không có gì** cho thấy khách đã từng có yêu cầu hoàn tiền — huỷ đơn xong là hết, kể cả khi khách sạn đang duyệt/đã duyệt/đã chuyển khoản hoặc từ chối.
+  - `types/payments.type.ts` thêm `PaymentMethod`/`PaymentStatus`/`RefundStatus`/`BookingRefund`/`BookingPayment` (mirror `client/src/types/payment.types.ts`); `types/bookings.type.ts` thêm `Booking.payments?: BookingPayment[]` + `cancelledByRole` (BE đã trả cả hai, mobile chỉ chưa khai).
+  - `components/booking/RefundStatusCard.tsx` (mới) — port `RefundStatusCard` bên client: badge trạng thái + số tiền + lý do, rồi hoặc dòng thời gian 3 bước (Chờ duyệt → Đã duyệt → Đã hoàn tiền, mỗi bước có mốc thời gian khi đã tới) hoặc khối đỏ lý do từ chối khi `rejected`.
+  - `booking/[id].tsx` nối `booking.payments[].refunds[]` → render mỗi refund một `RefundStatusCard`. Kèm 3 khối phụ theo đúng luật client đã đúc kết (đơn giản là refund **không phải** đường duy nhất tiền quay lại — ví có 2 đường tắt riêng):
+    - **Ví tự hoàn** (huỷ đơn `pending`/quá hạn giữ chỗ mà đã trừ ví — BE hoàn thẳng vào ví, không tạo `Refund` nào để card ở trên bắt được) → banner xanh lá + link sang `/profile/wallet`, đổi câu theo `cancelledByRole` (`system` = tự hết hạn, còn lại = khách tự huỷ).
+    - **Quá hạn giữ chỗ nhưng cron chưa quét tới** (`usePaymentHold(booking).expired`) → banner amber, nói rõ tiền ví sẽ tự về nếu có.
+    - **Huỷ muộn bị phạt hết, không có khoản hoàn nào** → banner trung tính, tránh để khách chờ một khoản tiền không tồn tại.
+  - i18n: thêm `account:refund.*` (title/status/steps/rejected*/wallet*) + `booking:detail.holdExpired{Title,Body,Wallet}` — en/vi cân bằng (booking 104/104, account 235/235).
+  - **Verify**: `tsc --noEmit` 0 lỗi mới (baseline 39 pre-existing giữ nguyên), `eslint` sạch trên 5 file mới/sửa.
+  - ⚠️ Chưa chạy được app trong phiên này ⇒ nhờ bạn thử với 1 đơn đã huỷ có refund `pending`/`approved`/`rejected` thật để xem card hiển thị đúng.
+
 ### August 8, 2026 (continued 2)
 
 - [x] **Đồng hồ đếm ngược hạn giữ chỗ (15'/30') cạnh nút "Pay now" — port `usePaymentHold` từ client**:

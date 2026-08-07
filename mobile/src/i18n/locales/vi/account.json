@@ -186,6 +186,37 @@
       "adjustment": "Điều chỉnh"
     }
   },
+  "refund": {
+    "title": "Hoàn tiền",
+    "amountLabel": "Số tiền hoàn: ",
+    "reasonLabel": "Lý do: {{reason}}",
+    "walletAutoRefunded": "Đơn hết hạn giữ chỗ nên đã tự huỷ. {{amount}} bạn trả bằng ví đã được hoàn lại ngay, không mất phí.",
+    "walletRefundedOnCancel": "Đã huỷ đơn. {{amount}} bạn trả bằng ví đã được hoàn lại ngay, không mất phí.",
+    "openWallet": "Xem ví của tôi",
+    "noneTitle": "Theo chính sách huỷ của khách sạn, đơn này không có khoản hoàn tiền.",
+    "rejectedTitle": "Khách sạn đã từ chối yêu cầu hoàn tiền",
+    "rejectedNoReason": "Khách sạn không nêu lý do. Vui lòng liên hệ chỗ nghỉ để biết thêm chi tiết.",
+    "status": {
+      "pending": "Chờ khách sạn duyệt",
+      "approved": "Đã duyệt",
+      "processed": "Đã hoàn tiền",
+      "rejected": "Bị từ chối"
+    },
+    "steps": {
+      "pending": {
+        "title": "Chờ khách sạn duyệt",
+        "desc": "Khách sạn đang xem xét yêu cầu của bạn. Quá 3 ngày mà khách sạn chưa phản hồi thì yêu cầu tự động được duyệt"
+      },
+      "approved": {
+        "title": "Khách sạn đã duyệt",
+        "desc": "Chờ StayHub chuyển khoản về tài khoản của bạn"
+      },
+      "processed": {
+        "title": "Đã hoàn tiền",
+        "desc": "Tiền đã được chuyển, có thể mất vài ngày làm việc để về tài khoản"
+      }
+    }
+  },
   "help": {
     "title": "Trợ giúp & hỗ trợ",
     "faq": "Câu hỏi thường gặp",

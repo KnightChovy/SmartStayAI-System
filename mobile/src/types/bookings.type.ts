@@ -1,5 +1,7 @@
 /** Type cho luồng đặt phòng — model theo backend (`/v1/bookings`). */
 
+import type { BookingPayment } from './payments.type';
+
 export type BookingStatus =
   | 'pending'
   | 'confirmed'
@@ -68,6 +70,20 @@ export interface Booking {
   source: BookingSource;
   specialRequests?: string | null;
   cancellationReason?: string | null;
+  /**
+   * Ai huỷ đơn. `system` = cron dọn đơn quá hạn giữ chỗ; các giá trị còn lại là người
+   * thật. Cần để nói ĐÚNG nguyên nhân khi báo đã hoàn tiền — cùng một khối hiển thị phục
+   * vụ cả đơn hệ thống tự huỷ lẫn đơn khách tự bấm huỷ, ghi cứng một câu là nói sai cho
+   * nửa số ca.
+   */
+  cancelledByRole?:
+    | 'customer'
+    | 'hotel_staff'
+    | 'hotel_partner'
+    | 'platform_manager'
+    | 'admin'
+    | 'system'
+    | null;
   checkedInAt?: string | null;
   checkedOutAt?: string | null;
   cancelledAt?: string | null;
@@ -81,6 +97,8 @@ export interface Booking {
   hotel?: BookingHotelSummary;
   roomType?: BookingRoomTypeSummary;
   voucher?: BookingVoucherSummary | null;
+  /** Các khoản đã thanh toán, kèm yêu cầu hoàn tiền phát sinh từ mỗi khoản (nếu có). */
+  payments?: BookingPayment[];
 }
 
 /** Payload tạo booking — giá do server tự tính, client KHÔNG gửi tiền. */

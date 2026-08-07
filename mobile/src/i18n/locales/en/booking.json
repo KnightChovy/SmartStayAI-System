@@ -109,7 +109,10 @@
     "cancelBody": "Are you sure you want to cancel this booking? This cannot be undone.",
     "cancelConfirm": "Yes, cancel",
     "keep": "Keep booking",
-    "cancelFailed": "Could not cancel"
+    "cancelFailed": "Could not cancel",
+    "holdExpiredTitle": "This booking has passed its payment hold",
+    "holdExpiredBody": "The room has been released. We will cancel this booking within a few minutes — please book again.",
+    "holdExpiredWallet": "The room has been released. We will cancel this booking within a few minutes and return the {{amount}} you paid from your wallet, with no fee."
   },
   "sepay": {
     "title": "Bank transfer (SePay)",

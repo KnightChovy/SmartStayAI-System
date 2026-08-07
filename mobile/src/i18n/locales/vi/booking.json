@@ -109,7 +109,10 @@
     "cancelBody": "Bạn có chắc muốn huỷ đặt phòng này? Thao tác không thể hoàn tác.",
     "cancelConfirm": "Có, huỷ",
     "keep": "Giữ đặt phòng",
-    "cancelFailed": "Không thể huỷ"
+    "cancelFailed": "Không thể huỷ",
+    "holdExpiredTitle": "Đơn này đã quá hạn giữ chỗ",
+    "holdExpiredBody": "Phòng đã được nhả lại. Hệ thống sẽ tự huỷ đơn trong ít phút — bạn đặt lại giúp nhé.",
+    "holdExpiredWallet": "Phòng đã được nhả lại. Hệ thống sẽ tự huỷ đơn trong ít phút và hoàn {{amount}} bạn trả bằng ví về lại ví, không mất phí."
   },
   "sepay": {
     "title": "Chuyển khoản ngân hàng (SePay)",
