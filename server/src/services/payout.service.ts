@@ -27,20 +27,20 @@ export class PayoutService {
       include: { partner: { select: { id: true, ownerId: true } } },
     });
     if (!hotel) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy khách sạn');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Hotel not found');
     }
     if (hotel.partner.ownerId !== currentUser.id) {
-      throw new ApiError(httpStatus.FORBIDDEN, 'Chỉ chủ khách sạn được yêu cầu rút tiền');
+      throw new ApiError(httpStatus.FORBIDDEN, 'Only the hotel owner can request a payout');
     }
     if (amount.lessThan(MIN_PAYOUT_AMOUNT)) {
-      throw new ApiError(httpStatus.BAD_REQUEST, `Số tiền rút tối thiểu là ${MIN_PAYOUT_AMOUNT.toString()}đ`);
+      throw new ApiError(httpStatus.BAD_REQUEST, `Minimum payout amount is ${MIN_PAYOUT_AMOUNT.toString()}đ`);
     }
     // Phải có tài khoản nhận tiền (ưu tiên tài khoản chính) — không thì PM không biết chuyển đi đâu
     const account =
       (await prisma.hotelPayoutAccount.findFirst({ where: { hotelId, isPrimary: true } })) ??
       (await prisma.hotelPayoutAccount.findFirst({ where: { hotelId } }));
     if (!account) {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Khách sạn chưa có tài khoản nhận tiền để rút');
+      throw new ApiError(httpStatus.BAD_REQUEST, 'The hotel has no payout account set up yet');
     }
 
     return prisma.$transaction(async (tx) => {
@@ -82,10 +82,10 @@ export class PayoutService {
       include: { partner: { select: { id: true, ownerId: true } } },
     });
     if (!hotel) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy khách sạn');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Hotel not found');
     }
     if (hotel.partner.ownerId !== currentUser.id) {
-      throw new ApiError(httpStatus.FORBIDDEN, 'Chỉ chủ khách sạn được đổi tài khoản nhận tiền');
+      throw new ApiError(httpStatus.FORBIDDEN, 'Only the hotel owner can change the payout account');
     }
 
     // undefined ⇒ không đụng tới (giữ giá trị cũ khi update); '' ⇒ null
@@ -197,7 +197,7 @@ export class PayoutService {
       },
     });
     if (!payout) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy yêu cầu rút tiền');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Payout request not found');
     }
     return {
       ...payout,
@@ -219,10 +219,10 @@ export class PayoutService {
   ) => {
     const payout = await prisma.payout.findUnique({ where: { id: payoutId } });
     if (!payout) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy yêu cầu rút tiền');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Payout request not found');
     }
     if (payout.status !== 'pending') {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Yêu cầu rút này đã được xử lý');
+      throw new ApiError(httpStatus.BAD_REQUEST, 'This payout request has already been processed');
     }
 
     if (decision === 'approve') {
@@ -236,7 +236,7 @@ export class PayoutService {
         },
       });
       if (done.count === 0) {
-        throw new ApiError(httpStatus.BAD_REQUEST, 'Yêu cầu rút này vừa được xử lý');
+        throw new ApiError(httpStatus.BAD_REQUEST, 'This payout request was just processed');
       }
     } else {
       await prisma.$transaction(async (tx) => {
@@ -245,7 +245,7 @@ export class PayoutService {
           data: { status: 'failed' as PayoutStatus, notes: input.notes ?? null },
         });
         if (done.count === 0) {
-          throw new ApiError(httpStatus.BAD_REQUEST, 'Yêu cầu rút này vừa được xử lý');
+          throw new ApiError(httpStatus.BAD_REQUEST, 'This payout request was just processed');
         }
         await walletService.releasePayoutHold(tx, payout.hotelId, payout.amount, payout.id);
       });

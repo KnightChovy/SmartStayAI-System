@@ -22,7 +22,7 @@ export class AmenityService {
     const name = payload.name.trim();
     const existing = await prisma.amenity.findFirst({ where: { name: { equals: name, mode: 'insensitive' } } });
     if (existing) {
-      throw new ApiError(httpStatus.BAD_REQUEST, `Tiện nghi "${name}" đã tồn tại`);
+      throw new ApiError(httpStatus.BAD_REQUEST, `Amenity "${name}" already exists`);
     }
     return prisma.amenity.create({ data: { ...payload, name } });
   };

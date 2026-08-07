@@ -19,7 +19,7 @@ export class RoomTypeService {
   private getOwnedRoomType = async (hotelId: string, roomTypeId: string) => {
     const roomType = await prisma.roomType.findFirst({ where: { id: roomTypeId, hotelId } });
     if (!roomType) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy loại phòng trong khách sạn này');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Room type not found in this hotel');
     }
     return roomType;
   };
@@ -58,7 +58,7 @@ export class RoomTypeService {
     if (roomCount > 0 || bookingCount > 0) {
       throw new ApiError(
         httpStatus.BAD_REQUEST,
-        'Loại phòng đã có phòng hoặc lịch sử đặt, không thể xoá — hãy tắt bằng isActive=false để ngừng bán'
+        'This room type already has rooms or booking history and cannot be deleted — disable it with isActive=false to stop selling'
       );
     }
     await prisma.roomType.delete({ where: { id: roomTypeId } });
@@ -116,7 +116,7 @@ export class RoomTypeService {
     if (amenityIds.length > 0) {
       const existingCount = await prisma.amenity.count({ where: { id: { in: amenityIds } } });
       if (existingCount !== amenityIds.length) {
-        throw new ApiError(httpStatus.BAD_REQUEST, 'Có tiện nghi không tồn tại trong danh sách gửi lên');
+        throw new ApiError(httpStatus.BAD_REQUEST, 'Some amenities in the submitted list do not exist');
       }
     }
 

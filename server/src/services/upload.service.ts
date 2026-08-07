@@ -24,7 +24,7 @@ export class UploadService {
       // Backstop: buộc reject nếu callback của Cloudinary không bao giờ được gọi
       const timer = setTimeout(() => {
         reject(
-          new ApiError(httpStatus.GATEWAY_TIMEOUT, 'Tải ảnh lên quá thời gian chờ — vui lòng thử lại')
+          new ApiError(httpStatus.GATEWAY_TIMEOUT, 'Image upload timed out — please try again')
         );
       }, UPLOAD_TIMEOUT_MS);
 

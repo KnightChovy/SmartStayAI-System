@@ -48,13 +48,13 @@ export class ReviewService {
       select: { id: true, customerId: true, hotelId: true, status: true, review: { select: { id: true } } },
     });
     if (!booking || booking.customerId !== currentUser.id) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy booking của bạn');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Booking not found');
     }
     if (booking.status !== 'checked_out') {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Chỉ đánh giá được sau khi đã trả phòng');
+      throw new ApiError(httpStatus.BAD_REQUEST, 'You can only review after check-out');
     }
     if (booking.review) {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Booking này đã được đánh giá');
+      throw new ApiError(httpStatus.BAD_REQUEST, 'This booking has already been reviewed');
     }
 
     return prisma.review.create({
@@ -165,7 +165,7 @@ export class ReviewService {
       select: { id: true, customerId: true },
     });
     if (!review || review.customerId !== currentUser.id) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy đánh giá của bạn');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Review not found');
     }
 
     const data: Prisma.ReviewUpdateInput = {
@@ -194,7 +194,7 @@ export class ReviewService {
       select: { id: true, customerId: true },
     });
     if (!review || review.customerId !== currentUser.id) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy đánh giá của bạn');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Review not found');
     }
     await prisma.review.delete({ where: { id: reviewId } });
   };
@@ -301,7 +301,7 @@ export class ReviewService {
       select: { id: true },
     });
     if (!hotel) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy khách sạn');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Hotel not found');
     }
     return this.computeReviewStats(hotelId);
   };
@@ -313,7 +313,7 @@ export class ReviewService {
       include: reviewInclude,
     });
     if (!review) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy đánh giá');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Review not found');
     }
     return review;
   };

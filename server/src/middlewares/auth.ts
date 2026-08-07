@@ -50,7 +50,7 @@ export const optionalAuth = (req: Request, res: Response, next: NextFunction): v
     }
     // Có Authorization header mà xác thực vẫn trượt = token hỏng/hết hạn → báo để client refresh rồi gửi lại
     if (req.headers.authorization) {
-      return next(new ApiError(httpStatus.UNAUTHORIZED, 'Token không hợp lệ hoặc đã hết hạn'));
+      return next(new ApiError(httpStatus.UNAUTHORIZED, 'Token is invalid or has expired'));
     }
     // Không có token → khách vãng lai
     return next();
