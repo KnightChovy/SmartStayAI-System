@@ -116,6 +116,29 @@ const bookingInclude = {
   },
 } satisfies Prisma.BookingInclude;
 
+/**
+ * Bổ sung hai số tiền DẪN XUẤT cho booking trả về client: đã trả bao nhiêu, còn phải trả bao nhiêu.
+ *
+ * Vì sao cần: một booking có thể trả GHÉP (ví trả một phần, cổng trả phần còn lại), nên `totalAmount`
+ * KHÔNG còn là số khách sắp bị trừ ở cổng — cổng chỉ thu phần còn thiếu. Không trả sẵn hai số này thì
+ * mỗi màn hiển thị phải tự cộng lại `payments[]`, và mỗi nơi một công thức là chắc chắn trôi lệch.
+ *
+ * Dùng ĐÚNG luật của payment.service.outstandingAmount (chỉ tính payment 'completed', kẹp về 0 khi
+ * lỡ trả dư) nên số hiện trên màn hình luôn bằng số cổng sẽ thu. Tính ngay trên `payments[]` đã
+ * include sẵn ⇒ KHÔNG thêm truy vấn nào, kể cả khi trả về một trang danh sách.
+ */
+const withPaymentBalance = <
+  T extends { totalAmount: Prisma.Decimal; payments: { status: string; amount: Prisma.Decimal }[] },
+>(
+  booking: T
+) => {
+  const amountPaid = booking.payments
+    .filter((payment) => payment.status === 'completed')
+    .reduce((sum, payment) => sum.add(payment.amount), new Prisma.Decimal(0));
+  const remaining = booking.totalAmount.sub(amountPaid);
+  return { ...booking, amountPaid, remainingAmount: remaining.isNegative() ? new Prisma.Decimal(0) : remaining };
+};
+
 // Quan hệ kèm theo cho màn vận hành của staff/chủ KS (kèm khách, phòng đã gán, voucher)
 const staffBookingInclude = {
   customer: { select: { id: true, fullName: true, email: true, phone: true } },
@@ -444,7 +467,9 @@ export class BookingService {
         },
       });
 
-      return booking;
+      // Đơn vừa tạo thì chưa payment nào 'completed' ⇒ remainingAmount = totalAmount. Vẫn trả hai
+      // field cho ĐỒNG NHẤT hình dạng response, khỏi bắt client phân biệt "chưa có" với "bằng 0".
+      return withPaymentBalance(booking);
     });
   };
 
@@ -631,7 +656,7 @@ export class BookingService {
       }
 
       const result = await tx.booking.findUniqueOrThrow({ where: { id: bookingId }, include: bookingInclude });
-      return { ...result, refund };
+      return { ...withPaymentBalance(result), refund };
     });
   };
 
@@ -657,7 +682,13 @@ export class BookingService {
       prisma.booking.count({ where }),
     ]);
 
-    return { results, page, limit, totalPages: Math.ceil(totalResults / limit), totalResults };
+    return {
+      results: results.map(withPaymentBalance),
+      page,
+      limit,
+      totalPages: Math.ceil(totalResults / limit),
+      totalResults,
+    };
   };
 
   // Truy vấn phân trang dùng chung cho các màn GIÁM SÁT booking (PM toàn sàn / partner theo đối tác)
@@ -738,7 +769,7 @@ export class BookingService {
     if (!isOwner && !canManage) {
       throw new ApiError(httpStatus.FORBIDDEN, 'Forbidden');
     }
-    return booking;
+    return withPaymentBalance(booking);
   };
 
   /**
