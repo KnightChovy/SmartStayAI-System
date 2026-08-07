@@ -1,19 +1,8 @@
 import prisma from '../config/prisma';
 import type { DestinationSuggestFilter } from '../dto/destination.dto';
+import { removeAccent } from '../utils/text';
 
 const listedHotel = { isActive: true, isListed: true, deletedAt: null };
-
-/**
- * Bỏ dấu tiếng Việt để so khớp không phân biệt dấu ("da nang" khớp "Đà Nẵng").
- * NFD tách dấu ra khỏi chữ rồi xoá; đ/Đ không tách được nên map tay.
- */
-const removeAccent = (s: string): string =>
-  s
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/đ/g, 'd')
-    .replace(/Đ/g, 'D')
-    .toLowerCase();
 
 export class DestinationService {
   /**

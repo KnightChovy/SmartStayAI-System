@@ -2,6 +2,7 @@ import { Prisma } from '@prisma/client';
 import prisma from '../config/prisma';
 import type { DealFilter } from '../dto/promotion.dto';
 import { availabilityService } from './availability.service';
+import { hotelService } from './hotel.service';
 import { toUtcDate } from '../utils/dates';
 
 // Còn dưới ngần này giờ tới lúc hết hạn ⇒ đánh dấu 'flash_sale' để FE hiện countdown.
@@ -24,6 +25,9 @@ export class PromotionService {
     const today = toUtcDate(now);
     const tomorrow = new Date(today);
     tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+    // Khớp thành phố KHÔNG PHÂN BIỆT DẤU — xem hotelService.resolveCityFilter để biết vì sao
+    // `contains` + `mode: 'insensitive'` là chưa đủ ("Đà Nẵng" không khớp dữ liệu "Da Nang").
+    const cityFilter = filter.city ? await hotelService.resolveCityFilter(filter.city) : undefined;
 
     // 1) Các rule GIẢM GIÁ (adjustmentValue < 0) đang bật + còn trong hạn HÔM NAY, của KS đang mở bán.
     //    Đây chỉ là bước lọc thô theo cửa sổ ngày; việc rule có thật sự áp cho đêm nay hay không
@@ -38,7 +42,7 @@ export class PromotionService {
           isActive: true,
           isListed: true,
           deletedAt: null,
-          ...(filter.city && { city: { contains: filter.city, mode: 'insensitive' } }),
+          ...(cityFilter && { city: cityFilter }),
         },
       },
       select: { hotelId: true, name: true, endDate: true },
