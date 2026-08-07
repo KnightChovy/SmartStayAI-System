@@ -1,13 +1,6 @@
 import { Controller, FormProvider, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  Banknote,
-  Loader2,
-  Mail,
-  Phone,
-  User,
-  X,
-} from 'lucide-react';
+import { Banknote, Loader2, Mail, Phone, User, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -64,10 +57,14 @@ export function RefundPayoutModal({ refund, onClose }: RefundPayoutModalProps) {
         // `confirmed` chỉ là guard ở client — BE không nhận field này (Joi sẽ 400 nếu gửi kèm).
         dto: { refundTransactionId: values.refundTransactionId.trim() },
       });
-      toast.success(`Refund marked as transferred · ${formatCurrency(refund.amount)}`);
+      toast.success(
+        `Refund marked as transferred · ${formatCurrency(refund.amount)}`
+      );
       onClose();
     } catch (err) {
-      toast.error(errorMessage(err, 'Failed to mark this refund as transferred'));
+      toast.error(
+        errorMessage(err, 'Failed to mark this refund as transferred')
+      );
       onClose();
     }
   });
@@ -134,13 +131,17 @@ export function RefundPayoutModal({ refund, onClose }: RefundPayoutModalProps) {
 
           {/* Số tiền phải chuyển */}
           <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
-            <p className="text-xs font-medium text-slate-500">Amount to transfer</p>
+            <p className="text-xs font-medium text-slate-500">
+              Amount to transfer
+            </p>
             <p className="mt-0.5 text-3xl font-bold tracking-tight tabular-nums text-red-600">
               {formatCurrency(refund.amount)}
             </p>
             <p className="mt-1 text-xs text-slate-400">
-              Guest paid {formatCurrency(refund.payment.amount)} · hotel keeps{' '}
-              {formatCurrency(Number(refund.payment.amount) - Number(refund.amount))}
+              Guest paid {formatCurrency(refund.payment.amount)} · Held Balance{' '}
+              {formatCurrency(
+                Number(refund.payment.amount) - Number(refund.amount)
+              )}
             </p>
           </div>
 
@@ -165,8 +166,8 @@ export function RefundPayoutModal({ refund, onClose }: RefundPayoutModalProps) {
                 )}
               </p>
               <p className="pt-1 text-xs text-slate-400">
-                The guest&apos;s bank account is not stored on the platform — get the payout
-                details from the guest before transferring.
+                The guest&apos;s bank account is not stored on the platform —
+                get the payout details from the guest before transferring.
               </p>
             </div>
           </div>
@@ -196,8 +197,14 @@ export function RefundPayoutModal({ refund, onClose }: RefundPayoutModalProps) {
               />
               {refund.processedAt && (
                 <>
-                  <Row label="Transferred at" value={formatDate(refund.processedAt)} />
-                  <Row label="Transaction id" value={refund.refundTransactionId} />
+                  <Row
+                    label="Transferred at"
+                    value={formatDate(refund.processedAt)}
+                  />
+                  <Row
+                    label="Transaction id"
+                    value={refund.refundTransactionId}
+                  />
                 </>
               )}
             </dl>
@@ -209,14 +216,18 @@ export function RefundPayoutModal({ refund, onClose }: RefundPayoutModalProps) {
               <form onSubmit={onSubmit} className="space-y-4">
                 <div className="rounded-lg border border-red-200 bg-red-50 px-3.5 py-3">
                   <p className="text-xs text-red-800">
-                    Only submit this <strong>after</strong> the money has actually left the
-                    platform account. It recalculates the hotel&apos;s commission and debits their
-                    wallet — <strong>it cannot be undone.</strong>
+                    Only submit this <strong>after</strong> the money has
+                    actually left the platform account. It recalculates the
+                    hotel&apos;s commission and debits their wallet —{' '}
+                    <strong>it cannot be undone.</strong>
                   </p>
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="refundTransactionId" className="text-sm font-medium text-slate-700">
+                  <Label
+                    htmlFor="refundTransactionId"
+                    className="text-sm font-medium text-slate-700"
+                  >
                     Bank / gateway transaction id
                     <span className="ml-0.5 text-red-500">*</span>
                   </Label>
@@ -227,10 +238,13 @@ export function RefundPayoutModal({ refund, onClose }: RefundPayoutModalProps) {
                     {...register('refundTransactionId')}
                   />
                   {errors.refundTransactionId ? (
-                    <p className="text-xs text-red-500">{errors.refundTransactionId.message}</p>
+                    <p className="text-xs text-red-500">
+                      {errors.refundTransactionId.message}
+                    </p>
                   ) : (
                     <p className="text-xs text-slate-400">
-                      The real reference from your bank — kept for reconciliation.
+                      The real reference from your bank — kept for
+                      reconciliation.
                     </p>
                   )}
                 </div>
@@ -244,17 +258,22 @@ export function RefundPayoutModal({ refund, onClose }: RefundPayoutModalProps) {
                         <span className="mt-0.5 shrink-0">
                           <Checkbox
                             checked={field.value}
-                            onCheckedChange={checked => field.onChange(checked === true)}
+                            onCheckedChange={checked =>
+                              field.onChange(checked === true)
+                            }
                             aria-invalid={!!errors.confirmed}
                           />
                         </span>
                         <span className="text-sm text-slate-700">
-                          I have already transferred {formatCurrency(refund.amount)} to{' '}
+                          I have already transferred{' '}
+                          {formatCurrency(refund.amount)} to{' '}
                           {refund.requesterUser.fullName}.
                         </span>
                       </label>
                       {errors.confirmed && (
-                        <p className="mt-1 text-xs text-red-500">{errors.confirmed.message}</p>
+                        <p className="mt-1 text-xs text-red-500">
+                          {errors.confirmed.message}
+                        </p>
                       )}
                     </div>
                   )}
@@ -265,9 +284,9 @@ export function RefundPayoutModal({ refund, onClose }: RefundPayoutModalProps) {
 
           {refund.status === 'pending' && (
             <div className="rounded-lg border border-amber-200 bg-amber-50 px-3.5 py-3 text-xs text-amber-800">
-              Waiting for <strong>{booking.hotel.name}</strong> to review this request. You can only
-              transfer once it is approved — the system auto-approves it if the hotel does not
-              respond within 3 days.
+              Waiting for <strong>{booking.hotel.name}</strong> to review this
+              request. You can only transfer once it is approved — the system
+              auto-approves it if the hotel does not respond within 3 days.
             </div>
           )}
         </div>
@@ -293,12 +312,24 @@ export function RefundPayoutModal({ refund, onClose }: RefundPayoutModalProps) {
   );
 }
 
-function Row({ label, value }: { label: string; value: string | null | undefined }) {
+function Row({
+  label,
+  value,
+}: {
+  label: string;
+  value: string | null | undefined;
+}) {
   return (
     <div className="flex gap-4 px-4 py-2.5">
-      <dt className="w-36 shrink-0 text-xs font-medium text-slate-500">{label}</dt>
+      <dt className="w-36 shrink-0 text-xs font-medium text-slate-500">
+        {label}
+      </dt>
       <dd className="min-w-0 flex-1 text-sm text-slate-700">
-        {value ? value : <span className="italic text-slate-400">Not provided</span>}
+        {value ? (
+          value
+        ) : (
+          <span className="italic text-slate-400">Not provided</span>
+        )}
       </dd>
     </div>
   );
