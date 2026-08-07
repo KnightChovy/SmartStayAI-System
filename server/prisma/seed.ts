@@ -1101,7 +1101,7 @@ const main = async (): Promise<void> => {
           balanceAfter: pendingAfterEarning,
           bookingId: booking.id,
           status: 'completed',
-          description: 'Net doanh thu booking (chờ tất toán)',
+          description: 'Booking net revenue (pending settlement)',
         },
       });
       if (settled) {
@@ -1114,7 +1114,7 @@ const main = async (): Promise<void> => {
             balanceAfter: availableAfterSettle,
             commissionId: commission.id,
             status: 'completed',
-            description: 'Chuyển pending → available (đã tất toán)',
+            description: 'Settled — moved from pending to available',
           },
         });
         // Đơn đã chốt sổ: net rời pending, vào available (đúng net effect earning + settle)
