@@ -85,6 +85,27 @@ export class BookingController {
     res.send(booking);
   });
 
+  // Gán TRƯỚC phòng vật lý cho đơn đã xác nhận nhưng chưa tới
+  assignRoom = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const booking = await bookingService.assignRoom(
+      req.params.hotelId as string,
+      req.params.bookingId as string,
+      req.user as User,
+      req.body
+    );
+    res.send(booking);
+  });
+
+  // Gỡ phòng đã gán trước (chưa check-in)
+  releaseAssignedRoom = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const booking = await bookingService.releaseAssignedRoom(
+      req.params.hotelId as string,
+      req.params.bookingId as string,
+      req.user as User
+    );
+    res.send(booking);
+  });
+
   // [M13] Check-in khách
   checkIn = catchAsync(async (req: Request, res: Response): Promise<void> => {
     const booking = await bookingService.checkInBooking(

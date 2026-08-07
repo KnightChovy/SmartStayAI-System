@@ -1,13 +1,22 @@
 import httpStatus from 'http-status';
 import { Prisma } from '@prisma/client';
-import type { User, CommissionStatus, PaymentStatus, PaymentMethod } from '@prisma/client';
+import type { User, BookingStatus, CommissionStatus, PaymentStatus, PaymentMethod } from '@prisma/client';
 import prisma from '../config/prisma';
 import ApiError from '../utils/ApiError';
 import { auditService } from './audit.service';
 import { walletService } from './wallet.service';
 
-// Kỳ giữ sau khi khách check-out trước khi tự tất toán (đối soát). 0 = tất toán ngay khi đã check-out.
+// Kỳ giữ sau khi kỳ ở kết thúc trước khi tự tất toán (đối soát). 0 = tất toán ngay khi đủ điều kiện.
 const SETTLEMENT_HOLD_DAYS = 1;
+
+/**
+ * Trạng thái booking đã CHỐT SỔ — hết cửa huỷ/hoàn nên nhả tiền cho khách sạn được:
+ * - `checked_out`: khách ở xong.
+ * - `no_show`: khách không đến, tiền trả trước bị forfeit (khách sạn được giữ theo chính sách).
+ *   Thiếu trạng thái này thì net nằm chết ở `balancePending` VĨNH VIỄN vì no-show không bao giờ
+ *   đạt `checked_out` — khách sạn không rút được, sàn cũng không chốt được hoa hồng.
+ */
+const SETTLEABLE_BOOKING_STATUSES: BookingStatus[] = ['checked_out', 'no_show'];
 
 export class AdminService {
   /**
@@ -227,6 +236,137 @@ export class AdminService {
     return { createdAt };
   };
 
+  /**
+   * [Admin/PM] Doanh thu CHI TIẾT theo TỪNG đối tác / khách sạn / thành phố (thứ /admin/revenue chỉ
+   * cho tổng toàn sàn). Cùng mốc ghi nhận: gmv + commission theo `pc.created_at` (ngày thanh toán),
+   * refunded theo `r.created_at`. `commission` = doanh thu THẬT của sàn cho nhóm đó (bỏ 'disputed').
+   *
+   * `partnerId` để drill-down: bấm 1 đối tác ⇒ gọi lại với `groupBy=hotel&partnerId=` để xem các KS
+   * của họ; bấm 1 KS ⇒ dùng endpoint sẵn có `GET /hotels/:id/revenue` (manager có manageBookings).
+   * Gộp tất cả nhóm ở tầng DB (số đối tác/KS/thành phố nhỏ) rồi phân trang trong bộ nhớ. Tiền dạng chuỗi.
+   */
+  getRevenueBreakdown = async (query: {
+    groupBy: 'partner' | 'hotel' | 'city';
+    from?: Date;
+    to?: Date;
+    partnerId?: string;
+    sortBy?: 'commission' | 'gmv' | 'bookingCount';
+    page?: number;
+    limit?: number;
+  }) => {
+    const { groupBy } = query;
+    const limit = query.limit || 20;
+    const page = query.page || 1;
+    const sortBy = query.sortBy ?? 'commission';
+    const from = query.from ?? null;
+    // 'to' là mốc NGÀY (gồm cả ngày đó) ⇒ chặn trên lấy 00:00 ngày kế tiếp
+    const toExclusive = query.to ? new Date(query.to.getTime() + 24 * 60 * 60 * 1000) : null;
+    const partnerId = query.partnerId ?? null;
+
+    // gmv = Σ totalAmount; commission = Σ commission_amount (bỏ 'disputed'); cùng lọc theo pc.created_at.
+    // NULL::... để 3 chiều cùng một tập cột, gán key theo chiều rồi đổi tên ở bước map bên dưới.
+    const commissionSql = {
+      partner: `SELECT hp.id::text AS key, hp.business_name AS name, NULL::text AS city,
+                       NULL::text AS "partnerId", NULL::text AS "partnerName",
+                       count(*)::int AS "bookingCount", count(DISTINCT h.id)::int AS "hotelCount",
+                       coalesce(sum(b.total_amount),0)::text AS gmv,
+                       coalesce(sum(CASE WHEN pc.status <> 'disputed' THEN pc.commission_amount ELSE 0 END),0)::text AS commission
+                FROM platform_commissions pc
+                JOIN bookings b ON b.id = pc.booking_id
+                JOIN hotels h ON h.id = b.hotel_id
+                JOIN hotel_partners hp ON hp.id = h.partner_id
+                WHERE ($1::timestamptz IS NULL OR pc.created_at >= $1)
+                  AND ($2::timestamptz IS NULL OR pc.created_at < $2)
+                  AND ($3::uuid IS NULL OR h.partner_id = $3)
+                GROUP BY hp.id, hp.business_name`,
+      hotel: `SELECT h.id::text AS key, h.name AS name, h.city AS city,
+                     hp.id::text AS "partnerId", hp.business_name AS "partnerName",
+                     count(*)::int AS "bookingCount", NULL::int AS "hotelCount",
+                     coalesce(sum(b.total_amount),0)::text AS gmv,
+                     coalesce(sum(CASE WHEN pc.status <> 'disputed' THEN pc.commission_amount ELSE 0 END),0)::text AS commission
+              FROM platform_commissions pc
+              JOIN bookings b ON b.id = pc.booking_id
+              JOIN hotels h ON h.id = b.hotel_id
+              JOIN hotel_partners hp ON hp.id = h.partner_id
+              WHERE ($1::timestamptz IS NULL OR pc.created_at >= $1)
+                AND ($2::timestamptz IS NULL OR pc.created_at < $2)
+                AND ($3::uuid IS NULL OR h.partner_id = $3)
+              GROUP BY h.id, h.name, h.city, hp.id, hp.business_name`,
+      city: `SELECT h.city AS key, h.city AS name, NULL::text AS city,
+                    NULL::text AS "partnerId", NULL::text AS "partnerName",
+                    count(*)::int AS "bookingCount", count(DISTINCT h.id)::int AS "hotelCount",
+                    coalesce(sum(b.total_amount),0)::text AS gmv,
+                    coalesce(sum(CASE WHEN pc.status <> 'disputed' THEN pc.commission_amount ELSE 0 END),0)::text AS commission
+             FROM platform_commissions pc
+             JOIN bookings b ON b.id = pc.booking_id
+             JOIN hotels h ON h.id = b.hotel_id
+             WHERE ($1::timestamptz IS NULL OR pc.created_at >= $1)
+               AND ($2::timestamptz IS NULL OR pc.created_at < $2)
+               AND ($3::uuid IS NULL OR h.partner_id = $3)
+             GROUP BY h.city`,
+    }[groupBy];
+
+    // refunded theo NGÀY TẠO yêu cầu hoàn (r.created_at); khoá gộp KHỚP với key ở trên
+    const refundKey = { partner: 'h.partner_id::text', hotel: 'b.hotel_id::text', city: 'h.city' }[groupBy];
+    const refundSql = `SELECT ${refundKey} AS key, coalesce(sum(r.amount),0)::text AS refunded
+      FROM refunds r
+      JOIN payments p ON p.id = r.payment_id
+      JOIN bookings b ON b.id = p.booking_id
+      JOIN hotels h ON h.id = b.hotel_id
+      WHERE ($1::timestamptz IS NULL OR r.created_at >= $1)
+        AND ($2::timestamptz IS NULL OR r.created_at < $2)
+        AND ($3::uuid IS NULL OR h.partner_id = $3)
+      GROUP BY ${refundKey}`;
+
+    type Row = {
+      key: string;
+      name: string | null;
+      city: string | null;
+      partnerId: string | null;
+      partnerName: string | null;
+      bookingCount: number;
+      hotelCount: number | null;
+      gmv: string;
+      commission: string;
+    };
+    const [rows, refundRows] = await Promise.all([
+      prisma.$queryRawUnsafe<Row[]>(commissionSql, from, toExclusive, partnerId),
+      prisma.$queryRawUnsafe<{ key: string; refunded: string }[]>(refundSql, from, toExclusive, partnerId),
+    ]);
+    const refundByKey = new Map(refundRows.map((r) => [r.key, r.refunded]));
+
+    // Sắp giảm dần theo tiêu chí chọn (mặc định doanh thu sàn), rồi phân trang trong bộ nhớ
+    const sorted = rows.sort((a, b) => {
+      if (sortBy === 'bookingCount') return b.bookingCount - a.bookingCount;
+      return new Prisma.Decimal(b[sortBy]).comparedTo(new Prisma.Decimal(a[sortBy]));
+    });
+    const totalResults = sorted.length;
+    const paged = sorted.slice((page - 1) * limit, page * limit);
+
+    const results = paged.map((r) => {
+      const refunded = refundByKey.get(r.key) ?? '0';
+      if (groupBy === 'partner') {
+        return { partnerId: r.key, name: r.name, gmv: r.gmv, commission: r.commission, refunded, bookingCount: r.bookingCount, hotelCount: r.hotelCount };
+      }
+      if (groupBy === 'city') {
+        return { city: r.key, gmv: r.gmv, commission: r.commission, refunded, bookingCount: r.bookingCount, hotelCount: r.hotelCount };
+      }
+      return {
+        hotelId: r.key,
+        name: r.name,
+        city: r.city,
+        partnerId: r.partnerId,
+        partnerName: r.partnerName,
+        gmv: r.gmv,
+        commission: r.commission,
+        refunded,
+        bookingCount: r.bookingCount,
+      };
+    });
+
+    return { groupBy, results, page, limit, totalPages: Math.ceil(totalResults / limit), totalResults };
+  };
+
   // ===== Pha 3 — Hoa hồng / payout =====
 
   /** [Admin/PM] Liệt kê hoa hồng nền tảng, lọc theo trạng thái + đối tác, kèm tên đối tác + mã booking. */
@@ -270,12 +410,12 @@ export class AdminService {
     if (commission.status === 'settled') {
       throw new ApiError(httpStatus.BAD_REQUEST, 'Khoản hoa hồng này đã được tất toán');
     }
-    // Cùng điều kiện với cron tự tất toán: chỉ nhả tiền khi khách ĐÃ TRẢ PHÒNG (hết cửa huỷ/hoàn).
+    // Cùng điều kiện với cron tự tất toán: chỉ nhả tiền khi booking đã chốt sổ (trả phòng hoặc no-show).
     // Không có guard này, admin có thể nhả tiền cho booking khách chưa tới ở — khách huỷ sau thì đã muộn.
-    if (commission.booking.status !== 'checked_out') {
+    if (!SETTLEABLE_BOOKING_STATUSES.includes(commission.booking.status)) {
       throw new ApiError(
         httpStatus.BAD_REQUEST,
-        `Chỉ tất toán được booking đã trả phòng. Booking ${commission.booking.bookingCode} đang ở trạng thái "${commission.booking.status}".`
+        `Chỉ tất toán được booking đã trả phòng hoặc no-show. Booking ${commission.booking.bookingCode} đang ở trạng thái "${commission.booking.status}".`
       );
     }
     // Net khách sạn thực nhận = tổng booking − hoa hồng; tất toán chuyển khoản này pending → available
@@ -300,10 +440,11 @@ export class AdminService {
   };
 
   /**
-   * [Cron] Tự tất toán các khoản hoa hồng ĐỦ ĐIỀU KIỆN: booking đã checked_out (hết cửa huỷ/hoàn)
-   * và đã qua kỳ giữ SETTLEMENT_HOLD_DAYS ngày. Mỗi khoản: commission pending→settled + ví chuyển
-   * pending→available, gói trong 1 transaction; update CÓ ĐIỀU KIỆN (status pending) để không tất
-   * toán hai lần nếu cron chạy chồng. Vết tiền nằm ở wallet_transactions (type payout), không cần audit user.
+   * [Cron] Tự tất toán các khoản hoa hồng ĐỦ ĐIỀU KIỆN: booking đã chốt sổ (xem
+   * SETTLEABLE_BOOKING_STATUSES) và đã qua kỳ giữ SETTLEMENT_HOLD_DAYS ngày. Mỗi khoản: commission
+   * pending→settled + ví chuyển pending→available, gói trong 1 transaction; update CÓ ĐIỀU KIỆN
+   * (status pending) để không tất toán hai lần nếu cron chạy chồng. Vết tiền nằm ở
+   * wallet_transactions (type settlement), không cần audit user.
    * @returns số khoản đã tất toán
    */
   settleEligibleCommissions = async (): Promise<number> => {
@@ -311,7 +452,15 @@ export class AdminService {
     const eligible = await prisma.platformCommission.findMany({
       where: {
         status: 'pending',
-        booking: { status: 'checked_out', checkedOutAt: { lte: cutoff } },
+        booking: {
+          OR: [
+            { status: 'checked_out', checkedOutAt: { lte: cutoff } },
+            // no-show KHÔNG có checkedOutAt ⇒ đếm kỳ giữ từ ngày TRẢ PHÒNG theo lịch. Cố ý không
+            // dùng checkInDate: staff đánh no-show ngay ngày nhận phòng, mà kỳ ở vẫn còn đang chạy
+            // thì chưa nên nhả tiền — còn cửa để đối soát/khiếu nại tới hết kỳ.
+            { status: 'no_show', checkOutDate: { lte: cutoff } },
+          ],
+        },
       },
       select: {
         id: true,

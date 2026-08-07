@@ -47,9 +47,13 @@ export interface BookingQueryOptions {
   sortBy?: string;
 }
 
-/** Bộ lọc khi staff/chủ KS xem booking của một khách sạn (theo trạng thái + ngày nhận phòng). */
+/**
+ * Bộ lọc khi staff/chủ KS xem booking của một khách sạn. Khác các màn giám sát ở hai chỗ:
+ *  - `status` nhận nhiều trạng thái cùng lúc (màn lịch cần confirmed + checked_in + pending)
+ *  - `fromDate`/`toDate` là KHOẢNG LƯU TRÚ, không phải khoảng ngày nhận phòng
+ */
 export interface HotelBookingFilter {
-  status?: BookingStatus;
+  status?: BookingStatus | BookingStatus[];
   fromDate?: Date;
   toDate?: Date;
 }
@@ -71,6 +75,14 @@ export interface PartnerBookingFilter {
   fromDate?: Date;
   toDate?: Date;
   search?: string;
+}
+
+/**
+ * Payload gán TRƯỚC phòng vật lý cho một booking đã xác nhận nhưng chưa tới (front desk chốt phòng
+ * từ hôm trước). Khác check-in: không đổi trạng thái phòng, không phát voucher, gỡ lại được.
+ */
+export interface AssignRoomDto {
+  roomId: string;
 }
 
 /** Payload check-in: gán phòng vật lý cụ thể (tuỳ chọn) + mã voucher để đối chiếu (tuỳ chọn). */

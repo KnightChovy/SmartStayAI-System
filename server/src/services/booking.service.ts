@@ -14,7 +14,15 @@ import ApiError from '../utils/ApiError';
 import { roleRights } from '../config/roles';
 import { toUtcDate, eachNightOfStay, todayInVietnamDate } from '../utils/dates';
 import { availabilityService } from './availability.service';
-import { hotelService, readCancellationPolicy } from './hotel.service';
+import {
+  hotelService,
+  readCancellationPolicy,
+  parseCancellationPolicy,
+  refundPercentForHours,
+  appliedTierForHours,
+  nextTierAfter,
+  freeUntilHoursOf,
+} from './hotel.service';
 import type { CancellationPolicy } from './hotel.service';
 import type {
   CreateBookingDto,
@@ -23,6 +31,7 @@ import type {
   HotelBookingFilter,
   PlatformBookingFilter,
   PartnerBookingFilter,
+  AssignRoomDto,
   CheckInBookingDto,
   CheckOutBookingDto,
   CancelBookingDto,
@@ -145,20 +154,29 @@ const checkInMomentOf = (checkInDate: Date, checkInTime: string | null): Date =>
   return moment;
 };
 
-/** Số tiền hoàn theo chính sách: huỷ sớm ⇒ 100%; huỷ muộn ⇒ trừ phí phạt (1 đêm hoặc toàn bộ). */
+/**
+ * Số tiền hoàn theo chính sách BẬC THANG: tìm bậc áp dụng cho "còn bao nhiêu giờ tới check-in" rồi
+ * hoàn `refundPercent%` của số đã trả. Làm tròn 2 chữ số (đồng bộ phần tiền còn lại của hệ thống).
+ */
 const computeRefundAmount = (
   policy: CancellationPolicy,
   hoursBeforeCheckIn: number,
-  totalPaid: Prisma.Decimal,
-  firstNightPrice: Prisma.Decimal
-): Prisma.Decimal => {
-  if (hoursBeforeCheckIn >= policy.freeUntilHours) {
-    return totalPaid;
-  }
-  const penalty = policy.latePenalty === 'full' ? totalPaid : firstNightPrice;
-  const refund = totalPaid.sub(penalty);
-  return refund.isNegative() ? new Prisma.Decimal(0) : refund;
-};
+  totalPaid: Prisma.Decimal
+): Prisma.Decimal =>
+  totalPaid.mul(refundPercentForHours(policy, hoursBeforeCheckIn)).div(100).toDecimalPlaces(2);
+
+/**
+ * Chính sách áp cho một booking = SNAPSHOT đóng băng lúc đặt (booking.cancellationPolicy) nếu có,
+ * ngược lại đọc policy SỐNG của khách sạn (booking cũ chưa có snapshot). Nhờ snapshot, KS đổi chính
+ * sách sau khi khách đặt KHÔNG làm đổi điều khoản của đơn cũ.
+ */
+const resolveBookingPolicy = (booking: {
+  cancellationPolicy: Prisma.JsonValue | null;
+  hotel: { settings: Prisma.JsonValue | null };
+}): CancellationPolicy =>
+  booking.cancellationPolicy
+    ? parseCancellationPolicy(booking.cancellationPolicy)
+    : readCancellationPolicy(booking.hotel.settings);
 
 export class BookingService {
   /**
@@ -252,10 +270,13 @@ export class BookingService {
         isActive: true,
         hotel: { isActive: true, isListed: true, deletedAt: null },
       },
+      include: { hotel: { select: { settings: true } } }, // để snapshot chính sách huỷ lúc đặt
     });
     if (!roomType) {
       throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy loại phòng trong khách sạn này');
     }
+    // Đóng băng chính sách huỷ HIỆN TẠI của KS vào booking (xem resolveBookingPolicy)
+    const cancellationSnapshot = readCancellationPolicy(roomType.hotel.settings);
     // Số khách: nhận cách mới (numAdults/numChildren) hoặc cũ (numGuests). Chỉ có numGuests ⇒ coi tất
     // cả là người lớn (tương thích ngược). Tiền vẫn tính theo TỔNG khách, không phân biệt trẻ em.
     const numAdults = payload.numAdults ?? payload.numGuests ?? 1;
@@ -349,6 +370,8 @@ export class BookingService {
           source: 'website',
           specialRequests: payload.specialRequests || null,
           holdExpiresAt: isCash ? null : new Date(Date.now() + holdMinutes * 60 * 1000),
+          // đóng băng chính sách huỷ lúc đặt (cast: CancellationPolicy là JSON thuần nhưng thiếu index signature)
+          cancellationPolicy: cancellationSnapshot as unknown as Prisma.InputJsonValue,
         },
         include: bookingInclude,
       });
@@ -437,7 +460,7 @@ export class BookingService {
       throw new ApiError(httpStatus.FORBIDDEN, 'Chỉ nhân viên khách sạn mới được chọn lý do huỷ có tính chính sách');
     }
 
-    const policy = readCancellationPolicy(booking.hotel.settings);
+    const policy = resolveBookingPolicy(booking); // snapshot của đơn (fallback policy sống của KS)
     const checkInMoment = checkInMomentOf(booking.checkInDate, booking.hotel.checkInTime);
     const hoursBeforeCheckIn = (checkInMoment.getTime() - Date.now()) / (1000 * 60 * 60);
 
@@ -452,7 +475,7 @@ export class BookingService {
       ? new Prisma.Decimal(0)
       : reasonCode && FULL_REFUND_REASON_CODES.includes(reasonCode)
         ? paidTotal
-        : computeRefundAmount(policy, hoursBeforeCheckIn, paidTotal, booking.basePricePerNight);
+        : computeRefundAmount(policy, hoursBeforeCheckIn, paidTotal);
 
     return { booking, policy, checkInMoment, hoursBeforeCheckIn, paidPayment, paidTotal, refundAmount };
   };
@@ -469,6 +492,9 @@ export class BookingService {
 
     // Tiền đã trả = TỔNG các payment (booking có thể trả ghép), không phải một payment
     const paidAmount = paidTotal;
+    const appliedTier = appliedTierForHours(policy, hoursBeforeCheckIn);
+    const nextTier = nextTierAfter(policy, appliedTier);
+    const freeUntilHours = freeUntilHoursOf(policy);
     const canCancel =
       toUtcDate(booking.checkInDate) > todayInVietnamDate() &&
       (booking.status === 'pending' || booking.status === 'confirmed');
@@ -489,13 +515,23 @@ export class BookingService {
       refundAmount,
       // Phần bị giữ lại nếu huỷ ngay bây giờ
       penaltyAmount: paidAmount.sub(refundAmount),
-      // Chính sách đang áp + mốc thời gian, để FE giải thích "vì sao chỉ được hoàn ngần này"
-      freeUntilHours: policy.freeUntilHours,
-      latePenalty: policy.latePenalty,
-      isFreeCancellation: hoursBeforeCheckIn >= policy.freeUntilHours,
       hoursBeforeCheckIn: Math.round(hoursBeforeCheckIn * 10) / 10,
-      // Huỷ trước mốc này thì hoàn 100%
-      freeUntilMoment: new Date(checkInMoment.getTime() - policy.freeUntilHours * 60 * 60 * 1000),
+      // Bậc thang: bậc đang áp + % hoàn + toàn bộ bậc để FE vẽ bảng
+      appliedTier,
+      refundPercent: appliedTier?.refundPercent ?? 0,
+      tiers: policy.tiers,
+      // Cảnh báo bậc kế: sau `changesAt` thì % hoàn tụt xuống `refundPercent` (null nếu đã ở bậc thấp nhất)
+      nextTier:
+        appliedTier && nextTier
+          ? {
+              changesAt: new Date(checkInMoment.getTime() - appliedTier.minHoursBefore * 60 * 60 * 1000),
+              refundPercent: nextTier.refundPercent,
+            }
+          : null,
+      // Dẫn xuất để FE cũ không vỡ (CancellationLine đọc freeUntilHours)
+      freeUntilHours,
+      isFreeCancellation: (appliedTier?.refundPercent ?? 0) === 100,
+      freeUntilMoment: freeUntilHours != null ? new Date(checkInMoment.getTime() - freeUntilHours * 60 * 60 * 1000) : null,
       checkInMoment,
     };
   };
@@ -681,8 +717,17 @@ export class BookingService {
   };
 
   /**
-   * [M12] Staff/chủ KS xem booking của một khách sạn, lọc theo trạng thái + khoảng ngày nhận phòng.
+   * [M12] Staff/chủ KS xem booking của một khách sạn — nguồn dữ liệu của màn lịch tồn kho.
    * Quyền: chủ KS, manager, hoặc nhân viên được phân công (getOperableHotel).
+   *
+   * Hai điểm CỐ Ý khác các màn giám sát của PM/partner (applyOversightFilters):
+   *
+   * 1. `status` nhận cả mảng — màn lịch cần confirmed + checked_in + pending trong một lượt.
+   * 2. `fromDate`/`toDate` lọc theo KHOẢNG LƯU TRÚ, không theo ngày nhận phòng. Lọc theo checkInDate
+   *    làm đơn nhận 30/07 trả 09/08 biến mất khi xem tuần 06/08 — dù nó vẫn đang chiếm phòng suốt
+   *    tuần đó, và người dùng phải tự lùi ngày bắt đầu ra thật xa để mò lại. Hai kỳ chồng nhau khi
+   *    nhận phòng <= ngày cuối khoảng xem VÀ trả phòng > ngày đầu khoảng xem (ngày trả không phải
+   *    một đêm ngủ nên dùng dấu > chứ không phải >=).
    */
   listHotelBookings = async (
     hotelId: string,
@@ -697,13 +742,14 @@ export class BookingService {
 
     const where: Prisma.BookingWhereInput = { hotelId };
     if (filter.status) {
-      where.status = filter.status;
+      const statuses = Array.isArray(filter.status) ? filter.status : [filter.status];
+      where.status = { in: statuses };
     }
-    if (filter.fromDate || filter.toDate) {
-      where.checkInDate = {
-        ...(filter.fromDate && { gte: toUtcDate(filter.fromDate) }),
-        ...(filter.toDate && { lte: toUtcDate(filter.toDate) }),
-      };
+    if (filter.toDate) {
+      where.checkInDate = { lte: toUtcDate(filter.toDate) };
+    }
+    if (filter.fromDate) {
+      where.checkOutDate = { gt: toUtcDate(filter.fromDate) };
     }
 
     let orderBy: Prisma.BookingOrderByWithRelationInput = { checkInDate: 'asc' };
@@ -761,6 +807,138 @@ export class BookingService {
   };
 
   /**
+   * Phòng hợp lệ để gán cho một booking, đã kiểm đủ 3 điều kiện KHÔNG phụ thuộc thời điểm gán:
+   * đúng khách sạn, đúng loại phòng của đơn, và còn trong biên chế (isActive).
+   */
+  private loadRoomForAssignment = async (hotelId: string, roomId: string, roomTypeId: string) => {
+    const room = await prisma.room.findFirst({
+      where: { id: roomId, hotelId },
+      select: { id: true, roomNumber: true, roomTypeId: true, isActive: true },
+    });
+    if (!room) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy phòng trong khách sạn này');
+    }
+    if (room.roomTypeId !== roomTypeId) {
+      throw new ApiError(httpStatus.BAD_REQUEST, `Phòng ${room.roomNumber} không đúng loại phòng của đơn`);
+    }
+    if (!room.isActive) {
+      throw new ApiError(httpStatus.BAD_REQUEST, `Phòng ${room.roomNumber} đã ngừng sử dụng`);
+    }
+    return room;
+  };
+
+  /**
+   * [Front desk] GÁN TRƯỚC một phòng vật lý cho booking đã xác nhận nhưng chưa tới.
+   *
+   * Vì sao cần: bookingRoom trước đây chỉ sinh ra lúc check-in, nên một đơn `confirmed` cho đêm nay
+   * chiếm một suất trong kho mà KHÔNG gắn với phòng nào — bản đồ phòng hiện 10 phòng trống trong khi
+   * thực tế chỉ phát ra được 9, lễ tân dễ hứa nhầm với khách vãng lai.
+   *
+   * KHÔNG đụng tới rooms.status: cột đó là tình trạng của HÔM NAY, còn đơn được gán có thể của tuần
+   * sau — đánh dấu occupied từ bây giờ là khoá mất một phòng đang bán được. Việc gán chỉ thể hiện
+   * qua bookingRooms; check-in mới là lúc phòng chuyển sang occupied.
+   */
+  assignRoom = async (hotelId: string, bookingId: string, currentUser: User, payload: AssignRoomDto) => {
+    await hotelService.getOperableHotel(hotelId, currentUser);
+    const booking = await prisma.booking.findFirst({ where: { id: bookingId, hotelId } });
+    if (!booking) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy booking trong khách sạn này');
+    }
+    if (booking.status !== 'confirmed') {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        'Chỉ gán phòng trước cho booking đã xác nhận — đơn đang lưu trú thì đổi phòng ở mục Front desk'
+      );
+    }
+
+    const room = await this.loadRoomForAssignment(hotelId, payload.roomId, booking.roomTypeId);
+    const checkIn = toUtcDate(booking.checkInDate);
+    const checkOut = toUtcDate(booking.checkOutDate);
+    // Đêm cuối khách ngủ = ngày trả phòng trừ 1: đợt chặn đúng ngày trả phòng không ảnh hưởng gì.
+    const lastNight = new Date(checkOut);
+    lastNight.setUTCDate(lastNight.getUTCDate() - 1);
+
+    // Chỉ 'ooo' mới cản: 'oos' là ngưng phục vụ trong ngày (kê lại đồ), phòng vẫn bán và vẫn ở được.
+    const block = await prisma.roomBlock.findFirst({
+      where: {
+        roomId: room.id,
+        blockType: 'ooo',
+        resolvedAt: null,
+        startDate: { lte: lastNight },
+        endDate: { gte: checkIn },
+      },
+      select: { startDate: true, endDate: true },
+    });
+    if (block) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        `Phòng ${room.roomNumber} đang bị chặn ${block.startDate.toISOString().slice(0, 10)} → ` +
+          `${block.endDate.toISOString().slice(0, 10)}, trùng kỳ ở của đơn`
+      );
+    }
+
+    return prisma.$transaction(async (tx) => {
+      // Khoá dòng phòng suốt giao dịch. Không có nó, hai lễ tân cùng gán một phòng cho hai đơn trùng
+      // ngày sẽ CÙNG đọc thấy "chưa ai gán" rồi cùng ghi — kiểm tra trùng ở dưới phải nhìn thấy bản
+      // ghi của người kia thì mới có tác dụng.
+      await tx.$queryRaw`SELECT id FROM rooms WHERE id = ${room.id}::uuid FOR UPDATE`;
+
+      // Hai kỳ ở chồng nhau khi: đơn kia nhận phòng TRƯỚC ngày trả của đơn này và trả phòng SAU ngày
+      // nhận của đơn này (dấu < và > chứ không phải <=/>=: khách đi buổi sáng, khách mới đến buổi
+      // chiều cùng ngày là bình thường).
+      const conflict = await tx.bookingRoom.findFirst({
+        where: {
+          roomId: room.id,
+          bookingId: { not: bookingId },
+          booking: {
+            status: { in: ['confirmed', 'checked_in'] },
+            checkInDate: { lt: checkOut },
+            checkOutDate: { gt: checkIn },
+          },
+        },
+        select: { booking: { select: { bookingCode: true, checkInDate: true, checkOutDate: true } } },
+      });
+      if (conflict) {
+        throw new ApiError(
+          httpStatus.CONFLICT,
+          `Phòng ${room.roomNumber} đã gán cho đơn ${conflict.booking.bookingCode} ` +
+            `(${conflict.booking.checkInDate.toISOString().slice(0, 10)} → ` +
+            `${conflict.booking.checkOutDate.toISOString().slice(0, 10)})`
+        );
+      }
+
+      // Xoá rồi tạo lại thay vì update: bookingRoom không giữ dữ liệu gì ngoài mốc gán, và cách này
+      // xử lý luôn ca "đổi sang phòng khác" mà không cần gọi DELETE trước.
+      await tx.bookingRoom.deleteMany({ where: { bookingId } });
+      await tx.bookingRoom.create({ data: { bookingId, roomId: room.id, assignedAt: new Date() } });
+
+      return tx.booking.findUniqueOrThrow({ where: { id: bookingId }, include: staffBookingInclude });
+    });
+  };
+
+  /**
+   * [Front desk] Gỡ phòng đã gán trước, trả đơn về trạng thái "chưa chốt phòng".
+   *
+   * Chỉ gỡ được khi đơn CHƯA check-in: sau khi khách đã nhận phòng thì bookingRoom là bằng chứng
+   * khách đang ở phòng nào — bỏ nó đi là mất dấu, phải đi qua check-out.
+   */
+  releaseAssignedRoom = async (hotelId: string, bookingId: string, currentUser: User) => {
+    await hotelService.getOperableHotel(hotelId, currentUser);
+    const booking = await prisma.booking.findFirst({ where: { id: bookingId, hotelId } });
+    if (!booking) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy booking trong khách sạn này');
+    }
+    if (booking.status !== 'confirmed') {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        'Chỉ gỡ được phòng gán trước của booking đã xác nhận — khách đã nhận phòng thì trả phòng ở mục Front desk'
+      );
+    }
+    await prisma.bookingRoom.deleteMany({ where: { bookingId } });
+    return prisma.booking.findUniqueOrThrow({ where: { id: bookingId }, include: staffBookingInclude });
+  };
+
+  /**
    * [M13] Check-in khách: chỉ booking đã confirmed (đã thanh toán). Trong một transaction:
    * confirmed→checked_in (có điều kiện), gán MỘT phòng vật lý trống đúng loại (giành phòng có
    * điều kiện để hai quầy check-in không gán trùng phòng), đánh dấu voucher đã dùng.
@@ -800,17 +978,28 @@ export class BookingService {
         throw new ApiError(httpStatus.BAD_REQUEST, 'Booking không còn ở trạng thái xác nhận');
       }
 
-      // Chọn một phòng vật lý trống đúng loại (hoặc đúng phòng staff chỉ định nếu có)
+      // Thứ tự ưu tiên khi chọn phòng vật lý:
+      //  1. phòng staff chỉ định ngay lúc check-in (đổi ý ở quầy thì lời sau cùng thắng)
+      //  2. phòng đã GÁN TRƯỚC cho đơn này (assignRoom) — không chọn lại, nếu không thì việc chốt
+      //     phòng từ hôm trước thành vô nghĩa và khách được hứa một đằng nhận một nẻo
+      //  3. bất kỳ phòng trống nào đúng loại
+      const preAssigned = await tx.bookingRoom.findFirst({ where: { bookingId }, select: { roomId: true } });
+      const desiredRoomId = payload.roomId ?? preAssigned?.roomId;
       const room = await tx.room.findFirst({
         where: {
           hotelId,
           roomTypeId: booking.roomTypeId,
           status: 'available',
-          ...(payload.roomId && { id: payload.roomId }),
+          ...(desiredRoomId && { id: desiredRoomId }),
         },
       });
       if (!room) {
-        throw new ApiError(httpStatus.BAD_REQUEST, 'Không còn phòng trống đúng loại để bàn giao');
+        throw new ApiError(
+          httpStatus.BAD_REQUEST,
+          desiredRoomId
+            ? 'Phòng đã chọn chưa sẵn sàng bàn giao (đang có khách / đang dọn / đang bị chặn) — chọn phòng khác'
+            : 'Không còn phòng trống đúng loại để bàn giao'
+        );
       }
       // Giành phòng có điều kiện: chỉ thành công khi phòng vẫn 'available'.
       // Ghi cả foStatus — đây là chiều LỄ TÂN, và là nơi DUY NHẤT sinh ra 'occupied' (nó phải đi
@@ -822,6 +1011,9 @@ export class BookingService {
       if (claimed.count === 0) {
         throw new ApiError(httpStatus.BAD_REQUEST, 'Phòng vừa được nhận, vui lòng thử phòng khác');
       }
+      // Dọn bản ghi gán trước (nếu có) rồi ghi lại: staff có thể vừa đổi sang phòng khác ở quầy,
+      // và bookingRoom không giữ dữ liệu gì ngoài mốc gán nên xoá đi không mất lịch sử.
+      await tx.bookingRoom.deleteMany({ where: { bookingId } });
       await tx.bookingRoom.create({ data: { bookingId, roomId: room.id, assignedAt: new Date() } });
 
       if (booking.voucher) {

@@ -2,21 +2,26 @@ import { api } from '@/lib/api';
 import { cleanParams } from '@/utils/cleanParams';
 import type { Paginated } from '@/types/api.type';
 import type {
+  AssignRoomPayload,
   CheckInPayload,
   CheckOutPayload,
   Conversation,
   ConversationSummary,
   ConversationsParams,
+  CreateRoomBlockPayload,
   HousekeepingParams,
   HousekeepingTask,
   Message,
   ReplyPayload,
+  RoomBlock,
+  RoomBlockResult,
   StaffAssignedHotel,
   StaffBooking,
   StaffBookingsParams,
   StaffRoom,
   StaffRoomsParams,
   RoomStatusUpdatable,
+  UpdateRoomBlockPayload,
 } from '@/types/staff.type';
 
 export const staffService = {
@@ -70,6 +75,27 @@ export const staffService = {
     const { data } = await api.post<StaffBooking>(
       `/hotels/${hotelId}/bookings/${bookingId}/check-in`,
       payload,
+    );
+    return data;
+  },
+
+  /** `POST /hotels/:hotelId/bookings/:bookingId/assign-room` — chốt trước phòng vật lý. */
+  async assignRoom(
+    hotelId: string,
+    bookingId: string,
+    payload: AssignRoomPayload,
+  ): Promise<StaffBooking> {
+    const { data } = await api.post<StaffBooking>(
+      `/hotels/${hotelId}/bookings/${bookingId}/assign-room`,
+      payload,
+    );
+    return data;
+  },
+
+  /** `DELETE /hotels/:hotelId/bookings/:bookingId/assign-room` — gỡ phòng đã gán trước. */
+  async releaseAssignedRoom(hotelId: string, bookingId: string): Promise<StaffBooking> {
+    const { data } = await api.delete<StaffBooking>(
+      `/hotels/${hotelId}/bookings/${bookingId}/assign-room`,
     );
     return data;
   },
@@ -150,6 +176,53 @@ export const staffService = {
     const { data } = await api.patch<StaffRoom>(
       `/hotels/${hotelId}/rooms/${roomId}/status`,
       { status },
+    );
+    return data;
+  },
+
+  /** `GET /hotels/:hotelId/room-blocks` — danh sách đợt chặn phòng (mặc định chỉ đợt chưa xử lý). */
+  async listRoomBlocks(
+    hotelId: string,
+    params: { includeResolved?: boolean } = {},
+  ): Promise<RoomBlock[]> {
+    const { data } = await api.get<RoomBlock[]>(
+      `/hotels/${hotelId}/room-blocks`,
+      { params: cleanParams(params) },
+    );
+    return data;
+  },
+
+  /** `POST /hotels/:hotelId/rooms/:roomId/blocks` — tạo đợt chặn (khẩn cấp). */
+  async createRoomBlock(
+    hotelId: string,
+    roomId: string,
+    payload: CreateRoomBlockPayload,
+  ): Promise<RoomBlockResult> {
+    const { data } = await api.post<RoomBlockResult>(
+      `/hotels/${hotelId}/rooms/${roomId}/blocks`,
+      payload,
+    );
+    return data;
+  },
+
+  /** `PATCH /hotels/:hotelId/rooms/:roomId/blocks/:blockId` — gia hạn/rút ngắn đợt chặn. */
+  async updateRoomBlock(
+    hotelId: string,
+    roomId: string,
+    blockId: string,
+    payload: UpdateRoomBlockPayload,
+  ): Promise<RoomBlockResult> {
+    const { data } = await api.patch<RoomBlockResult>(
+      `/hotels/${hotelId}/rooms/${roomId}/blocks/${blockId}`,
+      payload,
+    );
+    return data;
+  },
+
+  /** `DELETE /hotels/:hotelId/rooms/:roomId/blocks/:blockId` — đóng đợt chặn (soft resolve). */
+  async resolveRoomBlock(hotelId: string, roomId: string, blockId: string): Promise<RoomBlock> {
+    const { data } = await api.delete<RoomBlock>(
+      `/hotels/${hotelId}/rooms/${roomId}/blocks/${blockId}`,
     );
     return data;
   },

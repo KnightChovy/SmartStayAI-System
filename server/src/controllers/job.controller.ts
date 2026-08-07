@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import catchAsync from '../utils/catchAsync';
-import { bookingService, adminService, refundService, commissionRateService } from '../services';
+import { bookingService, adminService, refundService, commissionRateService, roomBlockService } from '../services';
 
 // Các handler kích TAY các job nền (qua /v1/internal/jobs/..., chặn bằng cronAuth).
 // Các job này đã tự chạy theo lịch trong config/scheduler.ts — đây chỉ là nút bấm khi cần chạy ngay.
@@ -27,6 +27,12 @@ export class JobController {
   autoApproveRefunds = catchAsync(async (_req: Request, res: Response): Promise<void> => {
     const approved = await refundService.autoApproveStaleRefunds();
     res.send({ approved });
+  });
+
+  // Rà lại nhãn rooms.status theo ngày hiện tại (block bắt đầu/kết thúc hôm nay)
+  syncRoomStatus = catchAsync(async (_req: Request, res: Response): Promise<void> => {
+    const synced = await roomBlockService.syncStatusForToday();
+    res.send({ synced });
   });
 
   // Nhắc đối tác trước khi ưu đãi hoa hồng hết hạn (mốc 30 / 14 / 7 ngày)

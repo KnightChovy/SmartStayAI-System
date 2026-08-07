@@ -14,5 +14,6 @@ router.post('/jobs/settle-commissions', cronAuth, jobController.settleCommission
 router.post('/jobs/auto-approve-refunds', cronAuth, jobController.autoApproveRefunds);
 router.post('/jobs/credit-wallet-refunds', cronAuth, jobController.creditWalletRefunds);
 router.post('/jobs/remind-commission-expiry', cronAuth, jobController.remindCommissionExpiry);
+router.post('/jobs/sync-room-status', cronAuth, jobController.syncRoomStatus);
 
 export default router;

@@ -11,6 +11,13 @@ router.get('/overview', auth('viewPlatformStats'), adminController.getOverview);
 
 // Doanh thu nền tảng (GMV, hoa hồng, net, so sánh kỳ trước) — viewPlatformStats
 router.get('/revenue', auth('viewPlatformStats'), validate(adminValidation.getPlatformRevenue), adminController.getPlatformRevenue);
+// Doanh thu CHI TIẾT theo từng đối tác / khách sạn / thành phố (drill-down) — viewPlatformStats
+router.get(
+  '/revenue/breakdown',
+  auth('viewPlatformStats'),
+  validate(adminValidation.getRevenueBreakdown),
+  adminController.getRevenueBreakdown
+);
 
 // ===== Pha 3 — Hoa hồng / payout (manageCommissions) =====
 router.get('/commissions', auth('manageCommissions'), validate(adminValidation.listCommissions), adminController.listCommissions);

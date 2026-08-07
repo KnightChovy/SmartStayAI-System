@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -32,6 +32,13 @@ export default function StaffCheckInScreen() {
 
   const [voucherCode, setVoucherCode] = useState('');
   const [roomId, setRoomId] = useState<string | undefined>(undefined);
+
+  // Booking đã được gán trước phòng (qua "Room assignment" ở booking detail) → chọn sẵn phòng đó,
+  // vì BE cũng ưu tiên bookingRoom đã gán khi payload không kèm roomId.
+  const preAssignedRoomId = booking?.bookingRooms?.[0]?.room?.id;
+  useEffect(() => {
+    if (preAssignedRoomId) setRoomId(preAssignedRoomId);
+  }, [preAssignedRoomId]);
 
   // Available rooms of the booking's type → staff can pick manually (or let BE auto-assign).
   const availableRooms = (roomsPage?.results ?? []).filter(
@@ -128,7 +135,9 @@ export default function StaffCheckInScreen() {
                 Assign room
               </Text>
               <Text size="2xs" className="text-gray-400 mb-3">
-                Leave empty to auto-assign a free room of the same type.
+                {preAssignedRoomId
+                  ? 'This room was pre-assigned earlier — pick a different one to override it.'
+                  : 'Leave empty to auto-assign a free room of the same type.'}
               </Text>
               {availableRooms.length === 0 ? (
                 <Text size="sm" className="text-gray-400">

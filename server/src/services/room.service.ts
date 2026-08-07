@@ -2,21 +2,31 @@ import httpStatus from 'http-status';
 import type { Prisma, User, HkStatus, RoomStatus } from '@prisma/client';
 import prisma from '../config/prisma';
 import ApiError from '../utils/ApiError';
-import { todayInVietnamDate } from '../utils/dates';
+import { todayInVietnamDate, toUtcDate, eachDayInclusive } from '../utils/dates';
 import { cleaningSlaLevel } from '../utils/room-status';
 import { hotelService } from './hotel.service';
 import { roomBlockService } from './room-block.service';
-import type { CreateRoomDto, UpdateRoomDto, RoomFilter, RoomQueryOptions } from '../dto/room.dto';
+import { availabilityService } from './availability.service';
+import type {
+  CreateRoomDto,
+  UpdateRoomDto,
+  RoomFilter,
+  RoomQueryOptions,
+  InventoryCalendarRange,
+} from '../dto/room.dto';
 
 const roomTypeInclude = { roomType: { select: { id: true, name: true } } };
 
 /**
- * Cột status cũ chỉ có 'maintenance' chứ không có ngày dự kiến xong. Khi ai đó vẫn bấm Maintenance
- * qua endpoint cũ, ta tạo một đợt chặn có hạn thay vì chặn vô thời hạn — quản lý vào sửa lại ngày
- * hoặc bấm "đã sửa xong" là hết. Bằng đúng số ngày mà migration dùng để backfill dữ liệu cũ.
+ * Lời nhắc dùng chung cho mọi cửa còn nhận `status: 'maintenance'`.
+ *
+ * Trước đây các cửa này tự tạo một đợt chặn cứng 7 ngày với lý do bịa sẵn — người bấm không hề khai
+ * ngày dự kiến xong, mà phòng thì biến mất khỏi kho bán suốt một tuần (dữ liệu deploy còn nguyên
+ * vết). Bảo trì luôn phải có KHOẢNG NGÀY và LÝ DO THẬT, nên chỉ còn một đường vào duy nhất.
  */
-const LEGACY_BLOCK_DAYS = 7;
-const LEGACY_BLOCK_REASON = 'Chặn nhanh từ Room map — chưa nhập ngày dự kiến xong';
+const MAINTENANCE_NEEDS_BLOCK =
+  'Phòng đang sửa phải khai khoảng ngày: dùng POST /hotels/{hotelId}/rooms/{roomId}/blocks ' +
+  '(blockType, startDate, endDate, reason) thay vì đổi trạng thái phòng';
 
 export class RoomService {
   /**
@@ -65,6 +75,9 @@ export class RoomService {
         'Không tạo phòng ở trạng thái "có khách" — trạng thái đó do check-in sinh ra'
       );
     }
+    if (payload.status === 'maintenance') {
+      throw new ApiError(httpStatus.BAD_REQUEST, MAINTENANCE_NEEDS_BLOCK);
+    }
     await this.assertRoomNumberFree(hotelId, payload.roomNumber);
 
     const room = await prisma.$transaction(async (tx) => {
@@ -85,10 +98,6 @@ export class RoomService {
       return created;
     });
 
-    if (payload.status === 'maintenance') {
-      await this.blockForLegacyMaintenance(hotelId, room.id, currentUser);
-      return prisma.room.findUniqueOrThrow({ where: { id: room.id }, include: roomTypeInclude });
-    }
     return room;
   };
 
@@ -153,29 +162,21 @@ export class RoomService {
     });
   };
 
-  /** Bắc cầu cho lối vào cũ: bấm Maintenance mà không nhập ngày ⇒ chặn OOO có hạn LEGACY_BLOCK_DAYS. */
-  private blockForLegacyMaintenance = async (hotelId: string, roomId: string, currentUser: User) => {
-    const startDate = todayInVietnamDate();
-    const endDate = new Date(startDate);
-    endDate.setUTCDate(endDate.getUTCDate() + LEGACY_BLOCK_DAYS);
-    return roomBlockService.createBlock(hotelId, roomId, currentUser, {
-      blockType: 'ooo',
-      startDate,
-      endDate,
-      reason: LEGACY_BLOCK_REASON,
-    });
-  };
-
   /**
-   * Lối vào CŨ của room map (`PATCH /rooms/:id/status`) — giữ nguyên để FE hiện tại không gãy,
-   * nhưng mỗi giá trị nay được dịch về đúng chiều của nó:
+   * @deprecated Lối vào CŨ của room map (`PATCH /rooms/:id/status`). Giữ lại để client cũ không gãy,
+   * nhưng nay chỉ còn là bí danh của PATCH .../housekeeping — cột status không có chiều thời gian
+   * nên mọi thứ liên quan tới NGÀY đều phải đi qua room_blocks.
    *
-   *  - available   → buồng phòng báo phòng đã sạch, đồng thời gỡ mọi đợt chặn còn hiệu lực
+   *  - available   → buồng phòng báo phòng đã dọn xong ('clean')
    *  - cleaning    → buồng phòng nhận việc dọn (bắt đầu chạy SLA)
-   *  - maintenance → tạo đợt chặn có hạn (FE nên chuyển sang POST /blocks để nhập ngày + lý do thật)
-   *  - occupied    → TỪ CHỐI: trạng thái này phải đi kèm một booking, chỉ check-in mới tạo ra được.
-   *                  Bấm tay ở đây sẽ làm lễ tân không bàn giao được phòng vì không còn phòng
-   *                  'available' nào để gán, dù thực tế phòng vẫn trống.
+   *  - maintenance → TỪ CHỐI: phải khai khoảng ngày qua POST .../blocks
+   *  - occupied    → TỪ CHỐI: phải đi kèm một booking, chỉ check-in mới tạo ra được. Bấm tay ở đây
+   *                  sẽ làm lễ tân không bàn giao được phòng vì không còn phòng 'available' nào để
+   *                  gán, dù thực tế phòng vẫn trống.
+   *
+   * KHÔNG còn tự gỡ đợt chặn khi bấm 'available': một cú bấm cho HÔM NAY từng xoá sạch cả những đợt
+   * chặn của tuần sau do người khác đặt lịch. Muốn trả phòng về kho thì gỡ đúng đợt chặn đó
+   * (DELETE .../blocks/{blockId}).
    */
   updateRoomStatus = async (hotelId: string, roomId: string, currentUser: User, status: RoomStatus) => {
     await hotelService.getOperableHotel(hotelId, currentUser);
@@ -187,6 +188,9 @@ export class RoomService {
         'Trạng thái "có khách" chỉ sinh ra từ check-in — đổi ở mục Front desk, không đổi ở bản đồ phòng'
       );
     }
+    if (status === 'maintenance') {
+      throw new ApiError(httpStatus.BAD_REQUEST, MAINTENANCE_NEEDS_BLOCK);
+    }
     if (room.foStatus === 'occupied') {
       throw new ApiError(
         httpStatus.BAD_REQUEST,
@@ -194,25 +198,10 @@ export class RoomService {
       );
     }
 
-    if (status === 'maintenance') {
-      await this.blockForLegacyMaintenance(hotelId, roomId, currentUser);
-      return prisma.room.findUniqueOrThrow({ where: { id: roomId }, include: roomTypeInclude });
-    }
-
-    // 'available' nghĩa là phòng dùng được lại ⇒ gỡ luôn các đợt chặn còn hiệu lực, nếu không thì
-    // block vẫn đè lên và staff bấm mãi vẫn thấy Maintenance.
-    if (status === 'available') {
-      const activeBlocks = await prisma.roomBlock.findMany({
-        where: { roomId, resolvedAt: null },
-        select: { id: true },
-      });
-      for (const block of activeBlocks) {
-        // eslint-disable-next-line no-await-in-loop
-        await roomBlockService.resolveBlock(hotelId, roomId, block.id, currentUser);
-      }
-    }
-
-    return this.updateHousekeeping(hotelId, roomId, currentUser, status === 'cleaning' ? 'cleaning' : 'inspected');
+    // 'clean' chứ không phải 'inspected': dọn xong không có nghĩa là đã được giám sát duyệt. Ghi
+    // thẳng 'inspected' ở đây chính là lý do gần như mọi phòng trên deploy đang mang nhãn đã-duyệt
+    // mà chưa ai kiểm tra bao giờ.
+    return this.updateHousekeeping(hotelId, roomId, currentUser, status === 'cleaning' ? 'cleaning' : 'clean');
   };
 
   /** Cập nhật thông tin phòng (số phòng, tầng, ghi chú, ngừng dùng) + trạng thái vận hành. */
@@ -268,6 +257,63 @@ export class RoomService {
         await this.shiftFutureInventory(tx, room.roomTypeId, -1);
       }
     });
+  };
+
+  /**
+   * Lịch tồn kho THEO TỪNG ĐÊM: mỗi loại phòng × mỗi ngày còn bao nhiêu phòng bán được.
+   *
+   * Vì sao cần: `getStayQuotes` chỉ trả MIN của cả kỳ ở, nên màn lịch tồn kho của staff không có
+   * nguồn nào để đọc — FE phải NHÂN BẢN công thức của BE từ 3 endpoint rời (rooms + room-blocks +
+   * bookings). Mỗi lần BE đổi công thức là hai bên lệch nhau trong im lặng (đã xảy ra một lần).
+   *
+   * Dùng ĐÚNG công thức của availability.service để con số ở đây và số khách nhìn thấy lúc đặt phòng
+   * không thể khác nhau:
+   *  - đêm ĐÃ CÓ dòng room_availability → totalRooms − bookedRooms (dòng này đã trừ đợt chặn OOO rồi)
+   *  - đêm CHƯA CÓ dòng                 → chưa ai đặt ⇒ đếm lại từ bảng rooms, trừ phòng đang bị chặn
+   */
+  getInventoryCalendar = async (hotelId: string, currentUser: User, range: InventoryCalendarRange) => {
+    await hotelService.getOperableHotel(hotelId, currentUser);
+    const days = eachDayInclusive(range.from, range.to);
+    const roomTypes = await prisma.roomType.findMany({
+      where: { hotelId },
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' },
+    });
+    if (roomTypes.length === 0 || days.length === 0) {
+      return { from: toUtcDate(range.from), to: toUtcDate(range.to), results: [] };
+    }
+
+    const roomTypeIds = roomTypes.map((roomType) => roomType.id);
+    const [sellableByNight, availabilityRows] = await Promise.all([
+      availabilityService.countSellableRoomsPerDate(roomTypeIds, days),
+      prisma.roomAvailability.findMany({
+        where: { roomTypeId: { in: roomTypeIds }, date: { in: days } },
+        select: { roomTypeId: true, date: true, totalRooms: true, bookedRooms: true },
+      }),
+    ]);
+    const rowByKey = new Map(availabilityRows.map((row) => [`${row.roomTypeId}:${row.date.getTime()}`, row]));
+
+    const results = roomTypes.flatMap((roomType) =>
+      days.map((date) => {
+        const key = `${roomType.id}:${date.getTime()}`;
+        const row = rowByKey.get(key);
+        const totalRooms = row ? row.totalRooms : sellableByNight.get(key) ?? 0;
+        const bookedRooms = row ? row.bookedRooms : 0;
+        return {
+          roomTypeId: roomType.id,
+          roomTypeName: roomType.name,
+          date,
+          totalRooms,
+          bookedRooms,
+          availableRooms: Math.max(0, totalRooms - bookedRooms),
+          // Để FE phân biệt được số ĐÃ CHỐT trong bảng tồn kho với số suy ra từ bảng rooms — hai
+          // nguồn này lệch nhau khi đối tác chỉnh tay totalRooms.
+          source: row ? ('availability' as const) : ('derived' as const),
+        };
+      })
+    );
+
+    return { from: days[0], to: days[days.length - 1], results };
   };
 
   /**

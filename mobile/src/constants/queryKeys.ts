@@ -68,6 +68,8 @@ export const queryKeys = {
       ['staff', hotelId, 'housekeeping', params] as const,
     rooms: (hotelId: string, params: StaffRoomsParams) =>
       ['staff', hotelId, 'rooms', params] as const,
+    roomBlocks: (hotelId: string, includeResolved: boolean) =>
+      ['staff', hotelId, 'room-blocks', includeResolved] as const,
     conversations: (hotelId: string, params: ConversationsParams) =>
       ['staff', hotelId, 'conversations', params] as const,
     conversation: (hotelId: string, conversationId: string) =>
