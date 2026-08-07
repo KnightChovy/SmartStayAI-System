@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useRoomTypes } from '@/hooks/hotels';
 import { staffService } from '@/services/staff.service';
 import type { HotelBooking, InventoryCalendar } from '@/types/staff.types';
-import { buildInventoryCalendar, shiftDateKey } from '@/utils/inventoryCalendar';
+import { buildInventoryGrid, shiftDateKey } from '@/utils/inventoryCalendar';
 import { staffKeys } from './keys';
 import { STAFF_LIVE } from './live';
 import { useHotelRooms } from './use-hotel-rooms';
@@ -55,37 +55,54 @@ async function fetchBookingsCovering(
   return { bookings, truncated: pages > MAX_PAGES };
 }
 
+interface InventoryCalendarOptions {
+  /**
+   * Có tải thêm nguồn thô cho **bản đồ phòng của một ngày** hay không.
+   *
+   * Mặc định `false`: lưới tồn kho giờ chạy bằng một request duy nhất, còn phần này tốn tới 20
+   * request phân trang booking — chỉ tải khi staff thực sự mở bản đồ phòng.
+   */
+  withRoomDetail?: boolean;
+}
+
 /**
- * Lịch tồn kho theo ngày cho một khách sạn — hook TỔNG HỢP, không phải một endpoint.
+ * Lịch tồn kho theo ngày cho một khách sạn.
  *
- * BE chưa có endpoint trả tồn kho theo từng ngày, nên ghép từ ba nguồn sẵn có:
- * phòng (`useHotelRooms`) + đợt chặn (`useRoomBlocks`) + booking. Toàn bộ phép tính nằm trong
- * `utils/inventoryCalendar.ts` để đối chiếu được với công thức của BE.
+ * **Lưới** đọc thẳng `GET /hotels/:hotelId/inventory/calendar` — nguồn duy nhất, cùng bảng
+ * `room_availability` mà khách thấy lúc đặt phòng. (Bản trước tự ghép rooms + blocks + bookings ở
+ * client và nhân bản công thức của BE, nên lệch ngay khi đối tác chỉnh tay `totalRooms`.)
+ *
+ * **Bản đồ phòng của một ngày** thì endpoint trên không nói được — nó chỉ trả con số tổng, không có
+ * phòng nào đang bị chặn hay ai đang ở phòng nào — nên vẫn cần 3 nguồn thô, và chỉ tải khi cần.
  */
 export function useInventoryCalendar(
   hotelId: string | undefined,
   from: string,
-  to: string
+  to: string,
+  { withRoomDetail = false }: InventoryCalendarOptions = {}
 ) {
   // Tự làm mới: khách đặt phòng trên web/app KHÔNG chạy mutation nào ở máy lễ tân nên không có gì
   // invalidate cache — thiếu chỗ này thì lịch đứng im cho tới khi F5. Xem `live.ts`.
-  const roomsQuery = useHotelRooms(hotelId, {}, STAFF_LIVE);
-  const blocksQuery = useRoomBlocks(hotelId, false, STAFF_LIVE);
-  // Chỉ để xếp hàng theo phân khúc giá — danh sách phòng của staff không kèm `basePrice`.
-  // KHÔNG truyền ngày: có ngày là BE tính luôn tồn kho + giá cả kỳ, ở đây chỉ cần giá gốc.
-  const roomTypesQuery = useRoomTypes(hotelId ?? '');
-
-  const bookingsQuery = useQuery({
+  const calendarQuery = useQuery({
     queryKey: staffKeys.inventory(hotelId ?? '', from, to),
-    queryFn: () => fetchBookingsCovering(hotelId as string, from, to),
+    queryFn: () => staffService.getInventoryCalendar(hotelId as string, from, to),
     enabled: Boolean(hotelId && from && to),
-    // Nguồn đổi nhiều nhất — đơn mới của khách rơi vào đây.
     ...STAFF_LIVE,
   });
 
-  const rooms = roomsQuery.data;
-  const blocks = blocksQuery.data;
-  const bookingResult = bookingsQuery.data;
+  // Chỉ để xếp hàng theo phân khúc giá — endpoint lịch không trả giá.
+  // KHÔNG truyền ngày: có ngày là BE tính luôn tồn kho + giá cả kỳ, ở đây chỉ cần giá gốc.
+  const roomTypesQuery = useRoomTypes(hotelId ?? '');
+
+  const detailEnabled = Boolean(hotelId) && withRoomDetail;
+  const roomsQuery = useHotelRooms(detailEnabled ? hotelId : undefined, {}, STAFF_LIVE);
+  const blocksQuery = useRoomBlocks(detailEnabled ? hotelId : undefined, false, STAFF_LIVE);
+  const bookingsQuery = useQuery({
+    queryKey: staffKeys.inventoryBookings(hotelId ?? '', from, to),
+    queryFn: () => fetchBookingsCovering(hotelId as string, from, to),
+    enabled: detailEnabled && Boolean(from && to),
+    ...STAFF_LIVE,
+  });
 
   // `basePrice` là Decimal serialize thành chuỗi ⇒ ép số một lần ở đây, bỏ qua giá trị không parse được.
   const basePriceByType = useMemo(() => {
@@ -97,34 +114,32 @@ export function useInventoryCalendar(
     return map;
   }, [roomTypesQuery.data]);
 
-  const data: InventoryCalendar | undefined =
-    rooms && blocks && bookingResult
-      ? buildInventoryCalendar({
-          rooms,
-          blocks,
-          bookings: bookingResult.bookings,
-          basePriceByType,
-          from,
-          to,
-          truncated: bookingResult.truncated,
-        })
-      : undefined;
+  const response = calendarQuery.data;
+  const data: InventoryCalendar | undefined = useMemo(
+    () => (response ? buildInventoryGrid({ response, basePriceByType, from, to }) : undefined),
+    [response, basePriceByType, from, to]
+  );
+
+  const bookingResult = bookingsQuery.data;
 
   return {
     data,
-    // Nguồn thô để dựng bản đồ phòng của một ngày (`buildRoomDayView`) — dùng lại đúng cache này,
-    // không gọi thêm request nào.
-    rooms,
-    blocks,
-    bookings: bookingResult?.bookings,
     // Giá chỉ ảnh hưởng THỨ TỰ hàng, không phải con số ⇒ không chặn lịch hiện vì nó.
-    isLoading: roomsQuery.isLoading || blocksQuery.isLoading || bookingsQuery.isLoading,
-    isFetching:
-      roomsQuery.isFetching ||
-      blocksQuery.isFetching ||
-      bookingsQuery.isFetching ||
-      roomTypesQuery.isFetching,
-    isError: roomsQuery.isError || blocksQuery.isError || bookingsQuery.isError,
-    error: roomsQuery.error ?? blocksQuery.error ?? bookingsQuery.error,
+    isLoading: calendarQuery.isLoading,
+    isFetching: calendarQuery.isFetching || roomTypesQuery.isFetching,
+    isError: calendarQuery.isError,
+    error: calendarQuery.error,
+
+    // ----- Nguồn thô cho bản đồ phòng của một ngày (chỉ có khi `withRoomDetail`) -----
+    rooms: roomsQuery.data,
+    blocks: blocksQuery.data,
+    bookings: bookingResult?.bookings,
+    /** Booking bị cắt vì chạm trần phân trang ⇒ bản đồ phòng có thể thiếu đơn. */
+    bookingsTruncated: bookingResult?.truncated ?? false,
+    detailLoading:
+      detailEnabled &&
+      (roomsQuery.isLoading || blocksQuery.isLoading || bookingsQuery.isLoading),
+    detailError: roomsQuery.isError || blocksQuery.isError || bookingsQuery.isError,
+    detailErrorObject: roomsQuery.error ?? blocksQuery.error ?? bookingsQuery.error,
   };
 }

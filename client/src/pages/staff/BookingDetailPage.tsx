@@ -20,6 +20,8 @@ import { Label } from '@/components/ui/label';
 import {
   useHotelBooking,
   useHotelRooms,
+  useAssignRoom,
+  useReleaseAssignedRoom,
   useCheckIn,
   useCheckOut,
   useRecordCashPayment,
@@ -80,8 +82,13 @@ export default function BookingDetailPage() {
   const checkOut = useCheckOut(hotel?.id);
   const recordCash = useRecordCashPayment(hotel?.id);
   const noShow = useMarkNoShow(hotel?.id);
+  const assignRoom = useAssignRoom(hotel?.id);
+  const releaseRoom = useReleaseAssignedRoom(hotel?.id);
 
   const [roomId, setRoomId] = useState('');
+  /** Phòng đang chọn trong ô "gán trước" — tách khỏi `roomId` của lúc check-in. */
+  const [preAssignRoomId, setPreAssignRoomId] = useState('');
+  const [confirmRelease, setConfirmRelease] = useState(false);
   const [voucherCode, setVoucherCode] = useState('');
   const [lateCheckoutReason, setLateCheckoutReason] = useState('');
   const [confirmNoShow, setConfirmNoShow] = useState(false);
@@ -122,6 +129,19 @@ export default function BookingDetailPage() {
   const assignedRooms = booking.bookingRooms
     .map(r => r.room?.roomNumber ?? r.roomId.slice(0, 6))
     .join(', ');
+
+  /**
+   * Phòng có thể CHỐT TRƯỚC cho đơn này. Điều kiện bám đúng `loadRoomForAssignment` của BE: cùng
+   * loại phòng + còn dùng được. **Không** lọc theo `status`: đó là tình trạng của HÔM NAY, mà đơn
+   * được gán có thể của tuần sau — lọc theo nó sẽ giấu mất những phòng hoàn toàn hợp lệ. Trùng đợt
+   * chặn hay trùng đơn khác thì BE từ chối kèm lý do cụ thể, hiện nguyên văn qua toast.
+   */
+  const assignableRooms = (rooms ?? []).filter(
+    r => r.roomTypeId === booking.roomTypeId && r.isActive
+  );
+  const assignedRoomId = booking.bookingRooms[0]?.roomId ?? null;
+  const assignedRoomNumber = booking.bookingRooms[0]?.room?.roomNumber ?? null;
+  const assigning = assignRoom.isPending || releaseRoom.isPending;
 
   /** Runs a front-desk action and reports the outcome. BE messages surface verbatim on failure. */
   const run = async (action: () => Promise<unknown>, okMsg: string, fallbackErr: string) => {
@@ -198,6 +218,102 @@ export default function BookingDetailPage() {
               <Row label="Special requests" value={booking.specialRequests} />
             )}
           </Card>
+
+          {/*
+            Chốt phòng TRƯỚC khi khách tới. Trước khi BE có `assign-room`, phòng vật lý chỉ được
+            chọn lúc check-in ⇒ một đơn đã xác nhận cho đêm nay chiếm một suất trong kho mà không
+            gắn với phòng nào, và bản đồ phòng phải đoán. Gán ở đây là dữ liệu thật: bản đồ phòng
+            hiện đúng ô, và check-in sẽ dùng lại chính phòng này.
+          */}
+          {booking.status === 'confirmed' && (
+            <Card title="Room assignment">
+              <div className="flex items-center justify-between gap-4 py-1 text-sm">
+                <span className="text-slate-500">Assigned room</span>
+                <span
+                  className={
+                    assignedRoomNumber
+                      ? 'text-right font-medium text-slate-900'
+                      : 'text-right text-slate-400 italic'
+                  }
+                >
+                  {assignedRoomNumber ?? 'Not assigned yet'}
+                </span>
+              </div>
+
+              <p className="pt-1 text-xs text-slate-500">
+                {assignedRoomNumber
+                  ? 'Check-in will hand over this room unless you pick another one at the desk.'
+                  : 'Optional — leave it empty and check-in will pick any free room of this type.'}
+              </p>
+
+              <div className="flex flex-wrap items-end gap-2 pt-2">
+                <div className="min-w-50 flex-1 space-y-1.5">
+                  <Label htmlFor="pre-assign-room" className="text-xs text-slate-500">
+                    {assignedRoomNumber ? 'Move to another room' : 'Pick a room'}
+                  </Label>
+                  <select
+                    id="pre-assign-room"
+                    value={preAssignRoomId}
+                    onChange={e => setPreAssignRoomId(e.target.value)}
+                    disabled={assigning || assignableRooms.length === 0}
+                    className="h-9 w-full truncate rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-slate-400 focus:outline-none disabled:bg-slate-50"
+                  >
+                    <option value="">Select a room…</option>
+                    {assignableRooms.map(r => (
+                      <option key={r.id} value={r.id} disabled={r.id === assignedRoomId}>
+                        Room {r.roomNumber}
+                        {r.floor != null ? ` · floor ${r.floor}` : ''}
+                        {r.id === assignedRoomId ? ' · assigned' : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <Button
+                  variant="outline"
+                  disabled={assigning || !preAssignRoomId || preAssignRoomId === assignedRoomId}
+                  onClick={async () => {
+                    await run(
+                      () =>
+                        assignRoom.mutateAsync({
+                          bookingId: booking.id,
+                          roomId: preAssignRoomId,
+                        }),
+                      `Room ${
+                        assignableRooms.find(r => r.id === preAssignRoomId)?.roomNumber ?? ''
+                      } is now held for ${booking.customer.fullName}.`,
+                      'Could not assign this room.'
+                    );
+                    setPreAssignRoomId('');
+                  }}
+                >
+                  {assignRoom.isPending ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <BedDouble className="size-4" />
+                  )}
+                  {assignedRoomNumber ? 'Move' : 'Assign'}
+                </Button>
+
+                {assignedRoomId && (
+                  <Button
+                    variant="outline"
+                    className="border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                    disabled={assigning}
+                    onClick={() => setConfirmRelease(true)}
+                  >
+                    Unassign
+                  </Button>
+                )}
+              </div>
+
+              {assignableRooms.length === 0 && (
+                <p className="pt-1 text-xs text-rose-500">
+                  This hotel has no active rooms of this type.
+                </p>
+              )}
+            </Card>
+          )}
 
           <Card title="Customer">
             <Row label="Email" value={booking.customer.email} />
@@ -288,11 +404,19 @@ export default function BookingDetailPage() {
                     title={
                       roomId
                         ? availableRooms.find(r => r.id === roomId)?.roomNumber
-                        : 'Auto-assign an available room of this type'
+                        : assignedRoomNumber
+                          ? `Room ${assignedRoomNumber} was assigned in advance`
+                          : 'Auto-assign an available room of this type'
                     }
                     className="h-9 w-full truncate rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-slate-400 focus:outline-none disabled:bg-slate-50"
                   >
-                    <option value="">Auto-assign a room</option>
+                    {/* Đã chốt trước thì để trống KHÔNG phải "phòng bất kỳ" — BE ưu tiên phòng đã
+                        gán. Nói đúng tên việc, nếu không lễ tân tưởng phải chọn lại. */}
+                    <option value="">
+                      {assignedRoomNumber
+                        ? `Use assigned room ${assignedRoomNumber}`
+                        : 'Auto-assign a room'}
+                    </option>
                     {availableRooms.map(r => (
                       <option key={r.id} value={r.id}>
                         Room {r.roomNumber}
@@ -458,6 +582,23 @@ export default function BookingDetailPage() {
       />
 
       <ConfirmDialog
+        open={confirmRelease}
+        onClose={() => setConfirmRelease(false)}
+        onConfirm={async () => {
+          await run(
+            () => releaseRoom.mutateAsync({ bookingId: booking.id }),
+            `Room ${assignedRoomNumber ?? ''} released.`,
+            'Could not release this room.'
+          );
+          setConfirmRelease(false);
+        }}
+        loading={releaseRoom.isPending}
+        title={`Release room ${assignedRoomNumber ?? ''}?`}
+        confirmLabel="Unassign"
+        message={`The booking stays confirmed and keeps its place in inventory — it just goes back to having no room picked, and check-in will choose any free ${booking.roomType.name}.`}
+      />
+
+      <ConfirmDialog
         open={confirmLateCheckout}
         onClose={() => setConfirmLateCheckout(false)}
         onConfirm={async () => {
@@ -484,7 +625,11 @@ export default function BookingDetailPage() {
           checkOutDate={booking.checkOutDate}
           numNights={booking.numNights}
           voucherCode={effectiveVoucher || booking.voucher?.voucherCode}
-          roomNumber={availableRooms.find(r => r.id === roomId)?.roomNumber}
+          roomNumber={
+            availableRooms.find(r => r.id === roomId)?.roomNumber ??
+            assignedRoomNumber ??
+            undefined
+          }
           warning={checkInBlockText}
           blocking={checkInBlock === 'stay_ended'}
         />

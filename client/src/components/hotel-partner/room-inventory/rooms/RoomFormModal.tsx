@@ -10,8 +10,15 @@ import {
   TextareaField,
   FieldShell,
 } from '@/components/hotel-partner/shared/form-controls';
-import { ROOM_STATUS_OPTIONS } from '@/components/hotel-partner/shared/labels';
-import { roomFormSchema, type RoomFormValues } from '@/validations/hotel-management.validation';
+import {
+  EDITABLE_ROOM_STATUS_OPTIONS,
+  ROOM_STATUS_CONFIG,
+} from '@/components/hotel-partner/shared/labels';
+import {
+  isEditableRoomStatus,
+  roomFormSchema,
+  type RoomFormValues,
+} from '@/validations/hotel-management.validation';
 import { useCreateRoom, useUpdateRoom } from '@/hooks/hotel-management';
 import type {
   ManagedRoomType,
@@ -35,13 +42,20 @@ export function RoomFormModal({ open, onClose, hotelId, roomTypes, room }: RoomF
   const updateMutation = useUpdateRoom(hotelId);
   const isPending = createMutation.isPending || updateMutation.isPending;
 
+  /**
+   * Phòng đang `occupied`/`maintenance` thì trạng thái KHÔNG sửa được ở form này (BE trả 400).
+   * Nạp thẳng giá trị đó vào form sẽ để lại một giá trị không hợp lệ trong payload, nên quy về
+   * `available` cho form và bỏ hẳn `status` khỏi payload — xem `statusLocked` bên dưới.
+   */
+  const statusLocked = isEdit && !!room && !isEditableRoomStatus(room.status);
+
   const methods = useForm<RoomFormValues>({
     resolver: zodResolver(roomFormSchema),
     values: {
       roomTypeId: room?.roomTypeId ?? roomTypes[0]?.id ?? '',
       roomNumber: room?.roomNumber ?? '',
       floor: room?.floor != null ? String(room.floor) : '',
-      status: room?.status ?? 'available',
+      status: room && isEditableRoomStatus(room.status) ? room.status : 'available',
       notes: room?.notes ?? '',
     },
   });
@@ -54,7 +68,9 @@ export function RoomFormModal({ open, onClose, hotelId, roomTypes, room }: RoomF
         const dto: UpdateRoomDto = {
           roomNumber: values.roomNumber.trim(),
           floor,
-          status: values.status,
+          // Trạng thái bị khoá ⇒ không gửi field này (BE chỉ cần ≥1 field), tránh ghi đè trạng thái
+          // do check-in / đợt chặn sinh ra bằng một giá trị form.
+          ...(statusLocked ? {} : { status: values.status }),
           notes,
         };
         await updateMutation.mutateAsync({ roomId: room.id, dto });
@@ -134,12 +150,31 @@ export function RoomFormModal({ open, onClose, hotelId, roomTypes, room }: RoomF
             />
           </div>
 
-          <SelectField<RoomFormValues>
-            name="status"
-            label="Status"
-            required
-            options={ROOM_STATUS_OPTIONS}
-          />
+          {/*
+            Chỉ Available/Cleaning. "Maintenance" từng nằm ở đây và bấm là BE âm thầm chặn phòng
+            suốt 7 ngày kể từ hôm nay với lý do bịa sẵn — bảo trì giờ phải khai khoảng ngày ở
+            Rooms & inventory. "Occupied" thì phải đi kèm một booking nên chỉ check-in tạo ra.
+          */}
+          {statusLocked && room ? (
+            <FieldShell label="Status">
+              <div className="h-9 flex items-center px-2.5 text-sm text-slate-500 bg-slate-50 border border-slate-200 rounded-lg">
+                {ROOM_STATUS_CONFIG[room.status].label}
+              </div>
+              <p className="mt-1 text-xs text-slate-500">
+                {room.status === 'occupied'
+                  ? 'Set by check-in — change it from the front desk.'
+                  : 'This room is blocked for maintenance — end the block from Rooms & inventory.'}
+              </p>
+            </FieldShell>
+          ) : (
+            <SelectField<RoomFormValues>
+              name="status"
+              label="Status"
+              required
+              options={EDITABLE_ROOM_STATUS_OPTIONS}
+              hint="Maintenance is set by blocking the room for a date range; occupied comes from check-in."
+            />
+          )}
 
           <TextareaField<RoomFormValues> name="notes" label="Notes" placeholder="Internal notes..." rows={2} />
         </form>

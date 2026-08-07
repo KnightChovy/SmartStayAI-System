@@ -14,6 +14,10 @@ export const staffKeys = {
     ['staff', 'rooms', hotelId, params] as const,
   roomBlocks: (hotelId: string, includeResolved: boolean) =>
     ['staff', 'room-blocks', hotelId, includeResolved] as const,
+  /** Lưới tồn kho theo đêm (`GET .../inventory/calendar`). */
   inventory: (hotelId: string, from: string, to: string) =>
     ['staff', 'inventory', hotelId, from, to] as const,
+  /** Booking phủ khoảng ngày — nguồn thô cho bản đồ phòng, không dùng cho lưới. */
+  inventoryBookings: (hotelId: string, from: string, to: string) =>
+    ['staff', 'inventory-bookings', hotelId, from, to] as const,
 };
