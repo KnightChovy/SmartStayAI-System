@@ -2441,7 +2441,6 @@ paths:
                               type: string
                               enum: [earning, commission, payout, settlement, refund, adjustment, spend]
                               description: 'Loại bút toán (ghi nhận/tất toán/rút/hoàn/điều chỉnh)'
-                            status: { type: string, example: completed, description: 'Đã ghi sổ nên luôn completed' }
                             amount: { type: string, example: '850000', description: 'Có dấu: + earning, − payout/refund' }
                             balanceAfter: { type: string, example: '850000' }
                             bookingId: { type: string, format: uuid, nullable: true }
@@ -2452,7 +2451,25 @@ paths:
                               description: 'Phương thức khách đã trả cho booking đó. Rỗng nếu GD không gắn booking'
                               example: [vnpay]
                             commissionId: { type: string, format: uuid, nullable: true }
-                            description: { type: string, nullable: true }
+                            payoutId:
+                              type: string
+                              format: uuid
+                              nullable: true
+                              description: 'Yêu cầu rút sinh ra bút toán này. null nếu GD không thuộc luồng rút tiền'
+                            payoutStatus:
+                              type: string
+                              nullable: true
+                              enum: [pending, processing, paid, failed]
+                              description: >
+                                Trạng thái THẬT của khoản rút — pending = tiền mới bị GIỮ, chưa chuyển đi;
+                                paid = đã chuyển khoản; failed = bị từ chối, tiền đã trả lại ví.
+                                null khi bút toán không thuộc yêu cầu rút nào.
+                                Dùng field NÀY để hiển thị trạng thái, đừng suy từ `type`.
+                            description:
+                              type: string
+                              nullable: true
+                              example: 'Payout request — funds on hold'
+                              description: 'Diễn giải bút toán, viết bằng TIẾNG ANH để client tự dịch theo i18n'
                             createdAt: { type: string, format: date-time }
                       page: { type: integer }
                       limit: { type: integer }
@@ -2572,13 +2589,15 @@ paths:
 
   /hotels/{hotelId}/wallet:
     get:
-      summary: Hotel wallet balances (owner/manager)
+      summary: Hotel wallet balances + payout account (owner/manager)
       description: >
-        Auth. Wallet BALANCES ONLY for ONE hotel: balanceAvailable ("trong ví"), balancePending
-        ("chờ tất toán"), pendingPayout ("chờ payout"). The transaction ledger was MOVED to
-        GET /hotels/{hotelId}/revenue (the `transactions` field there). A hotel with no wallet yet
-        returns zero balances instead of 404. Money values are strings. Access checked in-service
-        (owner/manager/assigned staff).
+        Auth. Wallet BALANCES for ONE hotel: balanceAvailable ("trong ví"), balancePending
+        ("chờ tất toán"), pendingPayout ("chờ payout"); plus `payoutAccount` (bank account money is
+        paid out to). The transaction ledger was MOVED to GET /hotels/{hotelId}/revenue (the
+        `transactions` field there). The payout account number is DECRYPTED and returned only to the
+        hotel OWNER — other operable users (staff/manager) get null for accountNumber. A hotel with no
+        wallet yet returns zero balances instead of 404. Money values are strings. Access checked
+        in-service (owner/manager/assigned staff).
       tags: [Revenue]
       security:
         - bearerAuth: []
@@ -2602,6 +2621,21 @@ paths:
                       balancePending: { type: string, description: '"Chờ tất toán" — khách chưa ở xong, chưa rút được', example: '0' }
                       pendingPayout: { type: string, description: '"Chờ payout" — Σ yêu cầu rút đang pending (đã trừ khỏi available), PM chi trả xong về 0', example: '0' }
                       currency: { type: string, example: VND }
+                  payoutAccount:
+                    type: object
+                    nullable: true
+                    description: 'Tài khoản nhận tiền (chính) của KS. null nếu KS chưa khai tài khoản.'
+                    properties:
+                      id: { type: string, format: uuid }
+                      accountHolder: { type: string, example: 'CONG TY TNHH BIEN XANH' }
+                      bankName: { type: string, example: 'Vietcombank' }
+                      bankBranch: { type: string, nullable: true, example: 'CN Đà Nẵng' }
+                      isPrimary: { type: boolean, example: true }
+                      accountNumber:
+                        type: string
+                        nullable: true
+                        description: 'Số TK ĐẦY ĐỦ (đã giải mã) — CHỈ trả cho chủ KS (owner). Người operable khác (staff/manager) nhận null. FE tự che/hiện bằng nút bật-tắt.'
+                        example: '0123456789'
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }

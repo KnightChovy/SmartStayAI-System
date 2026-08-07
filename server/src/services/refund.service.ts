@@ -218,7 +218,8 @@ export class RefundService {
         refund.requestedBy,
         refund.amount,
         booking.id,
-        `Hoàn tiền booking ${booking.bookingCode}`
+        // Tiếng Anh vì chuỗi này lưu thẳng vào sổ ví rồi hiển thị nguyên văn — xem walletService.writeTxn
+        `Refund for booking ${booking.bookingCode}`
       );
       await this.settleHotelSide(tx, refund, booking);
 
@@ -393,7 +394,7 @@ export class RefundService {
       args.customerId,
       args.amount,
       args.bookingId,
-      `Hoàn tiền vào sau khi booking ${args.bookingCode} hết hạn giữ chỗ`
+      `Refund — payment arrived after booking ${args.bookingCode} expired`
     );
     logger.warn(`[Refund] Tiền mồ côi ${args.amount.toString()}đ của booking ${args.bookingCode} đã hoàn vào ví khách`);
   };
