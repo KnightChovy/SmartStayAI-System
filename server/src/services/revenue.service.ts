@@ -1,5 +1,5 @@
 import { Prisma } from '@prisma/client';
-import type { User, WalletTransactionType, PaymentMethod } from '@prisma/client';
+import type { User, WalletTransactionType, PaymentMethod, PayoutStatus } from '@prisma/client';
 import prisma from '../config/prisma';
 import { hotelService } from './hotel.service';
 import { platformManagerService } from './platform-manager.service';
@@ -234,6 +234,18 @@ export class RevenueService {
       }
     }
 
+    // Trạng thái THẬT của các bút toán rút tiền. Ví bị trừ ngay lúc partner tạo yêu cầu (giữ tiền),
+    // nên nếu chỉ nhìn sổ ví thì một khoản còn đang chờ duyệt trông y hệt khoản đã chuyển xong.
+    const payoutIds = [...new Set(rows.map((t) => t.payoutId).filter((v): v is string => !!v))];
+    const payoutStatusById = new Map<string, PayoutStatus>();
+    if (payoutIds.length > 0) {
+      const payouts = await prisma.payout.findMany({
+        where: { id: { in: payoutIds } },
+        select: { id: true, status: true },
+      });
+      for (const p of payouts) payoutStatusById.set(p.id, p.status);
+    }
+
     return {
       results: rows.map((t) => {
         const bid = resolveBookingId(t);
@@ -241,13 +253,18 @@ export class RevenueService {
         return {
           id: t.id, // mã giao dịch (uuid)
           type: t.type, // loại: earning/settlement/payout/refund/adjustment/commission/spend
-          status: t.status, // trạng thái bút toán (luôn 'completed' khi đã ghi sổ)
           amount: t.amount.toString(),
           balanceAfter: t.balanceAfter.toString(),
           bookingId: t.bookingId,
           bookingCode: info?.bookingCode ?? null, // "từ đâu" — mã booking để hiển thị
           paymentMethods: info?.paymentMethods ?? [], // phương thức khách đã trả (rỗng nếu payout/adjustment)
           commissionId: t.commissionId,
+          payoutId: t.payoutId,
+          // pending = tiền mới bị GIỮ, chưa chuyển đi; paid = đã chuyển; failed = bị từ chối, đã trả
+          // lại ví. null khi bút toán không thuộc yêu cầu rút nào (earning/settlement/refund...).
+          // KHÔNG trả `walletTransaction.status`: nó luôn 'completed' (nghĩa là "đã ghi sổ") nên đọc
+          // nhầm thành "tiền đã tới tay đối tác".
+          payoutStatus: t.payoutId ? payoutStatusById.get(t.payoutId) ?? null : null,
           description: t.description,
           createdAt: t.createdAt,
         };

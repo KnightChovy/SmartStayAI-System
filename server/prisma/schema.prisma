@@ -1254,12 +1254,19 @@ model WalletTransaction {
   balanceAfter Decimal               @map("balance_after") @db.Decimal(14, 2)
   bookingId    String?               @map("booking_id") @db.Uuid
   commissionId String?               @map("commission_id") @db.Uuid
+  // Bút toán 'payout' (giữ tiền) và 'adjustment' (trả lại khi bị từ chối) trỏ về yêu cầu rút sinh ra
+  // chúng. Không có cột này thì từ sổ ví KHÔNG tra được yêu cầu rút đó đã được duyệt hay chưa.
+  payoutId     String?               @map("payout_id") @db.Uuid
+  payout       Payout?               @relation(fields: [payoutId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  // Bút toán ghi vào sổ là xong, không có vòng đời riêng ⇒ cột này luôn 'completed'. Giữ lại cho dữ
+  // liệu cũ nhưng KHÔNG trả ra API: đọc nhầm thành "tiền đã tới tay" (xem payout.status mới đúng).
   status       String                @default("completed")
   description  String?
   createdAt    DateTime              @default(now()) @map("created_at")
 
   @@index([walletId])
   @@index([bookingId])
+  @@index([payoutId])
   @@map("wallet_transactions")
 }
 
@@ -1805,7 +1812,10 @@ model Payout {
   createdAt           DateTime           @default(now()) @map("created_at")
   updatedAt           DateTime           @default(now()) @updatedAt @map("updated_at")
 
-  commissions PlatformCommission[]
+  commissions        PlatformCommission[]
+  // Bút toán ví sinh ra bởi yêu cầu rút này: 'payout' lúc giữ tiền, 'adjustment' nếu bị từ chối
+  walletTransactions WalletTransaction[]
 
+  @@index([hotelId, status])
   @@map("payouts")
 }

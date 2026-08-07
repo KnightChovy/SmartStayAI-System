@@ -20,6 +20,13 @@ export class WalletService {
     return tx.wallet.upsert({ where: { customerId }, create: { customerId }, update: {} });
   };
 
+  /**
+   * Ghi một dòng vào sổ ví.
+   *
+   * `description` viết bằng TIẾNG ANH có chủ ý: chuỗi này lưu thẳng vào DB rồi hiển thị nguyên văn,
+   * nên nếu ghi tiếng Việt thì giao diện đa ngữ không dịch được. Client tự dịch theo `type` + chuỗi
+   * này, giống cách xử lý các giá trị enum khác.
+   */
   private writeTxn = async (
     tx: Tx,
     args: {
@@ -29,6 +36,7 @@ export class WalletService {
       balanceAfter: Prisma.Decimal;
       bookingId?: string;
       commissionId?: string;
+      payoutId?: string;
       description: string;
     }
   ) => {
@@ -46,7 +54,7 @@ export class WalletService {
       amount: netAmount,
       balanceAfter: newPending,
       bookingId,
-      description: 'Net doanh thu booking (chờ tất toán)',
+      description: 'Booking net revenue (pending settlement)',
     });
   };
 
@@ -65,7 +73,7 @@ export class WalletService {
       amount: netAmount,
       balanceAfter: newAvailable,
       commissionId,
-      description: 'Chuyển pending → available (đã tất toán)',
+      description: 'Settled — moved from pending to available',
     });
   };
 
@@ -86,7 +94,7 @@ export class WalletService {
       amount: delta.negated(),
       balanceAfter: newPending,
       bookingId,
-      description: 'Điều chỉnh do huỷ/hoàn tiền',
+      description: 'Adjustment for booking cancellation/refund',
     });
   };
 
@@ -95,8 +103,11 @@ export class WalletService {
    * để không thể tạo nhiều yêu cầu rút vượt số dư. Trừ CÓ ĐIỀU KIỆN (updateMany + balanceAvailable >=
    * amount) rồi kiểm count — hai yêu cầu song song cùng tiêu một số dư thì chỉ một bên thắng. Bị từ
    * chối thì hoàn lại bằng releasePayoutHold.
+   *
+   * `payoutId` BẮT BUỘC: tiền bị trừ trước khi ai duyệt, nên sổ ví phải trỏ được về yêu cầu rút để
+   * biết khoản đó mới đang bị giữ hay đã thật sự chuyển đi.
    */
-  holdForPayout = async (tx: Tx, hotelId: string, amount: Prisma.Decimal) => {
+  holdForPayout = async (tx: Tx, hotelId: string, amount: Prisma.Decimal, payoutId: string) => {
     const wallet = await this.getOrCreateWallet(tx, hotelId);
     const { count } = await tx.wallet.updateMany({
       where: { id: wallet.id, balanceAvailable: { gte: amount } },
@@ -111,13 +122,14 @@ export class WalletService {
       type: 'payout',
       amount: amount.negated(),
       balanceAfter: after,
-      description: 'Yêu cầu rút tiền',
+      payoutId,
+      description: 'Payout request — funds on hold',
     });
     return after;
   };
 
   /** Yêu cầu rút bị TỪ CHỐI ⇒ hoàn lại phần đã giữ vào balanceAvailable. */
-  releasePayoutHold = async (tx: Tx, hotelId: string, amount: Prisma.Decimal) => {
+  releasePayoutHold = async (tx: Tx, hotelId: string, amount: Prisma.Decimal, payoutId: string) => {
     const wallet = await this.getOrCreateWallet(tx, hotelId);
     const after = wallet.balanceAvailable.add(amount);
     await tx.wallet.update({ where: { id: wallet.id }, data: { balanceAvailable: after } });
@@ -126,7 +138,8 @@ export class WalletService {
       type: 'adjustment',
       amount,
       balanceAfter: after,
-      description: 'Hoàn tiền do yêu cầu rút bị từ chối',
+      payoutId,
+      description: 'Payout request rejected — hold released',
     });
     return after;
   };
@@ -174,7 +187,7 @@ export class WalletService {
       amount: amount.negated(),
       balanceAfter: after,
       bookingId,
-      description: 'Dùng số dư ví thanh toán booking',
+      description: 'Wallet balance used for booking payment',
     });
     return after;
   };
@@ -185,11 +198,30 @@ export class WalletService {
     return wallet?.balanceAvailable ?? new Prisma.Decimal(0);
   };
 
-  /** Ví khách + lịch sử giao dịch, mới nhất trước. */
+  /**
+   * Ví khách + lịch sử giao dịch, mới nhất trước.
+   *
+   * Chọn cột TƯỜNG MINH thay vì trả cả bản ghi: `status` luôn là 'completed' (chỉ nghĩa là đã ghi sổ)
+   * còn `payoutId` thuộc luồng rút tiền của khách sạn — cả hai đều vô nghĩa với khách và dễ đọc nhầm.
+   */
   getCustomerWallet = async (customerId: string, limit = 50) => {
     const wallet = await prisma.wallet.findUnique({
       where: { customerId },
-      include: { transactions: { orderBy: { createdAt: 'desc' }, take: limit } },
+      include: {
+        transactions: {
+          orderBy: { createdAt: 'desc' },
+          take: limit,
+          select: {
+            id: true,
+            type: true,
+            amount: true,
+            balanceAfter: true,
+            bookingId: true,
+            description: true,
+            createdAt: true,
+          },
+        },
+      },
     });
     // Chưa có ví ⇒ trả về ví rỗng thay vì 404: khách chưa từng được hoàn tiền là chuyện bình thường
     return (
