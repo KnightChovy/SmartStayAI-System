@@ -1,4 +1,4 @@
-import { ArrowDownLeft, ArrowUpRight, Coins, Minus, RefreshCcw, Wallet } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, CheckCircle2, Coins, Minus, RefreshCcw, Wallet } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { PartnerActivity } from '@/hooks/partner-dashboard';
 import type { WalletTransactionType } from '@/types/hotel-revenue.types';
@@ -22,6 +22,9 @@ const TXN_META: Record<
   },
   commission: { icon: Minus, label: 'Commission', wrap: 'bg-amber-50', color: 'text-amber-600' },
   payout: { icon: ArrowUpRight, label: 'Payout', wrap: 'bg-role-partner-light', color: 'text-role-partner-primary' },
+  // Tất toán: chuyển pending → available, tiền KHÔNG rời nền tảng nên cố ý KHÔNG dùng
+  // mũi tên ra/vào như earning/payout — mũi tên khiến đối tác tưởng vừa nhận/mất tiền.
+  settlement: { icon: CheckCircle2, label: 'Settlement', wrap: 'bg-violet-50', color: 'text-violet-600' },
   refund: { icon: RefreshCcw, label: 'Refund', wrap: 'bg-red-50', color: 'text-red-500' },
   adjustment: { icon: Coins, label: 'Adjustment', wrap: 'bg-slate-100', color: 'text-slate-500' },
 };

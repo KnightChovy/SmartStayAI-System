@@ -24,8 +24,10 @@ export interface HotelRevenueSummary {
   gross: string;
   commission: string;
   net: string;
+  netAfterRefund: string;
   refunded: string;
   bookingCount: number;
+  commissionRate: string;
 }
 
 export interface HotelRevenueSeriesPoint {
@@ -33,6 +35,8 @@ export interface HotelRevenueSeriesPoint {
   gross: string;
   commission: string;
   net: string;
+  netAfterRefund: string;
+  refunded: string;
   bookingCount: number;
 }
 
@@ -44,10 +48,15 @@ export interface HotelRevenueReport {
 
 // ─── Wallet (GET /hotels/:id/wallet) ─────────────────────────────────────────
 
+/**
+ * Các loại giao dịch của ví KHÁCH SẠN — khớp `getHotelWallet` của backend.
+ * (`spend` là của ví khách, không bao giờ xuất hiện ở ví khách sạn.)
+ */
 export type WalletTransactionType =
   | 'earning'
   | 'commission'
   | 'payout'
+  | 'settlement'
   | 'refund'
   | 'adjustment';
 

@@ -11,25 +11,16 @@ interface WalletBalanceCardProps {
   isLoading: boolean;
 }
 
-/**
- * Thẻ số dư: khả dụng · chờ tất toán · tổng thu nhập tích luỹ.
- *
- * "Tổng thu nhập tích luỹ" KHÔNG có endpoint riêng — lấy `summary.net` của
- * `GET /hotels/:id/revenue` **không kèm from/to**, backend trả về toàn bộ lịch sử
- * (đã đối chiếu: bỏ trống from/to cho kết quả y hệt `from=2020-01-01`).
- * Là net (sau hoa hồng) nên đúng nghĩa "khách sạn thực nhận".
- */
 export function WalletBalanceCard({
   hotelId,
   wallet,
   isLoading,
 }: WalletBalanceCardProps) {
   const lifetime = useHotelRevenue(hotelId);
-  const totalEarned = lifetime.data?.summary.net;
+  const totalEarned = lifetime.data?.summary.netAfterRefund;
 
   return (
     <div className="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-6">
-      {/* Hình trang trí, không mang thông tin nên ẩn khỏi screen reader. */}
       <Wallet
         aria-hidden
         className="pointer-events-none absolute -right-6 top-4 h-32 w-32 text-slate-100"
@@ -62,7 +53,7 @@ export function WalletBalanceCard({
             icon={TrendingUp}
             label="Total earned (all time)"
             value={totalEarned}
-            hint="Net revenue after platform commission, across your whole history."
+            hint="Net revenue after platform commission and refunds, across your whole history."
             loading={lifetime.isLoading && !totalEarned}
             tone="text-slate-800"
           />

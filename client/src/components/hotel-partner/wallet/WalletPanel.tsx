@@ -8,14 +8,17 @@ import {
 import { useHotelWallet } from '@/hooks/hotel-revenue';
 import { WalletBalanceCard } from './WalletBalanceCard';
 import { WithdrawalHistoryCard } from './WithdrawalHistoryCard';
-import { TransactionHistoryCard } from './TransactionHistoryCard';
 
 interface WalletPanelProps {
   hotelId: string;
 }
 
 /**
- * Ví của MỘT khách sạn: số dư · lịch sử rút tiền · sổ giao dịch.
+ * Ví của MỘT khách sạn: số dư · lịch sử rút tiền.
+ *
+ * Sổ giao dịch đầy đủ đã gỡ khỏi đây — sắp chuyển sang màn Revenue. Component
+ * `TransactionHistoryCard` + `labels.ts` giữ nguyên tại chỗ để bên đó dùng lại,
+ * hiện chưa file nào import.
  *
  * ⚠️ Nút "Request withdrawal" CỐ Ý bị vô hiệu hoá: backend **chưa có endpoint** nào cho
  * đối tác tự tạo yêu cầu rút tiền. Bảng `payouts` có trong `schema.prisma` (kèm enum
@@ -26,7 +29,7 @@ interface WalletPanelProps {
  */
 export function WalletPanel({ hotelId }: WalletPanelProps) {
   // Chỉ lấy số dư ở đây (limit 1) — endpoint luôn trả kèm `wallet` bất kể `limit`;
-  // hai bảng bên dưới tự query phần danh sách của riêng chúng.
+  // bảng rút tiền bên dưới tự query danh sách của riêng nó.
   const { data, isLoading } = useHotelWallet(hotelId, { page: 1, limit: 1 });
 
   return (
@@ -73,8 +76,6 @@ export function WalletPanel({ hotelId }: WalletPanelProps) {
           <WithdrawalHistoryCard hotelId={hotelId} />
         </div>
       </div>
-
-      <TransactionHistoryCard hotelId={hotelId} />
     </div>
   );
 }
