@@ -960,20 +960,26 @@ components:
         voucherCode: { type: string, nullable: true, description: 'Issued only once the booking is confirmed' }
         walletBalance: { type: string, description: 'Balance left after this payment' }
 
+    CancellationTier:
+      type: object
+      properties:
+        minHoursBefore: { type: integer, example: 168, description: 'Cancel at least this many hours before check-in…' }
+        refundPercent: { type: integer, example: 50, description: '…to get this percent back' }
+
     CancellationRule:
       type: object
       description: >
-        The cancellation terms that actually decide the refund, by number. A hotel may also write
-        free-text descriptions (hotel.cancellationPolicy and the policies[cancellation] row) — those
-        are for reading only and are NOT tied to these numbers, so show these values next to the
-        text rather than trusting the text alone.
+        Tiered cancellation terms that decide the refund (percent-only). A hotel may also write
+        free-text descriptions — show these numbers next to that text. `freeUntilHours` is DERIVED
+        (smallest tier still at 100%) for backward-compat.
       properties:
-        freeUntilHours: { type: integer, description: 'Cancel more than this many hours before check-in time to get a 100% refund' }
-        latePenalty: { type: string, enum: [first_night, full], description: 'What is kept on a late cancellation: the first night, or everything' }
+        tiers: { type: array, items: { $ref: '#/components/schemas/CancellationTier' } }
+        noShowRefundPercent: { type: integer, example: 0 }
+        freeUntilHours: { type: integer, nullable: true, description: 'Derived: cancel this many hours before check-in for 100% (compat)' }
 
     RefundPreview:
       type: object
-      description: What the guest gets back if they cancel right now, and why.
+      description: What the guest gets back if they cancel right now, and why (tiered policy).
       properties:
         bookingId: { type: string, format: uuid }
         bookingCode: { type: string }
@@ -982,13 +988,25 @@ components:
         cannotCancelReason: { type: string, nullable: true, description: 'Why canCancel is false; null when it is true' }
         isPaid: { type: boolean, description: 'False when nothing has been paid yet — then there is no money to refund' }
         paidAmount: { type: string, description: 'Decimal as string' }
-        refundAmount: { type: string, description: 'Refunded if cancelling now' }
+        refundAmount: { type: string, description: 'Refunded if cancelling now = paidAmount × refundPercent' }
         penaltyAmount: { type: string, description: 'paidAmount - refundAmount — the part kept by the hotel' }
-        freeUntilHours: { type: integer }
-        latePenalty: { type: string, enum: [first_night, full] }
-        isFreeCancellation: { type: boolean, description: 'True while still inside the free window (refundAmount = paidAmount)' }
         hoursBeforeCheckIn: { type: number, description: 'Hours left until check-in time; negative once it has passed' }
-        freeUntilMoment: { type: string, format: date-time, description: 'Cancel before this instant for a full refund — use it for a countdown' }
+        appliedTier:
+          nullable: true
+          allOf: [{ $ref: '#/components/schemas/CancellationTier' }]
+          description: 'The tier applied right now (null once past check-in)'
+        refundPercent: { type: integer, description: 'Percent refunded right now' }
+        tiers: { type: array, items: { $ref: '#/components/schemas/CancellationTier' }, description: 'Full ladder for the table' }
+        nextTier:
+          type: object
+          nullable: true
+          description: 'After changesAt the refund drops to refundPercent (null at the lowest tier)'
+          properties:
+            changesAt: { type: string, format: date-time }
+            refundPercent: { type: integer }
+        freeUntilHours: { type: integer, nullable: true, description: 'Derived (compat)' }
+        isFreeCancellation: { type: boolean, description: 'True when the applied tier is 100%' }
+        freeUntilMoment: { type: string, format: date-time, nullable: true, description: 'Cancel before this for 100% (compat, countdown)' }
         checkInMoment: { type: string, format: date-time, description: 'Check-in date combined with the hotel check-in time' }
 
     Booking:

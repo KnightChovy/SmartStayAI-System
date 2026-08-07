@@ -6,6 +6,11 @@ import catchAsync from '../utils/catchAsync';
 import { hotelService } from '../services';
 
 export class HotelController {
+  // [Public] 5 preset chính sách huỷ để đối tác chọn nhanh
+  getCancellationPresets = catchAsync(async (_req: Request, res: Response): Promise<void> => {
+    res.send({ presets: hotelService.getCancellationPresets() });
+  });
+
   searchHotels = catchAsync(async (req: Request, res: Response): Promise<void> => {
     const raw = pick(req.query, ['city', 'checkIn', 'checkOut', 'guests', 'adults', 'children', 'rooms', 'priceMin', 'priceMax', 'stars', 'amenities', 'reviewScore']);
     // Bộ chọn khách mới của FE gửi adults + children riêng; gộp thành tổng khách để lọc sức chứa.

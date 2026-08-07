@@ -19,31 +19,37 @@ import type {
 } from '../dto/hotel.dto';
 import type { AmenityAssignmentInput } from '../dto/amenity.dto';
 
-/**
- * Chính sách huỷ/hoàn tiền — kiểu "free-cancel tới hạn chót" (giống giá linh hoạt của OTA).
- * - freeUntilHours: huỷ trước mốc này (giờ, tính tới thời điểm nhận phòng) ⇒ hoàn 100%.
- * - latePenalty: phạt khi huỷ muộn — 'first_night' (giữ 1 đêm đầu) | 'full' (mất toàn bộ).
- *
- * Đặt ở hotel.service vì chính sách này thuộc về KHÁCH SẠN; booking.service import từ đây để dùng
- * (chiều ngược lại sẽ tạo import vòng tròn). Mặc định dưới đây áp cho KS chưa tự cấu hình.
- */
-export const DEFAULT_CANCELLATION_POLICY = { freeUntilHours: 48, latePenalty: 'first_night' };
+// Engine chính sách huỷ BẬC THANG nằm ở utils/cancellation-policy (hàm THUẦN, không chạm DB ⇒ unit-test
+// được). Import phần dùng nội bộ + re-export để downstream (booking.service) vẫn import từ hotel.service.
+import {
+  CANCELLATION_PRESETS,
+  DEFAULT_CANCELLATION_POLICY,
+  parseCancellationPolicy,
+  readCancellationPolicy,
+  appliedTierForHours,
+  refundPercentForHours,
+  freeUntilHoursOf,
+  nextTierAfter,
+} from '../utils/cancellation-policy';
+import type { CancellationTier, CancellationPolicy } from '../utils/cancellation-policy';
 
-export interface CancellationPolicy {
-  freeUntilHours: number;
-  latePenalty: string;
-}
-
-/** Đọc chính sách huỷ đã cấu hình ở hotel.settings.cancellation, thiếu thì dùng mặc định. */
-export const readCancellationPolicy = (settings: Prisma.JsonValue | null): CancellationPolicy => {
-  const parsed = settings as unknown as { cancellation?: Partial<CancellationPolicy> } | null;
-  return {
-    freeUntilHours: parsed?.cancellation?.freeUntilHours ?? DEFAULT_CANCELLATION_POLICY.freeUntilHours,
-    latePenalty: parsed?.cancellation?.latePenalty ?? DEFAULT_CANCELLATION_POLICY.latePenalty,
-  };
+export {
+  CANCELLATION_PRESETS,
+  DEFAULT_CANCELLATION_POLICY,
+  parseCancellationPolicy,
+  readCancellationPolicy,
+  appliedTierForHours,
+  refundPercentForHours,
+  freeUntilHoursOf,
+  nextTierAfter,
 };
+export type { CancellationTier, CancellationPolicy };
 
 export class HotelService {
+  /** [Public] 5 preset chính sách huỷ để đối tác chọn nhanh khi cấu hình. */
+  getCancellationPresets = () =>
+    Object.entries(CANCELLATION_PRESETS).map(([key, v]) => ({ key, name: v.name, ...v.policy }));
+
   /**
    * Điểm đánh giá công khai của MỘT NHÓM khách sạn, gom trong đúng một query để danh sách không
    * bị N+1. Chỉ tính đánh giá 'published' — bằng đúng tập khách xem được ở trang đánh giá.
@@ -639,7 +645,9 @@ export class HotelService {
     // bằng chữ (cột `cancellationPolicy` và `policies[cancellation].description`) do partner tự
     // viết, KHÔNG ràng buộc gì với con số này. Trả kèm số thật để FE hiện cạnh phần mô tả, tránh
     // việc khách chỉ đọc chữ rồi hiểu sai mình được hoàn bao nhiêu.
-    const cancellationRule = readCancellationPolicy(hotel.settings);
+    // Bậc thang + `freeUntilHours` DẪN XUẤT (mốc còn hoàn 100%) để FE cũ (CancellationLine) không vỡ
+    const policy = readCancellationPolicy(hotel.settings);
+    const cancellationRule = { ...policy, freeUntilHours: freeUntilHoursOf(policy) };
 
     return { ...hotel, cancellationRule, ...(ratings.get(hotel.id) ?? { avgRating: null, reviewCount: 0 }) };
   };

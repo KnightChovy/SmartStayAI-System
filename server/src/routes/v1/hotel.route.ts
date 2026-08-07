@@ -44,6 +44,9 @@ router.get('/mine', auth(), hotelController.getMyHotels);
 // Khách sạn staff được phân công (bản của staff, tương tự '/mine' của partner) — literal 2 segment
 router.get('/staff/mine', auth(), hotelController.getMyStaffHotels);
 
+// Preset chính sách huỷ — public, literal nên đặt TRƯỚC '/:hotelId' để khỏi bị param nuốt.
+router.get('/cancellation-presets', hotelController.getCancellationPresets);
+
 // Chi tiết một khách sạn cho guest — public, chỉ KS đang mở bán (isActive + isListed).
 router.get('/:hotelId', validate(hotelValidation.getHotel), hotelController.getHotel);
 
