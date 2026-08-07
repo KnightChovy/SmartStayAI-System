@@ -11,6 +11,20 @@ export interface CreateRoomBlockDto {
   estimatedCost?: number;
 }
 
+/**
+ * Sửa một đợt chặn đang mở — gia hạn/rút ngắn ngày kết thúc, sửa lý do hoặc chi phí dự kiến.
+ *
+ * KHÔNG cho đổi `startDate` và `blockType`: ngày bắt đầu đã trôi qua thì không viết lại lịch sử
+ * được, còn đổi loại chặn là đổi luôn ý nghĩa tồn kho (ooo trừ kho, oos thì không) — trường hợp đó
+ * hãy gỡ đợt cũ và tạo đợt mới để số liệu sự cố không bị trộn.
+ */
+export interface UpdateRoomBlockDto {
+  /** Ngày cuối CÒN BỊ CHẶN sau khi sửa, tính cả ngày này */
+  endDate?: Date;
+  reason?: string;
+  estimatedCost?: number;
+}
+
 /** Một booking sẽ mất phòng vì đợt chặn này. */
 export interface AffectedBooking {
   id: string;

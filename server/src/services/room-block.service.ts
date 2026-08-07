@@ -1,12 +1,18 @@
 import httpStatus from 'http-status';
 import { Prisma } from '@prisma/client';
-import type { RoomBlock, User } from '@prisma/client';
+import type { RoomBlock, RoomStatus, User } from '@prisma/client';
 import prisma from '../config/prisma';
 import ApiError from '../utils/ApiError';
 import { toUtcDate, eachDayInclusive, todayInVietnamDate } from '../utils/dates';
 import { deriveRoomStatus } from '../utils/room-status';
 import { hotelService } from './hotel.service';
-import type { CreateRoomBlockDto, RoomBlockPreview, ShortageNight, AffectedBooking } from '../dto/room-block.dto';
+import type {
+  CreateRoomBlockDto,
+  UpdateRoomBlockDto,
+  RoomBlockPreview,
+  ShortageNight,
+  AffectedBooking,
+} from '../dto/room-block.dto';
 
 /** Booking đang giữ chỗ thật sự — chỉ hai trạng thái này mới cần lo xếp lại phòng. */
 const LIVE_BOOKING_STATUS: Prisma.BookingWhereInput['status'] = { in: ['confirmed', 'checked_in'] };
@@ -309,6 +315,133 @@ export class RoomBlockService {
   };
 
   /**
+   * Sửa một đợt chặn đang mở: gia hạn / rút ngắn ngày kết thúc, sửa lý do, sửa chi phí dự kiến.
+   *
+   * Vì sao cần: trước đây muốn "gia hạn thêm 2 ngày" phải gỡ đợt cũ rồi tạo đợt mới — mất luôn lịch
+   * sử chi phí sự cố của đợt đang xử lý, mà createBlock lại từ chối hai đợt OOO chồng nhau nên thao
+   * tác còn vòng vèo hơn.
+   *
+   * Tồn kho chỉ bù đúng phần CHÊNH LỆCH (những ngày vừa thêm vào hoặc vừa bị cắt), không đụng phần
+   * ngày cũ — trừ/cộng lại cả khoảng là trừ hai lần cho cùng một sự việc.
+   */
+  updateBlock = async (
+    hotelId: string,
+    roomId: string,
+    blockId: string,
+    currentUser: User,
+    dto: UpdateRoomBlockDto
+  ) => {
+    const room = await this.loadRoomForBlock(hotelId, roomId, currentUser);
+    const block = await prisma.roomBlock.findFirst({ where: { id: blockId, roomId, hotelId } });
+    if (!block) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy đợt chặn của phòng này');
+    }
+    if (block.resolvedAt) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        'Đợt chặn đã xử lý xong — tạo đợt mới thay vì sửa lại một sự việc đã đóng'
+      );
+    }
+
+    const newEndDate = dto.endDate ? toUtcDate(dto.endDate) : block.endDate;
+    if (newEndDate < block.startDate) {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Ngày dự kiến xong không được trước ngày bắt đầu');
+    }
+
+    // Chỉ cần kiểm xung đột khi GIA HẠN: rút ngắn thì không thể đụng vào ai. Cùng lý do với
+    // createBlock — hai đợt OOO chồng nhau trên một phòng sẽ trừ tồn kho hai lần.
+    if (block.blockType === 'ooo' && newEndDate > block.endDate) {
+      const overlapping = await prisma.roomBlock.findFirst({
+        where: {
+          roomId,
+          blockType: 'ooo',
+          id: { not: blockId },
+          ...this.activeInRange(block.startDate, newEndDate),
+        },
+        select: { startDate: true, endDate: true },
+      });
+      if (overlapping) {
+        throw new ApiError(
+          httpStatus.BAD_REQUEST,
+          `Gia hạn tới ${newEndDate.toISOString().slice(0, 10)} sẽ đè lên đợt chặn ` +
+            `${overlapping.startDate.toISOString().slice(0, 10)} → ${overlapping.endDate.toISOString().slice(0, 10)}`
+        );
+      }
+    }
+
+    // Hậu quả tính trên khoảng ngày MỚI, bỏ chính đợt này ra khỏi phép đếm để không tự trừ hai lần.
+    const [affectedBookings, shortageNights] = await Promise.all([
+      this.findAffectedBookings(roomId, block.startDate, newEndDate),
+      this.computeShortage(
+        room.roomTypeId,
+        roomId,
+        { blockType: block.blockType, startDate: block.startDate, endDate: newEndDate },
+        blockId
+      ),
+    ]);
+
+    const updatedBlock = await prisma.$transaction(async (tx) => {
+      // Ghi có điều kiện trên endDate cũ: hai người cùng gia hạn thì chỉ một bên thắng, phần bù tồn
+      // kho ở dưới mới khớp với khoảng ngày thật.
+      const changed = await tx.roomBlock.updateMany({
+        where: { id: blockId, resolvedAt: null, endDate: block.endDate },
+        data: {
+          endDate: newEndDate,
+          ...(dto.reason !== undefined && { reason: dto.reason }),
+          ...(dto.estimatedCost !== undefined && { estimatedCost: new Prisma.Decimal(dto.estimatedCost) }),
+        },
+      });
+      if (changed.count === 0) {
+        throw new ApiError(httpStatus.CONFLICT, 'Đợt chặn vừa được người khác sửa hoặc gỡ, vui lòng tải lại');
+      }
+
+      if (newEndDate > block.endDate) {
+        // Dài thêm ⇒ trừ tồn kho những ngày vừa thêm vào (ngày đầu tiên sau ngày kết thúc cũ)
+        const addedFrom = new Date(block.endDate);
+        addedFrom.setUTCDate(addedFrom.getUTCDate() + 1);
+        await this.shiftInventoryForBlock(
+          tx,
+          { blockType: block.blockType, startDate: addedFrom, endDate: newEndDate },
+          room.roomTypeId,
+          -1
+        );
+      } else if (newEndDate < block.endDate) {
+        // Ngắn lại ⇒ trả tồn kho những ngày vừa cắt, nhưng chỉ từ HÔM NAY trở đi: ngày đã trôi qua
+        // có cộng lại cũng không bán được nữa, chỉ làm phồng số liệu quá khứ (giống resolveBlock).
+        const today = todayInVietnamDate();
+        const cutFrom = new Date(newEndDate);
+        cutFrom.setUTCDate(cutFrom.getUTCDate() + 1);
+        const restoreFrom = cutFrom > today ? cutFrom : today;
+        if (restoreFrom <= block.endDate) {
+          await this.shiftInventoryForBlock(
+            tx,
+            { blockType: block.blockType, startDate: restoreFrom, endDate: block.endDate },
+            room.roomTypeId,
+            1
+          );
+        }
+      }
+
+      await tx.roomStatusHistory.updateMany({
+        where: { roomId, dimension: 'block', endedAt: null },
+        data: { expectedEndAt: newEndDate, ...(dto.reason !== undefined && { reason: dto.reason }) },
+      });
+      // Rút ngắn về hôm qua ⇒ phòng hết bị chặn từ hôm nay, nhãn hiển thị phải đổi theo ngay
+      await this.syncDisplayStatus(tx, roomId);
+
+      return tx.roomBlock.findUniqueOrThrow({ where: { id: blockId } });
+    });
+
+    return {
+      block: updatedBlock,
+      roomNumber: room.roomNumber,
+      roomTypeName: room.roomType.name,
+      affectedBookings,
+      shortageNights,
+    };
+  };
+
+  /**
    * Gỡ block (đã sửa xong) — KHÔNG xoá dòng, chỉ đánh dấu resolved để còn thống kê chi phí sự cố.
    * Trả tồn kho đúng những ngày CÒN LẠI của đợt chặn: ngày đã trôi qua thì không bán lại được nữa,
    * cộng vào chỉ làm phồng số liệu quá khứ.
@@ -353,6 +486,59 @@ export class RoomBlockService {
 
       return tx.roomBlock.findUniqueOrThrow({ where: { id: blockId } });
     });
+  };
+
+  /**
+   * [Cron] Rà lại nhãn `rooms.status` theo NGÀY HIỆN TẠI.
+   *
+   * Vì sao cần: `syncDisplayStatus` chỉ chạy khi có người đụng vào phòng (đổi housekeeping, tạo hoặc
+   * gỡ block), mà block thì có khoảng ngày. Đặt đợt chặn cho ngày mai thì sang ngày mai cột status
+   * VẪN là 'available' cho tới khi ai đó tình cờ thao tác lên phòng đó — mọi màn hình đọc
+   * `rooms.status` (kể cả bộ lọc phòng lúc check-in) sẽ thấy sai mà không ai biết.
+   *
+   * Quét theo ĐIỀU KIỆN dữ liệu chứ không theo "đã chạy hôm nay chưa", nên lỡ nhịp (Render free ngủ
+   * tiến trình) hay chạy chồng đều vô hại:
+   *  - phòng đang có block hiệu lực hôm nay  → có thể vừa phải chuyển sang 'maintenance'
+   *  - phòng đang mang nhãn 'maintenance'    → có thể vừa hết bị chặn, phải trả về nhãn thật
+   *
+   * @returns số phòng thực sự phải đổi nhãn
+   */
+  syncStatusForToday = async (): Promise<number> => {
+    const today = todayInVietnamDate();
+    const [blocked, labelledMaintenance] = await Promise.all([
+      prisma.roomBlock.findMany({
+        where: this.activeOnDate(today),
+        select: { roomId: true },
+        distinct: ['roomId'],
+      }),
+      prisma.room.findMany({ where: { status: 'maintenance' }, select: { id: true } }),
+    ]);
+
+    const blockedRoomIds = new Set(blocked.map((row) => row.roomId));
+    const roomIds = [...new Set([...blockedRoomIds, ...labelledMaintenance.map((room) => room.id)])];
+    if (roomIds.length === 0) {
+      return 0;
+    }
+
+    const rooms = await prisma.room.findMany({
+      where: { id: { in: roomIds } },
+      select: { id: true, status: true, foStatus: true, hkStatus: true },
+    });
+
+    // Gom theo nhãn đích rồi ghi mỗi nhãn một lượt, thay vì mỗi phòng một transaction
+    const idsByNextStatus = new Map<RoomStatus, string[]>();
+    for (const room of rooms) {
+      const next = deriveRoomStatus(room, blockedRoomIds.has(room.id));
+      if (next === room.status) {
+        continue;
+      }
+      idsByNextStatus.set(next, [...(idsByNextStatus.get(next) ?? []), room.id]);
+    }
+
+    await Promise.all(
+      [...idsByNextStatus].map(([status, ids]) => prisma.room.updateMany({ where: { id: { in: ids } }, data: { status } }))
+    );
+    return [...idsByNextStatus.values()].reduce((sum, ids) => sum + ids.length, 0);
   };
 
   /** Danh sách đợt chặn của một khách sạn — mặc định chỉ những đợt chưa xử lý xong. */

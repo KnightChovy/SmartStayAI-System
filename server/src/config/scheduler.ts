@@ -5,6 +5,7 @@ import { bookingService } from '../services/booking.service';
 import { adminService } from '../services/admin.service';
 import { refundService } from '../services/refund.service';
 import { commissionRateService } from '../services/commission-rate.service';
+import { roomBlockService } from '../services/room-block.service';
 
 // Giờ Việt Nam để lịch chạy khớp với nghiệp vụ (Render chạy UTC).
 const TIMEZONE = 'Asia/Ho_Chi_Minh';
@@ -74,6 +75,14 @@ export const startScheduler = (): void => {
     timezone: TIMEZONE,
   });
 
+  // Rà lại nhãn rooms.status theo ngày mới — 00:05 hằng ngày, ngay sau khi sang ngày.
+  // Đợt chặn có khoảng ngày, còn cột status thì không: không có job này thì block đặt cho ngày mai
+  // sang ngày mai vẫn chưa đổi nhãn, và mọi màn đọc rooms.status (kể cả lọc phòng lúc check-in)
+  // thấy sai mà không ai biết.
+  cron.schedule('5 0 * * *', () => runJob('sync-room-status', () => roomBlockService.syncStatusForToday()), {
+    timezone: TIMEZONE,
+  });
+
   // Nhắc đối tác trước khi ưu đãi hoa hồng hết hạn (mốc 30 / 14 / 7 ngày) — 08:00 hằng ngày, giờ
   // hành chính để thông báo tới lúc người ta đang làm việc. Hết hạn KHÔNG cần job xử lý: mức áp
   // được suy theo ngày ngay lúc tính hoa hồng, nên cron có lỡ nhịp cũng không ai bị tính sai tiền.
@@ -82,8 +91,8 @@ export const startScheduler = (): void => {
   });
 
   logger.info(
-    `[Cron] Đã bật scheduler (${TIMEZONE}): release-holds mỗi 5', sweep-no-shows 02:00, ` +
-      `settle-commissions 03:00, auto-approve-refunds 04:00, credit-wallet-refunds 04:10, ` +
-      `remind-commission-expiry 08:00`
+    `[Cron] Đã bật scheduler (${TIMEZONE}): release-holds mỗi 5', sync-room-status 00:05, ` +
+      `sweep-no-shows 02:00, settle-commissions 03:00, auto-approve-refunds 04:00, ` +
+      `credit-wallet-refunds 04:10, remind-commission-expiry 08:00`
   );
 };
