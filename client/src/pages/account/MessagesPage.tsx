@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import { HotelPickerPanel } from '@/components/account/HotelPickerPanel';
-import { ConversationModeToggle } from '@/components/chat';
+import { ChatMessageText, ConversationModeToggle } from '@/components/chat';
 import { Button } from '@/components/ui/button';
 import {
   useConversationSocket,
@@ -398,7 +398,7 @@ export default function MessagesPage() {
                         )}
                         <div
                           className={cn(
-                            'whitespace-pre-wrap wrap-break-word rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed',
+                            'rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed',
                             isGuest &&
                               'rounded-br-sm bg-primary text-on-primary',
                             isStaff &&
@@ -408,7 +408,12 @@ export default function MessagesPage() {
                               'rounded-bl-sm border border-outline-variant/40 bg-surface text-on-surface'
                           )}
                         >
-                          {message.content}
+                          <ChatMessageText
+                            text={message.content}
+                            payLabel={t('chat.payNow')}
+                            qrLabel={t('chat.qrAlt')}
+                            onDarkBubble={isGuest}
+                          />
                         </div>
                         <span className="text-[10px] text-on-surface-variant/70">
                           {clockTime(message.createdAt)}

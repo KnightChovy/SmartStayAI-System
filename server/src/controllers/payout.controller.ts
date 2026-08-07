@@ -14,6 +14,25 @@ export class PayoutController {
     res.status(httpStatus.CREATED).send(result);
   });
 
+  // [Chủ KS] Đổi/tạo tài khoản nhận tiền (chính) của khách sạn
+  updatePayoutAccount = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const body = pick(req.body, [
+      'accountHolder',
+      'bankName',
+      'accountNumber',
+      'bankBranch',
+      'swiftCode',
+      'taxIdVatNumber',
+      'registeredBusinessAddress',
+    ]);
+    const result = await payoutService.updatePayoutAccount(
+      req.params.hotelId as string,
+      req.user as User,
+      body as Parameters<typeof payoutService.updatePayoutAccount>[2]
+    );
+    res.send(result);
+  });
+
   // [Chủ KS / manager] Lịch sử yêu cầu rút của khách sạn
   listHotelPayouts = catchAsync(async (req: Request, res: Response): Promise<void> => {
     const options = pick(req.query, ['status', 'page', 'limit']);

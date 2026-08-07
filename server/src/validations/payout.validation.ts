@@ -12,6 +12,26 @@ export const requestPayout = {
   }),
 };
 
+// [Chủ KS] Đổi/tạo tài khoản nhận tiền chính — số TK chỉ nhận 6–30 chữ số
+export const updatePayoutAccount = {
+  params: Joi.object().keys({
+    hotelId: Joi.string().uuid().required(),
+  }),
+  body: Joi.object().keys({
+    accountHolder: Joi.string().trim().min(2).max(255).required(),
+    bankName: Joi.string().trim().min(2).max(255).required(),
+    accountNumber: Joi.string()
+      .trim()
+      .pattern(/^\d{6,30}$/)
+      .required()
+      .messages({ 'string.pattern.base': 'Số tài khoản phải gồm 6–30 chữ số' }),
+    bankBranch: Joi.string().trim().max(255).allow('', null),
+    swiftCode: Joi.string().trim().max(50).allow('', null),
+    taxIdVatNumber: Joi.string().trim().max(50).allow('', null),
+    registeredBusinessAddress: Joi.string().trim().max(500).allow('', null),
+  }),
+};
+
 // [Chủ KS / manager] Lịch sử yêu cầu rút của khách sạn
 export const listHotelPayouts = {
   params: Joi.object().keys({

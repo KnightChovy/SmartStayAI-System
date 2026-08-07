@@ -1,9 +1,10 @@
 import { Prisma } from '@prisma/client';
-import type { User, WalletTransactionType, PaymentMethod } from '@prisma/client';
+import type { User, WalletTransactionType, PaymentMethod, PayoutStatus } from '@prisma/client';
 import prisma from '../config/prisma';
 import { hotelService } from './hotel.service';
 import { platformManagerService } from './platform-manager.service';
 import { commissionRateService } from './commission-rate.service';
+import { decrypt } from '../utils/encryption';
 
 // from/to/groupBy: báo cáo doanh thu; type/page/limit: phân trang + lọc SỔ GIAO DỊCH (nay trả kèm
 // trang Doanh thu — hai nhóm tham số độc lập nhau).
@@ -233,6 +234,18 @@ export class RevenueService {
       }
     }
 
+    // Trạng thái THẬT của các bút toán rút tiền. Ví bị trừ ngay lúc partner tạo yêu cầu (giữ tiền),
+    // nên nếu chỉ nhìn sổ ví thì một khoản còn đang chờ duyệt trông y hệt khoản đã chuyển xong.
+    const payoutIds = [...new Set(rows.map((t) => t.payoutId).filter((v): v is string => !!v))];
+    const payoutStatusById = new Map<string, PayoutStatus>();
+    if (payoutIds.length > 0) {
+      const payouts = await prisma.payout.findMany({
+        where: { id: { in: payoutIds } },
+        select: { id: true, status: true },
+      });
+      for (const p of payouts) payoutStatusById.set(p.id, p.status);
+    }
+
     return {
       results: rows.map((t) => {
         const bid = resolveBookingId(t);
@@ -240,13 +253,18 @@ export class RevenueService {
         return {
           id: t.id, // mã giao dịch (uuid)
           type: t.type, // loại: earning/settlement/payout/refund/adjustment/commission/spend
-          status: t.status, // trạng thái bút toán (luôn 'completed' khi đã ghi sổ)
           amount: t.amount.toString(),
           balanceAfter: t.balanceAfter.toString(),
           bookingId: t.bookingId,
           bookingCode: info?.bookingCode ?? null, // "từ đâu" — mã booking để hiển thị
           paymentMethods: info?.paymentMethods ?? [], // phương thức khách đã trả (rỗng nếu payout/adjustment)
           commissionId: t.commissionId,
+          payoutId: t.payoutId,
+          // pending = tiền mới bị GIỮ, chưa chuyển đi; paid = đã chuyển; failed = bị từ chối, đã trả
+          // lại ví. null khi bút toán không thuộc yêu cầu rút nào (earning/settlement/refund...).
+          // KHÔNG trả `walletTransaction.status`: nó luôn 'completed' (nghĩa là "đã ghi sổ") nên đọc
+          // nhầm thành "tiền đã tới tay đối tác".
+          payoutStatus: t.payoutId ? payoutStatusById.get(t.payoutId) ?? null : null,
           description: t.description,
           createdAt: t.createdAt,
         };
@@ -259,30 +277,60 @@ export class RevenueService {
   };
 
   /**
-   * [Chủ KS / manager] Số dư ví của MỘT khách sạn — CHỈ số dư (trong ví / chờ tất toán / chờ payout).
-   * Lịch sử giao dịch đã chuyển sang getHotelRevenue (trang Doanh thu). KS chưa có ví ⇒ trả 0, không 404.
+   * [Chủ KS / manager] Số dư ví + tài khoản nhận tiền của MỘT khách sạn (số dư: trong ví / chờ tất
+   * toán / chờ payout). Lịch sử giao dịch đã chuyển sang getHotelRevenue (trang Doanh thu). KS chưa
+   * có ví ⇒ trả số dư 0, không 404.
+   *
+   * `payoutAccount` = tài khoản nhận tiền để partner đối chiếu nơi tiền được chuyển tới. Số TK lưu
+   * MÃ HOÁ; chỉ giải mã trả cho CHỦ KS (owner) — nhất quán với luồng payout owner-only. FE tự che/hiện
+   * bằng nút bật-tắt. Người operable khác (staff/manager) thấy tên chủ TK + ngân hàng nhưng số = null.
    */
   getHotelWallet = async (hotelId: string, currentUser: User) => {
     await hotelService.getOperableHotel(hotelId, currentUser);
 
-    const [wallet, payoutAgg] = await prisma.$transaction([
+    const [wallet, payoutAgg, account] = await prisma.$transaction([
       prisma.wallet.findUnique({ where: { hotelId } }),
       // "chờ payout" = tổng yêu cầu rút đang pending (đã trừ khỏi available lúc tạo yêu cầu).
       prisma.payout.aggregate({ _sum: { amount: true }, where: { hotelId, status: 'pending' } }),
+      // Tài khoản nhận tiền (ưu tiên tài khoản chính, mới nhất trước)
+      prisma.hotelPayoutAccount.findFirst({
+        where: { hotelId },
+        orderBy: [{ isPrimary: 'desc' }, { createdAt: 'desc' }],
+        select: {
+          id: true,
+          accountHolder: true,
+          bankName: true,
+          bankBranch: true,
+          accountNumber: true,
+          isPrimary: true,
+          partner: { select: { ownerId: true } },
+        },
+      }),
     ]);
     const pendingPayout = (payoutAgg._sum.amount ?? new Prisma.Decimal(0)).toString();
 
-    if (!wallet) {
-      return { wallet: { balanceAvailable: '0', balancePending: '0', pendingPayout, currency: 'VND' } };
-    }
-    return {
-      wallet: {
-        balanceAvailable: wallet.balanceAvailable.toString(), // "trong ví" — rút được
-        balancePending: wallet.balancePending.toString(), // "chờ tất toán" — khách chưa ở xong
-        pendingPayout, // "chờ payout" — đợi PM chi trả
-        currency: wallet.currency,
-      },
-    };
+    const payoutAccount = account
+      ? {
+          id: account.id,
+          accountHolder: account.accountHolder,
+          bankName: account.bankName,
+          bankBranch: account.bankBranch,
+          isPrimary: account.isPrimary,
+          // Số đầy đủ CHỈ cho chủ KS; operable khác nhận null (chỉ thấy tên chủ TK + ngân hàng)
+          accountNumber: account.partner.ownerId === currentUser.id ? decrypt(account.accountNumber) : null,
+        }
+      : null;
+
+    const balances = wallet
+      ? {
+          balanceAvailable: wallet.balanceAvailable.toString(), // "trong ví" — rút được
+          balancePending: wallet.balancePending.toString(), // "chờ tất toán" — khách chưa ở xong
+          pendingPayout, // "chờ payout" — đợi PM chi trả
+          currency: wallet.currency,
+        }
+      : { balanceAvailable: '0', balancePending: '0', pendingPayout, currency: 'VND' };
+
+    return { wallet: balances, payoutAccount };
   };
 
   /**
