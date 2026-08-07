@@ -17,7 +17,19 @@
     "amenities": "Amenities",
     "location": "Location",
     "rooms": "Rooms",
-    "reviews": "Reviews"
+    "reviews": "Reviews",
+    "cancellation": "Cancellation"
+  },
+  "cancellation": {
+    "title": "Cancellation policy",
+    "beforeDays_one": "Cancel {{count}} day or more ahead",
+    "beforeDays_other": "Cancel {{count}} days or more ahead",
+    "beforeHours": "Cancel {{hours}} hours or more ahead",
+    "later": "Cancel later than that",
+    "noShow": "No-show, no cancellation",
+    "refundPercent": "{{percent}}% refunded",
+    "freeUntilDate": "For the dates you picked, free cancellation runs through {{date}}.",
+    "snapshotNote": "Your booking keeps the policy that applied when you booked, even if the property changes it later."
   },
   "trust": {
     "verified": "Verified property",

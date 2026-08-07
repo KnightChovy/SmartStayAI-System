@@ -17,7 +17,19 @@
     "amenities": "Tiện ích",
     "location": "Vị trí",
     "rooms": "Phòng",
-    "reviews": "Đánh giá"
+    "reviews": "Đánh giá",
+    "cancellation": "Chính sách huỷ"
+  },
+  "cancellation": {
+    "title": "Chính sách huỷ phòng",
+    "beforeDays_one": "Huỷ trước {{count}} ngày trở lên",
+    "beforeDays_other": "Huỷ trước {{count}} ngày trở lên",
+    "beforeHours": "Huỷ trước {{hours}} giờ trở lên",
+    "later": "Huỷ muộn hơn mốc trên",
+    "noShow": "Không đến, không báo huỷ",
+    "refundPercent": "Hoàn {{percent}}%",
+    "freeUntilDate": "Với kỳ ở bạn đang chọn, huỷ miễn phí tới hết ngày {{date}}.",
+    "snapshotNote": "Đơn của bạn giữ nguyên chính sách tại thời điểm đặt, kể cả khi khách sạn đổi chính sách sau đó."
   },
   "trust": {
     "verified": "Khách sạn đã xác minh",
