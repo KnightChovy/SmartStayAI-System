@@ -7,15 +7,15 @@ import { revenueService } from '../services';
 export class RevenueController {
   // [Chủ KS / manager] Báo cáo doanh thu khách sạn theo khoảng thời gian
   getHotelRevenue = catchAsync(async (req: Request, res: Response): Promise<void> => {
-    const options = pick(req.query, ['from', 'to', 'groupBy']);
+    // from/to/groupBy: báo cáo; type/limit/page: phân trang sổ giao dịch trả kèm
+    const options = pick(req.query, ['from', 'to', 'groupBy', 'type', 'limit', 'page']);
     const result = await revenueService.getHotelRevenue(req.params.hotelId as string, req.user as User, options);
     res.send(result);
   });
 
-  // [Chủ KS / manager] Số dư ví + lịch sử giao dịch của khách sạn
+  // [Chủ KS / manager] Số dư ví của khách sạn (chỉ số dư — sổ giao dịch đã chuyển sang /revenue)
   getHotelWallet = catchAsync(async (req: Request, res: Response): Promise<void> => {
-    const options = pick(req.query, ['type', 'limit', 'page']);
-    const result = await revenueService.getHotelWallet(req.params.hotelId as string, req.user as User, options);
+    const result = await revenueService.getHotelWallet(req.params.hotelId as string, req.user as User);
     res.send(result);
   });
 
