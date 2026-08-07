@@ -5,8 +5,16 @@ import { hotelService } from './hotel.service';
 import { platformManagerService } from './platform-manager.service';
 import { commissionRateService } from './commission-rate.service';
 
-type RevenueQuery = { from?: Date; to?: Date; groupBy?: 'day' | 'month' };
-type WalletQuery = { type?: WalletTransactionType; page?: number; limit?: number };
+// from/to/groupBy: báo cáo doanh thu; type/page/limit: phân trang + lọc SỔ GIAO DỊCH (nay trả kèm
+// trang Doanh thu — hai nhóm tham số độc lập nhau).
+type RevenueQuery = {
+  from?: Date;
+  to?: Date;
+  groupBy?: 'day' | 'month';
+  type?: WalletTransactionType;
+  page?: number;
+  limit?: number;
+};
 
 export class RevenueService {
   /**
@@ -62,6 +70,14 @@ export class RevenueService {
     // con số % đúng cho cả kỳ — trả mức đang chịu là thứ đối tác cần biết và luôn có, kể cả kỳ trống.
     const commissionRate = await commissionRateService.resolveRate(hotelId, new Date());
 
+    // Sổ giao dịch ví (phân trang + lọc type) giờ trả KÈM trang Doanh thu — chuyển từ endpoint ví
+    // sang đây. from/to KHÔNG lọc sổ này: đây là lịch sử bút toán, độc lập với khoảng ngày báo cáo.
+    const transactions = await this.getHotelTransactions(hotelId, {
+      type: query.type,
+      page: query.page,
+      limit: query.limit,
+    });
+
     return {
       summary: {
         gross: gross.toString(),
@@ -74,6 +90,7 @@ export class RevenueService {
       },
       groupBy,
       series,
+      transactions,
     };
   };
 
@@ -151,26 +168,26 @@ export class RevenueService {
   };
 
   /**
-   * [Chủ KS / manager] Số dư ví + lịch sử giao dịch của MỘT khách sạn (phân trang, lọc theo loại).
-   * KS chưa phát sinh giao dịch nào ⇒ trả ví rỗng thay vì 404.
+   * Sổ giao dịch ví của MỘT khách sạn (phân trang, lọc theo loại), kèm mã booking + phương thức khách
+   * đã trả để đọc được nguồn tiền. KS chưa có ví ⇒ sổ rỗng. Dùng bởi getHotelRevenue — sổ giao dịch
+   * giờ hiển thị ở trang Doanh thu, KHÔNG còn nằm trong response ví.
    */
-  getHotelWallet = async (hotelId: string, currentUser: User, query: WalletQuery) => {
-    await hotelService.getOperableHotel(hotelId, currentUser);
+  private getHotelTransactions = async (
+    hotelId: string,
+    query: { type?: WalletTransactionType; page?: number; limit?: number }
+  ) => {
     const limit = query.limit || 20;
     const page = query.page || 1;
 
-    const wallet = await prisma.wallet.findUnique({ where: { hotelId } });
+    const wallet = await prisma.wallet.findUnique({ where: { hotelId }, select: { id: true } });
     if (!wallet) {
-      return {
-        wallet: { balanceAvailable: '0', balancePending: '0', pendingPayout: '0', currency: 'VND' },
-        transactions: { results: [], page, limit, totalPages: 0, totalResults: 0 },
-      };
+      return { results: [], page, limit, totalPages: 0, totalResults: 0 };
     }
 
     const where: Prisma.WalletTransactionWhereInput = { walletId: wallet.id };
     if (query.type) where.type = query.type;
 
-    const [rows, totalResults, payoutAgg] = await prisma.$transaction([
+    const [rows, totalResults] = await prisma.$transaction([
       prisma.walletTransaction.findMany({
         where,
         skip: (page - 1) * limit,
@@ -178,9 +195,6 @@ export class RevenueService {
         orderBy: { createdAt: 'desc' },
       }),
       prisma.walletTransaction.count({ where }),
-      // Tiền đang CHỜ PAYOUT = tổng yêu cầu rút đang pending (đã trừ khỏi available lúc tạo yêu cầu).
-      // Payout paid → hết pending → số này về 0; reject → phần đó cộng lại available.
-      prisma.payout.aggregate({ _sum: { amount: true }, where: { hotelId, status: 'pending' } }),
     ]);
 
     // Làm giàu "lịch sử giao dịch": gắn mã booking (từ đâu) + phương thức khách đã trả để đọc được
@@ -220,34 +234,53 @@ export class RevenueService {
     }
 
     return {
+      results: rows.map((t) => {
+        const bid = resolveBookingId(t);
+        const info = bid ? bookingInfo.get(bid) : undefined;
+        return {
+          id: t.id, // mã giao dịch (uuid)
+          type: t.type, // loại: earning/settlement/payout/refund/adjustment/commission/spend
+          status: t.status, // trạng thái bút toán (luôn 'completed' khi đã ghi sổ)
+          amount: t.amount.toString(),
+          balanceAfter: t.balanceAfter.toString(),
+          bookingId: t.bookingId,
+          bookingCode: info?.bookingCode ?? null, // "từ đâu" — mã booking để hiển thị
+          paymentMethods: info?.paymentMethods ?? [], // phương thức khách đã trả (rỗng nếu payout/adjustment)
+          commissionId: t.commissionId,
+          description: t.description,
+          createdAt: t.createdAt,
+        };
+      }),
+      page,
+      limit,
+      totalPages: Math.ceil(totalResults / limit),
+      totalResults,
+    };
+  };
+
+  /**
+   * [Chủ KS / manager] Số dư ví của MỘT khách sạn — CHỈ số dư (trong ví / chờ tất toán / chờ payout).
+   * Lịch sử giao dịch đã chuyển sang getHotelRevenue (trang Doanh thu). KS chưa có ví ⇒ trả 0, không 404.
+   */
+  getHotelWallet = async (hotelId: string, currentUser: User) => {
+    await hotelService.getOperableHotel(hotelId, currentUser);
+
+    const [wallet, payoutAgg] = await prisma.$transaction([
+      prisma.wallet.findUnique({ where: { hotelId } }),
+      // "chờ payout" = tổng yêu cầu rút đang pending (đã trừ khỏi available lúc tạo yêu cầu).
+      prisma.payout.aggregate({ _sum: { amount: true }, where: { hotelId, status: 'pending' } }),
+    ]);
+    const pendingPayout = (payoutAgg._sum.amount ?? new Prisma.Decimal(0)).toString();
+
+    if (!wallet) {
+      return { wallet: { balanceAvailable: '0', balancePending: '0', pendingPayout, currency: 'VND' } };
+    }
+    return {
       wallet: {
         balanceAvailable: wallet.balanceAvailable.toString(), // "trong ví" — rút được
-        balancePending: wallet.balancePending.toString(), // "chờ tất toán" — khách chưa ở xong, chưa rút được
-        pendingPayout: (payoutAgg._sum.amount ?? new Prisma.Decimal(0)).toString(), // "chờ payout" — đợi PM chi trả
+        balancePending: wallet.balancePending.toString(), // "chờ tất toán" — khách chưa ở xong
+        pendingPayout, // "chờ payout" — đợi PM chi trả
         currency: wallet.currency,
-      },
-      transactions: {
-        results: rows.map((t) => {
-          const bid = resolveBookingId(t);
-          const info = bid ? bookingInfo.get(bid) : undefined;
-          return {
-            id: t.id, // mã giao dịch (uuid)
-            type: t.type, // loại: earning/settlement/payout/refund/adjustment/commission/spend
-            status: t.status, // trạng thái bút toán (luôn 'completed' khi đã ghi sổ)
-            amount: t.amount.toString(),
-            balanceAfter: t.balanceAfter.toString(),
-            bookingId: t.bookingId,
-            bookingCode: info?.bookingCode ?? null, // "từ đâu" — mã booking để hiển thị
-            paymentMethods: info?.paymentMethods ?? [], // phương thức khách đã trả (rỗng nếu payout/adjustment)
-            commissionId: t.commissionId,
-            description: t.description,
-            createdAt: t.createdAt,
-          };
-        }),
-        page,
-        limit,
-        totalPages: Math.ceil(totalResults / limit),
-        totalResults,
       },
     };
   };
