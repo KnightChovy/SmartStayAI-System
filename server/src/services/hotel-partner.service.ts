@@ -343,7 +343,7 @@ export class HotelPartnerService {
       include: requestInclude,
     });
     if (!request) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy hồ sơ đăng ký');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Registration application not found');
     }
     const isOwner = request.partner.ownerId === currentUser.id;
     const canManage = (roleRights.get(currentUser.role) || []).includes('manageHotelVerifications');
@@ -395,7 +395,7 @@ export class HotelPartnerService {
   reviewDocument = async (documentId: string, reviewerId: string, body: ReviewDocumentDto) => {
     const document = await prisma.hotelVerificationDocument.findUnique({ where: { id: documentId } });
     if (!document) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy giấy tờ');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Document not found');
     }
     const reviewedAt = new Date();
     const newStatus = body.decision === 'approve' ? 'approved' : 'rejected';
@@ -438,13 +438,13 @@ export class HotelPartnerService {
       include: { partner: true },
     });
     if (!oldDocument) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy giấy tờ');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Document not found');
     }
     if (oldDocument.partner.ownerId !== currentUser.id) {
       throw new ApiError(httpStatus.FORBIDDEN, 'Forbidden');
     }
     if (oldDocument.status !== 'rejected') {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Chỉ được nộp lại giấy tờ đã bị từ chối');
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Only rejected documents can be resubmitted');
     }
 
     return prisma.$transaction(async (tx) => {
@@ -479,10 +479,10 @@ export class HotelPartnerService {
       },
     });
     if (!request) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy hồ sơ đăng ký');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Registration application not found');
     }
     if (request.status === 'approved' || request.status === 'rejected') {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Hồ sơ này đã được duyệt trước đó');
+      throw new ApiError(httpStatus.BAD_REQUEST, 'This application has already been reviewed');
     }
 
     const reviewedAt = new Date();
@@ -582,8 +582,8 @@ export class HotelPartnerService {
           data: {
             userId: request.partner.ownerId,
             type: 'partner_approved',
-            title: 'Hồ sơ đăng ký khách sạn đã được duyệt',
-            body: 'Chúc mừng! Hồ sơ của bạn đã được duyệt. Vào Room Inventory để hoàn thiện thông tin phòng (giá, ảnh, mô tả) rồi publish để khách có thể đặt.',
+            title: 'Hotel registration application approved',
+            body: 'Congratulations! Your application has been approved. Go to Room Inventory to complete your room details (price, images, description), then publish so guests can book.',
             channel: 'in_app',
             status: 'sent',
             sentAt: reviewedAt,

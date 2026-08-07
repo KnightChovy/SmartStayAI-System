@@ -1,8 +1,10 @@
 import { api } from '@/lib/api';
 import type {
+  HotelPayoutAccountSummary,
   HotelRevenueParams,
   HotelRevenueReport,
   HotelWalletResponse,
+  UpdatePayoutAccountDto,
 } from '@/types/hotel-revenue.types';
 import type {
   HotelPerformance,
@@ -36,6 +38,24 @@ export const hotelRevenueService = {
    */
   async getWallet(hotelId: string): Promise<HotelWalletResponse> {
     const { data } = await api.get<HotelWalletResponse>(`/hotels/${hotelId}/wallet`);
+    return data;
+  },
+
+  /**
+   * `PUT /hotels/:id/payout-account` — **chỉ CHỦ khách sạn** (người khác nhận 403).
+   *
+   * Đã có tài khoản chính thì BE update **tại chỗ** (giữ nguyên `id`) nên các yêu cầu rút đang
+   * `pending` không bị hỏng — nhưng cũng có nghĩa Platform Manager sẽ chuyển tiền vào tài khoản
+   * MỚI cho những yêu cầu đó.
+   */
+  async updatePayoutAccount(
+    hotelId: string,
+    payload: UpdatePayoutAccountDto
+  ): Promise<HotelPayoutAccountSummary> {
+    const { data } = await api.put<HotelPayoutAccountSummary>(
+      `/hotels/${hotelId}/payout-account`,
+      payload
+    );
     return data;
   },
 

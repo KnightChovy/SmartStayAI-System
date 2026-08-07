@@ -114,6 +114,58 @@ This file tracks the accomplished tasks, resolved user requests, and visual/func
     - **Ảnh QR SePay render thành `<img>`** ngay trong bong bóng, bọc trong link để bấm ra ảnh gốc. Một URL ảnh thô thì khách **không quét được** — mà BE lại dặn bot gửi thẳng URL đó (`conversation.service.ts:626`). Cũng chỉ nhận đúng host `qr.sepay.vn` để không biến link lạ thành ảnh.
   - **VERIFY sau khi thêm 2 mục trên — 25/25 render thật + 16/16 trên Chrome**: `**...**` ra `<strong>` và **không còn dấu sao nào trên màn hình**, nhiều cụm đậm trong một dòng đều đúng, in đậm vẫn chạy ở đoạn chữ **sau** link; ảnh QR ra `<img>` có `alt`, có kích thước thật, nằm gọn trong khung, và **không còn in `qr.sepay.vn` thô**.
 
+## August 8, 2026 (continued 3)
+
+- [x] **Hotel Partner · Modal "Change bank account" — ô số TK điền sẵn số cũ, chạm vào là xoá để gõ số mới**:
+  - **Bản trước cố ý để TRỐNG** kèm ghi chú "prefill là mời lưu nhầm chuỗi `•••• 3456`". Nỗi lo đó đúng, nhưng **tiền đề thì sai**: BE **có** giải mã số đầy đủ cho **chủ** khách sạn (`accountNumber` trong `payoutAccount`), mà modal này vốn **owner-only** — staff/manager không mở tới được. Nên vẫn có số thật để điền lại.
+  - **Vì sao đáng sửa**: phần lớn lần vào đây là để sửa **tên chủ TK hoặc chi nhánh**; bắt gõ lại 13 chữ số cho một thứ không hề đổi là chỗ dễ gõ sai nhất form — mà gõ sai số tài khoản thì tiền đi lạc.
+  - **Cơ chế 3 trạng thái** (`numberDraft: string | null`): `null` = **chưa đụng vào** ⇒ ô hiện **số cũ đã che** và lúc lưu **gửi lại số THẬT** (`savedNumber`), không phải chuỗi che ⇒ rủi ro của bản trước bị chặn ở gốc chứ không né bằng cách để trống. Vừa focus là ô **trống ngay** để gõ số mới; rời ô mà **chưa gõ gì thì số cũ hiện lại** ⇒ không bao giờ rơi vào trạng thái trống-không-hợp-lệ chỉ vì lỡ bấm vào.
+  - **CỐ Ý xoá lúc FOCUS chứ không lúc CHANGE**: chuỗi che chứa sẵn 4 chữ số cuối, gõ đè lên nó thì `onChange` nhận "mask + ký tự mới" — muốn tách ra phải đoán ký tự nào là của mask, rất dễ sai. Xoá lúc focus là ranh giới rõ ràng, không phải đoán gì.
+  - **Chỉ soi lỗi 6–30 chữ số khi đối tác ĐÃ tự gõ**: số cũ là số BE đang lưu, bắt lỗi nó là vô nghĩa.
+  - **Placeholder cũ bị cắt cụt** ("Currently •••• 5042 — type the full number to r…") vì quá dài cho ô hẹp — giờ thành **dòng hint riêng** dưới ô ("This is the account currently on file. Leave it as it is to keep it."), placeholder rút còn "Type the new number". Hint bị **lỗi che** khi có lỗi (một ô chỉ nói một điều tại một thời điểm), và `aria-describedby` trỏ đúng cái đang hiện.
+  - **Tách `maskAccount` sang `payout-labels.ts`** dùng chung với thẻ Bank Account: hai chỗ che khác kiểu thì đối tác tưởng là hai con số khác nhau.
+  - **Verify**: `tsc` **0 lỗi**, `eslint` **0 vấn đề**, `npm run build` **pass**. ⚠️ Chưa drive Chrome ⇒ nhờ bạn bấm thử 3 nhánh: mở modal thấy số cũ · bấm vào ô rồi bỏ đi (số cũ phải quay lại) · gõ số mới rồi lưu.
+
+## August 8, 2026 (continued 2)
+
+- [x] **Hotel Partner · Hotel detail — khối "Property information": 5 thẻ trong lưới 4 cột → danh sách**:
+  - **Thẻ mồ côi**: 5 mục trong `lg:grid-cols-4` ⇒ hàng đầu 4 thẻ, hàng hai còn **đúng 1 thẻ đứng lẻ**, mép dưới lởm chởm. Đổi `grid-cols` chỉ dời chỗ chứ không hết (5 vào 3 cột thì thừa 1 ô, vào 5 cột thì mô tả bị cắt cụt).
+  - **Sửa ở mô hình chứ không ở lưới**: năm mục này đều là "bấm để mở modal chỉnh" — **cùng một loại hành động**, nên đọc thành **một danh sách có đường phân cách** mới đúng bản chất, và danh sách thì không có mép lởm chởm dù số mục là mấy.
+  - **Nhãn + mô tả về CÙNG một dòng** (không xếp chồng): dòng full-width mà chữ dồn hết về trái nhìn rất rỗng; ghép lại thì hàng thấp xuống và phần giữa được lấp. Cả khối cũng gọn hơn khối cũ dù cùng 5 mục.
+  - **Đổi icon `Settings2` → `ChevronRight`**: mọi mục ở đây đều *là* cài đặt nên icon hình sliders không phân biệt được gì; thứ cần báo cho người dùng là "bấm vào sẽ mở ra". Chevron đổi màu theo hover để nói rõ cả dòng bấm được.
+  - **Xếp lại theo nhóm nghĩa** thay vì thứ tự ngẫu nhiên: 2 mục khách **đọc** (Contacts · Nearby places) trước, rồi 3 mục quyết định **tiền** (Policies · Taxes & fees · Cancellation policy).
+  - **CỐ Ý không thêm badge "đã cấu hình / chưa cấu hình"** dù nó hữu ích: `GET /hotels/:id/manage` **không** trả `contacts`/`policies`/`charges`/`nearbyPlaces` (mỗi modal tự gọi endpoint riêng), nên muốn có badge phải bắn thêm **4 request** ngay khi mở trang chỉ để tô mấy con số — không đáng.
+  - **Verify**: `tsc` **0 lỗi**, `eslint` **0 vấn đề**, `npm run build` **pass**. ⚠️ Theo yêu cầu, **không drive Chrome** lần này ⇒ phần thị giác cần bạn liếc qua.
+
+## August 8, 2026 (continued)
+
+- [x] **Hotel Partner · Wallet — refactor UI/UX: sửa bố cục lệch nửa trang và bổ sung con số người dùng hỏi đầu tiên**:
+  - **🔴 Nửa phải trang bỏ trống**: khối 3 số dư bị nhét vào cột `1/3`, còn "Payout History" chiếm `2/3` nhưng **rỗng** (0 request) ⇒ một vùng trắng cao gần nửa màn hình bên phải, trong khi cột trái chồng 2 thẻ. Đổi khối tiền thành **full width**, hàng dưới mới chia `1/3 + 2/3` (Bank Account + Payout History).
+  - **Ba số dư chuyển từ DỌC sang NGANG**: đây là một **dòng chảy** (`Pending settlement → Available → Pending payout`), mà đọc dòng chảy từ trái sang là tự nhiên hơn từ trên xuống; mũi tên trong cột hẹp trước đây bé xíu, dễ bị bỏ qua nên ba con số lại thành ba khoản rời rạc. Mobile tự xếp dọc, mũi tên đổi thành chevron xuống.
+  - **🔴 Thiếu hẳn con số "tôi đang có bao nhiêu"**: màn hình có 3 số nhưng không có tổng. Ba số **rời nhau** (tạo yêu cầu rút là chuyển từ `available` sang `pendingPayout`, không nhân đôi) nên cộng được — thêm **Total balance** ở góc phải header, đo ra `18.204.450 VNĐ`. Đây là câu hỏi đầu tiên khi mở ví mà bản trước không trả lời ở đâu cả.
+  - **Nút "Request payout" chuyển từ header vào TRONG chặng "Available"**: nó chỉ tác động lên đúng con số đó, đặt cạnh nhau thì khỏi phải bắc cầu bằng mắt qua nửa màn hình. Nhánh bị chặn vẫn disable kèm nguyên lý do (không phải chủ KS / chưa có tài khoản / dưới mức tối thiểu).
+  - **`0 VNĐ` hết bị tô xanh đậm**: một con số **bằng không** mà tô màu mạnh là kéo mắt về chỗ không có gì. Zero → xám nhạt (đo runtime: `oklch(0.704 0.04 256.788)` = slate-400), icon cũng nhạt theo.
+  - **Empty state của Payout History**: `py-20` cũ đẻ ra khoảng trống cao gần nửa thẻ cho đúng một câu 6 chữ. Rút gọn còn `py-10` và **nói điều sắp xảy ra** ("khi bạn tạo yêu cầu, nó hiện ở đây kèm trạng thái và mã chuyển khoản") thay vì chỉ báo "chưa có gì".
+  - **Verify — trình duyệt thật, 2 khổ (1440 / 390)**: `tsc` **0 lỗi**, `eslint` **0 vấn đề**, `build` **pass**; đủ 3 chặng, Total balance ra đúng, **nút nằm trong chặng Available** (kiểm bằng selector lồng, không đọc bằng mắt), zero **xám** ở cả 2 khổ, **0 tràn ngang**, **0 lỗi console**. Đã xem ảnh render thật để chốt bố cục.
+
+## August 8, 2026
+
+- [x] **Bắt kịp spec gộp `fe-changes-2026-08-07.md` — 3 mục CÒN LẠI thật sự mới (phần lớn spec đã làm hôm qua)**:
+  - **Rà trước khi code**: spec này gộp 3 file đã gửi rời, nên đối chiếu từng mục thì **6/9 đã xong** (ví 3 số dư, sổ giao dịch dời sang `/revenue`, breakdown `commissionRatePct`/`sharePct`/`totals`, admin revenue `takeRatePct`/`avgBookingValue` + `null` → `—`, payout partner/PM, nút Settle vốn chưa từng nối). Việc thật sự còn lại là 3 mục dưới.
+  - **🔴 BREAKING #2 — `transaction.status` đã bị BE GỠ**: FE vẫn khai `status: string`, đọc ra `undefined`. Đo trên deploy: `Object.keys` của một dòng **không còn `status`**, thay bằng **`payoutId` + `payoutStatus`**. Đã bỏ khỏi type và thêm 2 field mới.
+  - **Badge `payoutStatus` trong sổ giao dịch** — thứ này *bắt buộc* chứ không phải trang trí: cả 3 kết cục `pending`/`paid`/`failed` đều mang **`type: 'payout'`**, nên không có badge thì ba dòng khác hẳn nhau về ý nghĩa lại nhìn y hệt. Badge ẩn khi `payoutStatus === null` (giao dịch không thuộc luồng rút).
+  - **Tự sinh câu mô tả theo `type` + `payoutStatus`** (`describeTxn`), bỏ render thẳng `description` của BE: đó là chuỗi **tiếng Anh backfill cứng** ("Payout request — funds on hold"), không đi qua i18n và **không phản ánh trạng thái hiện tại** — một khoản đã bị từ chối vẫn mang câu "funds on hold". `description` chỉ còn là phương án chót cho loại giao dịch lạ. Cột đổi tên `Type` → **"What happened"** cho khớp việc nó đang làm.
+  - **🆕 Ví trả kèm `payoutAccount`** + thẻ **Bank Account** mới ở trang Wallet: số tài khoản **che sẵn** (`•••• •••• 3456`) kèm nút con mắt bật/tắt — màn hình này hay mở giữa quầy lễ tân, số chỉ cần đọc lúc đối chiếu chứ không cần phơi suốt.
+  - **⚠️ `accountNumber === null` KHÔNG phải "chưa khai"**: BE chỉ giải mã cho **chủ** KS, staff/manager luôn nhận `null` — **đã đo**: manager đọc `/wallet` ra đủ object nhưng `accountNumber: null`. Báo "chưa có tài khoản" với người không đủ quyền là **sai sự thật**, nên hai trạng thái nói khác hẳn nhau ("Hidden — only the hotel owner can see the full number" vs khối rỗng "No bank account on file").
+  - **🆕 `PUT /hotels/:id/payout-account`** (owner-only) — service + hook + modal đổi tài khoản. Validate cùng luật BE ngay tại chỗ (**6–30 chữ số**, `accountHolder`/`bankName` ≥ 2 ký tự — luật ≥2 này **spec không nói**, tự đo ra khi thử payload sai); ô số TK **tự lọc bỏ ký tự không phải chữ số** khi gõ. **Luôn bắt nhập lại số đầy đủ** thay vì prefill: số cũ đã bị che, prefill là mời lưu nhầm chuỗi `•••• 3456`.
+  - **Cảnh báo đổi TK khi đang có payout chờ duyệt**: BE update **tại chỗ** (giữ `id`) nên yêu cầu `pending` không hỏng — nhưng PM sẽ chuyển tiền vào tài khoản **MỚI**. BE cố ý không chặn, nên đây là chỗ duy nhất nói được điều đó cho đối tác.
+  - **Chặn "xin rút khi chưa có tài khoản"**: BE từ chối, nên nút Request payout disable kèm đúng lý do và chỉ thẳng việc cần làm, thay vì để bấm rồi ăn 400.
+  - **Ví KHÁCH** (`/me/wallet`): bỏ `status` khỏi type theo §6.
+  - **Verify — API thật + trình duyệt thật**: manager đọc `/wallet` ra `accountNumber: null` ✅; manager `PUT payout-account` → **403 "Chỉ chủ khách sạn được đổi tài khoản nhận tiền"** ✅; 3 nhánh 400 (holder 1 ký tự · số 5 chữ số · số có khoảng trắng) ✅ và **tài khoản NGUYÊN VẸN** sau mọi lần thử ⇒ không mutate gì. Drive Chrome: thẻ Bank Account che số mặc định, bấm con mắt hiện đủ, modal chặn đúng 2 nhánh lỗi và bật nút khi hợp lệ. **`payoutStatus` trên deploy toàn `null`** (DB vừa reseed, chưa có yêu cầu rút nào) nên ép 3 trạng thái bằng cách chặn response: badge ra đúng **Awaiting review / Paid / Declined**, cặp `payout`+`adjustment` cùng `payoutId` (§5.2) hiện đúng 2 dòng, **0 chuỗi tiếng Anh backfill**, **0 `undefined`**, **0 lỗi console**. `tsc`/`eslint`/`build` sạch.
+  - ⚠️ **DB deploy đang bị reseed liên tục** — hotel ID đổi giữa các lần gọi (có lúc 404 giữa chừng). Không phải lỗi FE, nhưng ai test bằng ID hardcode sẽ dính.
+  - ⚠️ **Chưa bấm Lưu thật** trên `PUT /payout-account` (sẽ ghi đè tài khoản seed của đối tác) và chưa tạo yêu cầu rút thật ⇒ nhánh ghi cần bạn thử một lần trên môi trường test.
+  - ⚠️ **Deals §10 không cần sửa gì** — `discountPercent` chỉ đổi cách BE tính, FE vẫn render thẳng field đó.
+
 ## August 7, 2026 (continued 8)
 
 - [x] **Platform Manager · Revenue — Export bỏ CSV, chuyển sang EXCEL thật (.xlsx) 3 sheet, và xuất ĐỦ mọi thứ đang hiện trên màn hình**:
