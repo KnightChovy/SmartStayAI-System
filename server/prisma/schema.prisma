@@ -998,6 +998,9 @@ model Booking {
   specialRequests    String?       @map("special_requests")
   // Hạn giữ chỗ cho booking chưa thanh toán: quá hạn mà vẫn pending thì nhả tồn kho (xem releaseExpiredHolds)
   holdExpiresAt      DateTime?     @map("hold_expires_at")
+  // SNAPSHOT chính sách huỷ (bậc thang) ĐÓNG BĂNG lúc đặt: KS đổi chính sách sau không đổi điều khoản
+  // đơn cũ. Đơn cũ chưa có snapshot ⇒ null ⇒ fallback policy sống của KS (xem resolveBookingPolicy).
+  cancellationPolicy Json?         @map("cancellation_policy")
   // ----- Vết huỷ đơn: AI huỷ, VÌ SAO (máy đọc), và lời giải thích tự do -----
   // Ba cột này đi cùng nhau; thiếu cancelledByRole thì không đối soát được ai chịu chi phí hoàn tiền.
   cancelledByRole        CancelledByRole?        @map("cancelled_by_role")

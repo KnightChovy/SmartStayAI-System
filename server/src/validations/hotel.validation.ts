@@ -1,5 +1,25 @@
 import Joi from 'joi';
 
+// Kiểm bậc thang chính sách huỷ: mốc duy nhất, PHẢI có bậc 0 (phủ tới sát check-in), và huỷ càng muộn
+// hoàn càng ít (refundPercent không tăng khi minHoursBefore giảm). Trả về mảng đã sắp GIẢM DẦN.
+type Tier = { minHoursBefore: number; refundPercent: number };
+const validateCancellationTiers = (tiers: Tier[], helpers: Joi.CustomHelpers): Tier[] | Joi.ErrorReport => {
+  const sorted = [...tiers].sort((a, b) => b.minHoursBefore - a.minHoursBefore);
+  const hours = sorted.map((t) => t.minHoursBefore);
+  if (new Set(hours).size !== hours.length) {
+    return helpers.message({ custom: 'Các mốc minHoursBefore không được trùng nhau' });
+  }
+  if (!hours.includes(0)) {
+    return helpers.message({ custom: 'Phải có bậc minHoursBefore = 0 (phủ kín tới sát giờ nhận phòng)' });
+  }
+  for (let i = 1; i < sorted.length; i += 1) {
+    if (sorted[i].refundPercent > sorted[i - 1].refundPercent) {
+      return helpers.message({ custom: 'refundPercent phải KHÔNG tăng khi huỷ muộn hơn (mốc giờ nhỏ hơn)' });
+    }
+  }
+  return sorted;
+};
+
 export const searchHotels = {
   query: Joi.object()
     .keys({
@@ -90,10 +110,19 @@ export const updateHotel = {
       settings: Joi.object().keys({
         cancellation: Joi.object()
           .keys({
-            // Trần 2160h = 90 ngày: đủ cho cả villa/resort mùa cao điểm (chính sách 60-90 ngày),
-            // vẫn chặn được số vô lý. 0 = không bao giờ được huỷ miễn phí.
-            freeUntilHours: Joi.number().integer().min(0).max(2160).required(),
-            latePenalty: Joi.string().valid('first_night', 'full').required(),
+            // Bậc thang: huỷ trước ≥ minHoursBefore giờ ⇒ hoàn refundPercent%. Trần 2160h = 90 ngày
+            // (đủ cho villa/resort mùa cao điểm). Ràng buộc phủ kín + giảm dần ở validateCancellationTiers.
+            tiers: Joi.array()
+              .min(1)
+              .items(
+                Joi.object().keys({
+                  minHoursBefore: Joi.number().integer().min(0).max(2160).required(),
+                  refundPercent: Joi.number().integer().min(0).max(100).required(),
+                })
+              )
+              .custom(validateCancellationTiers, 'tier coverage & ordering')
+              .required(),
+            noShowRefundPercent: Joi.number().integer().min(0).max(100).default(0),
           })
           .required(),
       }),
