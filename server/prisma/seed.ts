@@ -1075,7 +1075,7 @@ const main = async (): Promise<void> => {
       const commissionAmount = Math.round((m.totalAmount * rate) / 100);
       const net = m.totalAmount - commissionAmount;
       const settled = b.status === 'checked_out';
-      await prisma.platformCommission.create({
+      const commission = await prisma.platformCommission.create({
         data: {
           bookingId: booking.id,
           paymentId: payment.id,
@@ -1086,12 +1086,49 @@ const main = async (): Promise<void> => {
           ...(settled && { settledAt: checkOut }),
         },
       });
-      await prisma.wallet.update({
-        where: { hotelId: b.hotel.id },
-        data: settled
-          ? { balanceAvailable: { increment: net } }
-          : { balancePending: { increment: net } },
+
+      // Ghi giao dịch ví GIỐNG HỆT wallet.service khi tiền thật về, để ví demo có LỊCH SỬ giải thích
+      // số dư thay vì chỉ cộng thẳng: earning (net → "chờ tất toán"/balancePending) rồi — nếu đơn đã
+      // chốt sổ — settlement (chuyển net sang "trong ví"/balanceAvailable). Mọi giao dịch status
+      // 'completed'; balanceAfter = số dư của ĐÚNG cột mà giao dịch đó tác động (khớp cách BE tính).
+      const wallet = await prisma.wallet.findUniqueOrThrow({ where: { hotelId: b.hotel.id } });
+      const pendingAfterEarning = wallet.balancePending.add(net);
+      await prisma.walletTransaction.create({
+        data: {
+          walletId: wallet.id,
+          type: 'earning',
+          amount: net,
+          balanceAfter: pendingAfterEarning,
+          bookingId: booking.id,
+          status: 'completed',
+          description: 'Net doanh thu booking (chờ tất toán)',
+        },
       });
+      if (settled) {
+        const availableAfterSettle = wallet.balanceAvailable.add(net);
+        await prisma.walletTransaction.create({
+          data: {
+            walletId: wallet.id,
+            type: 'settlement',
+            amount: net,
+            balanceAfter: availableAfterSettle,
+            commissionId: commission.id,
+            status: 'completed',
+            description: 'Chuyển pending → available (đã tất toán)',
+          },
+        });
+        // Đơn đã chốt sổ: net rời pending, vào available (đúng net effect earning + settle)
+        await prisma.wallet.update({
+          where: { id: wallet.id },
+          data: { balancePending: wallet.balancePending, balanceAvailable: availableAfterSettle },
+        });
+      } else {
+        // Đơn tương lai: net còn treo ở pending, chờ khách ở xong mới tất toán
+        await prisma.wallet.update({
+          where: { id: wallet.id },
+          data: { balancePending: pendingAfterEarning },
+        });
+      }
     }
 
     if (b.review) {
@@ -1113,7 +1150,7 @@ const main = async (): Promise<void> => {
       });
     }
   }
-  console.log(`  ✓ ${BOOKINGS.length} booking (kèm thanh toán, hoa hồng, ví, voucher, đánh giá)`);
+  console.log(`  ✓ ${BOOKINGS.length} booking (kèm thanh toán, hoa hồng, ví + giao dịch earning/settlement, voucher, đánh giá)`);
 
   // ----- Ví khách: nạp sẵn số dư để demo thanh toán bằng ví ngay, khỏi phải huỷ đơn trước -----
   // customer@gmail.com: đủ trả trọn một đơn rẻ ⇒ demo "ví trả hết, booking confirmed ngay"
@@ -1128,6 +1165,7 @@ const main = async (): Promise<void> => {
           type: 'adjustment',
           amount: 2_000_000,
           balanceAfter: 2_000_000,
+          status: 'completed',
           description: 'Sample balance for the wallet payment demo',
         },
       },
@@ -1142,6 +1180,7 @@ const main = async (): Promise<void> => {
           type: 'adjustment',
           amount: 300_000,
           balanceAfter: 300_000,
+          status: 'completed',
           description: 'Small sample balance for the wallet + gateway split payment demo',
         },
       },

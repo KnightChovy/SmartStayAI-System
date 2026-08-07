@@ -158,7 +158,7 @@ export class RevenueService {
     const wallet = await prisma.wallet.findUnique({ where: { hotelId } });
     if (!wallet) {
       return {
-        wallet: { balanceAvailable: '0', balancePending: '0', currency: 'VND' },
+        wallet: { balanceAvailable: '0', balancePending: '0', pendingPayout: '0', currency: 'VND' },
         transactions: { results: [], page, limit, totalPages: 0, totalResults: 0 },
       };
     }
@@ -166,7 +166,7 @@ export class RevenueService {
     const where: Prisma.WalletTransactionWhereInput = { walletId: wallet.id };
     if (query.type) where.type = query.type;
 
-    const [rows, totalResults] = await prisma.$transaction([
+    const [rows, totalResults, payoutAgg] = await prisma.$transaction([
       prisma.walletTransaction.findMany({
         where,
         skip: (page - 1) * limit,
@@ -174,12 +174,16 @@ export class RevenueService {
         orderBy: { createdAt: 'desc' },
       }),
       prisma.walletTransaction.count({ where }),
+      // Tiền đang CHỜ PAYOUT = tổng yêu cầu rút đang pending (đã trừ khỏi available lúc tạo yêu cầu).
+      // Payout paid → hết pending → số này về 0; reject → phần đó cộng lại available.
+      prisma.payout.aggregate({ _sum: { amount: true }, where: { hotelId, status: 'pending' } }),
     ]);
 
     return {
       wallet: {
-        balanceAvailable: wallet.balanceAvailable.toString(),
-        balancePending: wallet.balancePending.toString(),
+        balanceAvailable: wallet.balanceAvailable.toString(), // "trong ví" — rút được
+        balancePending: wallet.balancePending.toString(), // "chờ tất toán" — khách chưa ở xong, chưa rút được
+        pendingPayout: (payoutAgg._sum.amount ?? new Prisma.Decimal(0)).toString(), // "chờ payout" — đợi PM chi trả
         currency: wallet.currency,
       },
       transactions: {

@@ -483,41 +483,6 @@ paths:
         "403":
           $ref: '#/components/responses/Forbidden'
 
-  /admin/commissions/{commissionId}/settle:
-    patch:
-      summary: Mark a commission as settled / paid out (admin)
-      description: >
-        Sets a commission's status to settled (payout done) and stamps settledAt. Rejected if already
-        settled. Writes an audit log entry.
-      tags: [Admin]
-      security:
-        - bearerAuth: []
-      parameters:
-        - in: path
-          name: commissionId
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        "200":
-          description: Updated commission
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/Commission' }
-        "400":
-          description: Already settled
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        "401":
-          $ref: '#/components/responses/Unauthorized'
-        "403":
-          $ref: '#/components/responses/Forbidden'
-        "404":
-          $ref: '#/components/responses/NotFound'
-
   /admin/hotels:
     get:
       summary: List all hotels platform-wide (admin)
@@ -2540,8 +2505,9 @@ paths:
                   wallet:
                     type: object
                     properties:
-                      balanceAvailable: { type: string, example: '10625000' }
-                      balancePending: { type: string, example: '0' }
+                      balanceAvailable: { type: string, description: '"Trong ví" — rút được ngay', example: '10625000' }
+                      balancePending: { type: string, description: '"Chờ tất toán" — khách chưa ở xong, chưa rút được', example: '0' }
+                      pendingPayout: { type: string, description: '"Chờ payout" — Σ yêu cầu rút đang pending (đã trừ khỏi available), PM chi trả xong về 0', example: '0' }
                       currency: { type: string, example: VND }
                   transactions:
                     type: object
