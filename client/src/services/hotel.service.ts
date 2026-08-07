@@ -11,6 +11,7 @@ import type {
   RoomTypeDetail,
   RoomTypeDetailParams,
   RoomTypeParams,
+  CancellationPreset,
   UpdateHotelDto,
 } from '@/types/hotel.types';
 import type {
@@ -133,5 +134,19 @@ export const hotelService = {
   async getById(hotelId: string): Promise<HotelDetail> {
     const { data } = await api.get<HotelDetail>(`/hotels/${hotelId}`);
     return data;
+  },
+
+  /**
+   * 5 preset chính sách huỷ do BE định nghĩa (`GET /hotels/cancellation-presets`). Public.
+   *
+   * Lấy từ BE chứ **không hardcode ở client**: đây là con số quyết định tiền hoàn cho khách, mà BE
+   * lại dùng chính bộ này làm mặc định khi khách sạn chưa cấu hình — chép sang FE là chờ ngày hai
+   * bên trôi lệch rồi partner chọn "Linh hoạt" mà khách nhận điều khoản khác.
+   */
+  async getCancellationPresets(): Promise<CancellationPreset[]> {
+    const { data } = await api.get<{ presets: CancellationPreset[] }>(
+      '/hotels/cancellation-presets'
+    );
+    return data.presets;
   },
 };

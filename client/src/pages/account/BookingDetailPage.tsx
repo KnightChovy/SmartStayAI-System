@@ -12,7 +12,7 @@ import {
   Users,
   XCircle,
 } from 'lucide-react';
-import { useBooking, useCancelBooking, usePaymentHold } from '@/hooks/bookings';
+import { useBooking, usePaymentHold } from '@/hooks/bookings';
 import { useMyReviews } from '@/hooks/account';
 import { ROUTES } from '@/constants/routes';
 import BackLink from '@/components/shared/BackLink';
@@ -23,8 +23,8 @@ import DateRangePicker from '@/components/shared/DateRangePicker';
 import GuestSelector from '@/components/shared/GuestSelector';
 import ReviewModal from '@/components/account/ReviewModal';
 import RefundStatusCard from '@/components/account/RefundStatusCard';
+import CancelBookingPanel from '@/components/account/CancelBookingPanel';
 import PayNowAction from '@/components/booking/PayNowAction';
-import { CANCEL_REASON_MAX } from '@/validations/account.validation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { formatDateShort } from '@/utils/formatDate';
@@ -37,7 +37,6 @@ export default function BookingDetailPage() {
   const { bookingId = '' } = useParams();
   const navigate = useNavigate();
   const { data: booking, isLoading } = useBooking(bookingId);
-  const cancelBooking = useCancelBooking();
   // Đơn tạo xong nhưng chưa trả tiền (huỷ giữa chừng ở cổng / đóng tab) vẫn còn hạn giữ chỗ
   // → phải nói rõ và cho đường trả tiền lại, nếu không khách kẹt cho tới lúc cron huỷ đơn.
   const hold = usePaymentHold(booking);
@@ -46,7 +45,6 @@ export default function BookingDetailPage() {
   const existingReview = myReviews?.find(r => r.bookingId === bookingId) ?? null;
 
   const [showCancel, setShowCancel] = useState(false);
-  const [reason, setReason] = useState('');
 
   const [showModify, setShowModify] = useState(false);
   const [modifyRange, setModifyRange] = useState({ checkIn: '', checkOut: '' });
@@ -96,14 +94,6 @@ export default function BookingDetailPage() {
 
   /** Tải hóa đơn (mock): backend chưa có endpoint Invoice → in trang. */
   const downloadInvoice = () => window.print();
-
-  const handleCancel = async () => {
-    await cancelBooking.mutateAsync({
-      bookingId: booking.id,
-      reason: reason || undefined,
-    });
-    setShowCancel(false);
-  };
 
   return (
     <div>
@@ -265,48 +255,16 @@ export default function BookingDetailPage() {
             </div>
           )}
 
-          {/* Cancel form */}
+          {/*
+            Khối huỷ — tách riêng vì nó phải gọi `refund-preview` để nói cho khách biết mất bao
+            nhiêu tiền TRƯỚC khi bấm (huỷ không hoàn tác được), và còn hỏi nơi nhận tiền hoàn.
+          */}
           {showCancel && (
-            <div className="rounded-2xl border border-error/30 bg-error/5 p-5">
-              <h3 className="font-semibold text-on-surface">
-                {t('detail.cancelTitle')}
-              </h3>
-              <p className="mt-1 text-sm text-on-surface-variant">
-                {t('detail.cancelDesc')}
-              </p>
-              {/* Trần 500 khớp `cancelBooking` của BE (`reason: Joi.string().max(500)`) — cắt tại
-                  chỗ gõ thay vì để khách viết dài rồi mới ăn 400 lúc bấm Xác nhận huỷ. */}
-              <textarea
-                rows={3}
-                value={reason}
-                maxLength={CANCEL_REASON_MAX}
-                onChange={e => setReason(e.target.value)}
-                placeholder={t('detail.cancelReasonPlaceholder')}
-                className="mt-3 w-full rounded-xl border border-outline-variant/40 bg-surface px-3 py-2 text-sm outline-none focus:border-primary"
-              />
-              <p className="mt-1 text-right text-xs text-on-surface-variant">
-                {reason.length}/{CANCEL_REASON_MAX}
-              </p>
-              {cancelBooking.isError && (
-                <p className="mt-2 text-sm text-error">
-                  {t('detail.cancelError')}
-                </p>
-              )}
-              <div className="mt-3 flex gap-3">
-                <Button variant="outline" onClick={() => setShowCancel(false)}>
-                  {t('detail.keepBooking')}
-                </Button>
-                <Button
-                  variant="destructive"
-                  disabled={cancelBooking.isPending}
-                  onClick={handleCancel}
-                >
-                  {cancelBooking.isPending
-                    ? t('detail.cancelling')
-                    : t('detail.confirmCancel')}
-                </Button>
-              </div>
-            </div>
+            <CancelBookingPanel
+              bookingId={booking.id}
+              onClose={() => setShowCancel(false)}
+              onCancelled={() => setShowCancel(false)}
+            />
           )}
         </div>
 

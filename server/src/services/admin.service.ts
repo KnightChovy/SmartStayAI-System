@@ -1,6 +1,6 @@
 import httpStatus from 'http-status';
 import { Prisma } from '@prisma/client';
-import type { User, BookingStatus, CommissionStatus, PaymentStatus, PaymentMethod } from '@prisma/client';
+import type { User, CommissionStatus, PaymentStatus, PaymentMethod } from '@prisma/client';
 import prisma from '../config/prisma';
 import ApiError from '../utils/ApiError';
 import { auditService } from './audit.service';
@@ -8,15 +8,6 @@ import { walletService } from './wallet.service';
 
 // Kỳ giữ sau khi kỳ ở kết thúc trước khi tự tất toán (đối soát). 0 = tất toán ngay khi đủ điều kiện.
 const SETTLEMENT_HOLD_DAYS = 1;
-
-/**
- * Trạng thái booking đã CHỐT SỔ — hết cửa huỷ/hoàn nên nhả tiền cho khách sạn được:
- * - `checked_out`: khách ở xong.
- * - `no_show`: khách không đến, tiền trả trước bị forfeit (khách sạn được giữ theo chính sách).
- *   Thiếu trạng thái này thì net nằm chết ở `balancePending` VĨNH VIỄN vì no-show không bao giờ
- *   đạt `checked_out` — khách sạn không rút được, sàn cũng không chốt được hoa hồng.
- */
-const SETTLEABLE_BOOKING_STATUSES: BookingStatus[] = ['checked_out', 'no_show'];
 
 export class AdminService {
   /**
@@ -398,50 +389,9 @@ export class AdminService {
     return { results, page, limit, totalPages: Math.ceil(totalResults / limit), totalResults };
   };
 
-  /** [Admin/PM] Đánh dấu đã tất toán (payout) 1 khoản hoa hồng. Chỉ khoản chưa settled mới được. */
-  settleCommission = async (commissionId: string, currentUser: User) => {
-    const commission = await prisma.platformCommission.findUnique({
-      where: { id: commissionId },
-      include: { booking: { select: { hotelId: true, totalAmount: true, status: true, bookingCode: true } } },
-    });
-    if (!commission) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy khoản hoa hồng');
-    }
-    if (commission.status === 'settled') {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Khoản hoa hồng này đã được tất toán');
-    }
-    // Cùng điều kiện với cron tự tất toán: chỉ nhả tiền khi booking đã chốt sổ (trả phòng hoặc no-show).
-    // Không có guard này, admin có thể nhả tiền cho booking khách chưa tới ở — khách huỷ sau thì đã muộn.
-    if (!SETTLEABLE_BOOKING_STATUSES.includes(commission.booking.status)) {
-      throw new ApiError(
-        httpStatus.BAD_REQUEST,
-        `Chỉ tất toán được booking đã trả phòng hoặc no-show. Booking ${commission.booking.bookingCode} đang ở trạng thái "${commission.booking.status}".`
-      );
-    }
-    // Net khách sạn thực nhận = tổng booking − hoa hồng; tất toán chuyển khoản này pending → available
-    const net = commission.booking.totalAmount.sub(commission.commissionAmount);
-    const updated = await prisma.$transaction(async (tx) => {
-      const settled = await tx.platformCommission.update({
-        where: { id: commissionId },
-        data: { status: 'settled', settledAt: new Date() },
-      });
-      await walletService.settle(tx, commission.booking.hotelId, net, commissionId);
-      return settled;
-    });
-    await auditService.log({
-      userId: currentUser.id,
-      action: 'commission.settle',
-      entityType: 'commission',
-      entityId: commissionId,
-      oldValue: { status: commission.status },
-      newValue: { status: 'settled' },
-    });
-    return updated;
-  };
-
   /**
-   * [Cron] Tự tất toán các khoản hoa hồng ĐỦ ĐIỀU KIỆN: booking đã chốt sổ (xem
-   * SETTLEABLE_BOOKING_STATUSES) và đã qua kỳ giữ SETTLEMENT_HOLD_DAYS ngày. Mỗi khoản: commission
+   * [Cron] Tự tất toán các khoản hoa hồng ĐỦ ĐIỀU KIỆN: booking đã chốt sổ (checked_out hoặc no_show)
+   * và đã qua kỳ giữ SETTLEMENT_HOLD_DAYS ngày. Mỗi khoản: commission
    * pending→settled + ví chuyển pending→available, gói trong 1 transaction; update CÓ ĐIỀU KIỆN
    * (status pending) để không tất toán hai lần nếu cron chạy chồng. Vết tiền nằm ở
    * wallet_transactions (type settlement), không cần audit user.

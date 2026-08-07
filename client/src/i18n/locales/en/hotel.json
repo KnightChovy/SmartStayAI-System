@@ -117,7 +117,10 @@
     "balcony": "Balcony",
     "bedsLabel": "Beds",
     "bestValue": "Best value",
-    "viewDetails": "View room details"
+    "viewDetails": "View room details",
+    "freeCancellationDays_one": "Free cancellation until {{count}} day before",
+    "freeCancellationDays_other": "Free cancellation until {{count}} days before",
+    "partialRefund": "Up to {{percent}}% refunded if you cancel {{hours}}h before"
   },
   "gallery": {
     "close": "Close gallery",
