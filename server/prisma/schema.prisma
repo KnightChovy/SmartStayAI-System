@@ -1026,6 +1026,10 @@ model Booking {
   promotions          BookingPromotion[]
   housekeepingTasks   HousekeepingTask[]
 
+  // Báo cáo doanh thu lọc booking theo khách sạn + khoảng ngày; không có index thì mỗi lần là
+  // quét toàn bảng.
+  @@index([hotelId, createdAt])
+  @@index([status, createdAt])
   @@map("bookings")
 }
 
@@ -1069,6 +1073,9 @@ model Payment {
 
   refunds Refund[]
 
+  // Mọi truy vấn tiền đều đi từ booking sang payment
+  @@index([bookingId])
+  @@index([status, paidAt])
   @@map("payments")
 }
 
@@ -1101,6 +1108,10 @@ model Refund {
   createdAt           DateTime     @default(now()) @map("created_at")
   updatedAt           DateTime     @default(now()) @updatedAt @map("updated_at")
 
+  // Báo cáo chỉ cộng refund đã 'processed' trong một khoảng ngày tạo; cron duyệt quá hạn cũng
+  // quét theo (status, createdAt) nên cùng dùng chung index này.
+  @@index([status, createdAt])
+  @@index([paymentId])
   @@map("refunds")
 }
 
@@ -1135,6 +1146,12 @@ model PlatformCommission {
   createdAt        DateTime         @default(now()) @map("created_at")
   updatedAt        DateTime         @default(now()) @updatedAt @map("updated_at")
 
+  // createdAt = mốc ghi nhận doanh thu ⇒ mọi báo cáo đều lọc theo nó; partnerId cho breakdown
+  // theo đối tác, status cho việc tất toán, payoutId cho việc tra một đợt chi trả.
+  @@index([createdAt])
+  @@index([partnerId, createdAt])
+  @@index([status, createdAt])
+  @@index([payoutId])
   @@map("platform_commissions")
 }
 
