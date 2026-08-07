@@ -1,6 +1,7 @@
 import { View, Pressable, Linking, Platform } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { Text } from '@/components/ui/text';
 import { GUEST_COLORS } from '@/constants/guestTheme';
 
@@ -79,6 +80,7 @@ function buildMapHtml(lat: number, lng: number): string {
 
 /** Bản đồ vị trí khách sạn (maplibre-gl qua WebView trên native). */
 export function HotelMap({ latitude, longitude, name, address, height = 160 }: HotelMapProps) {
+  const { t } = useTranslation('hotel');
   const lat = latitude != null && latitude !== '' ? Number(latitude) : null;
   const lng = longitude != null && longitude !== '' ? Number(longitude) : null;
   const hasCoords = lat != null && lng != null && !Number.isNaN(lat) && !Number.isNaN(lng);
@@ -114,7 +116,7 @@ export function HotelMap({ latitude, longitude, name, address, height = 160 }: H
         </Text>
         <View className="flex-row items-center gap-1">
           <Text className="font-bevi-bold text-bronze" size="xs">
-            Chỉ đường
+            {t('directions')}
           </Text>
           <Ionicons name="open-outline" size={14} color={GUEST_COLORS.bronze} />
         </View>

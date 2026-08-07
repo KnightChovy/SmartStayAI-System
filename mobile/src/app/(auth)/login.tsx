@@ -22,8 +22,8 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  const emailValidation = emailError(email);
-  const passwordValidation = loginPasswordError(password);
+  const emailValidation = emailError(email, t);
+  const passwordValidation = loginPasswordError(password, t);
 
   function handleLogin() {
     setSubmitted(true);

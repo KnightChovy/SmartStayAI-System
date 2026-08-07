@@ -179,7 +179,7 @@ export default function ChatbotScreen() {
             </View>
             <View className="flex-1">
               <Text bold numberOfLines={1} className="font-bevi-bold text-on-surface text-base">
-                {isPlatform ? 'SmartStay AI' : hotelName || t('chat:scope.hotel')}
+                {isPlatform ? t('chat:assistantName') : hotelName || t('chat:scope.hotel')}
               </Text>
               <Text
                 size="2xs"

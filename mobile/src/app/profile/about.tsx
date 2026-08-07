@@ -61,17 +61,16 @@ export default function AboutScreen() {
             <Ionicons name="bed" size={28} color={GUEST_COLORS.bronze} />
           </View>
           <Heading size="lg" className="font-bevi-bold text-on-surface">
-            StayHub
+            {t('common:appName')}
           </Heading>
           <Text size="sm" className="font-bevi text-muted mt-1">
-            Version {version}
+            {t('account:about.version', { version })}
           </Text>
           <Text
             size="sm"
             className="font-bevi text-on-surface-variant text-center mt-3 leading-5"
           >
-            AI-powered hotel booking and customer engagement — find your stay,
-            book in seconds, and check in with a tap.
+            {t('account:about.tagline')}
           </Text>
         </View>
 

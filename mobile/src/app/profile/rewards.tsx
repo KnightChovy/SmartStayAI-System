@@ -17,15 +17,15 @@ import { GUEST_COLORS } from '@/constants/guestTheme';
  */
 const CURRENT_TIER = 'silver' as const;
 const TOTAL_POINTS = 1240;
-const NEXT_TIER = 'gold';
+const NEXT_TIER = 'gold' as const;
 const NEXT_THRESHOLD = 5000;
 
 const POINTS_HISTORY = [
-  { id: 'h1', label: 'Stay at StayHub Hanoi Old Quarter', points: 420, date: '2026-06-18' },
-  { id: 'h2', label: 'Stay at Pearl Bay Resort', points: 380, date: '2026-05-22' },
-  { id: 'h3', label: 'Welcome bonus', points: 200, date: '2026-04-02' },
-  { id: 'h4', label: 'Redeemed for late checkout', points: -100, date: '2026-06-25' },
-];
+  { id: 'h1', labelKey: 'stayHanoi', points: 420, date: '2026-06-18' },
+  { id: 'h2', labelKey: 'stayPearlBay', points: 380, date: '2026-05-22' },
+  { id: 'h3', labelKey: 'welcomeBonus', points: 200, date: '2026-04-02' },
+  { id: 'h4', labelKey: 'lateCheckoutRedeem', points: -100, date: '2026-06-25' },
+] as const;
 
 export default function RewardsScreen() {
   const router = useRouter();
@@ -47,19 +47,22 @@ export default function RewardsScreen() {
           <View className="flex-row items-center justify-between">
             <View>
               <Text bold className="font-bevi-bold text-white/80 text-xs uppercase tracking-wider">
-                {CURRENT_TIER} member
+                {t('account:rewards.memberOfTier', { tier: t(`account:rewards.tiers.${CURRENT_TIER}`) })}
               </Text>
               <Text bold className="font-bevi-bold text-white text-4xl mt-1.5">{TOTAL_POINTS.toLocaleString()}</Text>
-              <Text size="sm" className="font-bevi text-white/70">points available</Text>
+              <Text size="sm" className="font-bevi text-white/70">{t('account:rewards.pointsAvailable')}</Text>
             </View>
             <Ionicons name="gift-outline" size={44} color={GUEST_COLORS.bronze} />
           </View>
 
           <View className="mt-6">
             <View className="flex-row items-center justify-between mb-1.5">
-              <Text size="xs" className="font-bevi text-white/70 capitalize">{CURRENT_TIER}</Text>
+              <Text size="xs" className="font-bevi text-white/70 capitalize">{t(`account:rewards.tiers.${CURRENT_TIER}`)}</Text>
               <Text size="xs" bold className="font-bevi-bold text-white">
-                {NEXT_THRESHOLD - TOTAL_POINTS} pts to {NEXT_TIER}
+                {t('account:rewards.ptsToNextTier', {
+                  count: NEXT_THRESHOLD - TOTAL_POINTS,
+                  tier: t(`account:rewards.tiers.${NEXT_TIER}`),
+                })}
               </Text>
             </View>
             <View className="h-2 bg-surface/20 rounded-full overflow-hidden">
@@ -68,7 +71,9 @@ export default function RewardsScreen() {
           </View>
 
           {user?.fullName ? (
-            <Text size="xs" className="font-bevi text-white/60 mt-4">Member: {user.fullName}</Text>
+            <Text size="xs" className="font-bevi text-white/60 mt-4">
+              {t('account:rewards.memberName', { name: user.fullName })}
+            </Text>
           ) : null}
         </View>
 
@@ -95,7 +100,9 @@ export default function RewardsScreen() {
                     />
                   </View>
                   <View className="flex-1">
-                    <Text bold size="sm" className="font-bevi-bold text-on-surface">{tx.label}</Text>
+                    <Text bold size="sm" className="font-bevi-bold text-on-surface">
+                      {t(`account:rewards.historyItems.${tx.labelKey}`)}
+                    </Text>
                     <Text size="xs" className="font-bevi text-muted mt-0.5">{tx.date}</Text>
                   </View>
                 </View>

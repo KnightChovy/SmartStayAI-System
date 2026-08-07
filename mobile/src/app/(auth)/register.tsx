@@ -30,10 +30,10 @@ export default function RegisterScreen() {
   const [submitted, setSubmitted] = useState(false);
 
   const passwordMismatch = confirmPassword.length > 0 && password !== confirmPassword;
-  const nameValidation = fullNameError(name);
-  const emailValidation = emailError(email);
-  const passwordValidation = passwordError(password);
-  const otpValidation = otpError(otp);
+  const nameValidation = fullNameError(name, t);
+  const emailValidation = emailError(email, t);
+  const passwordValidation = passwordError(password, t);
+  const otpValidation = otpError(otp, t);
 
   function handleSendOtp() {
     if (emailValidation) {

@@ -4,7 +4,6 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import * as WebBrowser from 'expo-web-browser';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Text } from '@/components/ui/text';
 import { Heading } from '@/components/ui/heading';
@@ -12,11 +11,12 @@ import { BookingStatusBadge } from '@/components/shared/BookingStatusBadge';
 import { PriceSummary } from '@/components/shared/PriceSummary';
 import { QRVoucher } from '@/components/shared/QRVoucher';
 import { StayPickerSheet, type StaySelection } from '@/components/shared/StayPickerSheet';
+import { PayNowAction } from '@/components/booking';
 import { ReviewSheet } from '@/components/guest';
 import { useGetBooking, useCancelBooking } from '@/hooks/bookings';
 import { useMyReviews } from '@/hooks/reviews';
-import { useCreateVnpayPayment } from '@/hooks/payments';
 import { formatDateLong, formatDateShort } from '@/utils/formatDate';
+import { formatVnd } from '@/utils/formatCurrency';
 import { GUEST_COLORS } from '@/constants/guestTheme';
 
 
@@ -36,7 +36,6 @@ export default function BookingDetailScreen() {
   const { id = '' } = useLocalSearchParams<{ id: string }>();
   const { data: booking, isLoading, isError, refetch, isRefetching } = useGetBooking(id);
   const cancelBooking = useCancelBooking();
-  const createPayment = useCreateVnpayPayment();
   const [actionError, setActionError] = useState('');
   const [showModifySheet, setShowModifySheet] = useState(false);
   const [modifyRequest, setModifyRequest] = useState<StaySelection | null>(null);
@@ -61,31 +60,20 @@ export default function BookingDetailScreen() {
 
   function handleCancel() {
     Alert.alert(t('booking:detail.cancelTitle'), t('booking:detail.cancelBody'), [
-      { text: 'Keep booking', style: 'cancel' },
+      { text: t('booking:detail.keep'), style: 'cancel' },
       {
-        text: 'Cancel booking',
+        text: t('booking:detail.cancelConfirm'),
         style: 'destructive',
         onPress: async () => {
           setActionError('');
           try {
             await cancelBooking.mutateAsync({ bookingId: id });
           } catch (err) {
-            setActionError(errorMessage(err, 'Could not cancel this booking. Please try again.'));
+            setActionError(errorMessage(err, t('booking:detail.cancelFailed')));
           }
         },
       },
     ]);
-  }
-
-  async function handlePay() {
-    setActionError('');
-    try {
-      const { paymentUrl } = await createPayment.mutateAsync(id);
-      await WebBrowser.openBrowserAsync(paymentUrl);
-      await refetch();
-    } catch (err) {
-      setActionError(errorMessage(err, 'Could not start VNPay payment. Please try again later.'));
-    }
   }
 
   if (isLoading) {
@@ -112,6 +100,13 @@ export default function BookingDetailScreen() {
 
   const subtotal = Number(booking.subtotal);
   const discount = Number(booking.discountAmount);
+  const tax = Number(booking.taxAmount);
+  const fee = Number(booking.feeAmount);
+  // Đơn trả GHÉP (ví một phần + cổng phần còn lại) khiến `totalAmount` không còn là số
+  // sắp bị thu — luôn đọc `amountPaid`/`remainingAmount` do BE tính sẵn (đã trừ mọi
+  // payment `completed`, kể cả `wallet`) thay vì tự cộng lại `payments[]`.
+  const paidSoFar = Number(booking.amountPaid);
+  const remainingAmount = Number(booking.remainingAmount);
 
   return (
     <View className="flex-1 bg-canvas">
@@ -140,7 +135,9 @@ export default function BookingDetailScreen() {
             <BookingStatusBadge status={booking.status} size="md" />
           </View>
           {booking.cancellationReason ? (
-            <Text size="sm" className="font-bevi text-red-600">Reason: {booking.cancellationReason}</Text>
+            <Text size="sm" className="font-bevi text-red-600">
+              {t('booking:detail.cancellationReason', { reason: booking.cancellationReason })}
+            </Text>
           ) : null}
 
           {booking.status !== 'cancelled' && (
@@ -153,7 +150,7 @@ export default function BookingDetailScreen() {
 
         {/* Hotel + room */}
         <View className="bg-surface rounded-card p-4 mb-3.5">
-          <Heading size="md" className="font-bevi-bold text-on-surface mb-2">{booking.hotel?.name ?? 'Hotel'}</Heading>
+          <Heading size="md" className="font-bevi-bold text-on-surface mb-2">{booking.hotel?.name ?? t('common:hotel')}</Heading>
           {booking.hotel?.address ? (
             <View className="flex-row items-start gap-1.5 mb-2">
               <Ionicons name="location-outline" size={15} color={GUEST_COLORS.onSurfaceVariant} />
@@ -170,11 +167,11 @@ export default function BookingDetailScreen() {
 
         {/* Stay info */}
         <View className="bg-surface rounded-card p-4 mb-3.5">
-          <InfoRow label="Check-in" value={`${formatDateLong(booking.checkInDate)}${booking.hotel?.checkInTime ? ` · ${booking.hotel.checkInTime}` : ''}`} />
-          <InfoRow label="Check-out" value={`${formatDateLong(booking.checkOutDate)}${booking.hotel?.checkOutTime ? ` · ${booking.hotel.checkOutTime}` : ''}`} />
-          <InfoRow label="Nights" value={`${booking.numNights} night${booking.numNights > 1 ? 's' : ''}`} />
-          <InfoRow label="Guests" value={`${booking.numGuests} guest${booking.numGuests > 1 ? 's' : ''}`} />
-          {booking.specialRequests ? <InfoRow label="Requests" value={booking.specialRequests} /> : null}
+          <InfoRow label={t('booking:detail.info.checkIn')} value={`${formatDateLong(booking.checkInDate)}${booking.hotel?.checkInTime ? ` · ${booking.hotel.checkInTime}` : ''}`} />
+          <InfoRow label={t('booking:detail.info.checkOut')} value={`${formatDateLong(booking.checkOutDate)}${booking.hotel?.checkOutTime ? ` · ${booking.hotel.checkOutTime}` : ''}`} />
+          <InfoRow label={t('booking:detail.info.nights')} value={t('common:nights', { count: booking.numNights })} />
+          <InfoRow label={t('booking:detail.info.guests')} value={t('common:guests', { count: booking.numGuests })} />
+          {booking.specialRequests ? <InfoRow label={t('booking:detail.info.requests')} value={booking.specialRequests} /> : null}
         </View>
 
         {/* Đánh giá — chỉ mở sau khi đã trả phòng, đúng luật của BE. */}
@@ -211,11 +208,11 @@ export default function BookingDetailScreen() {
             <View className="flex-1">
               <Text bold className="font-bevi-bold text-emerald-700">{t('booking:detail.modifySent')}</Text>
               <Text size="sm" className="font-bevi text-emerald-700 mt-0.5">
-                New dates: {formatDateShort(modifyRequest.checkIn)} → {formatDateShort(modifyRequest.checkOut)} ·{' '}
-                {modifyRequest.guests} guest{modifyRequest.guests > 1 ? 's' : ''}
+                {t('booking:detail.newDatesPrefix')} {formatDateShort(modifyRequest.checkIn)} → {formatDateShort(modifyRequest.checkOut)} ·{' '}
+                {t('common:guests', { count: modifyRequest.guests })}
               </Text>
               <Text size="xs" className="font-bevi text-emerald-600 mt-1">
-                The property will confirm availability shortly.
+                {t('booking:detail.modifySentBody')}
               </Text>
             </View>
           </View>
@@ -226,11 +223,25 @@ export default function BookingDetailScreen() {
         <View className="bg-surface rounded-card p-4">
           <PriceSummary
             lines={[
-              { label: `Room × ${booking.numNights} night${booking.numNights > 1 ? 's' : ''}`, value: subtotal },
-              ...(discount > 0 ? [{ label: 'Discount', value: -discount }] : []),
+              { label: t('booking:detail.roomLine', { count: booking.numNights }), value: subtotal },
+              ...(discount > 0 ? [{ label: t('booking:detail.discount'), value: -discount }] : []),
+              ...(tax > 0 ? [{ label: t('booking:detail.tax'), value: tax }] : []),
+              ...(fee > 0 ? [{ label: t('booking:detail.fee'), value: fee }] : []),
             ]}
             total={booking.totalAmount}
           />
+          {paidSoFar > 0 && (
+            <View className="mt-3 gap-1.5 border-t border-hairline/30 pt-3">
+              <View className="flex-row items-center justify-between">
+                <Text size="sm" className="font-bevi text-on-surface-variant">{t('booking:detail.amountPaid')}</Text>
+                <Text size="sm" bold className="font-bevi-bold text-green-600">-{formatVnd(paidSoFar)}</Text>
+              </View>
+              <View className="flex-row items-center justify-between">
+                <Text size="sm" bold className="font-bevi-bold text-on-surface">{t('booking:payment.dueNow')}</Text>
+                <Text size="sm" bold className="font-bevi-bold text-on-surface">{formatVnd(remainingAmount)}</Text>
+              </View>
+            </View>
+          )}
         </View>
 
         {actionError ? (
@@ -254,21 +265,12 @@ export default function BookingDetailScreen() {
               className="flex-1 border border-red-200 rounded-card py-3.5 items-center"
             >
               <Text bold className="font-bevi-bold text-red-600 text-base">
-                {cancelBooking.isPending ? 'Cancelling…' : 'Cancel'}
+                {cancelBooking.isPending ? t('booking:detail.cancelling') : t('booking:detail.cancel')}
               </Text>
             </Pressable>
           )}
           {canPay && (
-            <Pressable
-              disabled={createPayment.isPending}
-              onPress={handlePay}
-              className="flex-1 bg-bronze rounded-card py-3.5 items-center flex-row justify-center gap-2"
-            >
-              <Ionicons name="card-outline" size={18} color={GUEST_COLORS.onSurface} />
-              <Text bold className="font-bevi-bold text-on-surface text-base">
-                {createPayment.isPending ? 'Opening…' : 'Pay now'}
-              </Text>
-            </Pressable>
+            <PayNowAction booking={booking} onPaid={refetch} />
           )}
         </View>
       )}

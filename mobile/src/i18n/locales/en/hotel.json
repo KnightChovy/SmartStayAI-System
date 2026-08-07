@@ -46,6 +46,11 @@
     "onlyLeft_other": "Only {{count}} left",
     "roomsLeft_one": "{{count}} room left",
     "roomsLeft_other": "{{count}} rooms left",
+    "noneLeft": "No rooms left for these dates",
+    "upToGuests_one": "Up to {{count}} guest",
+    "upToGuests_other": "Up to {{count}} guests",
+    "forNightsInclTaxes_one": "for {{count}} night (incl. taxes)",
+    "forNightsInclTaxes_other": "for {{count}} nights (incl. taxes)",
     "viewDetails": "View details",
     "nightsLine_one": "{{price}} × {{count}} night",
     "nightsLine_other": "{{price}} × {{count}} nights",
@@ -63,6 +68,11 @@
     "maxGuests_other": "Max {{count}} for this room",
     "pickCheckIn": "Pick your check-in date",
     "pickCheckOut": "Now pick your check-out date",
-    "apply": "Apply dates"
+    "apply": "Apply dates",
+    "weekdays": ["S", "M", "T", "W", "T", "F", "S"],
+    "months": [
+      "January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December"
+    ]
   }
 }
