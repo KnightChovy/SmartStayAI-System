@@ -190,6 +190,11 @@ export default function StaffDashboardScreen() {
               onPress={() => router.push('/(staff)/bookings')}
             />
             <QuickAction
+              icon="bed-outline"
+              label="Rooms"
+              onPress={() => router.push('/(staff)/rooms')}
+            />
+            <QuickAction
               icon="chatbubbles-outline"
               label="Inbox"
               badge={escalated}
@@ -214,7 +219,7 @@ export default function StaffDashboardScreen() {
                 value={`${roomsFree}/${rooms.length}`}
                 label="Rooms available"
                 tone="emerald"
-                onPress={() => router.push('/(staff)/bookings')}
+                onPress={() => router.push('/(staff)/rooms')}
               />
             </View>
             <View style={{ width: '48%' }} className="mb-3">
