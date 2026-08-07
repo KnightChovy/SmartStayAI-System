@@ -73,17 +73,26 @@ export const getRefundPreview = {
   }),
 };
 
-// Staff/chủ KS xem booking của một khách sạn
+/**
+ * Staff/chủ KS xem booking của một khách sạn — bộ lọc dựng cho MÀN LỊCH, khác các màn giám sát:
+ *
+ *  - `status` nhận cả một giá trị lẫn MẢNG (`.single()`): màn lịch cần confirmed + checked_in +
+ *    pending trong một lượt, trước đây phải bỏ lọc ở server rồi lọc lại ở client.
+ *  - `fromDate`/`toDate` lọc theo KHOẢNG LƯU TRÚ chứ không theo ngày nhận phòng (xem service).
+ *  - `limit` tới 500: một tuần của khách sạn lớn vượt xa 100 đơn, lặp trang chỉ để dựng lịch là phí.
+ */
 export const listHotelBookings = {
   params: Joi.object().keys({
     hotelId: Joi.string().uuid().required(),
   }),
   query: Joi.object().keys({
-    status: Joi.string().valid('pending', 'confirmed', 'checked_in', 'checked_out', 'cancelled', 'no_show'),
+    status: Joi.array()
+      .items(Joi.string().valid('pending', 'confirmed', 'checked_in', 'checked_out', 'cancelled', 'no_show'))
+      .single(),
     fromDate: Joi.date().iso(),
     toDate: Joi.date().iso(),
     sortBy: Joi.string(),
-    limit: Joi.number().integer().min(1).max(100),
+    limit: Joi.number().integer().min(1).max(500),
     page: Joi.number().integer().min(1),
   }),
 };
@@ -132,6 +141,25 @@ export const lookupBookingByVoucher = {
   }),
   query: Joi.object().keys({
     voucherCode: Joi.string().max(50).required(),
+  }),
+};
+
+// Gán TRƯỚC phòng vật lý cho đơn đã xác nhận nhưng chưa tới (front desk chốt phòng từ hôm trước)
+export const assignRoom = {
+  params: Joi.object().keys({
+    hotelId: Joi.string().uuid().required(),
+    bookingId: Joi.string().uuid().required(),
+  }),
+  body: Joi.object().keys({
+    roomId: Joi.string().uuid().required(),
+  }),
+};
+
+// Gỡ phòng đã gán trước
+export const releaseAssignedRoom = {
+  params: Joi.object().keys({
+    hotelId: Joi.string().uuid().required(),
+    bookingId: Joi.string().uuid().required(),
   }),
 };
 
