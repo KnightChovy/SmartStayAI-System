@@ -5,6 +5,7 @@
   "nav": {
     "profile": "Hồ sơ",
     "bookings": "Đặt phòng của tôi",
+    "wallet": "Ví của tôi",
     "messages": "Tin nhắn",
     "reviews": "Đánh giá của tôi",
     "notifications": "Thông báo",
@@ -201,6 +202,25 @@
     "errors": {
       "imageUrlInvalid": "Đường dẫn ảnh phải bắt đầu bằng http:// hoặc https://",
       "imageLimit": "Tối đa {{max}} ảnh mỗi đánh giá."
+    }
+  },
+  "wallet": {
+    "title": "Ví của tôi",
+    "balanceLabel": "Số dư khả dụng",
+    "balanceHint": "Dùng để thanh toán cho lần đặt phòng sau. Số dư ví không rút ra ngân hàng được — nếu muốn nhận tiền mặt, hãy chọn hoàn về tài khoản ngân hàng khi huỷ đơn.",
+    "useOnBooking": "Dùng cho đơn đang chờ thanh toán",
+    "historyTitle": "Lịch sử giao dịch",
+    "historyLimit": "Chỉ hiển thị 50 giao dịch gần nhất.",
+    "balanceAfter": "Số dư: {{amount}}",
+    "viewBooking": "Xem đơn",
+    "emptyTitle": "Ví của bạn chưa có giao dịch nào",
+    "emptyDesc": "Khi bạn huỷ một đơn đã thanh toán và chọn nhận tiền hoàn vào ví, số tiền sẽ xuất hiện ở đây.",
+    "loadError": "Không tải được ví. Vui lòng thử lại.",
+    "retry": "Thử lại",
+    "txn": {
+      "refund": "Tiền hoàn từ đơn đã huỷ",
+      "spend": "Thanh toán bằng ví",
+      "adjustment": "Điều chỉnh"
     }
   },
   "messages": {

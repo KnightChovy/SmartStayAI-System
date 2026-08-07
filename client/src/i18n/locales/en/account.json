@@ -5,6 +5,7 @@
   "nav": {
     "profile": "Profile",
     "bookings": "My bookings",
+    "wallet": "My wallet",
     "messages": "Messages",
     "reviews": "My reviews",
     "notifications": "Notifications",
@@ -201,6 +202,25 @@
     "errors": {
       "imageUrlInvalid": "Image link must start with http:// or https://",
       "imageLimit": "Up to {{max}} photos per review."
+    }
+  },
+  "wallet": {
+    "title": "My wallet",
+    "balanceLabel": "Available balance",
+    "balanceHint": "Use it to pay for your next stay. Wallet credit cannot be withdrawn to a bank account — if you want the cash back, choose a bank refund when you cancel.",
+    "useOnBooking": "Use it on a booking awaiting payment",
+    "historyTitle": "Transaction history",
+    "historyLimit": "Only the 50 most recent transactions are shown.",
+    "balanceAfter": "Balance: {{amount}}",
+    "viewBooking": "View booking",
+    "emptyTitle": "No wallet activity yet",
+    "emptyDesc": "When you cancel a paid booking and choose to be refunded to your wallet, the money shows up here.",
+    "loadError": "Could not load your wallet. Please try again.",
+    "retry": "Try again",
+    "txn": {
+      "refund": "Refund from a cancelled booking",
+      "spend": "Paid with wallet",
+      "adjustment": "Adjustment"
     }
   },
   "messages": {

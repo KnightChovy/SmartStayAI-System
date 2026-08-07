@@ -2,6 +2,26 @@
 
 This file tracks the accomplished tasks, resolved user requests, and visual/functional refactoring completed in the client application.
 
+## August 7, 2026 (continued 3)
+
+- [x] **VÍ CỦA KHÁCH (role customer) — nối `GET /users/me/wallet` + `POST /payments/bookings/:id/wallet`; trước đây tiền vào ví mà khách KHÔNG có chỗ nào nhìn thấy và KHÔNG có đường tiêu**:
+  - **Lỗ hổng gốc**: khối huỷ đơn đã cho khách chọn `refundMethod: 'wallet'` từ đợt chính sách huỷ bậc thang, và BE cộng tiền thật vào ví ngay khi khách sạn duyệt (`walletService.creditCustomer`). Nhưng grep toàn `src` thì **không màn hình nào** gọi `/users/me/wallet` và **không nút nào** gọi `/payments/bookings/:id/wallet` ⇒ khách chọn "nhận vào ví StayHub" rồi tiền **biến mất khỏi tầm mắt**. Đo trên deploy: ví `customer@gmail.com` đang có **2.330.000đ** nằm im, ví `customer2@gmail.com` **3.054.000đ**.
+  - **Trang `/account/wallet` (mới)** + mục **Ví của tôi** trong sidebar khu tài khoản: số dư khả dụng + sổ giao dịch (icon/nhãn theo loại, link sang đúng booking sinh ra giao dịch, số dư sau mỗi dòng).
+  - **Nói thẳng thứ khách sẽ đi tìm: KHÔNG rút ví ra ngân hàng được.** BE không có endpoint nào cho việc đó — đường ra duy nhất là trả cho booking. Ghi rõ ngay dưới số dư kèm gợi ý "muốn nhận tiền mặt thì chọn hoàn về tài khoản ngân hàng lúc huỷ", thay vì để khách bới tìm một nút không tồn tại.
+  - **Ví khách chỉ có MỘT số dư** — không có "chờ tất toán"/"chờ payout" như ví khách sạn. Cột `balance_pending` có trong bảng dùng chung nhưng schema ghi rõ *"chỉ ví khách sạn dùng cột này; ví khách luôn để 0"*, nên **cố ý không khai** vào type để không ai lỡ render một con số vô nghĩa.
+  - **`CustomerWalletTxnType` CỐ Ý hẹp hơn enum Prisma**: ví khách chỉ có `refund` / `spend` / `adjustment`; `earning`/`commission`/`payout`/`settlement` là bút toán của ví KHÁCH SẠN. Đã đo trên cả local lẫn deploy: 100% giao dịch nằm trong 3 loại đó. Nhưng nơi hiển thị tra bằng `Partial<Record<…>>` + `??` chứ **không** `Record` đầy đủ — đúng bài học từ ví partner, nơi thiếu một khoá làm `undefined.icon` ném lỗi và vỡ cả thẻ.
+  - **Dấu +/− suy từ `amount`, không suy từ `type`**: BE ghi sẵn dấu (`+` refund, `−` spend) và `adjustment` đi cả hai chiều.
+  - **Tiêu ví ở HAI nơi, vì có hai tình huống khác nhau**: (a) `PayNowAction` (đơn đã tạo nhưng chưa trả — hiện ở chi tiết đơn, danh sách đơn, trang kết quả thanh toán) thêm mục **"Trả bằng ví (số dư)"**; (b) **bước Thanh toán ở checkout** — đây mới là luồng chính, khách đặt phòng mới trước giờ bị đẩy thẳng sang VNPay mà **không bao giờ được mời dùng ví**.
+  - **KHÔNG phải all-or-nothing — phải đọc `remainingToPay`**: ví thiếu thì BE vẫn trừ hết phần ví lo được và **giữ đơn ở `pending`** để trả nốt qua cổng. Coi 201 là "xong" sẽ báo đặt phòng thành công cho một đơn còn nợ tiền. Ví trả đủ ⇒ **không được** đẩy tiếp sang cổng (BE trả 400 *"Booking này đã được thanh toán đủ"* và khách tưởng đặt phòng hỏng) ⇒ điều hướng thẳng sang trang thành công.
+  - **Thứ tự trừ ví TRƯỚC khi ra cổng là bắt buộc**: BE chỉ thu phần **còn thiếu** ở cổng (`outstandingAmount` trừ đi các payment đã `completed`). Làm ngược lại thì khách trả đủ ở VNPay xong ví vẫn còn nguyên.
+  - **Checkbox ví mặc định KHÔNG tick**: tiền trong ví là tiền khách từng huỷ đơn để nhận lại — có thể họ đang để dành. Tiêu nó phải là hành động chủ động. Kèm cờ `walletCharged` để `handleConfirm` chạy lại (bấm lại sau banner đổi giá, hoặc cổng lỗi rồi thử lại) **không trừ ví lần hai**.
+  - **`PaymentMethod` của FE thiếu `'wallet'`** — enum BE có, và một booking trả kết hợp sẽ có **hai** dòng payment (`wallet` + cổng). Đã bổ sung.
+  - **Dọn kèm**: xoá bản `errorMessage` **chép riêng** trong `BookingCheckoutPage` (bản dùng chung `utils/errorMessage` xử lý được nhiều hình dạng body lỗi hơn: mảng, chuỗi JSON, khoá `error`).
+  - **VERIFY TRÊN API THẬT — 21/21 trên BE local (đủ vòng đời) + 9/9 trên deploy (phần đọc)**: hợp đồng `GET /users/me/wallet` đúng từng field, `id` là `string|null` (khách chưa có ví), tối đa 50 dòng và **không có tham số phân trang**; không token → **401** (đúng lý do hook phải có cờ `enabled` — `/booking` là route công khai); mỗi khách chỉ thấy ví của mình. Vòng đời tiêu tiền: tạo booking 900.000 với ví 2.000.000 → trả bằng ví → `remainingToPay = 0`, booking **`confirmed`**, **phát e-voucher luôn**, chỉ trừ đúng 900.000 (**không thu dư**), `walletBalance` khớp số dư đọc lại, sổ ví có dòng **`spend` gắn đúng `bookingId` và mang số ÂM**; gọi lại lần hai → **400**. Huỷ đơn test xong thì BE tạo `refund` `pending` với `refundMethod: 'wallet'` — chính là vòng tròn khép kín của tính năng này.
+  - **Verify tĩnh**: `tsc` **0 lỗi**, `eslint` **0 vấn đề** trên toàn bộ file mới/đụng tới, `npm run build` **pass**, i18n vi/en **cân bằng** (account 220/220, booking 104/104).
+  - ⚠️ **Chưa drive được browser cho phần này** ⇒ nhờ bạn xem qua: trang `/account/wallet` và checkbox ví ở bước Thanh toán của `/booking`.
+  - ⚠️ **Dev data (chỉ LOCAL)**: 1 booking test đã huỷ, để lại một `refund` đang `pending` chờ khách sạn duyệt (huỷ đơn đã trả tiền thì BE luôn sinh yêu cầu hoàn — không xoá được). Deploy **không đụng gì** (chỉ chạy phần đọc).
+
 ## August 7, 2026 (continued 2)
 
 - [x] **Chính sách huỷ BẬC THANG: khách thấy TRƯỚC số tiền mất, chọn nơi nhận tiền hoàn; partner chọn được chính sách — nối đợt BE vừa merge**:
