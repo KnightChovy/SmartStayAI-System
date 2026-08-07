@@ -9,6 +9,19 @@ export const getPlatformRevenue = {
   }),
 };
 
+// Doanh thu chi tiết theo từng đối tác / khách sạn / thành phố (drill-down cho /admin/revenue)
+export const getRevenueBreakdown = {
+  query: Joi.object().keys({
+    groupBy: Joi.string().valid('partner', 'hotel', 'city').required(),
+    from: Joi.date().iso(),
+    to: Joi.date().iso().min(Joi.ref('from')),
+    partnerId: Joi.string().uuid(), // lọc drill-down: xem các KS của 1 đối tác (dùng với groupBy=hotel)
+    sortBy: Joi.string().valid('commission', 'gmv', 'bookingCount').default('commission'),
+    limit: Joi.number().integer().min(1).max(100),
+    page: Joi.number().integer().min(1),
+  }),
+};
+
 // ===== Pha 3 — Hoa hồng / payout =====
 export const listCommissions = {
   query: Joi.object().keys({

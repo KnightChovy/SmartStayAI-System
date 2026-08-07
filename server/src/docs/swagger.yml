@@ -362,6 +362,85 @@ paths:
         "403":
           $ref: '#/components/responses/Forbidden'
 
+  /admin/revenue/breakdown:
+    get:
+      summary: Revenue breakdown by partner / hotel / city (admin & platform manager)
+      description: >
+        Requires `viewPlatformStats`. Detailed revenue for EACH partner, hotel, or city — the drill-down
+        for `/admin/revenue` (which only gives the platform total). Same recognition basis: `gmv` +
+        `commission` by PAYMENT date (commission.createdAt), `refunded` by refund request date.
+        `commission` is the platform's actual revenue for that group (excludes 'disputed'). The sum of
+        every group's `gmv`/`commission`/`refunded` equals the `/admin/revenue` total for the same range.
+
+
+        Drill flow: `groupBy=partner` (list all partners) → click one → `groupBy=hotel&partnerId=` (that
+        partner's hotels) → click a hotel → `GET /hotels/{id}/revenue` (per-hotel detail + time series,
+        already accessible to platform managers). All money values are strings.
+      tags: [Revenue]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: groupBy
+          required: true
+          schema: { type: string, enum: [partner, hotel, city] }
+        - in: query
+          name: from
+          schema: { type: string, format: date }
+          description: Inclusive start date (YYYY-MM-DD). Omit for all-time.
+        - in: query
+          name: to
+          schema: { type: string, format: date }
+        - in: query
+          name: partnerId
+          schema: { type: string, format: uuid }
+          description: Drill-down filter — with groupBy=hotel, only that partner's hotels.
+        - in: query
+          name: sortBy
+          schema: { type: string, enum: [commission, gmv, bookingCount], default: commission }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1, default: 1 }
+      responses:
+        "200":
+          description: Paginated breakdown. Row fields depend on groupBy.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  groupBy: { type: string, enum: [partner, hotel, city] }
+                  results:
+                    type: array
+                    description: >
+                      partner → { partnerId, name, gmv, commission, refunded, bookingCount, hotelCount };
+                      hotel → { hotelId, name, city, partnerId, partnerName, gmv, commission, refunded, bookingCount };
+                      city → { city, gmv, commission, refunded, bookingCount, hotelCount }
+                    items:
+                      type: object
+                      properties:
+                        partnerId: { type: string, nullable: true }
+                        hotelId: { type: string, nullable: true }
+                        city: { type: string, nullable: true }
+                        name: { type: string, nullable: true }
+                        partnerName: { type: string, nullable: true }
+                        gmv: { type: string, example: '20638000.00' }
+                        commission: { type: string, example: '3095700.00' }
+                        refunded: { type: string, example: '0' }
+                        bookingCount: { type: integer, example: 5 }
+                        hotelCount: { type: integer, nullable: true, example: 1 }
+                  page: { type: integer }
+                  limit: { type: integer }
+                  totalPages: { type: integer }
+                  totalResults: { type: integer }
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+
   /admin/commissions:
     get:
       summary: List platform commissions (admin)

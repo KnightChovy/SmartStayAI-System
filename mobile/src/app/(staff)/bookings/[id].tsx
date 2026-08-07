@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, ScrollView, TextInput, View } from 'react-native';
+import { Alert, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -18,7 +18,11 @@ import {
   useMarkNoShow,
   useRecordCashPayment,
   useStaffHotelId,
+  useHotelRooms,
+  useAssignRoom,
+  useReleaseAssignedRoom,
 } from '@/hooks/staff';
+import { cn } from '@/lib/cn';
 import { formatVnd } from '@/utils/formatCurrency';
 import { formatDateLong } from '@/utils/formatDate';
 
@@ -68,14 +72,44 @@ export default function StaffBookingDetailScreen() {
   const checkOut = useCheckOut(hotelId ?? '');
   const markNoShow = useMarkNoShow(hotelId ?? '');
   const recordCash = useRecordCashPayment(hotelId ?? '');
+  const { data: roomsPage } = useHotelRooms(hotelId ?? '', { limit: 200 });
+  const assignRoom = useAssignRoom(hotelId ?? '');
+  const releaseRoom = useReleaseAssignedRoom(hotelId ?? '');
 
   const [extraCharge, setExtraCharge] = useState('');
+  const [showRoomPicker, setShowRoomPicker] = useState(false);
 
   function onError(e: unknown) {
     const message =
       (e as { response?: { data?: { message?: string } } })?.response?.data?.message ??
       'Something went wrong. Please try again.';
     Alert.alert('Error', message);
+  }
+
+  const assignedRoom = booking?.bookingRooms?.[0]?.room;
+  const availableRoomsOfType = (roomsPage?.results ?? []).filter(
+    (r) => r.roomTypeId === booking?.roomTypeId && r.status === 'available'
+  );
+
+  function handleAssignRoom(roomId: string) {
+    assignRoom.mutate(
+      { bookingId, payload: { roomId } },
+      {
+        onSuccess: () => setShowRoomPicker(false),
+        onError,
+      }
+    );
+  }
+
+  function handleReleaseRoom() {
+    Alert.alert('Release room', 'Unassign the pre-assigned room for this booking?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Release',
+        style: 'destructive',
+        onPress: () => releaseRoom.mutate(bookingId, { onError }),
+      },
+    ]);
   }
 
   function handleCheckOut() {
@@ -191,6 +225,82 @@ export default function StaffBookingDetailScreen() {
                 />
               </Card>
             </View>
+
+            {/* Room assignment — chốt trước phòng vật lý cho đơn confirmed */}
+            {booking.status === 'confirmed' ? (
+              <View>
+                <SectionTitle>Room assignment</SectionTitle>
+                <Card className="p-4">
+                  {assignedRoom ? (
+                    <View className="flex-row items-center justify-between">
+                      <View>
+                        <Text size="2xs" className="text-gray-400">
+                          Assigned room
+                        </Text>
+                        <Text bold className="text-gray-900 text-base mt-0.5">
+                          {assignedRoom.roomNumber}
+                        </Text>
+                      </View>
+                      <View className="flex-row gap-2">
+                        <StaffButton
+                          label="Change"
+                          size="sm"
+                          variant="outline"
+                          onPress={() => setShowRoomPicker((v) => !v)}
+                        />
+                        <StaffButton
+                          label="Release"
+                          size="sm"
+                          variant="danger"
+                          loading={releaseRoom.isPending}
+                          onPress={handleReleaseRoom}
+                        />
+                      </View>
+                    </View>
+                  ) : (
+                    <View className="flex-row items-center justify-between">
+                      <Text size="sm" className="text-gray-400 flex-1 pr-2">
+                        No room assigned yet. Pick one now so front desk knows it's held.
+                      </Text>
+                      <StaffButton
+                        label="Assign"
+                        size="sm"
+                        variant="outline"
+                        onPress={() => setShowRoomPicker((v) => !v)}
+                      />
+                    </View>
+                  )}
+
+                  {showRoomPicker ? (
+                    <View className="mt-3 pt-3 border-t border-gray-100">
+                      {availableRoomsOfType.length === 0 ? (
+                        <Text size="sm" className="text-gray-400">
+                          No free rooms of this type right now.
+                        </Text>
+                      ) : (
+                        <View className="flex-row flex-wrap gap-2">
+                          {availableRoomsOfType.map((r) => (
+                            <Pressable
+                              key={r.id}
+                              disabled={assignRoom.isPending}
+                              onPress={() => handleAssignRoom(r.id)}
+                              className={cn(
+                                'rounded-xl px-4 py-2.5 border bg-white border-gray-200',
+                                assignRoom.isPending && 'opacity-50'
+                              )}
+                            >
+                              <Text size="sm" className="text-gray-700">
+                                {r.roomNumber}
+                              </Text>
+                            </Pressable>
+                          ))}
+                        </View>
+                      )}
+                    </View>
+                  ) : null}
+                </Card>
+              </View>
+            ) : null}
 
             {/* Voucher */}
             {booking.voucher ? (
