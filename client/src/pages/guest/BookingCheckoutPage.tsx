@@ -237,8 +237,13 @@ export default function BookingCheckoutPage() {
    * server trả về (đã đổ vào `actualTotals`) rồi mới gọi ví.
    */
   const useWallet = useWalletCredit && walletBalance > 0;
-  /** Phần ví thực sự gánh được — BE cũng lấy `min(số dư, còn thiếu)`, không bao giờ thu dư. */
-  const walletApplied = useWallet ? Math.min(walletBalance, displayTotal) : 0;
+  /**
+   * Ví sẽ gánh bao nhiêu NẾU dùng — BE cũng lấy `min(số dư, còn thiếu)`, không bao giờ thu dư.
+   * Tính KHÔNG phụ thuộc ô tick để nhãn "Dùng X trong ví" đứng yên khi khách bỏ chọn rồi tick lại.
+   */
+  const walletCandidate = Math.min(walletBalance, displayTotal);
+  /** Phần ví thực sự bị trừ ở lượt này (0 khi khách bỏ chọn). */
+  const walletApplied = useWallet ? walletCandidate : 0;
   /** Phần phải trả qua cổng sau khi trừ ví. `0` ⇒ khỏi đụng tới cổng thanh toán. */
   const remainingToPay = displayTotal - walletApplied;
   const walletCoversAll = useWallet && remainingToPay <= 0;
@@ -529,10 +534,17 @@ export default function BookingCheckoutPage() {
                       className="mt-0.5"
                     />
                     <span className="min-w-0">
+                      {/* Nhãn nói số SẼ BỊ TRỪ cho đơn này, không phải số dư — đó mới là con số
+                          khách cần cân nhắc khi quyết định tick hay không. */}
                       <span className="flex items-center gap-1.5 text-sm font-semibold text-on-surface">
                         <Wallet className="size-4 shrink-0 text-primary" aria-hidden="true" />
-                        {t('payment.walletUse', {
-                          balance: formatCurrency(wallet?.balanceAvailable),
+                        {t('payment.walletUse', { amount: formatCurrency(walletCandidate) })}
+                      </span>
+                      {/* Số dư để ở dòng phụ: vẫn cần thấy để biết ví còn lại bao nhiêu, nhưng
+                          không phải thứ quyết định. */}
+                      <span className="mt-0.5 block text-xs text-on-surface-variant">
+                        {t('payment.walletBalanceLine', {
+                          balance: formatCurrency(walletBalance),
                         })}
                       </span>
                       {/* Ví không đủ vẫn dùng được — nói thẳng phép chia bằng SỐ THẬT để khách
@@ -541,10 +553,8 @@ export default function BookingCheckoutPage() {
                         {walletBalance >= displayTotal
                           ? t('payment.walletCovers')
                           : t('payment.walletPartialSplit', {
-                              applied: formatCurrency(Math.min(walletBalance, displayTotal)),
-                              remaining: formatCurrency(
-                                Math.max(displayTotal - walletBalance, 0)
-                              ),
+                              applied: formatCurrency(walletCandidate),
+                              remaining: formatCurrency(displayTotal - walletCandidate),
                             })}
                       </span>
                     </span>
