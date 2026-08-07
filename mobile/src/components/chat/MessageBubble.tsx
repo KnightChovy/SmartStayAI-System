@@ -1,5 +1,7 @@
 import { Pressable, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
+import { LinkifiedText } from '@/components/shared/LinkifiedText';
 import { Text } from '@/components/ui/text';
 import type { ChatMessage } from '@/hooks/chat';
 import { TypingDots } from './TypingDots';
@@ -13,6 +15,7 @@ export interface MessageBubbleProps {
 
 /** Bong bóng tin nhắn cho một dòng chat (user hoặc AI), hỗ trợ trạng thái streaming/error. */
 export function MessageBubble({ message, onQuickReply }: MessageBubbleProps) {
+  const { t } = useTranslation('chat');
   const isUser = message.role === 'user';
 
   return (
@@ -43,13 +46,14 @@ export function MessageBubble({ message, onQuickReply }: MessageBubbleProps) {
           {message.streaming && message.text === '' ? (
             <TypingDots />
           ) : (
-            <Text
+            <LinkifiedText
               size="sm"
               className={isUser ? 'text-white' : message.error ? 'text-red-600' : 'text-on-surface'}
-            >
-              {message.text}
-              {message.streaming ? '▌' : ''}
-            </Text>
+              linkClassName={isUser ? 'text-white underline font-bold' : 'text-bronze underline font-bold'}
+              payLabel={t('payNow')}
+              qrLabel={t('qrAlt')}
+              text={`${message.text}${message.streaming ? '▌' : ''}`}
+            />
           )}
         </View>
 

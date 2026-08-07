@@ -8,6 +8,23 @@ This file tracks the accomplished tasks, resolved user requests, and structural/
 
 ## Completed Tasks Checklist
 
+### August 7, 2026 (continued 4)
+
+- [x] **Nâng `LinkifiedText` lên khớp bản đầy đủ bên client (`ChatMessageText`) — nút thanh toán VNPay + ảnh QR SePay, không chỉ link/in đậm**:
+  - **Bối cảnh**: đồng thời với đợt sửa ở mobile, một đồng đội bên client làm đúng vấn đề này nhưng đi xa hơn — nhận host `vnpayment.vn`/`vnpay.vn` để nâng link VNPay thành **nút bấm thật**, và host `qr.sepay.vn` để render URL ảnh QR SePay thành **ảnh** ngay trong bong bóng chat thay vì một chuỗi URL không quét được. Đồng bộ nốt cho mobile theo đúng bản đó.
+  - **`components/shared/LinkifiedText/LinkifiedText.tsx` viết lại**: thêm phân loại URL theo `hostname` đã parse (`PAYMENT_HOSTS`/`QR_IMAGE_HOSTS`, không `includes()` chuỗi thô để tránh mạo danh kiểu `vnpayment.vn.ke-gian.com`). Token `pay` → `<Text>` in đậm nền `bronze` bấm được (mô phỏng nút, vì RN không nhét được `Pressable`/`View` block vào giữa dòng `Text`). Token `qr` → nhúng **`Image` gốc của `react-native`** (KHÔNG phải `expo-image` như quy ước chung — chỉ core `Image` mới nhúng nội tuyến được vào trong `Text` trên cả iOS/Android), bọc `\n` trước/sau để tự xuống dòng riêng, bấm vào mở ảnh gốc.
+  - Thêm prop bắt buộc `payLabel`/`qrLabel` (mỗi màn tự truyền theo ngôn ngữ) — cập nhật cả 3 nơi gọi: `MessageBubble.tsx` (thêm `useTranslation('chat')`, trước đây file này chưa dùng i18n), `HotelConversationThread.tsx` (`ThreadBubble` tự gọi `useTranslation('chat')`), `(staff)/conversation/[id].tsx` (staff chưa i18n hoá nên giữ nhãn tiếng Anh cứng, khớp quy ước cổng đó).
+  - **i18n**: thêm `chat.payNow`/`chat.qrAlt` vào `locales/{en,vi}/chat.json`.
+  - **Verify**: `tsc --noEmit` giữ nguyên baseline 63 lỗi pre-existing (`components/ui/*` gluestack, không phát sinh lỗi mới), `eslint` sạch trên 4 file sửa. ⚠️ Chưa chạy được app ⇒ nhờ bạn thử: link VNPay hiện thành nút "Thanh toán ngay" nổi bật, ảnh QR SePay hiện thẳng thành ảnh quét được.
+
+### August 7, 2026 (continued 3)
+
+- [x] **Link thanh toán VNPay/SePay AI gửi trong chat giờ bấm được (đồng bộ với fix bên client)**:
+  - **Bối cảnh**: AI đặt phòng tự động (`server/src/services/conversation.service.ts`, tool `confirm_action`) chèn `paymentUrl` VNPay **nguyên văn dạng chuỗi** vào câu trả lời (chỉ thị LLM "gửi NGUYÊN VẸN, không bọc trong cú pháp nào"). Mọi nơi render tin nhắn chat trên mobile trước đây chỉ có `<Text>{message.content}</Text>` — người dùng phải tự bôi đen rồi copy/paste URL sang trình duyệt.
+  - **`components/shared/LinkifiedText/`** (mới): bọc `Text` (`@/components/ui/text`), tách chuỗi theo URL regex (`split` với capturing group — xét vị trí LẺ là URL, không dùng `.test()` trên regex `g` vì stateful `lastIndex` sai khi gọi lặp trong `.map`), URL render thành `<Text onPress={() => Linking.openURL(...)}>` gạch chân.
+  - Áp cho 3 nơi render tin nhắn AI/chat: `components/chat/MessageBubble.tsx` (tab "Toàn sàn"), `components/chat/HotelConversationThread.tsx` (scope "Khách sạn này" + `profile/messages/[hotelId]`), và `(staff)/conversation/[id].tsx` (view nhân viên xem cùng hội thoại).
+  - **Verify**: `tsc --noEmit` không phát sinh lỗi mới (giữ nguyên baseline lỗi có sẵn của `components/ui/*` gluestack), `eslint` sạch trên 4 file mới/sửa. ⚠️ Chưa chạy được app trong phiên này ⇒ nhờ bạn thử: AI hoàn thành đặt phòng gửi link VNPay → bấm thẳng vào chữ link phải mở trình duyệt, không cần copy/paste.
+
 ### August 7, 2026 (continued 2) — Gán phòng trước check-in + block phòng khẩn cấp (theo API server mới)
 
 - [x] **Đối chiếu 5 commit mới nhất của server (`develop`) với mobile — 2 tính năng khớp scope staff mobile, làm cả hai**:

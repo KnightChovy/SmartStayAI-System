@@ -3,6 +3,7 @@ import { View, FlatList, Pressable, TextInput, Keyboard, Platform, ActivityIndic
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+import { LinkifiedText } from '@/components/shared/LinkifiedText';
 import { Text } from '@/components/ui/text';
 import { TypingDots } from './TypingDots';
 import { useMyConversation, useSendMessage, useSetConversationMode } from '@/hooks/messages';
@@ -28,6 +29,8 @@ function TypingIndicatorRow({ label }: { label: string }) {
 }
 
 function ThreadBubble({ message, aiLabel, staffLabel }: { message: ConversationMessage; aiLabel: string; staffLabel: string }) {
+  const { t } = useTranslation('chat');
+
   if (message.senderType === 'system') {
     return (
       <View className="items-center my-2">
@@ -57,7 +60,14 @@ function ThreadBubble({ message, aiLabel, staffLabel }: { message: ConversationM
               : 'bg-surface border border-hairline/40 rounded-t-2xl rounded-br-2xl rounded-bl-md',
         )}
       >
-        <Text size="sm" className={cn('font-bevi leading-5', outgoing ? 'text-white' : 'text-on-surface')}>{message.content}</Text>
+        <LinkifiedText
+          size="sm"
+          className={cn('font-bevi leading-5', outgoing ? 'text-white' : 'text-on-surface')}
+          linkClassName={cn('font-bevi-bold underline', outgoing ? 'text-white' : 'text-bronze')}
+          payLabel={t('payNow')}
+          qrLabel={t('qrAlt')}
+          text={message.content}
+        />
       </View>
       <Text size="xs" className={cn('font-bevi text-muted mt-0.5', outgoing ? 'text-right mr-1' : 'ml-1')}>{formatTime(message.createdAt)}</Text>
     </View>
