@@ -1,13 +1,22 @@
 import httpStatus from 'http-status';
 import { Prisma } from '@prisma/client';
-import type { User, CommissionStatus, PaymentStatus, PaymentMethod } from '@prisma/client';
+import type { User, BookingStatus, CommissionStatus, PaymentStatus, PaymentMethod } from '@prisma/client';
 import prisma from '../config/prisma';
 import ApiError from '../utils/ApiError';
 import { auditService } from './audit.service';
 import { walletService } from './wallet.service';
 
-// Kỳ giữ sau khi khách check-out trước khi tự tất toán (đối soát). 0 = tất toán ngay khi đã check-out.
+// Kỳ giữ sau khi kỳ ở kết thúc trước khi tự tất toán (đối soát). 0 = tất toán ngay khi đủ điều kiện.
 const SETTLEMENT_HOLD_DAYS = 1;
+
+/**
+ * Trạng thái booking đã CHỐT SỔ — hết cửa huỷ/hoàn nên nhả tiền cho khách sạn được:
+ * - `checked_out`: khách ở xong.
+ * - `no_show`: khách không đến, tiền trả trước bị forfeit (khách sạn được giữ theo chính sách).
+ *   Thiếu trạng thái này thì net nằm chết ở `balancePending` VĨNH VIỄN vì no-show không bao giờ
+ *   đạt `checked_out` — khách sạn không rút được, sàn cũng không chốt được hoa hồng.
+ */
+const SETTLEABLE_BOOKING_STATUSES: BookingStatus[] = ['checked_out', 'no_show'];
 
 export class AdminService {
   /**
@@ -270,12 +279,12 @@ export class AdminService {
     if (commission.status === 'settled') {
       throw new ApiError(httpStatus.BAD_REQUEST, 'Khoản hoa hồng này đã được tất toán');
     }
-    // Cùng điều kiện với cron tự tất toán: chỉ nhả tiền khi khách ĐÃ TRẢ PHÒNG (hết cửa huỷ/hoàn).
+    // Cùng điều kiện với cron tự tất toán: chỉ nhả tiền khi booking đã chốt sổ (trả phòng hoặc no-show).
     // Không có guard này, admin có thể nhả tiền cho booking khách chưa tới ở — khách huỷ sau thì đã muộn.
-    if (commission.booking.status !== 'checked_out') {
+    if (!SETTLEABLE_BOOKING_STATUSES.includes(commission.booking.status)) {
       throw new ApiError(
         httpStatus.BAD_REQUEST,
-        `Chỉ tất toán được booking đã trả phòng. Booking ${commission.booking.bookingCode} đang ở trạng thái "${commission.booking.status}".`
+        `Chỉ tất toán được booking đã trả phòng hoặc no-show. Booking ${commission.booking.bookingCode} đang ở trạng thái "${commission.booking.status}".`
       );
     }
     // Net khách sạn thực nhận = tổng booking − hoa hồng; tất toán chuyển khoản này pending → available
@@ -300,10 +309,11 @@ export class AdminService {
   };
 
   /**
-   * [Cron] Tự tất toán các khoản hoa hồng ĐỦ ĐIỀU KIỆN: booking đã checked_out (hết cửa huỷ/hoàn)
-   * và đã qua kỳ giữ SETTLEMENT_HOLD_DAYS ngày. Mỗi khoản: commission pending→settled + ví chuyển
-   * pending→available, gói trong 1 transaction; update CÓ ĐIỀU KIỆN (status pending) để không tất
-   * toán hai lần nếu cron chạy chồng. Vết tiền nằm ở wallet_transactions (type payout), không cần audit user.
+   * [Cron] Tự tất toán các khoản hoa hồng ĐỦ ĐIỀU KIỆN: booking đã chốt sổ (xem
+   * SETTLEABLE_BOOKING_STATUSES) và đã qua kỳ giữ SETTLEMENT_HOLD_DAYS ngày. Mỗi khoản: commission
+   * pending→settled + ví chuyển pending→available, gói trong 1 transaction; update CÓ ĐIỀU KIỆN
+   * (status pending) để không tất toán hai lần nếu cron chạy chồng. Vết tiền nằm ở
+   * wallet_transactions (type settlement), không cần audit user.
    * @returns số khoản đã tất toán
    */
   settleEligibleCommissions = async (): Promise<number> => {
@@ -311,7 +321,15 @@ export class AdminService {
     const eligible = await prisma.platformCommission.findMany({
       where: {
         status: 'pending',
-        booking: { status: 'checked_out', checkedOutAt: { lte: cutoff } },
+        booking: {
+          OR: [
+            { status: 'checked_out', checkedOutAt: { lte: cutoff } },
+            // no-show KHÔNG có checkedOutAt ⇒ đếm kỳ giữ từ ngày TRẢ PHÒNG theo lịch. Cố ý không
+            // dùng checkInDate: staff đánh no-show ngay ngày nhận phòng, mà kỳ ở vẫn còn đang chạy
+            // thì chưa nên nhả tiền — còn cửa để đối soát/khiếu nại tới hết kỳ.
+            { status: 'no_show', checkOutDate: { lte: cutoff } },
+          ],
+        },
       },
       select: {
         id: true,
