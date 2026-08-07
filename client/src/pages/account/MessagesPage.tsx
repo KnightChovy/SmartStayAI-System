@@ -409,13 +409,7 @@ export default function MessagesPage() {
                               'rounded-bl-sm border border-outline-variant/40 bg-surface text-on-surface'
                           )}
                         >
-                          <LinkifiedText
-                            text={message.content}
-                            linkClassName={cn(
-                              'font-medium underline',
-                              isGuest ? 'text-on-primary' : 'text-primary'
-                            )}
-                          />
+                          {message.content}
                         </div>
                         <span className="text-[10px] text-on-surface-variant/70">
                           {clockTime(message.createdAt)}

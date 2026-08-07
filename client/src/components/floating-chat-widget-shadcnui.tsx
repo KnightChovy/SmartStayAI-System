@@ -636,17 +636,9 @@ export function FloatingChatWidget() {
                               'rounded-tl-none border border-emerald-500/25 bg-emerald-500/10 text-foreground'
                           )}
                         >
-                          <LinkifiedText
-                            text={item.text}
-                            className={cn(
-                              'block',
-                              isGuest && 'underline-offset-2'
-                            )}
-                            linkClassName={cn(
-                              'font-medium underline',
-                              isGuest ? 'text-primary-foreground' : 'text-primary'
-                            )}
-                          />
+                          <p className="whitespace-pre-wrap wrap-break-word">
+                            {item.text}
+                          </p>
                         </div>
 
                         {isAi &&

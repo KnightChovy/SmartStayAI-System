@@ -87,13 +87,7 @@ function MessageBubble({ message }: { message: StaffConversationMessage }) {
               'rounded-bl-sm border border-slate-200 bg-white text-slate-900'
           )}
         >
-          <LinkifiedText
-            text={message.content}
-            linkClassName={cn(
-              'font-medium underline',
-              isStaff ? 'text-white' : 'text-slate-900'
-            )}
-          />
+          {message.content}
         </div>
         <span className="text-[10px] text-slate-400">
           {messageTime(message.createdAt)}
