@@ -13,6 +13,7 @@ import { GitCompareArrows } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { formatCompactVnd, formatVndFull } from '@/utils/formatCurrency';
 import type { RevenueBucket, RevenueTimeSeries } from '@/types/revenue.types';
+import { currentPeriodKey, dropFuturePeriods } from '@/utils/revenueBucket';
 import type { ChartTooltipProps } from './chart-tooltip';
 import { ChartSkeleton, SectionEmpty, SectionError } from './states';
 
@@ -237,44 +238,25 @@ function Line2({
   );
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-/**
- * Bỏ các kỳ **hoàn toàn nằm ở tương lai** và đánh dấu kỳ **đang chạy dở**.
- *
- * Vì sao bắt buộc: preset "This quarter" cho range tới 30/09 trong khi hôm nay mới 07/08,
- * nên BE trả các bucket rỗng của tháng 9. Vẽ chúng thành 0 khiến biểu đồ đổ dốc thẳng
- * xuống đáy và đọc như "doanh thu sụp", trong khi thực tế là "chưa tới ngày".
- */
 function buildPoints(data: RevenueTimeSeries | undefined): ChartPoint[] {
   if (!data) return [];
-  const now = new Date();
-  const pad = (n: number) => String(n).padStart(2, '0');
-  const todayKey = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-  const currentKey = data.bucket === 'month' ? todayKey.slice(0, 7) : todayKey;
 
-  return (
-    data.points
-      // Khoá kỳ là YYYY-MM hoặc YYYY-MM-DD ⇒ so chuỗi là so đúng thứ tự thời gian.
-      .filter(p => p.period <= currentKey)
-      .map(p => {
-        const gmv = Number(p.revenue);
-        const commission = Number(p.commission);
-        return {
-          period: p.period,
-          gmv,
-          commission,
-          // Kẹp ≥ 0: hoa hồng lớn hơn GMV là bất thường, nhưng để đoạn âm thì recharts đẩy
-          // xuống dưới trục và đỉnh cột không còn bằng GMV nữa.
-          rest: Math.max(0, gmv - commission),
-          previousRevenue:
-            p.previousRevenue !== undefined
-              ? Number(p.previousRevenue)
-              : undefined,
-          inProgress: p.period === currentKey,
-        };
-      })
-  );
+  const currentKey = currentPeriodKey(data.bucket);
+
+  return dropFuturePeriods(data.points, data.bucket).map(p => {
+    const gmv = Number(p.revenue);
+    const commission = Number(p.commission);
+    return {
+      period: p.period,
+      gmv,
+      commission,
+
+      rest: Math.max(0, gmv - commission),
+      previousRevenue:
+        p.previousRevenue !== undefined ? Number(p.previousRevenue) : undefined,
+      inProgress: p.period === currentKey,
+    };
+  });
 }
 
 /** `2026-08` → `Th8 2026`; `2026-08-07` → `07/08`. Nhãn ngắn cho trục X. */

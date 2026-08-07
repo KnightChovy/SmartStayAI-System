@@ -10,8 +10,13 @@ import type {
   RevenueBreakdownGroupBy,
   RevenueBreakdownSortBy,
 } from '@/types/admin.types';
-import { exportToCsv } from '@/utils/exportCsv';
+import { adminService } from '@/services/admin.service';
+import { errorMessage } from '@/utils/errorMessage';
 import { formatDate, toDateInputValue } from '@/utils/formatDate';
+import {
+  BREAKDOWN_EXPORT_LIMIT,
+  exportRevenueWorkbook,
+} from './revenueReport';
 import type { DateRange } from '@/types/revenue.types';
 import { RevenueDateRangePicker } from '@/components/manager/revenue/RevenueDateRangePicker';
 import {
@@ -36,6 +41,12 @@ function formatAsOf(iso: string | undefined): string | null {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
+/** "07-08-2026 21:35" — dùng cho khối ngữ cảnh của file xuất. */
+function formatDateTime(iso: string): string {
+  const time = formatAsOf(iso);
+  return time ? `${formatDate(iso)} ${time}` : formatDate(iso);
+}
+
 export default function RevenuePage() {
   const [range, setRange] = useState<DateRange>(() =>
     resolvePreset('thisMonth')
@@ -52,6 +63,7 @@ export default function RevenuePage() {
     name: string;
   } | null>(null);
   const [hotelDrill, setHotelDrill] = useState<HotelDrillTarget | null>(null);
+  const [exporting, setExporting] = useState(false);
 
   const summary = useRevenueSummary(range);
   const timeSeries = useRevenueTimeSeries({ ...range, compare });
@@ -94,24 +106,60 @@ export default function RevenuePage() {
   const today = toDateInputValue(new Date());
   const partialTo = range.to > today ? today : null;
 
-  // Xuất chính chuỗi thời gian đang hiển thị — không gọi lại API, không xuất số khác trên màn hình.
-  const handleExport = () => {
+  /**
+   * Xuất **toàn bộ những gì đang hiện trên màn hình** thành một file báo cáo nhiều khối:
+   * KPI tóm tắt → chuỗi thời gian (dữ liệu của biểu đồ) → bảng phân rã.
+   *
+   * Bảng phân rã trên màn hình đang phân trang 10 dòng, nhưng file chỉ có 10 dòng trong khi
+   * kỳ có 45 nhóm thì là báo cáo SAI, không phải báo cáo gọn ⇒ gọi lại endpoint với `limit`
+   * tối đa để lấy đủ. Vượt trần 100 thì nói thẳng trong file, không cắt im lặng.
+   */
+  const handleExport = async () => {
     const points = timeSeries.data?.points ?? [];
-    if (points.length === 0) {
+    const summaryData = summary.data;
+    if (points.length === 0 && !summaryData) {
       toast.error('No data to export for the selected period');
       return;
     }
-    exportToCsv(
-      `revenue-${range.from}_${range.to}`,
-      [
-        { header: 'Period', value: p => p.period },
-        { header: 'Gross Revenue (VND)', value: p => p.revenue },
-        { header: 'Commission (VND)', value: p => p.commission },
-        { header: 'Bookings', value: p => p.bookings },
-      ],
-      points
-    );
-    toast.success('CSV report exported');
+
+    setExporting(true);
+    try {
+      const fullBreakdown = await adminService.getRevenueBreakdown({
+        ...range,
+        groupBy,
+        sortBy,
+        limit: BREAKDOWN_EXPORT_LIMIT,
+        ...(groupBy === 'hotel' && partnerFilter
+          ? { partnerId: partnerFilter.id }
+          : {}),
+      });
+
+      await exportRevenueWorkbook(
+        `platform-revenue_${range.from}_${range.to}`,
+        {
+          range,
+          summary: summaryData,
+          points,
+          bucket: timeSeries.data?.bucket ?? 'day',
+          compare,
+          groupBy,
+          partnerFilter,
+          breakdown: fullBreakdown,
+          partialTo,
+          labels: {
+            period: `${formatDate(range.from)} – ${formatDate(range.to)}`,
+            asOf: summaryData ? formatDateTime(summaryData.asOf) : '—',
+            exported: formatDateTime(new Date().toISOString()),
+            partialTo: partialTo ? formatDate(partialTo) : '',
+          },
+        }
+      );
+      toast.success('Excel report downloaded');
+    } catch (err) {
+      toast.error(errorMessage(err, 'Could not export the report'));
+    } finally {
+      setExporting(false);
+    }
   };
 
   return (
@@ -144,11 +192,12 @@ export default function RevenuePage() {
             <button
               type="button"
               onClick={handleExport}
-              disabled={timeSeries.isLoading}
+              disabled={timeSeries.isLoading || exporting}
+              title="Download everything on this page as Excel: summary, chart data and the full breakdown — one sheet each"
               className="flex items-center gap-2 text-sm font-medium text-white bg-role-manager-primary rounded-lg px-3 py-2 hover:bg-role-manager-secondary transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <Download className="w-4 h-4" />
-              Export CSV
+              {exporting ? 'Preparing…' : 'Export Excel'}
             </button>
           </div>
         </div>
