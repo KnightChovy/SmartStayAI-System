@@ -111,7 +111,7 @@ export class RoomBlockService {
       include: { roomType: { select: { id: true, name: true } } },
     });
     if (!room) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy phòng trong khách sạn này');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Room not found in this hotel');
     }
     return room;
   };
@@ -249,7 +249,7 @@ export class RoomBlockService {
 
   private assertValidRange = (dto: Pick<CreateRoomBlockDto, 'startDate' | 'endDate'>): void => {
     if (toUtcDate(dto.endDate) < toUtcDate(dto.startDate)) {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Ngày dự kiến xong không được trước ngày bắt đầu');
+      throw new ApiError(httpStatus.BAD_REQUEST, 'The expected completion date cannot be before the start date');
     }
   };
 
@@ -275,8 +275,8 @@ export class RoomBlockService {
       if (overlapping) {
         throw new ApiError(
           httpStatus.BAD_REQUEST,
-          `Phòng đã có đợt chặn ${overlapping.startDate.toISOString().slice(0, 10)} → ` +
-            `${overlapping.endDate.toISOString().slice(0, 10)} trùng khoảng này — gỡ hoặc sửa đợt đó trước`
+          `The room already has a block ${overlapping.startDate.toISOString().slice(0, 10)} → ` +
+            `${overlapping.endDate.toISOString().slice(0, 10)} overlapping this range — remove or edit that block first`
         );
       }
     }
@@ -334,18 +334,18 @@ export class RoomBlockService {
     const room = await this.loadRoomForBlock(hotelId, roomId, currentUser);
     const block = await prisma.roomBlock.findFirst({ where: { id: blockId, roomId, hotelId } });
     if (!block) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy đợt chặn của phòng này');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Block not found for this room');
     }
     if (block.resolvedAt) {
       throw new ApiError(
         httpStatus.BAD_REQUEST,
-        'Đợt chặn đã xử lý xong — tạo đợt mới thay vì sửa lại một sự việc đã đóng'
+        'This block has already been resolved — create a new block instead of editing a closed incident'
       );
     }
 
     const newEndDate = dto.endDate ? toUtcDate(dto.endDate) : block.endDate;
     if (newEndDate < block.startDate) {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Ngày dự kiến xong không được trước ngày bắt đầu');
+      throw new ApiError(httpStatus.BAD_REQUEST, 'The expected completion date cannot be before the start date');
     }
 
     // Chỉ cần kiểm xung đột khi GIA HẠN: rút ngắn thì không thể đụng vào ai. Cùng lý do với
@@ -363,7 +363,7 @@ export class RoomBlockService {
       if (overlapping) {
         throw new ApiError(
           httpStatus.BAD_REQUEST,
-          `Gia hạn tới ${newEndDate.toISOString().slice(0, 10)} sẽ đè lên đợt chặn ` +
+          `Extending to ${newEndDate.toISOString().slice(0, 10)} would overlap the block ` +
             `${overlapping.startDate.toISOString().slice(0, 10)} → ${overlapping.endDate.toISOString().slice(0, 10)}`
         );
       }
@@ -392,7 +392,7 @@ export class RoomBlockService {
         },
       });
       if (changed.count === 0) {
-        throw new ApiError(httpStatus.CONFLICT, 'Đợt chặn vừa được người khác sửa hoặc gỡ, vui lòng tải lại');
+        throw new ApiError(httpStatus.CONFLICT, 'The block was just edited or removed by someone else, please reload');
       }
 
       if (newEndDate > block.endDate) {
@@ -450,10 +450,10 @@ export class RoomBlockService {
     const room = await this.loadRoomForBlock(hotelId, roomId, currentUser);
     const block = await prisma.roomBlock.findFirst({ where: { id: blockId, roomId, hotelId } });
     if (!block) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy đợt chặn của phòng này');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Block not found for this room');
     }
     if (block.resolvedAt) {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Đợt chặn này đã được xử lý xong trước đó');
+      throw new ApiError(httpStatus.BAD_REQUEST, 'This block has already been resolved');
     }
 
     const today = todayInVietnamDate();
@@ -467,7 +467,7 @@ export class RoomBlockService {
         data: { resolvedAt: new Date(), resolvedBy: currentUser.id },
       });
       if (resolved.count === 0) {
-        throw new ApiError(httpStatus.CONFLICT, 'Đợt chặn vừa được người khác xử lý, vui lòng tải lại');
+        throw new ApiError(httpStatus.CONFLICT, 'The block was just resolved by someone else, please reload');
       }
 
       if (restoreFrom <= block.endDate) {

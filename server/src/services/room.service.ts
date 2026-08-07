@@ -25,8 +25,8 @@ const roomTypeInclude = { roomType: { select: { id: true, name: true } } };
  * vết). Bảo trì luôn phải có KHOẢNG NGÀY và LÝ DO THẬT, nên chỉ còn một đường vào duy nhất.
  */
 const MAINTENANCE_NEEDS_BLOCK =
-  'Phòng đang sửa phải khai khoảng ngày: dùng POST /hotels/{hotelId}/rooms/{roomId}/blocks ' +
-  '(blockType, startDate, endDate, reason) thay vì đổi trạng thái phòng';
+  'A room under maintenance must specify a date range: use POST /hotels/{hotelId}/rooms/{roomId}/blocks ' +
+  '(blockType, startDate, endDate, reason) instead of changing the room status';
 
 export class RoomService {
   /**
@@ -39,7 +39,7 @@ export class RoomService {
       where: { hotelId, roomNumber, ...(excludeRoomId && { id: { not: excludeRoomId } }) },
     });
     if (duplicate) {
-      throw new ApiError(httpStatus.BAD_REQUEST, `Số phòng ${roomNumber} đã tồn tại trong khách sạn`);
+      throw new ApiError(httpStatus.BAD_REQUEST, `Room number ${roomNumber} already exists in the hotel`);
     }
   };
 
@@ -67,12 +67,12 @@ export class RoomService {
     await hotelService.getManagedHotel(hotelId, currentUser);
     const roomType = await prisma.roomType.findFirst({ where: { id: payload.roomTypeId, hotelId } });
     if (!roomType) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy loại phòng trong khách sạn này');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Room type not found in this hotel');
     }
     if (payload.status === 'occupied') {
       throw new ApiError(
         httpStatus.BAD_REQUEST,
-        'Không tạo phòng ở trạng thái "có khách" — trạng thái đó do check-in sinh ra'
+        'Cannot create a room in the "occupied" status — that status is set by check-in'
       );
     }
     if (payload.status === 'maintenance') {
@@ -108,7 +108,7 @@ export class RoomService {
       include: { roomType: { select: { id: true, name: true, cleaningDurationMinutes: true } } },
     });
     if (!room) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy phòng trong khách sạn này');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Room not found in this hotel');
     }
     return room;
   };
@@ -139,7 +139,7 @@ export class RoomService {
         data: { hkStatus, hkStatusSince: now, hkExpectedUntil: expectedUntil },
       });
       if (changed.count === 0) {
-        throw new ApiError(httpStatus.CONFLICT, 'Trạng thái phòng vừa được người khác thay đổi, vui lòng thử lại');
+        throw new ApiError(httpStatus.CONFLICT, 'The room status was just changed by someone else, please try again');
       }
 
       await tx.roomStatusHistory.updateMany({
@@ -185,7 +185,7 @@ export class RoomService {
     if (status === 'occupied') {
       throw new ApiError(
         httpStatus.BAD_REQUEST,
-        'Trạng thái "có khách" chỉ sinh ra từ check-in — đổi ở mục Front desk, không đổi ở bản đồ phòng'
+        'The "occupied" status is only set by check-in — change it in the Front desk section, not on the room map'
       );
     }
     if (status === 'maintenance') {
@@ -194,7 +194,7 @@ export class RoomService {
     if (room.foStatus === 'occupied') {
       throw new ApiError(
         httpStatus.BAD_REQUEST,
-        'Phòng đang có khách lưu trú — trả phòng ở mục Front desk trước khi đổi trạng thái'
+        'The room currently has a guest staying — check out at the Front desk section before changing the status'
       );
     }
 
@@ -241,14 +241,14 @@ export class RoomService {
     if (usedCount > 0) {
       throw new ApiError(
         httpStatus.BAD_REQUEST,
-        'Phòng đã có lịch sử đặt, không thể xoá — hãy đặt isActive = false để ngừng dùng'
+        'The room already has booking history and cannot be deleted — set isActive = false to stop using it'
       );
     }
     // Đợt chặn đã trừ tồn kho theo khoảng ngày của nó; xoá phòng luôn thì phần trừ đó không còn
     // ai cộng lại. Bắt gỡ block trước để tồn kho không bị hụt vĩnh viễn.
     const openBlocks = await prisma.roomBlock.count({ where: { roomId, resolvedAt: null } });
     if (openBlocks > 0) {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Phòng đang có đợt chặn chưa xử lý — gỡ đợt chặn trước khi xoá');
+      throw new ApiError(httpStatus.BAD_REQUEST, 'The room has an unresolved block — remove the block before deleting');
     }
 
     await prisma.$transaction(async (tx) => {

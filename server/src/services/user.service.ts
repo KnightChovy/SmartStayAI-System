@@ -212,11 +212,11 @@ export class UserService {
     }
     const matches = await bcrypt.compare(currentPassword, user.passwordHash);
     if (!matches) {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Mật khẩu hiện tại không đúng');
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Current password is incorrect');
     }
     const sameAsOld = await bcrypt.compare(newPassword, user.passwordHash);
     if (sameAsOld) {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Mật khẩu mới phải khác mật khẩu hiện tại');
+      throw new ApiError(httpStatus.BAD_REQUEST, 'New password must be different from the current password');
     }
     const passwordHash = await bcrypt.hash(newPassword, config.bcrypt.rounds);
     await prisma.user.update({ where: { id: userId }, data: { passwordHash } });
@@ -229,7 +229,7 @@ export class UserService {
    */
   setUserStatus = async (userId: string, status: UserStatus, currentUser: User): Promise<User> => {
     if (userId === currentUser.id) {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Không thể tự đổi trạng thái tài khoản của chính mình');
+      throw new ApiError(httpStatus.BAD_REQUEST, 'You cannot change your own account status');
     }
     const user = await this.getUserById(userId);
     if (!user) {
@@ -253,7 +253,7 @@ export class UserService {
    */
   setUserRole = async (userId: string, role: UserRole, currentUser: User): Promise<User> => {
     if (userId === currentUser.id) {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Không thể tự đổi vai trò của chính mình');
+      throw new ApiError(httpStatus.BAD_REQUEST, 'You cannot change your own role');
     }
     const user = await this.getUserById(userId);
     if (!user) {
@@ -262,7 +262,7 @@ export class UserService {
     if (user.role === 'admin' && role !== 'admin') {
       const adminCount = await prisma.user.count({ where: { role: 'admin', deletedAt: null } });
       if (adminCount <= 1) {
-        throw new ApiError(httpStatus.BAD_REQUEST, 'Không thể hạ cấp admin cuối cùng của hệ thống');
+        throw new ApiError(httpStatus.BAD_REQUEST, 'Cannot demote the last admin in the system');
       }
     }
     const updated = await prisma.user.update({ where: { id: userId }, data: { role } });

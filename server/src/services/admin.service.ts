@@ -577,7 +577,7 @@ export class AdminService {
   setHotelFlags = async (hotelId: string, flags: { isListed?: boolean; isActive?: boolean }, currentUser: User) => {
     const hotel = await prisma.hotel.findFirst({ where: { id: hotelId, deletedAt: null } });
     if (!hotel) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy khách sạn');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Hotel not found');
     }
     const data: Prisma.HotelUpdateInput = {};
     if (flags.isListed !== undefined) data.isListed = flags.isListed;

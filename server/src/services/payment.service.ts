@@ -83,7 +83,7 @@ export class PaymentService {
     if (!config.vnpay.tmnCode || !config.vnpay.hashSecret) {
       throw new ApiError(
         httpStatus.SERVICE_UNAVAILABLE,
-        'VNPay chưa được cấu hình (đặt VNP_TMN_CODE và VNP_HASH_SECRET trong .env)'
+        'VNPay is not configured (set VNP_TMN_CODE and VNP_HASH_SECRET in .env)'
       );
     }
   };
@@ -98,22 +98,22 @@ export class PaymentService {
 
     const booking = await prisma.booking.findUnique({ where: { id: bookingId } });
     if (!booking) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy booking');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Booking not found');
     }
     if (booking.customerId !== currentUser.id) {
       throw new ApiError(httpStatus.FORBIDDEN, 'Forbidden');
     }
     if (booking.status !== 'pending') {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Booking không ở trạng thái chờ thanh toán');
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Booking is not awaiting payment');
     }
     if (booking.holdExpiresAt && booking.holdExpiresAt < new Date()) {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Booking đã quá hạn giữ chỗ, vui lòng đặt lại');
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Booking hold has expired, please book again');
     }
 
     // Chỉ thu phần CÒN THIẾU: khách có thể đã trả bớt bằng ví, thu nguyên totalAmount là thu hai lần
     const amountDue = await this.outstandingAmount(booking.id, booking.totalAmount);
     if (amountDue.lessThanOrEqualTo(0)) {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Booking này đã được thanh toán đủ');
+      throw new ApiError(httpStatus.BAD_REQUEST, 'This booking has already been paid in full');
     }
 
     const txnRef = `${booking.bookingCode}-${Date.now().toString(36).toUpperCase()}`;
@@ -160,7 +160,7 @@ export class PaymentService {
     this.assertConfigured();
 
     if (!this.verifySignature(params)) {
-      return { success: false, message: 'Chữ ký không hợp lệ', rspCode: '97' };
+      return { success: false, message: 'Invalid signature', rspCode: '97' };
     }
 
     const payment = await prisma.payment.findUnique({
@@ -168,16 +168,16 @@ export class PaymentService {
       include: { booking: { select: { id: true, bookingCode: true } } },
     });
     if (!payment) {
-      return { success: false, message: 'Không tìm thấy giao dịch', rspCode: '01' };
+      return { success: false, message: 'Transaction not found', rspCode: '01' };
     }
 
     if (payment.status === 'completed') {
-      return { success: true, bookingCode: payment.booking.bookingCode, message: 'Giao dịch đã được xử lý', rspCode: '02' };
+      return { success: true, bookingCode: payment.booking.bookingCode, message: 'Transaction already processed', rspCode: '02' };
     }
 
     const expectedAmount = Math.round(payment.amount.toNumber() * 100);
     if (Number(params.vnp_Amount) !== expectedAmount) {
-      return { success: false, bookingCode: payment.booking.bookingCode, message: 'Số tiền không khớp', rspCode: '04' };
+      return { success: false, bookingCode: payment.booking.bookingCode, message: 'Amount mismatch', rspCode: '04' };
     }
 
     const paidOk = params.vnp_ResponseCode === '00' && params.vnp_TransactionStatus === '00';
@@ -189,7 +189,7 @@ export class PaymentService {
       return {
         success: false,
         bookingCode: payment.booking.bookingCode,
-        message: `Thanh toán thất bại (mã ${params.vnp_ResponseCode})`,
+        message: `Payment failed (code ${params.vnp_ResponseCode})`,
         rspCode: '00',
       };
     }
@@ -202,7 +202,7 @@ export class PaymentService {
     return {
       success: true,
       bookingCode: payment.booking.bookingCode,
-      message: confirmed.confirmed ? 'Thanh toán thành công' : 'Đã ghi nhận thanh toán',
+      message: confirmed.confirmed ? 'Payment successful' : 'Payment recorded',
       rspCode: '00',
     };
   };
@@ -238,25 +238,25 @@ export class PaymentService {
   payWithWallet = async (bookingId: string, currentUser: User) => {
     const booking = await prisma.booking.findUnique({ where: { id: bookingId } });
     if (!booking) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy booking');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Booking not found');
     }
     if (booking.customerId !== currentUser.id) {
       throw new ApiError(httpStatus.FORBIDDEN, 'Forbidden');
     }
     if (booking.status !== 'pending') {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Booking không ở trạng thái chờ thanh toán');
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Booking is not awaiting payment');
     }
     if (booking.holdExpiresAt && booking.holdExpiresAt < new Date()) {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Booking đã quá hạn giữ chỗ, vui lòng đặt lại');
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Booking hold has expired, please book again');
     }
 
     const remaining = await this.outstandingAmount(booking.id, booking.totalAmount);
     if (remaining.lessThanOrEqualTo(0)) {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Booking này đã được thanh toán đủ');
+      throw new ApiError(httpStatus.BAD_REQUEST, 'This booking has already been paid in full');
     }
     const balance = await walletService.getCustomerBalance(currentUser.id);
     if (balance.lessThanOrEqualTo(0)) {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Ví của bạn không có số dư');
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Your wallet has no balance');
     }
 
     // Ví nhiều hơn số còn thiếu thì chỉ trừ đúng số còn thiếu — không bao giờ thu dư
@@ -293,7 +293,7 @@ export class PaymentService {
       });
       if (done.count === 0) {
         // Booking vừa bị huỷ/hết hạn giữa chừng — ném lỗi để rollback, ví KHÔNG bị trừ oan
-        throw new ApiError(httpStatus.BAD_REQUEST, 'Booking vừa hết hạn giữ chỗ, vui lòng đặt lại');
+        throw new ApiError(httpStatus.BAD_REQUEST, 'Booking hold has just expired, please book again');
       }
       const info = await this.finalizeConfirmedBooking(tx, booking.id, payment.id);
       return { paid: applied, remaining: new Prisma.Decimal(0), confirmed: true as const, ...info };
@@ -452,7 +452,7 @@ export class PaymentService {
     if (!config.sepay.webhookApiKey || !config.sepay.accountNumber || !config.sepay.bankCode) {
       throw new ApiError(
         httpStatus.SERVICE_UNAVAILABLE,
-        'SePay chưa được cấu hình (đặt SEPAY_WEBHOOK_API_KEY, SEPAY_ACCOUNT_NUMBER, SEPAY_BANK_CODE trong .env)'
+        'SePay is not configured (set SEPAY_WEBHOOK_API_KEY, SEPAY_ACCOUNT_NUMBER, SEPAY_BANK_CODE in .env)'
       );
     }
   };
@@ -469,22 +469,22 @@ export class PaymentService {
 
     const booking = await prisma.booking.findUnique({ where: { id: bookingId } });
     if (!booking) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy booking');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Booking not found');
     }
     if (booking.customerId !== currentUser.id) {
       throw new ApiError(httpStatus.FORBIDDEN, 'Forbidden');
     }
     if (booking.status !== 'pending') {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Booking không ở trạng thái chờ thanh toán');
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Booking is not awaiting payment');
     }
     if (booking.holdExpiresAt && booking.holdExpiresAt < new Date()) {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Booking đã quá hạn giữ chỗ, vui lòng đặt lại');
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Booking hold has expired, please book again');
     }
 
     // Chỉ thu phần CÒN THIẾU: khách có thể đã trả bớt bằng ví
     const amountDue = await this.outstandingAmount(booking.id, booking.totalAmount);
     if (amountDue.lessThanOrEqualTo(0)) {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Booking này đã được thanh toán đủ');
+      throw new ApiError(httpStatus.BAD_REQUEST, 'This booking has already been paid in full');
     }
 
     const existing = await prisma.payment.findFirst({
@@ -550,7 +550,7 @@ export class PaymentService {
    */
   handleSepayWebhook = async (payload: SepayWebhookPayload): Promise<{ success: boolean; message: string }> => {
     if (payload.transferType !== 'in') {
-      return { success: true, message: 'Bỏ qua giao dịch tiền ra' };
+      return { success: true, message: 'Ignoring outgoing transaction' };
     }
 
     // SePay tự bóc `code` nếu cấu hình mẫu ở dashboard; không có thì tự bóc từ nội dung thô.
@@ -560,7 +560,7 @@ export class PaymentService {
         `[SePay] Nhận ${payload.transferAmount}đ nhưng KHÔNG bóc được mã booking từ nội dung "${payload.content}" ` +
           `(ref ${payload.referenceCode ?? '-'}) — CẦN ĐỐI SOÁT THỦ CÔNG`
       );
-      return { success: true, message: 'Không tìm thấy mã booking trong nội dung chuyển khoản' };
+      return { success: true, message: 'No booking code found in the transfer content' };
     }
     const bookingCode = matched[0].toUpperCase();
 
@@ -571,12 +571,12 @@ export class PaymentService {
       logger.error(
         `[SePay] Nhận ${payload.transferAmount}đ cho booking ${bookingCode} nhưng không có khoản SePay nào — CẦN ĐỐI SOÁT THỦ CÔNG`
       );
-      return { success: true, message: 'Không tìm thấy khoản thanh toán SePay của booking' };
+      return { success: true, message: 'No SePay payment found for this booking' };
     }
 
     // Idempotent: SePay retry nhiều lần ⇒ đã completed thì báo thành công, không xử lý lại.
     if (payment.status === 'completed') {
-      return { success: true, message: 'Giao dịch đã được xử lý' };
+      return { success: true, message: 'Transaction already processed' };
     }
 
     const expectedAmount = Math.round(payment.amount.toNumber());
@@ -584,7 +584,7 @@ export class PaymentService {
       logger.error(
         `[SePay] Booking ${bookingCode} chuyển THIẾU: nhận ${payload.transferAmount}đ / cần ${expectedAmount}đ — CẦN ĐỐI SOÁT THỦ CÔNG`
       );
-      return { success: true, message: 'Số tiền chuyển chưa đủ' };
+      return { success: true, message: 'Transferred amount is insufficient' };
     }
     if (payload.transferAmount > expectedAmount) {
       logger.warn(
@@ -598,7 +598,7 @@ export class PaymentService {
     }
     return {
       success: true,
-      message: confirmed.confirmed ? 'Thanh toán thành công' : 'Đã ghi nhận thanh toán',
+      message: confirmed.confirmed ? 'Payment successful' : 'Payment recorded',
     };
   };
 
