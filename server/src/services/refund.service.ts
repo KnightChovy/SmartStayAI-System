@@ -98,13 +98,13 @@ export class RefundService {
       where: { id: refundId, payment: { booking: { hotelId } } },
     });
     if (!refund) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy yêu cầu hoàn tiền của khách sạn này');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Refund request not found for this hotel');
     }
     if (refund.status !== 'pending') {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Yêu cầu này đã được xét duyệt rồi');
+      throw new ApiError(httpStatus.BAD_REQUEST, 'This request has already been reviewed');
     }
     if (payload.decision === 'reject' && !payload.rejectionReason) {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Cần nêu lý do khi từ chối hoàn tiền');
+      throw new ApiError(httpStatus.BAD_REQUEST, 'A reason is required when rejecting a refund');
     }
 
     // Update CÓ ĐIỀU KIỆN (status pending) để hai người duyệt cùng lúc thì chỉ một bên thắng
@@ -118,7 +118,7 @@ export class RefundService {
       },
     });
     if (reviewed.count === 0) {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Yêu cầu vừa được người khác xét duyệt');
+      throw new ApiError(httpStatus.BAD_REQUEST, 'This request was just reviewed by someone else');
     }
 
     // Hoàn vào ví thì tiền không rời nền tảng ⇒ cộng ngay, không phải chờ ai chuyển khoản.
@@ -210,7 +210,7 @@ export class RefundService {
         data: { status: 'processed', processedAt: new Date() },
       });
       if (done.count === 0) {
-        throw new ApiError(httpStatus.BAD_REQUEST, 'Yêu cầu này vừa được xử lý');
+        throw new ApiError(httpStatus.BAD_REQUEST, 'This request was just processed');
       }
 
       await walletService.creditCustomer(
@@ -290,19 +290,19 @@ export class RefundService {
       },
     });
     if (!refund) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy yêu cầu hoàn tiền');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Refund request not found');
     }
     if (refund.status !== 'approved') {
       throw new ApiError(
         httpStatus.BAD_REQUEST,
-        'Chỉ xử lý được yêu cầu đã DUYỆT (approved). Yêu cầu chờ duyệt phải được khách sạn duyệt trước.'
+        'Only approved requests can be processed. A pending request must be approved by the hotel first.'
       );
     }
     // Hoàn vào ví được cộng tự động ngay lúc duyệt — không có gì để Platform Manager chuyển khoản
     if (refund.refundMethod !== 'bank') {
       throw new ApiError(
         httpStatus.BAD_REQUEST,
-        'Yêu cầu này khách chọn hoàn vào ví nên đã được cộng tự động, không cần chuyển khoản'
+        'This request was set to refund to the wallet and has been credited automatically, no bank transfer needed'
       );
     }
 
@@ -319,7 +319,7 @@ export class RefundService {
         },
       });
       if (done.count === 0) {
-        throw new ApiError(httpStatus.BAD_REQUEST, 'Yêu cầu này vừa được xử lý');
+        throw new ApiError(httpStatus.BAD_REQUEST, 'This request was just processed');
       }
 
       await this.settleHotelSide(tx, refund, booking);
@@ -381,7 +381,7 @@ export class RefundService {
         paymentId: args.paymentId,
         requestedBy: args.customerId,
         amount: args.amount,
-        reason: `Tiền vào sau khi booking ${args.bookingCode} hết hạn giữ chỗ — khách không có phòng, hoàn toàn bộ`,
+        reason: `Payment received after booking ${args.bookingCode} hold expired — guest has no room, refunded in full`,
         status: 'processed',
         refundMethod: 'wallet',
         reviewedAt: new Date(),

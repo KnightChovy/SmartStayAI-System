@@ -9,7 +9,7 @@ export class NotificationService {
   private getOwnedNotification = async (userId: string, notificationId: string) => {
     const notification = await prisma.notification.findFirst({ where: { id: notificationId, userId } });
     if (!notification) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy thông báo');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Notification not found');
     }
     return notification;
   };

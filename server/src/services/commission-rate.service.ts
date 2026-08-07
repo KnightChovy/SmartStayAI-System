@@ -169,7 +169,7 @@ export class CommissionRateService {
   ): Promise<{ allowed: boolean; reason: string | null; isRenewal: boolean }> => {
     const pending = await prisma.commissionRateRequest.count({ where: { hotelId, status: 'pending' } });
     if (pending > 0) {
-      return { allowed: false, reason: 'Đã có một đơn đang chờ duyệt cho khách sạn này', isRenewal: false };
+      return { allowed: false, reason: 'There is already a pending request for this hotel', isRenewal: false };
     }
 
     const lastRejected = await prisma.commissionRateRequest.findFirst({
@@ -181,7 +181,7 @@ export class CommissionRateService {
       if (waited < REJECT_COOLDOWN_DAYS) {
         return {
           allowed: false,
-          reason: `Đơn trước vừa bị từ chối, vui lòng đợi thêm ${REJECT_COOLDOWN_DAYS - waited} ngày`,
+          reason: `Your previous request was just rejected, please wait another ${REJECT_COOLDOWN_DAYS - waited} days`,
           isRenewal: false,
         };
       }
@@ -193,7 +193,7 @@ export class CommissionRateService {
       if (daysLeft === null || daysLeft > RENEWAL_WINDOW_DAYS) {
         return {
           allowed: false,
-          reason: `Đang áp dụng mức ưu đãi, chỉ được xin gia hạn khi còn ${RENEWAL_WINDOW_DAYS} ngày trước ngày hết hạn`,
+          reason: `A discount rate is in effect; you can only request a renewal within ${RENEWAL_WINDOW_DAYS} days before the expiry date`,
           isRenewal: false,
         };
       }
@@ -214,7 +214,7 @@ export class CommissionRateService {
 
     const gate = await this.checkCanRequest(hotelId, agreement);
     if (!gate.allowed) {
-      throw new ApiError(httpStatus.BAD_REQUEST, gate.reason ?? 'Chưa thể nộp đơn lúc này');
+      throw new ApiError(httpStatus.BAD_REQUEST, gate.reason ?? 'Cannot submit a request at this time');
     }
 
     // Mức để đối chiếu = mức khách sạn SẼ chịu nếu đơn này không được duyệt.
@@ -231,12 +231,12 @@ export class CommissionRateService {
       throw new ApiError(
         httpStatus.BAD_REQUEST,
         gate.isRenewal
-          ? `Mức đề xuất phải thấp hơn mức chung sẽ áp sau khi ưu đãi hiện tại hết hạn (${currentRate.toString()}%)`
-          : `Mức đề xuất phải thấp hơn mức đang áp dụng (${currentRate.toString()}%)`
+          ? `The proposed rate must be lower than the base rate that will apply after the current agreement expires (${currentRate.toString()}%)`
+          : `The proposed rate must be lower than the currently applied rate (${currentRate.toString()}%)`
       );
     }
     if (requestedRate.lessThan(MIN_RATE)) {
-      throw new ApiError(httpStatus.BAD_REQUEST, `Mức đề xuất không được thấp hơn ${MIN_RATE}%`);
+      throw new ApiError(httpStatus.BAD_REQUEST, `The proposed rate cannot be lower than ${MIN_RATE}%`);
     }
 
     return prisma.commissionRateRequest.create({
@@ -309,10 +309,10 @@ export class CommissionRateService {
       include: { hotel: { select: { id: true, name: true, partner: { select: { ownerId: true } } } } },
     });
     if (!request) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Không tìm thấy đơn');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Request not found');
     }
     if (request.status !== 'pending') {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Đơn này đã được xử lý');
+      throw new ApiError(httpStatus.BAD_REQUEST, 'This request has already been processed');
     }
 
     const reviewedAt = new Date();
@@ -332,10 +332,10 @@ export class CommissionRateService {
           data: {
             userId: request.hotel.partner.ownerId,
             type: 'alert',
-            title: 'Đơn xin giảm hoa hồng bị từ chối',
+            title: 'Commission reduction request rejected',
             body:
-              `Đơn xin mức ${request.requestedRate.toString()}% cho ${request.hotel.name} không được duyệt. ` +
-              `Lý do: ${payload.rejectionReason ?? 'không nêu'}. Bạn có thể nộp lại sau ${REJECT_COOLDOWN_DAYS} ngày.`,
+              `Your request for a ${request.requestedRate.toString()}% rate for ${request.hotel.name} was not approved. ` +
+              `Reason: ${payload.rejectionReason ?? 'not specified'}. You can resubmit after ${REJECT_COOLDOWN_DAYS} days.`,
             data: { requestId, hotelId: request.hotelId },
             channel: 'in_app',
             status: 'sent',
@@ -385,11 +385,11 @@ export class CommissionRateService {
         data: {
           userId: request.hotel.partner.ownerId,
           type: 'alert',
-          title: 'Đơn xin giảm hoa hồng đã được duyệt',
+          title: 'Commission reduction request approved',
           body:
-            `${request.hotel.name} được áp mức ${request.requestedRate.toString()}% từ ` +
-            `${effectiveFrom.toISOString().slice(0, 10)} đến ${effectiveTo.toISOString().slice(0, 10)}. ` +
-            `Hết hạn sẽ tự trở về mức hoa hồng chung của nền tảng.`,
+            `${request.hotel.name} will be charged a ${request.requestedRate.toString()}% rate from ` +
+            `${effectiveFrom.toISOString().slice(0, 10)} to ${effectiveTo.toISOString().slice(0, 10)}. ` +
+            `Upon expiry, it will automatically revert to the platform's base commission rate.`,
           data: { requestId, hotelId: request.hotelId },
           channel: 'in_app',
           status: 'sent',
@@ -442,7 +442,7 @@ export class CommissionRateService {
   setBaseRate = async (currentUser: User, payload: SetBaseRateDto) => {
     const rate = new Prisma.Decimal(payload.rate);
     if (rate.lessThan(MIN_RATE) || rate.greaterThan(MAX_RATE)) {
-      throw new ApiError(httpStatus.BAD_REQUEST, `Mức hoa hồng nền phải nằm trong khoảng ${MIN_RATE}%–${MAX_RATE}%`);
+      throw new ApiError(httpStatus.BAD_REQUEST, `The base commission rate must be between ${MIN_RATE}%–${MAX_RATE}%`);
     }
 
     const effectiveFrom = toUtcDate(new Date(payload.effectiveFrom));
@@ -450,7 +450,7 @@ export class CommissionRateService {
     if (effectiveFrom < earliest) {
       throw new ApiError(
         httpStatus.BAD_REQUEST,
-        `Phải báo trước ít nhất ${BASE_RATE_NOTICE_DAYS} ngày — ngày áp dụng sớm nhất là ${earliest
+        `Must give at least ${BASE_RATE_NOTICE_DAYS} days notice — the earliest effective date is ${earliest
           .toISOString()
           .slice(0, 10)}`
       );
@@ -496,10 +496,10 @@ export class CommissionRateService {
           data: ownerIds.map((ownerId) => ({
             userId: ownerId,
             type: 'alert' as const,
-            title: 'Thay đổi mức hoa hồng của nền tảng',
+            title: 'Platform commission rate change',
             body:
-              `Từ ngày ${effectiveFrom.toISOString().slice(0, 10)}, mức hoa hồng chung của nền tảng là ` +
-              `${rate.toString()}%. Các thoả thuận ưu đãi đang còn hiệu lực vẫn được giữ nguyên đến hết hạn.`,
+              `From ${effectiveFrom.toISOString().slice(0, 10)}, the platform's base commission rate is ` +
+              `${rate.toString()}%. Active discount agreements will remain unchanged until they expire.`,
             data: { rateId: row.id, effectiveFrom: effectiveFrom.toISOString().slice(0, 10) },
             channel: 'in_app' as const,
             status: 'sent' as const,
@@ -568,11 +568,11 @@ export class CommissionRateService {
           data: {
             userId: agreement.hotel!.partner.ownerId,
             type: 'alert',
-            title: `Ưu đãi hoa hồng sắp hết hạn (còn ${daysLeft} ngày)`,
+            title: `Commission discount expiring soon (${daysLeft} days left)`,
             body:
-              `Mức ${agreement.rate.toString()}% của ${agreement.hotel!.name} hết hiệu lực ngày ` +
-              `${agreement.effectiveTo!.toISOString().slice(0, 10)}, sau đó áp mức chung ${baseRate.toString()}%. ` +
-              `Bạn có thể nộp đơn xin gia hạn ngay từ bây giờ.`,
+              `The ${agreement.rate.toString()}% rate for ${agreement.hotel!.name} expires on ` +
+              `${agreement.effectiveTo!.toISOString().slice(0, 10)}, after which the base rate of ${baseRate.toString()}% applies. ` +
+              `You can submit a renewal request right now.`,
             data: {
               hotelId: agreement.hotelId,
               agreementId: agreement.id,

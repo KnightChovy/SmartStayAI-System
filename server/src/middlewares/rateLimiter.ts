@@ -16,5 +16,5 @@ export const chatLimiter = rateLimit({
     const user = req.user as { id?: string } | undefined;
     return user?.id ?? req.ip ?? 'anonymous';
   },
-  message: { code: 429, message: 'Bạn gửi tin quá nhanh, vui lòng chờ giây lát rồi thử lại.' },
+  message: { code: 429, message: 'You are sending messages too quickly. Please wait a moment and try again.' },
 });

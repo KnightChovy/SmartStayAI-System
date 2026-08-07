@@ -28,8 +28,10 @@ import type { PaymentMethod } from '@/types/staff.types';
 import {
   WALLET_TXN_CONFIG,
   WALLET_TXN_OPTIONS,
+  describeTxn,
   isPositiveTxn,
 } from '@/components/hotel-partner/wallet/labels';
+import { PAYOUT_STATUS_CONFIG } from '@/components/hotel-partner/wallet/payout-labels';
 
 const PAGE_SIZE = 10;
 const ALL_TYPES = 'all';
@@ -130,12 +132,14 @@ export function TransactionLedgerCard({ hotelId }: TransactionLedgerCardProps) {
             <table className="w-full min-w-200 text-sm">
               <thead>
                 <tr className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  <th className="px-6 py-3">When</th>
-                  <th className="px-6 py-3">Type</th>
-                  <th className="px-6 py-3">From</th>
-                  <th className="px-6 py-3">Paid by guest via</th>
+                  <th className="px-6 py-3">Date</th>
+                  <th className="px-6 py-3">Transaction Type</th>
+                  <th className="px-6 py-3">Booking ID</th>
+                  <th className="px-6 py-3">Payment Method</th>
                   <th className="px-6 py-3 text-right">Amount</th>
-                  <th className="px-6 py-3 text-right">Balance after</th>
+                  <th className="px-6 py-3 text-right">
+                    Balance After Transaction
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -197,21 +201,32 @@ function Row({ txn }: { txn: WalletTransaction }) {
       </td>
 
       <td className="px-6 py-3.5">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span className="cursor-default">
-              <Pill tone={config.tone}>{config.label}</Pill>
-            </span>
-          </TooltipTrigger>
-          <TooltipContent className="max-w-64 text-xs">
-            {/* Mã giao dịch dài, để trong tooltip thay vì chiếm một cột riêng chỉ để hiện
-                một chuỗi UUID không ai đọc bằng mắt. */}
-            <p className="font-mono">{txn.id}</p>
-            {txn.description && (
-              <p className="mt-1 text-slate-300">{txn.description}</p>
-            )}
-          </TooltipContent>
-        </Tooltip>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="cursor-default">
+                <Pill tone={config.tone}>{config.label}</Pill>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-64 text-xs">
+              {/* Mã giao dịch dài, để trong tooltip thay vì chiếm một cột riêng chỉ để hiện
+                  một chuỗi UUID không ai đọc bằng mắt. */}
+              <p className="font-mono">{txn.id}</p>
+            </TooltipContent>
+          </Tooltip>
+
+          {/* Badge trạng thái khoản rút — ẩn khi `null` (giao dịch không thuộc luồng rút).
+              Không có badge này thì ba kết cục pending/paid/failed nhìn y hệt nhau vì cùng
+              mang `type: 'payout'`. */}
+          {txn.payoutStatus && (
+            <Pill tone={PAYOUT_STATUS_CONFIG[txn.payoutStatus].tone}>
+              {PAYOUT_STATUS_CONFIG[txn.payoutStatus].label}
+            </Pill>
+          )}
+        </div>
+        <p className="mt-1 text-xs text-slate-400">
+          {describeTxn(txn.type, txn.payoutStatus, txn.description)}
+        </p>
       </td>
 
       <td className="px-6 py-3.5">
@@ -226,9 +241,7 @@ function Row({ txn }: { txn: WalletTransaction }) {
 
       <td className="px-6 py-3.5 text-xs text-slate-600">
         {txn.paymentMethods.length > 0 ? (
-          txn.paymentMethods
-            .map(m => PAYMENT_METHOD_LABEL[m] ?? m)
-            .join(' + ')
+          txn.paymentMethods.map(m => PAYMENT_METHOD_LABEL[m] ?? m).join(' + ')
         ) : (
           <span className="italic text-slate-300">—</span>
         )}
