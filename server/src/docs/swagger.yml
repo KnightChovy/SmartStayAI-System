@@ -2241,17 +2241,29 @@ paths:
               properties:
                 settings:
                   type: object
-                  description: 'Hotel settings. Only `cancellation` is accepted today; both of its keys are required together'
+                  description: 'Hotel settings. Only `cancellation` (tiered refund policy) is accepted today.'
                   required: [cancellation]
                   additionalProperties: false
                   properties:
                     cancellation:
                       type: object
-                      required: [freeUntilHours, latePenalty]
+                      required: [tiers]
                       additionalProperties: false
                       properties:
-                        freeUntilHours: { type: integer, minimum: 0, maximum: 2160, example: 24, description: 'Hours before check-in that still get a full refund. 0 = never free; max 2160 (90 days)' }
-                        latePenalty: { type: string, enum: [first_night, full] }
+                        tiers:
+                          type: array
+                          minItems: 1
+                          description: >
+                            Bậc thang (percent-only): huỷ trước ≥ minHoursBefore giờ ⇒ hoàn refundPercent%.
+                            Phải sắp minHoursBefore GIẢM DẦN, không trùng, CÓ bậc minHoursBefore:0 (phủ kín),
+                            và refundPercent không tăng khi minHoursBefore giảm (huỷ muộn hoàn ≤).
+                          items:
+                            type: object
+                            required: [minHoursBefore, refundPercent]
+                            properties:
+                              minHoursBefore: { type: integer, minimum: 0, maximum: 2160, example: 168 }
+                              refundPercent: { type: integer, minimum: 0, maximum: 100, example: 50 }
+                        noShowRefundPercent: { type: integer, minimum: 0, maximum: 100, default: 0 }
                 name: { type: string }
                 description: { type: string, nullable: true }
                 address: { type: string }
@@ -2657,6 +2669,37 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
+
+  /hotels/cancellation-presets:
+    get:
+      summary: List cancellation-policy presets (public)
+      description: >
+        5 ready-made tiered cancellation policies a partner can pick from (Flexible / Moderate /
+        Firm / Strict / Non-refundable). Moderate is the recommended default for VN hotels.
+      tags: [Hotels]
+      responses:
+        "200":
+          description: Preset list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  presets:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        key: { type: string, example: moderate }
+                        name: { type: string, example: 'Vừa phải' }
+                        tiers:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              minHoursBefore: { type: integer, example: 168 }
+                              refundPercent: { type: integer, example: 50 }
+                        noShowRefundPercent: { type: integer, example: 0 }
 
   /hotels/mine:
     get:
