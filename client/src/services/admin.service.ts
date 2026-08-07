@@ -4,7 +4,6 @@ import type {
   AdminAuditLogsParams,
   AdminAuditLogsResponse,
   AdminBooking,
-  AdminCommission,
   AdminCommissionsParams,
   AdminCommissionsResponse,
   AdminCreateUserPayload,
@@ -63,13 +62,6 @@ export const adminService = {
       {
         params: cleanParams(params),
       }
-    );
-    return data;
-  },
-
-  async settleCommission(commissionId: string): Promise<AdminCommission> {
-    const { data } = await api.patch<AdminCommission>(
-      `/admin/commissions/${commissionId}/settle`
     );
     return data;
   },

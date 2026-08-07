@@ -1,6 +1,14 @@
 import { NavLink } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { Bell, CalendarCheck, MessageSquare, Settings, Star, UserCircle } from 'lucide-react';
+import {
+  Bell,
+  CalendarCheck,
+  MessageSquare,
+  Settings,
+  Star,
+  UserCircle,
+  Wallet,
+} from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { ROUTES } from '@/constants/routes';
 import { cn } from '@/lib/cn';
@@ -10,6 +18,7 @@ interface NavItem {
   labelKey:
     | 'nav.profile'
     | 'nav.bookings'
+    | 'nav.wallet'
     | 'nav.messages'
     | 'nav.reviews'
     | 'nav.notifications'
@@ -20,6 +29,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { to: ROUTES.accountProfile, labelKey: 'nav.profile', icon: UserCircle },
   { to: ROUTES.accountBookings, labelKey: 'nav.bookings', icon: CalendarCheck },
+  { to: ROUTES.accountWallet, labelKey: 'nav.wallet', icon: Wallet },
   { to: ROUTES.accountMessages, labelKey: 'nav.messages', icon: MessageSquare },
   { to: ROUTES.accountReviews, labelKey: 'nav.reviews', icon: Star },
   { to: ROUTES.accountNotifications, labelKey: 'nav.notifications', icon: Bell },

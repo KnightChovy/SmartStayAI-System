@@ -2383,9 +2383,22 @@ paths:
         - in: query
           name: groupBy
           schema: { type: string, enum: [day, month], default: day }
+        # Sổ giao dịch ví trả KÈM báo cáo — phân trang + lọc type (độc lập với from/to)
+        - in: query
+          name: type
+          schema: { type: string, enum: [earning, commission, payout, settlement, refund, adjustment] }
+          description: 'Lọc sổ giao dịch ví theo loại.'
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1, default: 1 }
+          description: 'Trang sổ giao dịch ví.'
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+          description: 'Số giao dịch ví mỗi trang.'
       responses:
         '200':
-          description: Revenue summary + time series
+          description: Revenue summary + time series + wallet transaction ledger
           content:
             application/json:
               schema:
@@ -2414,6 +2427,37 @@ paths:
                         netAfterRefund: { type: string }
                         refunded: { type: string }
                         bookingCount: { type: integer }
+                  transactions:
+                    type: object
+                    description: 'Sổ giao dịch ví (đã CHUYỂN từ endpoint ví sang đây). Phân trang + lọc type; độc lập with from/to.'
+                    properties:
+                      results:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id: { type: string, format: uuid, description: 'Mã giao dịch' }
+                            type:
+                              type: string
+                              enum: [earning, commission, payout, settlement, refund, adjustment, spend]
+                              description: 'Loại bút toán (ghi nhận/tất toán/rút/hoàn/điều chỉnh)'
+                            status: { type: string, example: completed, description: 'Đã ghi sổ nên luôn completed' }
+                            amount: { type: string, example: '850000', description: 'Có dấu: + earning, − payout/refund' }
+                            balanceAfter: { type: string, example: '850000' }
+                            bookingId: { type: string, format: uuid, nullable: true }
+                            bookingCode: { type: string, nullable: true, example: 'BKSEED005', description: '"Từ đâu" — mã booking (kể cả GD settlement, tra qua commission). null nếu payout/adjustment' }
+                            paymentMethods:
+                              type: array
+                              items: { type: string, enum: [vnpay, sepay, stripe, cash, wallet] }
+                              description: 'Phương thức khách đã trả cho booking đó. Rỗng nếu GD không gắn booking'
+                              example: [vnpay]
+                            commissionId: { type: string, format: uuid, nullable: true }
+                            description: { type: string, nullable: true }
+                            createdAt: { type: string, format: date-time }
+                      page: { type: integer }
+                      limit: { type: integer }
+                      totalPages: { type: integer }
+                      totalResults: { type: integer }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -2528,11 +2572,13 @@ paths:
 
   /hotels/{hotelId}/wallet:
     get:
-      summary: Hotel wallet balance + transactions (owner/manager)
+      summary: Hotel wallet balances (owner/manager)
       description: >
-        Auth. Wallet balances (available/pending) and the paginated transaction ledger for ONE hotel.
-        A hotel with no transactions yet returns a zero-balance wallet instead of 404.
-        Money values are strings. Access checked in-service (owner/manager/assigned staff).
+        Auth. Wallet BALANCES ONLY for ONE hotel: balanceAvailable ("trong ví"), balancePending
+        ("chờ tất toán"), pendingPayout ("chờ payout"). The transaction ledger was MOVED to
+        GET /hotels/{hotelId}/revenue (the `transactions` field there). A hotel with no wallet yet
+        returns zero balances instead of 404. Money values are strings. Access checked in-service
+        (owner/manager/assigned staff).
       tags: [Revenue]
       security:
         - bearerAuth: []
@@ -2541,19 +2587,9 @@ paths:
           name: hotelId
           required: true
           schema: { type: string, format: uuid }
-        - in: query
-          name: type
-          schema: { type: string, enum: [earning, commission, payout, settlement, refund, adjustment] }
-          description: 'Filter transactions by type. payout = real bank withdrawal; settlement = internal pending→available.'
-        - in: query
-          name: page
-          schema: { type: integer, minimum: 1, default: 1 }
-        - in: query
-          name: limit
-          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
       responses:
         '200':
-          description: Wallet balances + paginated transactions
+          description: Wallet balances (no transactions — see /revenue)
           content:
             application/json:
               schema:
@@ -2566,36 +2602,6 @@ paths:
                       balancePending: { type: string, description: '"Chờ tất toán" — khách chưa ở xong, chưa rút được', example: '0' }
                       pendingPayout: { type: string, description: '"Chờ payout" — Σ yêu cầu rút đang pending (đã trừ khỏi available), PM chi trả xong về 0', example: '0' }
                       currency: { type: string, example: VND }
-                  transactions:
-                    type: object
-                    properties:
-                      results:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            id: { type: string, format: uuid, description: 'Mã giao dịch' }
-                            type:
-                              type: string
-                              enum: [earning, commission, payout, settlement, refund, adjustment, spend]
-                              description: 'Loại bút toán (dùng để hiển thị ghi nhận/tất toán/rút/hoàn/điều chỉnh)'
-                            status: { type: string, example: completed, description: 'Trạng thái bút toán — đã ghi sổ nên luôn completed' }
-                            amount: { type: string, example: '850000', description: 'Có dấu: + earning, − payout/refund' }
-                            balanceAfter: { type: string, example: '850000' }
-                            bookingId: { type: string, format: uuid, nullable: true }
-                            bookingCode: { type: string, nullable: true, example: 'BKSEED005', description: '"Từ đâu" — mã booking (kể cả GD settlement, tra qua commission). null nếu payout/adjustment' }
-                            paymentMethods:
-                              type: array
-                              items: { type: string, enum: [vnpay, sepay, stripe, cash, wallet] }
-                              description: 'Phương thức khách đã trả cho booking đó (đơn trả kết hợp có nhiều). Rỗng nếu GD không gắn booking'
-                              example: [vnpay]
-                            commissionId: { type: string, format: uuid, nullable: true }
-                            description: { type: string, nullable: true }
-                            createdAt: { type: string, format: date-time }
-                      page: { type: integer }
-                      limit: { type: integer }
-                      totalPages: { type: integer }
-                      totalResults: { type: integer }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }

@@ -5,6 +5,7 @@
   "nav": {
     "profile": "Profile",
     "bookings": "My bookings",
+    "wallet": "My wallet",
     "messages": "Messages",
     "reviews": "My reviews",
     "notifications": "Notifications",
@@ -203,6 +204,25 @@
       "imageLimit": "Up to {{max}} photos per review."
     }
   },
+  "wallet": {
+    "title": "My wallet",
+    "balanceLabel": "Available balance",
+    "balanceHint": "Use it to pay for your next stay. Wallet credit cannot be withdrawn to a bank account — if you want the cash back, choose a bank refund when you cancel.",
+    "useOnBooking": "Use it on a booking awaiting payment",
+    "historyTitle": "Transaction history",
+    "historyLimit": "Only the 50 most recent transactions are shown.",
+    "balanceAfter": "Balance: {{amount}}",
+    "viewBooking": "View booking",
+    "emptyTitle": "No wallet activity yet",
+    "emptyDesc": "When you cancel a paid booking and choose to be refunded to your wallet, the money shows up here.",
+    "loadError": "Could not load your wallet. Please try again.",
+    "retry": "Try again",
+    "txn": {
+      "refund": "Refund from a cancelled booking",
+      "spend": "Paid with wallet",
+      "adjustment": "Adjustment"
+    }
+  },
   "messages": {
     "empty": "You haven't messaged any hotel yet. Pick a hotel to start chatting with its front desk.",
     "newChat": "Message a hotel",
@@ -231,7 +251,9 @@
     "tierHours_other": "{{count}} hours before",
     "refundMethodTitle": "Where should we send the refund?",
     "methodWallet": "StayHub wallet",
-    "methodWalletHint": "Arrives as soon as the property approves it, and you can spend it on your next stay.",
+    "methodWalletHint": "Arrives as soon as the property approves it, and you can spend it on your next stay (see My wallet).",
+    "sentToWallet": "Refund request for {{amount}} sent. It lands in My wallet as soon as the property approves it.",
+    "sentToBank": "Refund request for {{amount}} sent. Once the property approves it, StayHub transfers it to your bank account.",
     "methodBank": "Bank account",
     "methodBankHint": "Transferred to your account — takes a few extra working days.",
     "accountNumber": "Account number",
