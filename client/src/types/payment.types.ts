@@ -36,7 +36,12 @@ export interface SepayPaymentInfo {
 // Thanh toán + hoàn tiền đính kèm booking (`bookingInclude` của BE)
 // ============================================================
 
-export type PaymentMethod = 'vnpay' | 'sepay' | 'stripe' | 'cash';
+/**
+ * `wallet` = khách trả bằng số dư ví. Một booking có thể có **hai** dòng payment: `wallet` cho
+ * phần ví lo được và cổng cho phần còn lại (BE cho phép thanh toán kết hợp), nên đừng giả định
+ * mỗi booking chỉ có một phương thức.
+ */
+export type PaymentMethod = 'vnpay' | 'sepay' | 'stripe' | 'cash' | 'wallet';
 
 export type PaymentStatus = 'pending' | 'completed' | 'failed' | 'refunded';
 

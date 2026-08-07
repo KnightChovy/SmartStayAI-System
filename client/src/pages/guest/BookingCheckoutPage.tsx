@@ -15,12 +15,19 @@ import {
   Maximize,
   ShieldCheck,
   Users,
+  Wallet,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { useProfile, useUpdateProfile } from '@/hooks/account';
 import { useCreateBooking } from '@/hooks/bookings';
 import { useMoney } from '@/hooks/currency';
 import { useHotel } from '@/hooks/hotels';
-import { useCreateSepayPayment, useCreateVnpayPayment } from '@/hooks/payments';
+import {
+  useCreateSepayPayment,
+  useCreateVnpayPayment,
+  usePayWithWallet,
+} from '@/hooks/payments';
+import { useMyWallet } from '@/hooks/wallet';
 import { useAuthStore } from '@/stores/authStore';
 import { ROUTES } from '@/constants/routes';
 import { guestDetailsSchema, type GuestDetailsValues } from '@/validations/checkout.validation';
@@ -37,8 +44,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { errorMessage } from '@/utils/errorMessage';
 import { estimateTaxAndFees } from '@/utils/estimateTaxAndFees';
 import { formatAddress } from '@/utils/formatAddress';
+import { formatCurrency } from '@/utils/formatCurrency';
 import { formatDateShort, nightsBetween } from '@/utils/formatDate';
 import type { HotelDetail, RoomType } from '@/types/hotel.types';
 import type { SepayPaymentInfo } from '@/types/payment.types';
@@ -71,15 +80,6 @@ function RequiredMark({ label }: { label: string }) {
       *<span className="sr-only"> ({label})</span>
     </span>
   );
-}
-
-/** Lấy message lỗi từ axios error (nếu có) mà không dùng `any`. */
-function errorMessage(err: unknown, fallback: string): string {
-  if (err && typeof err === 'object' && 'response' in err) {
-    const resp = (err as { response?: { data?: { message?: string } } }).response;
-    return resp?.data?.message ?? fallback;
-  }
-  return fallback;
 }
 
 export default function BookingCheckoutPage() {
@@ -118,12 +118,24 @@ export default function BookingCheckoutPage() {
   // khi khách quay lại bước trước rồi tới lại (các bước chỉ là render có điều kiện, không unmount).
   const [agreedTerms, setAgreedTerms] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
+  // Khách chủ động chọn tiêu số dư ví cho đơn này (mặc định KHÔNG).
+  const [useWalletCredit, setUseWalletCredit] = useState(false);
+  /**
+   * Đã trừ ví cho booking đang tạo hay chưa. BẮT BUỘC phải nhớ: `handleConfirm` chạy lại được
+   * (bấm lại sau khi thấy banner đổi giá, hoặc thanh toán cổng lỗi rồi thử lại) mà booking thì
+   * chỉ tạo một lần — không có cờ này thì lượt bấm thứ hai lại gọi trừ ví thêm một lần nữa.
+   */
+  const [walletCharged, setWalletCharged] = useState(false);
 
   // Nguồn thật của hồ sơ là `GET /users/me`, KHÔNG phải `authStore`: store chỉ giữ ảnh chụp
   // user tại thời điểm đăng nhập và không bao giờ refresh, nên số điện thoại khách lưu ở trang
   // Account sau đó không tới được đây (ô Phone trống dù tài khoản đã có sđt). Store vẫn dùng
   // làm giá trị mồi để form có sẵn chữ trong lúc chờ API.
   const { data: profile } = useProfile({ enabled: isAuthenticated });
+  // Ví chỉ có nghĩa với khách đã đăng nhập; `/booking` là route công khai nên phải gate.
+  const { data: wallet } = useMyWallet({ enabled: isAuthenticated });
+  const payWallet = usePayWithWallet();
+  const walletBalance = Number(wallet?.balanceAvailable ?? 0);
 
   const form = useForm<GuestDetailsValues>({
     resolver: zodResolver(guestDetailsSchema),
@@ -203,6 +215,9 @@ export default function BookingCheckoutPage() {
   const displayTotal = actualTotals
     ? Number(actualTotals.totalAmount)
     : (estimate?.total ?? subtotal);
+  // So với số đang HIỂN THỊ (ước tính khi chưa tạo booking) nên chỉ dùng để chọn câu chú thích,
+  // không dùng để quyết định luồng — con số chốt là `remainingToPay` mà BE trả về.
+  const walletCoversAll = walletBalance >= displayTotal;
 
   // Thiếu dữ liệu phòng (vào thẳng URL) → mời quay lại tìm phòng
   if (!roomType || !checkIn || !checkOut) {
@@ -284,6 +299,32 @@ export default function BookingCheckoutPage() {
         if (Math.abs(Number(booking.totalAmount) - quoted) >= 0.5) {
           setPriceChanged(true);
           return;
+        }
+      }
+
+      // ----- Trừ ví TRƯỚC khi ra cổng.
+      // Thứ tự này là bắt buộc: BE chỉ thu phần CÒN THIẾU ở cổng (`outstandingAmount`), nên trừ ví
+      // trước thì VNPay/SePay tự thu ít đi. Làm ngược lại là khách trả đủ ở cổng rồi ví vẫn còn.
+      if (useWalletCredit && walletBalance > 0 && !walletCharged) {
+        try {
+          const res = await payWallet.mutateAsync(bookingId);
+          setWalletCharged(true);
+          if (Number(res.remainingToPay) <= 0) {
+            // Ví trả đủ ⇒ booking đã `confirmed`, KHÔNG được đẩy sang cổng nữa (BE sẽ trả 400
+            // "Booking này đã được thanh toán đủ" và khách tưởng đặt phòng thất bại).
+            navigate(ROUTES.bookingSuccess(bookingId));
+            return;
+          }
+          toast.info(
+            t('payment.walletPaidPartial', {
+              amount: formatCurrency(res.walletApplied),
+              remaining: formatCurrency(res.remainingToPay),
+            })
+          );
+        } catch (err) {
+          // Ví hỏng thì vẫn phải cho khách trả nốt qua cổng — booking đã tồn tại rồi, chặn ở đây
+          // là bỏ khách lại với một đơn pending không có đường thanh toán.
+          toast.error(errorMessage(err, t('payment.payError')));
         }
       }
 
@@ -421,6 +462,35 @@ export default function BookingCheckoutPage() {
             {step === 1 && (
               <div className="space-y-5 rounded-2xl border border-outline-variant/30 bg-surface p-6">
                 <h2 className="font-be-vietnam text-lg font-semibold text-on-surface">{t('payment.title')}</h2>
+
+                {/*
+                  Số dư ví — CỐ Ý mặc định KHÔNG tick. Ví khách chỉ có tiền khi họ từng huỷ một đơn
+                  đã trả và chọn nhận về ví; đó là tiền họ có thể đang để dành, nên tiêu nó phải là
+                  hành động chủ động chứ không phải mặc định âm thầm.
+                */}
+                {walletBalance > 0 && (
+                  <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-outline-variant/60 bg-surface-container-low p-4">
+                    <Checkbox
+                      checked={useWalletCredit}
+                      onCheckedChange={v => setUseWalletCredit(v === true)}
+                      className="mt-0.5"
+                    />
+                    <span className="min-w-0">
+                      <span className="flex items-center gap-1.5 text-sm font-semibold text-on-surface">
+                        <Wallet className="size-4 shrink-0 text-primary" aria-hidden="true" />
+                        {t('payment.walletUse', {
+                          balance: formatCurrency(wallet?.balanceAvailable),
+                        })}
+                      </span>
+                      <span className="mt-0.5 block text-xs text-on-surface-variant">
+                        {walletCoversAll
+                          ? t('payment.walletCovers')
+                          : t('payment.walletPartialHint')}
+                      </span>
+                    </span>
+                  </label>
+                )}
+
                 <PaymentMethodSelect value={payment} onChange={setPayment} />
                 <div className="space-y-1.5 rounded-xl bg-emerald-500/5 p-3">
                   {/* Ghi chú phải khớp phương thức đã chọn: VNPay redirect, SePay hiện QR */}

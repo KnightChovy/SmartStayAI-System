@@ -116,6 +116,17 @@ export interface CancelledRefund {
   id: string;
   amount: string;
   status: RefundStatus;
+  /**
+   * Nơi tiền sẽ về. BE trả field này ở **response huỷ đơn** (`select` của `cancelBooking`),
+   * và nó quyết định hai vòng đời KHÁC HẲN nhau:
+   * - `wallet`: khách sạn duyệt là BE cộng thẳng vào ví ⇒ nhảy luôn sang `processed`, không có
+   *   bước Platform Manager chuyển khoản.
+   * - `bank`: duyệt xong mới `approved`, phải chờ Platform Manager chuyển tay rồi mới `processed`.
+   *
+   * ⚠️ `booking.payments[].refunds[]` (ở `GET /bookings/:id`) **KHÔNG** có field này — BE chưa
+   * select — nên chỉ biết đích đến ngay sau khi huỷ, tải lại trang là mất.
+   */
+  refundMethod: RefundMethod;
 }
 
 export interface CancelBookingResponse extends Booking {
