@@ -22,6 +22,14 @@ This file tracks the accomplished tasks, resolved user requests, and visual/func
   - ⚠️ **Chưa drive được browser cho phần này** ⇒ nhờ bạn xem qua: trang `/account/wallet` và checkbox ví ở bước Thanh toán của `/booking`.
   - ⚠️ **Dev data (chỉ LOCAL)**: 1 booking test đã huỷ, để lại một `refund` đang `pending` chờ khách sạn duyệt (huỷ đơn đã trả tiền thì BE luôn sinh yêu cầu hoàn — không xoá được). Deploy **không đụng gì** (chỉ chạy phần đọc).
 
+- [x] **Rà lại bản đánh giá BE 14/07 (Phụ lục E) lần hai — 10/11 mục đã xong, E6 tài liệu vẫn SAI, và tìm ra một chỗ FE nói thiếu do luồng ví mới**:
+  - **Rà bằng code chứ không theo trí nhớ** (develop đã đi tiếp 2 commit kể từ lần rà trước): **E1** `PaymentMethodSelect` chỉ còn VNPay+SePay ✅ · **E2** `client/vercel.json` có SPA rewrite ✅ · **E3** `SepayQrModal` ✅ · **E4** `HotelPolicies`/`HotelNearby`/`RoomTypeCard.beds` đều render ✅ · **E5** QR đọc `booking.voucher?.qrData` ✅ · **E7** `tsc` **0 lỗi** ✅ · **E8** `API_BASE_URL` đã `.replace(/\/+$/, '')` ✅ · **E9** `CancelBookingPanel` + `RefundStatusCard` ✅ · **E10** `hotel-partner/refunds/` ✅ · **E11** `manager/refunds/` ✅. **Không có mục nào conflict** với nhánh ví khách vừa làm.
+  - **E6 vẫn là mục TÀI LIỆU SAI, tuyệt đối không làm theo**: tài liệu bảo đổi `voucherCode` → `bookingCode`, nhưng kiểm lại trên develop hôm nay thì BE **vẫn** khai `lookupBookingByVoucher` nhận `voucherCode` (`booking.validation.ts:143`) và `checkInBooking` nhận `voucherCode` (`:174`). Làm theo là **hỏng luồng quét QR check-in**.
+  - **🔴 Chỗ FE đang nói thiếu, lộ ra đúng khi có ví khách**: khách huỷ đơn chọn **"nhận vào Ví StayHub"** nhưng sau khi bấm huỷ **không có chữ nào nói tiền sẽ về ví** — mà hai đích đến có vòng đời **khác hẳn**: `wallet` thì khách sạn duyệt là BE cộng thẳng vào ví, **nhảy luôn `processed`, không có bước Platform Manager chuyển khoản**; `bank` mới phải chờ PM chuyển tay. Không nói ra thì khách chọn ví xong ngồi chờ tiền về ngân hàng.
+  - **Sửa đúng chỗ FE biết chắc**: `CancelledRefund` thêm `refundMethod` (BE **đã** trả ở response huỷ — `select` của `cancelBooking`), và panel huỷ báo ngay tiền về đâu. Hint của lựa chọn "Ví StayHub" cũng chỉ đường sang mục **Ví của tôi** vừa có.
+  - ⚠️ **BE thiếu 1 dòng**: `bookingInclude.payments.refunds.select` **không có** `refundMethod` — đã đo trên API thật, khoá trả về đúng 8 field `id,amount,status,reason,rejectionReason,reviewedAt,processedAt,createdAt`. Nên FE **chỉ biết đích đến ngay lúc huỷ**, tải lại trang là mất. Thêm `refundMethod: true` vào select đó là đủ để badge theo dõi hoàn tiền nói đúng ở mọi lần tải.
+  - ⚠️ **Mục duy nhất còn chờ BE trong bảng "Đang chờ Backend"**: endpoint **áp mã khuyến mãi** — `deal.route.ts` tới giờ vẫn chỉ có `GET /deals` (liệt kê), không có route áp mã nào.
+
 ## August 7, 2026 (continued 2)
 
 - [x] **Chính sách huỷ BẬC THANG: khách thấy TRƯỚC số tiền mất, chọn nơi nhận tiền hoàn; partner chọn được chính sách — nối đợt BE vừa merge**:

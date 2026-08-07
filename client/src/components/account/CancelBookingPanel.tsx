@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AlertTriangle, Building2, Info, Loader2, Wallet } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -91,7 +92,7 @@ export default function CancelBookingPanel({
     }
 
     try {
-      await cancelBooking.mutateAsync({
+      const cancelled = await cancelBooking.mutateAsync({
         bookingId,
         reason: reason.trim() || undefined,
         // Chỉ gửi `refundMethod: 'bank'` khi có tiền để hoàn: BE khai `bankAccount` là
@@ -100,6 +101,17 @@ export default function CancelBookingPanel({
           ? { refundMethod: 'bank' as const, bankAccount }
           : {}),
       });
+      // Nói ngay tiền sẽ về ĐÂU. Đây là lúc duy nhất FE biết chắc: `booking.payments[].refunds[]`
+      // của các lần tải sau KHÔNG mang `refundMethod`. Không nói thì khách chọn "vào ví" xong
+      // ngồi chờ tiền về ngân hàng.
+      if (cancelled.refund) {
+        const amount = formatCurrency(cancelled.refund.amount);
+        toast.success(
+          cancelled.refund.refundMethod === 'wallet'
+            ? t('account:cancel.sentToWallet', { amount })
+            : t('account:cancel.sentToBank', { amount })
+        );
+      }
       onCancelled();
     } catch (err) {
       setSubmitError(errorMessage(err, t('account:detail.cancelError')));
