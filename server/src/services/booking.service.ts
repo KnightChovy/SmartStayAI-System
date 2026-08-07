@@ -194,7 +194,7 @@ export class BookingService {
     const now = new Date();
     const expired = await prisma.booking.findMany({
       where: { status: 'pending', holdExpiresAt: { lt: now } },
-      select: { id: true, roomTypeId: true, checkInDate: true, checkOutDate: true },
+      select: { id: true, customerId: true, bookingCode: true, roomTypeId: true, checkInDate: true, checkOutDate: true },
     });
 
     let released = 0;
@@ -219,6 +219,31 @@ export class BookingService {
           where: { roomTypeId: booking.roomTypeId, date: { in: nights }, bookedRooms: { gt: 0 } },
           data: { bookedRooms: { decrement: 1 } },
         });
+
+        // TRẢ LẠI TIỀN VÍ. Đơn quá hạn vẫn có thể ĐÃ trừ ví: thanh toán kết hợp trừ ví TRƯỚC rồi mới
+        // đẩy phần còn thiếu ra cổng, khách bỏ dở ở cổng là đơn nằm lại pending với một payment ví
+        // 'completed'. Huỷ đơn mà không hoàn thì khách MẤT TRẮNG khoản đó — tiền đã rời ví, phòng thì
+        // đã nhả, không còn gì đối ứng.
+        //
+        // Hoàn NGAY, không tạo Refund chờ khách sạn duyệt như cancelBooking: đây là hệ thống tự huỷ
+        // (hold_expired), khách không làm gì sai nên không có phí huỷ, và cũng chẳng có gì để duyệt.
+        const walletPayments = await tx.payment.findMany({
+          where: { bookingId: booking.id, paymentMethod: 'wallet', status: 'completed' },
+          select: { id: true, amount: true },
+        });
+        for (const payment of walletPayments) {
+          // eslint-disable-next-line no-await-in-loop
+          await walletService.creditCustomer(
+            tx,
+            booking.customerId,
+            payment.amount,
+            booking.id,
+            // Tiếng Anh vì chuỗi này hiển thị nguyên văn trong sổ ví của khách
+            `Refund for expired booking ${booking.bookingCode}`
+          );
+          // eslint-disable-next-line no-await-in-loop
+          await tx.payment.update({ where: { id: payment.id }, data: { status: 'refunded' } });
+        }
         return true;
       });
       if (done) {
