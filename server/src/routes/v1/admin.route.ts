@@ -19,14 +19,9 @@ router.get(
   adminController.getRevenueBreakdown
 );
 
-// ===== Pha 3 — Hoa hồng / payout (manageCommissions) =====
+// ===== Pha 3 — Hoa hồng (chỉ XEM; tất toán pending→available do cron settle-commissions tự chạy,
+// bỏ duyệt thủ công từng khoản — chốt duyệt duy nhất là payout 1 cục ở /platform-manager/payouts) =====
 router.get('/commissions', auth('manageCommissions'), validate(adminValidation.listCommissions), adminController.listCommissions);
-router.patch(
-  '/commissions/:commissionId/settle',
-  auth('manageCommissions'),
-  validate(adminValidation.settleCommission),
-  adminController.settleCommission
-);
 
 // Hoàn tiền đã chuyển sang /platform-manager/refunds (platform-manager.route.ts) —
 // Platform Manager là người giữ tài khoản nhận tiền nên họ thực thi chuyển khoản hoàn.

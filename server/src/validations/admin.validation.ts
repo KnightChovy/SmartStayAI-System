@@ -32,12 +32,6 @@ export const listCommissions = {
   }),
 };
 
-export const settleCommission = {
-  params: Joi.object().keys({
-    commissionId: Joi.string().uuid().required(),
-  }),
-};
-
 // ===== Pha 4 — Giám sát khách sạn toàn sàn =====
 export const listHotels = {
   query: Joi.object().keys({
