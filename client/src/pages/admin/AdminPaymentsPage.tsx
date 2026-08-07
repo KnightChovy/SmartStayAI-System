@@ -23,7 +23,6 @@ import {
   useAdminCommissions,
   useAdminOverview,
   useAdminPayments,
-  useSettleAdminCommission,
 } from '@/hooks/admin';
 import type { AdminPaymentsParams } from '@/types/admin.types';
 import { errorMessage } from '@/utils/errorMessage';
@@ -72,7 +71,6 @@ export function AdminPaymentsPage() {
     isError: isCommissionsError,
     error: commissionsError,
   } = useAdminCommissions({ limit: 10, page: commissionPage });
-  const settleCommission = useSettleAdminCommission();
 
   const paymentStats = [
     {
@@ -111,7 +109,6 @@ export function AdminPaymentsPage() {
       `${commission.commissionRate}%`,
       commission.status.toUpperCase(),
       formatDateShort(commission.createdAt),
-      commission.id,
     ]) ?? [];
 
   return (
@@ -292,7 +289,6 @@ export function AdminPaymentsPage() {
               'Rate',
               'Status',
               'Created',
-              'Actions',
             ]}
             rows={commissionRows}
             footer={
@@ -350,25 +346,7 @@ export function AdminPaymentsPage() {
                 </div>
               ) : undefined
             }
-            renderLastColumn={row => (
-              <Button
-                className="h-8 rounded-full px-3 text-xs"
-                disabled={row[4] === 'SETTLED' || settleCommission.isPending}
-                variant="outline"
-                onClick={() => settleCommission.mutate(row[6])}
-              >
-                {row[4] === 'SETTLED' ? 'Settled' : 'Settle'}
-              </Button>
-            )}
           />
-        )}
-        {settleCommission.isError && (
-          <p className="text-sm font-medium text-destructive">
-            {errorMessage(
-              settleCommission.error,
-              'Could not settle commission.'
-            )}
-          </p>
         )}
       </section>
     </div>
