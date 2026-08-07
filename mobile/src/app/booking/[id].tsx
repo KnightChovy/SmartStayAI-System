@@ -11,9 +11,9 @@ import { BookingStatusBadge } from '@/components/shared/BookingStatusBadge';
 import { PriceSummary } from '@/components/shared/PriceSummary';
 import { QRVoucher } from '@/components/shared/QRVoucher';
 import { StayPickerSheet, type StaySelection } from '@/components/shared/StayPickerSheet';
-import { PayNowAction } from '@/components/booking';
+import { PayNowAction, RefundStatusCard } from '@/components/booking';
 import { ReviewSheet } from '@/components/guest';
-import { useGetBooking, useCancelBooking } from '@/hooks/bookings';
+import { useGetBooking, useCancelBooking, usePaymentHold } from '@/hooks/bookings';
 import { useMyReviews } from '@/hooks/reviews';
 import { formatDateLong, formatDateShort } from '@/utils/formatDate';
 import { formatVnd } from '@/utils/formatCurrency';
@@ -36,6 +36,9 @@ export default function BookingDetailScreen() {
   const { id = '' } = useLocalSearchParams<{ id: string }>();
   const { data: booking, isLoading, isError, refetch, isRefetching } = useGetBooking(id);
   const cancelBooking = useCancelBooking();
+  // Đơn quá hạn giữ chỗ nhưng cron chưa quét tới — cần biết ở đây để nói đúng phần ví
+  // đang chờ hoàn (`usePaymentHold` là hook, phải gọi vô điều kiện trước early-return).
+  const paymentHold = usePaymentHold(booking);
   const [actionError, setActionError] = useState('');
   const [showModifySheet, setShowModifySheet] = useState(false);
   const [modifyRequest, setModifyRequest] = useState<StaySelection | null>(null);
@@ -107,6 +110,34 @@ export default function BookingDetailScreen() {
   // payment `completed`, kể cả `wallet`) thay vì tự cộng lại `payments[]`.
   const paidSoFar = Number(booking.amountPaid);
   const remainingAmount = Number(booking.remainingAmount);
+
+  // Yêu cầu hoàn tiền do BE tự tạo lúc huỷ (theo chính sách của KS) — khách không tự gửi.
+  const refunds = (booking.payments ?? []).flatMap(p => p.refunds ?? []);
+  const hasPaid = (booking.payments ?? []).some(p => p.status === 'completed');
+  /**
+   * Ví đã được hệ thống hoàn TỰ ĐỘNG khi job dọn đơn quá hạn giữ chỗ (`releaseExpiredHolds`)
+   * hoặc khách tự huỷ đơn chưa xác nhận: payment `wallet` chuyển sang `refunded` và tiền
+   * vào thẳng ví, KHÔNG sinh `Refund` nào để `RefundStatusCard` bám vào — phải nói ra
+   * riêng, không thì khách chỉ thấy một đơn bị huỷ và không dòng nào nhắc tới khoản đã trừ.
+   */
+  const walletAutoRefunded =
+    booking.status === 'cancelled' && refunds.length === 0
+      ? (booking.payments ?? [])
+          .filter(p => p.paymentMethod === 'wallet' && p.status === 'refunded')
+          .reduce((sum, p) => sum + Number(p.amount), 0)
+      : 0;
+  /**
+   * Phần ví ĐANG chờ được hoàn: đơn quá hạn giữ chỗ nhưng cron `release-holds` (5 phút/lần)
+   * chưa quét tới, nên payment ví vẫn `completed`. Nói ra để khách biết tiền sẽ tự về.
+   */
+  const walletAwaitingRefund = paymentHold.expired
+    ? (booking.payments ?? [])
+        .filter(p => p.paymentMethod === 'wallet' && p.status === 'completed')
+        .reduce((sum, p) => sum + Number(p.amount), 0)
+    : 0;
+  // Huỷ muộn bị phạt hết ⇒ BE không tạo refund nào. Phải nói rõ, không để khách chờ tiền.
+  const cancelledWithoutRefund =
+    booking.status === 'cancelled' && hasPaid && refunds.length === 0;
 
   return (
     <View className="flex-1 bg-canvas">
@@ -243,6 +274,58 @@ export default function BookingDetailScreen() {
             </View>
           )}
         </View>
+
+        {/* Theo dõi hoàn tiền — dữ liệu thật từ `booking.payments[].refunds[]` */}
+        {refunds.length > 0 && (
+          <View className="gap-3 mt-3.5">
+            {refunds.map(refund => <RefundStatusCard key={refund.id} refund={refund} />)}
+          </View>
+        )}
+
+        {/* Quá hạn nhưng cron chưa quét: nút thanh toán đã ẩn ⇒ nếu không có khối này thì
+            khách chỉ thấy một đơn "chờ xác nhận" bất động không giải thích gì. */}
+        {paymentHold.expired && (
+          <View className="flex-row gap-3 bg-amber-50 rounded-card p-4 mt-3.5">
+            <Ionicons name="time-outline" size={20} color="#B45309" />
+            <View className="flex-1">
+              <Text bold className="font-bevi-bold text-on-surface text-sm">{t('booking:detail.holdExpiredTitle')}</Text>
+              <Text size="sm" className="font-bevi text-on-surface-variant mt-0.5">
+                {walletAwaitingRefund > 0
+                  ? t('booking:detail.holdExpiredWallet', { amount: formatVnd(walletAwaitingRefund) })
+                  : t('booking:detail.holdExpiredBody')}
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {walletAutoRefunded > 0 && (
+          <View className="flex-row gap-2.5 bg-emerald-50 rounded-card p-4 mt-3.5">
+            <Ionicons name="wallet-outline" size={18} color="#059669" />
+            <Text size="sm" className="font-bevi text-on-surface flex-1">
+              {t(
+                booking.cancelledByRole === 'system'
+                  ? 'account:refund.walletAutoRefunded'
+                  : 'account:refund.walletRefundedOnCancel',
+                { amount: formatVnd(walletAutoRefunded) }
+              )}{' '}
+              <Text
+                bold
+                size="sm"
+                className="font-bevi-bold text-bronze"
+                onPress={() => router.push('/profile/wallet')}
+              >
+                {t('account:refund.openWallet')}
+              </Text>
+            </Text>
+          </View>
+        )}
+
+        {cancelledWithoutRefund && (
+          <View className="flex-row gap-2.5 bg-surface-container rounded-card p-4 mt-3.5">
+            <Ionicons name="information-circle-outline" size={18} color={GUEST_COLORS.onSurfaceVariant} />
+            <Text size="sm" className="font-bevi text-on-surface-variant flex-1">{t('account:refund.noneTitle')}</Text>
+          </View>
+        )}
 
         {actionError ? (
           <View className="bg-red-50 rounded-field px-3 py-2.5 mt-3 flex-row items-start gap-2">
