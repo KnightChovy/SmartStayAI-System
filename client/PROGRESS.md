@@ -2,6 +2,20 @@
 
 This file tracks the accomplished tasks, resolved user requests, and visual/functional refactoring completed in the client application.
 
+## August 7, 2026 (continued 4)
+
+- [x] **Link thanh toán VNPay trong khung chat AI thành NÚT bấm (trước đây là chuỗi text thô phải bôi đen copy tay)**:
+  - **Vì sao nghiêm trọng hơn vẻ ngoài**: khách đặt phòng qua trợ lý AI thì BE **nhét thẳng link VNPay nguyên vẹn vào lời đáp** (`conversation.service.ts:632-636` — *"gửi link này NGUYÊN VẸN, không rút gọn, không sửa một ký tự"*). Link đó **dài hơn 300 ký tự**, xuống 5–6 dòng trong bong bóng chat, và trước đây render bằng `<p>` thuần ⇒ **không bấm được**. Khách phải bôi đen copy tay một chuỗi có cả `%2C` và `&` — trong khi đơn **chỉ được giữ chỗ 15 phút**, hết hạn là cron huỷ đơn nhả phòng. Đây là chỗ rơi đơn, không phải chuyện thẩm mỹ.
+  - **`components/chat/ChatMessageText.tsx` (mới)** — tách URL khỏi văn bản: link **cổng thanh toán** → nút vàng "Thanh toán ngay"; link khác (ảnh QR SePay, trang chi tiết…) → thẻ `<a>` bấm được; phần chữ giữ nguyên kể cả xuống dòng.
+  - **Chỉ host cổng thanh toán mới được lên thành NÚT, và so theo `hostname` đã parse** chứ không `includes()` trên chuỗi thô: một URL bịa kiểu `https://sandbox.vnpayment.vn.evil-site.com/...` **chứa** chuỗi `vnpayment.vn` nên `includes` sẽ cho nó mạo danh nút "Thanh toán". Đã kiểm: host mạo danh ra link thường, không ra nút.
+  - **Cắt dấu câu dính đuôi URL**: regex bắt URL sẽ nuốt luôn dấu `.` / `)` cuối câu vào `href` ⇒ link chết. Nhưng `)` **là ký tự hợp lệ trong query string**, nên chỉ cắt khi trong URL không có `(` tương ứng.
+  - **Áp cho cả 3 màn chat** (widget nổi, `/account/messages`, inbox lễ tân) — cùng một component nên không thể trôi lệch. Nhãn nút truyền từ ngoài vào: 2 cổng khách dùng i18n `common:chat.payNow`, cổng staff để tiếng Anh đúng quy ước portal đó.
+  - **VERIFY 2 lớp — 16/16 render thật + 11/11 trên trình duyệt**:
+    - **Render thật** (`react-dom/server` qua vite SSR build, script tạm đã xoá): `href` **khớp từng ký tự** với URL gốc (không cắt cụt `&`/`%2C`), không còn in URL thô, có `target="_blank"` + `rel="noopener noreferrer"`, vùng bấm `min-h-11` (44px), host mạo danh bị chặn, dấu chấm/ngoặc cuối câu nằm ngoài `href`, tin không có link thì không sinh thẻ `<a>` nào.
+    - **Trình duyệt thật** (Chrome + playwright-core): đăng nhập khách → mở widget → **chặn response `/conversations/messages` ở tầng mạng** để bot "trả lời" đúng câu có link. Làm vậy để **không tạo booking thật** (chat thật là đặt phòng thật, giữ tồn kho thật) mà vẫn đo được app thật: nút hiện đúng trong bong bóng, `href` nguyên vẹn, cao **≥44px**, nằm gọn trong khung, **không còn `vpcpay.html` thô** trên màn hình, không tràn ngang, 0 lỗi console.
+  - ⚠️ **Chưa làm (nằm ngoài yêu cầu)**: bot còn trả **markdown thô** — `**Tổng thanh toán:**` hiện nguyên hai dấu sao vì khung chat render text thuần. Sửa được ngay trong cùng component này nếu muốn.
+  - ⚠️ **Ảnh QR SePay** hiện là link bấm được (mở ảnh ở tab mới), **chưa render thành `<img>`** ngay trong khung chat. Đặt cùng chỗ nếu bạn muốn làm tiếp.
+
 ## August 7, 2026 (continued 3)
 
 - [x] **VÍ CỦA KHÁCH (role customer) — nối `GET /users/me/wallet` + `POST /payments/bookings/:id/wallet`; trước đây tiền vào ví mà khách KHÔNG có chỗ nào nhìn thấy và KHÔNG có đường tiêu**:
