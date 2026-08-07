@@ -386,13 +386,19 @@ export default function HotelDetailPage() {
         */}
         <HotelCancellationPolicy rule={hotel?.cancellationRule} checkIn={checkIn} />
 
-        {/* Hỗ trợ ra quyết định: tiện nghi → chính sách → vị trí, trước khi khách chọn phòng */}
+        {/*
+          Các chính sách còn lại (giờ nhận/trả, cọc, trẻ em, thú cưng…) đứng NGAY SAU chính sách
+          huỷ: cùng là điều kiện ràng buộc khách, đọc liền một mạch thì mới so được với nhau.
+          Tách chúng ra xa nhau bằng khối tiện nghi là bắt khách nhớ điều kiện qua cả một màn hình.
+        */}
+        {hotel && <HotelPolicies hotel={hotel} />}
+
+        {/* Sau phần điều kiện mới tới phần "khách sạn có gì": tiện nghi → vị trí → chọn phòng */}
         {hotel?.amenities && (
           <div id="amenities" className="scroll-mt-[var(--app-anchor-offset,7rem)]">
             <HotelAmenities amenities={hotel.amenities.map(a => a.amenity)} />
           </div>
         )}
-        {hotel && <HotelPolicies hotel={hotel} />}
 
         {/* Map — toạ độ từ DB, hoặc geocode từ địa chỉ khi DB chưa có lat/lng */}
         {hasLocation ? (
