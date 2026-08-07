@@ -2,6 +2,8 @@
   "title": "Complete your booking",
   "emptyTitle": "No room selected",
   "emptyDesc": "Start by searching for a stay and picking a room to book.",
+  "invalidDatesTitle": "These dates aren't valid",
+  "invalidDatesDesc": "A booking can span at most 30 nights, and check-out must be after check-in. Pick a new date range and try again.",
   "findStay": "Find a stay",
   "stepper": {
     "guestDetails": "Guest details",

@@ -270,15 +270,31 @@ export function RoomDayBoard({
     return { entries: result.entries, unplacedHolds: result.unplaced };
   }, [factualEntries, unassignedBookings]);
 
+  // Phòng `isActive = false` không được tính là "Available" ở đây — state thô của
+  // `buildRoomDayView` vẫn ra 'available' cho nó (không block, không khách), nhưng nó đã bị rút
+  // khỏi biên chế nên KHÔNG THỂ phát cho khách. Trước đây bucket này đếm theo state thô ⇒ chip
+  // "Available" đếm dư đúng những phòng đã nghỉ bán, lệch với "Free to give out" bên dưới (dòng
+  // đó đã lọc `isActive` từ trước) — cùng một khách sạn, hai con số available khác nhau ngay
+  // trên một màn hình.
+  const isCountableAvailable = (entry: RoomDayEntry) =>
+    entry.state !== 'available' || entry.room.isActive;
+
   const counts = STATE_ORDER.reduce<Record<RoomDayState, number>>(
     (acc, state) => {
-      acc[state] = entries.filter(entry => entry.state === state).length;
+      acc[state] = entries.filter(
+        entry => entry.state === state && isCountableAvailable(entry)
+      ).length;
       return acc;
     },
     { available: 0, held: 0, occupied: 0, cleaning: 0, maintenance: 0, out_of_service: 0 }
   );
 
-  const visible = filter === 'all' ? entries : entries.filter(e => e.state === filter);
+  // Cùng lý do: bấm chip "Available" thì danh sách hiện ra phải khớp đúng số trên chip — không
+  // thể chip ghi 3 mà bấm vào lại thấy 4 ô. Phòng đã nghỉ bán vẫn xem được bình thường qua "All".
+  const visible =
+    filter === 'all'
+      ? entries
+      : entries.filter(e => e.state === filter && isCountableAvailable(e));
 
   // Nhóm theo tầng, trong tầng sắp theo số phòng tự nhiên ("Deluxe-2" trước "Deluxe-10").
   const floors = useMemo(() => {

@@ -5,7 +5,7 @@ import { MapPin, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/cn';
 import { toDateInputValue } from '@/utils/formatDate';
-import { applyCheckIn, minCheckOut } from '@/utils/stayDates';
+import { applyCheckIn, maxCheckOut, minCheckOut } from '@/utils/stayDates';
 import DestinationAutocomplete from './DestinationAutocomplete';
 import DateSegment from './DateSegment';
 import GuestsPopover, { type GuestSelection } from './GuestsPopover';
@@ -95,6 +95,7 @@ export default function HeroSearchBar() {
         value={checkOut}
         onChange={setCheckOut}
         min={minCheckOut(checkIn, today)}
+        max={maxCheckOut(checkIn)}
         placeholder={t('hero.addDate')}
         className={cn('md:flex-1', SEGMENT_DIVIDER_CLASS)}
       />

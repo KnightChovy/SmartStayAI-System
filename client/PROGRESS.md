@@ -2,6 +2,26 @@
 
 This file tracks the accomplished tasks, resolved user requests, and visual/functional refactoring completed in the client application.
 
+## August 7, 2026 (continued 7)
+
+- [x] **Chặn ngay từ FE việc chọn kỳ ở quá 30 đêm — trước giờ chỉ BE chặn, sau khi khách điền hết form mới nhận 400** (`server/src/services/booking.service.ts` đã có sẵn `MAX_NIGHTS = 30` trong `createBooking`, nhưng chỉ ở **tầng service**, không có ở Joi lẫn bất kỳ đâu phía FE):
+  - **`utils/stayDates.ts`**: thêm `MAX_BOOKING_NIGHTS = 30` (khớp đúng hằng số BE) + `maxCheckOut(checkIn)` (ngày trả xa nhất được chọn) + `isValidStayRange(checkIn, checkOut)` (kiểm nhanh 1 cặp ngày có hợp lệ không — dùng ở nơi ĐỌC ngày, không phải nơi CHỌN ngày). `applyCheckIn` viết lại: đổi ngày nhận mà ngày trả cũ vượt quá 30 đêm thì **kẹp về `checkIn + 30`** thay vì reset sạch về hôm sau (giữ đúng ý định "ở dài ngày" của khách).
+  - **Chặn ở CHỖ CHỌN** (2 lớp, dùng chung `min`/`max` đã có sẵn cơ chế trên Calendar): `DateRangePicker.tsx` (trang tìm kiếm + "your stay" ở chi tiết KS) và `HeroSearchBar`→`DateSegment.tsx` (thanh tìm kiếm trang chủ, `DateSegment` trước đây chỉ có `min`, nay thêm `max` + `endMonth` + `disabled: {after: maxDate}`) — ngày vượt quá 30 đêm bị **mờ đi trên lịch**, không bấm được, đúng cơ chế `min` (chặn quá khứ) đã dùng từ trước.
+  - **Chặn ở CHỖ ĐỌC** (`checkIn`/`checkOut` tới từ URL/router state chứ không phải lúc nào cũng đi qua picker — link tự sửa tay, link cũ còn trong history, hay tự dựng `navigate(..., {state})` đều bỏ qua được `min`/`max` trên lịch):
+    - `HotelDetailPage.tsx`: effect tự điền ngày mặc định giờ **kẹp luôn** khi URL có đủ ngày nhưng SAI luật (trả trước nhận, hoặc quá 30 đêm) — trước chỉ điền khi THIẾU ngày, bỏ qua trường hợp có đủ nhưng sai.
+    - `RoomDetailPage.tsx`: `handleBook` kẹp `checkOut` trước khi đóng gói `bookingState` sang checkout.
+    - `BookingCheckoutPage.tsx`: thêm **chốt chặn cuối cùng** — trước khi render form, nếu `!isValidStayRange(checkIn, checkOut)` thì hiện `EmptyState` báo rõ "Khoảng ngày này không hợp lệ" + nút quay lại tìm kiếm, thay vì để khách điền hết thông tin khách + bấm Xác nhận & Thanh toán rồi mới ăn lỗi 400 khó hiểu từ BE.
+  - **CỐ Ý không đụng `SearchResultsPage.tsx`**: đây là màn LỌC kết quả (không tạo booking), một khoảng ngày dài hơn 30 đêm ở đây không sai nghiệp vụ gì — khách vẫn có thể muốn "xem khách sạn nào còn trống cho một kỳ dài" dù chưa chắc đặt được trong 1 lượt; đã tự hưởng lợi từ việc `DateRangePicker` giờ chặn chọn quá 30 đêm trên lịch, không cần thêm gì.
+  - **i18n**: thêm `booking.invalidDatesTitle`/`invalidDatesDesc` (en/vi, đã kiểm cân bằng tự động — booking.json giữ nguyên 106/106 key).
+  - **Verify**: `tsc -p tsconfig.app.json --noEmit` + `eslint` sạch trên toàn bộ 7 file mới/sửa.
+
+## August 7, 2026 (continued 6)
+
+- [x] **Staff · `/staff/inventory` — chip "Available" đếm dư phòng đã nghỉ bán, lệch với "Free to give out" ngay trên cùng một màn** (user báo: lưới ghi "3" nhưng khu phòng ghi "Available 4"):
+  - **Nguyên nhân**: `RoomDayBoard.tsx` có **hai chỗ đếm "còn trống" độc lập, chỉ MỘT chỗ lọc `room.isActive`**. `freeToGiveOut`/`vacantNow` (dòng "10 Vacant now − 6 Held = X Free to give out") cố tình loại phòng đã `isActive=false` ("đã nghỉ bán, không phát cho khách được" — đúng comment sẵn có trong file), nên khớp con số trên lưới (`GET /hotels/:id/inventory/calendar` cũng chỉ đếm phòng active). Nhưng `counts` (nguồn cho chip filter "Available N" + danh sách phòng khi bấm chip đó) đếm thẳng theo `entry.state === 'available'` **không lọc `isActive`** — `buildRoomDayView` vẫn gán state `'available'` cho phòng đã nghỉ bán (nó không dính block, không có khách) nên phòng đó vẫn lọt vào bucket "Available" của chip dù không thể phát cho khách.
+  - **Sửa**: thêm điều kiện dùng chung `isCountableAvailable` (chỉ có tác dụng khi `state==='available'`, các state khác không đổi) — áp cho cả `counts.available` (chip) **lẫn** `visible` (danh sách hiện ra khi bấm chip "Available"), để chip và danh sách luôn khớp nhau, và khớp luôn với "Free to give out"/con số trên lưới. Phòng đã nghỉ bán **vẫn xem được** qua chip "All" — tile của nó vốn đã có nhãn riêng "Retired room — not sold on any date." + làm mờ, không mất thông tin, chỉ không còn bị tính nhầm vào "còn trống".
+  - **Verify**: `tsc -p tsconfig.app.json --noEmit` + `eslint` sạch trên file sửa.
+
 ## August 7, 2026 (continued 5)
 
 - [x] **Sửa merge conflict resolve lộn — dùng lại `ChatMessageText` của đồng đội thay cho `LinkifiedText` tự viết (mất cả nút thanh toán lẫn ảnh QR SePay)**:
