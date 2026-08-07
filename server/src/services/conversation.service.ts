@@ -13,6 +13,7 @@ import { AiTool } from './ai/ai.types';
 import { setPendingAction, consumePendingAction, peekPendingAction } from './ai/pending-action.store';
 import { emitMessageToConversation, emitConversationEscalated } from '../config/socket';
 import { toUtcDate, todayInVietnam, todayInVietnamDate } from '../utils/dates';
+import { includesAccentInsensitive } from '../utils/text';
 import type { HotelSearchFilter } from '../dto/hotel.dto';
 
 // Thông tin một khách sạn đủ để dựng lời nhắc + RAG cho concierge theo KS.
@@ -791,17 +792,18 @@ export class ConversationService {
       },
       execute: async (args) => {
         // Chỉ KS đang mở bán (giống searchHotels public) — không lộ KS chờ duyệt/đã ẩn.
-        const where: Prisma.HotelWhereInput = {
-          isActive: true,
-          isListed: true,
-          deletedAt: null,
-          name: { contains: String(args.hotelName), mode: 'insensitive' },
-        };
-        if (args.city) {
-          where.city = { contains: String(args.city), mode: 'insensitive' };
-        }
+        const listed: Prisma.HotelWhereInput = { isActive: true, isListed: true, deletedAt: null };
+        // Khớp tên + thành phố KHÔNG PHÂN BIỆT DẤU, làm ở JS: bot/khách gõ "Đà Nẵng" trong khi dữ
+        // liệu lưu "Da Nang", mà `mode: 'insensitive'` của Prisma chỉ bỏ qua HOA/thường (xem
+        // hotelService.resolveCityFilter). Tập KS đang mở bán nhỏ nên đọc id+tên+thành phố là đủ rẻ.
+        const candidates = await prisma.hotel.findMany({ where: listed, select: { id: true, name: true, city: true } });
+        const matchedIds = candidates
+          .filter((hotel) => includesAccentInsensitive(hotel.name, String(args.hotelName)))
+          .filter((hotel) => !args.city || includesAccentInsensitive(hotel.city, String(args.city)))
+          .map((hotel) => hotel.id);
+
         const hotels = await prisma.hotel.findMany({
-          where,
+          where: { ...listed, id: { in: matchedIds } },
           take: 4, // >1 ⇒ tên mơ hồ, trả danh sách để bot hỏi lại cho đúng
           include: {
             amenities: { include: { amenity: { select: { name: true } } } },

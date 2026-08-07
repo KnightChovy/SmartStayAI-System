@@ -5,6 +5,7 @@ import prisma from '../config/prisma';
 import ApiError from '../utils/ApiError';
 import { roleRights } from '../config/roles';
 import { eachNightOfStay } from '../utils/dates';
+import { includesAccentInsensitive } from '../utils/text';
 import { availabilityService } from './availability.service';
 import type {
   HotelSearchFilter,
@@ -455,6 +456,26 @@ export class HotelService {
   };
 
   /**
+   * Quy tên thành phố NGƯỜI DÙNG GÕ về đúng giá trị đang lưu trong DB, so khớp KHÔNG PHÂN BIỆT DẤU.
+   *
+   * Vì sao cần: khách (và chatbot) gõ "Đà Nẵng" trong khi dữ liệu lưu "Da Nang". `contains` +
+   * `mode: 'insensitive'` của Prisma chỉ bỏ qua HOA/thường, KHÔNG bỏ qua dấu ⇒ trả về 0 khách sạn
+   * dù dữ liệu có thật. Postgres không so khớp bỏ dấu được nếu chưa bật extension `unaccent`, nên
+   * bỏ dấu ở JS: tập thành phố của khách sạn ĐANG MỞ BÁN rất nhỏ (distinct) nên đọc hết là đủ rẻ.
+   *
+   * Vẫn giữ ngữ nghĩa `contains` cũ ("Nang" khớp "Da Nang"). Không khớp gì thì trả `{ in: [] }`
+   * để ra 0 kết quả, thay vì âm thầm bỏ qua bộ lọc và trả về khách sạn của thành phố khác.
+   */
+  resolveCityFilter = async (city: string): Promise<Prisma.StringFilter> => {
+    const cities = await prisma.hotel.findMany({
+      where: { isActive: true, isListed: true, deletedAt: null },
+      select: { city: true },
+      distinct: ['city'],
+    });
+    return { in: cities.map((row) => row.city).filter((name) => includesAccentInsensitive(name, city)) };
+  };
+
+  /**
    * Tìm khách sạn theo thành phố. Nếu có khoảng ngày (checkIn/checkOut) thì chỉ trả về
    * khách sạn còn ít nhất một loại phòng trống đủ sức chứa trong suốt kỳ ở.
    */
@@ -466,7 +487,7 @@ export class HotelService {
     // Chỉ tìm trong khách sạn đã được duyệt và đang mở bán
     const where: Prisma.HotelWhereInput = { isActive: true, isListed: true, deletedAt: null };
     if (filter.city) {
-      where.city = { contains: filter.city, mode: 'insensitive' };
+      where.city = await this.resolveCityFilter(filter.city);
     }
     // Lọc theo hạng sao — OR trong nhóm (KS có sao thuộc danh sách)
     if (filter.stars && filter.stars.length > 0) {
