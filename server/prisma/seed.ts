@@ -1152,18 +1152,18 @@ const main = async (): Promise<void> => {
   console.log(`  ✓ ${BOOKINGS.length} booking (kèm thanh toán, hoa hồng, ví + giao dịch earning/settlement, voucher, đánh giá)`);
 
   // ----- Ví khách: nạp sẵn số dư để demo thanh toán bằng ví ngay, khỏi phải huỷ đơn trước -----
-  // customer@gmail.com: đủ trả trọn một đơn rẻ ⇒ demo "ví trả hết, booking confirmed ngay"
+  // customer@gmail.com: 10 triệu — đủ trả trọn cả đơn đắt ⇒ demo "ví trả hết, booking confirmed ngay"
   // customer2@gmail.com: cố tình để ÍT ⇒ demo "ví trả một phần, cổng trả phần còn lại"
   // customer3@gmail.com: không có ví ⇒ demo trạng thái ví rỗng
   await prisma.wallet.create({
     data: {
       customerId: customer1.id,
-      balanceAvailable: 2_000_000,
+      balanceAvailable: 10_000_000,
       transactions: {
         create: {
           type: 'adjustment',
-          amount: 2_000_000,
-          balanceAfter: 2_000_000,
+          amount: 10_000_000,
+          balanceAfter: 10_000_000,
           status: 'completed',
           description: 'Sample balance for the wallet payment demo',
         },
@@ -1185,7 +1185,7 @@ const main = async (): Promise<void> => {
       },
     },
   });
-  console.log('  ✓ ví khách: customer@ 2.000.000đ (trả trọn đơn), customer2@ 300.000đ (trả kết hợp)');
+  console.log('  ✓ ví khách: customer@ 10.000.000đ (trả trọn đơn), customer2@ 300.000đ (trả kết hợp)');
 
   // Lưu ý: trang /deals KHÔNG còn dùng model Promotion — deal được suy ra từ pricing rule GIẢM GIÁ
   // (xem các rule âm ở trên + promotion.service.ts). Không seed Promotion nữa.
