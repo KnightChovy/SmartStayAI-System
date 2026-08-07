@@ -2,9 +2,11 @@ import { api } from '@/lib/api';
 import type { Paginated } from '@/types/api.types';
 import type {
   Booking,
+  CancelBookingPayload,
   CancelBookingResponse,
   CreateBookingPayload,
   CreateReviewPayload,
+  RefundPreview,
   UpdateReviewPayload,
   MyBookingsParams,
 } from '@/types/booking.types';
@@ -42,11 +44,25 @@ export const bookingService = {
    * Trả booking đã huỷ kèm `refund` — yêu cầu hoàn tiền vừa tạo ở trạng thái `pending`
    * (chờ khách sạn duyệt), hoặc `null` khi không có khoản nào để hoàn.
    */
-  async cancel(bookingId: string, reason?: string): Promise<CancelBookingResponse> {
+  async cancel(
+    bookingId: string,
+    payload: CancelBookingPayload = {}
+  ): Promise<CancelBookingResponse> {
     const { data } = await api.patch<CancelBookingResponse>(
       `/bookings/${bookingId}/cancel`,
-      { reason }
+      payload
     );
+    return data;
+  },
+
+  /**
+   * Xem trước tiền hoàn nếu huỷ NGAY BÂY GIỜ (`GET /bookings/:id/refund-preview`).
+   *
+   * Chỉ đọc — BE dùng đúng hàm tính của `cancelBooking` nên số hiện cho khách **chính là** số sẽ
+   * được hoàn. Phải gọi trước khi mời khách bấm Huỷ: thao tác đó không hoàn tác được.
+   */
+  async getRefundPreview(bookingId: string): Promise<RefundPreview> {
+    const { data } = await api.get<RefundPreview>(`/bookings/${bookingId}/refund-preview`);
     return data;
   },
 

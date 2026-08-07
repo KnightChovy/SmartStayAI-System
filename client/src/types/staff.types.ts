@@ -174,12 +174,22 @@ export interface CheckOutResponse extends HotelBooking {
 
 export type HotelBookingsResponse = Paginated<HotelBooking>;
 
-/** Filters for the hotel booking list. */
+/**
+ * Bộ lọc danh sách booking của một khách sạn (`GET /hotels/:hotelId/bookings`).
+ *
+ * Ba điểm dựng riêng cho MÀN LỊCH, khác các màn giám sát khác:
+ * - `status` nhận **cả mảng** — lịch cần `confirmed + checked_in + pending` trong một lượt.
+ * - `fromDate`/`toDate` lọc theo **KHOẢNG LƯU TRÚ** (`checkInDate <= toDate AND checkOutDate >
+ *   fromDate`), không phải theo ngày nhận phòng. Trước đây lọc theo ngày nhận phòng nên đơn nhận
+ *   30/07 trả 09/08 **không** hiện khi xem từ 06/08 dù vẫn chiếm phòng — FE phải lùi mốc 30 ngày.
+ * - `limit` tới **500** (các endpoint giám sát khác vẫn trần 100).
+ */
 export interface HotelBookingsParams {
-  status?: BookingStatus;
+  status?: BookingStatus | BookingStatus[];
   fromDate?: string;
   toDate?: string;
   sortBy?: string;
+  /** Trần 500 cho endpoint này. */
   limit?: number;
   page?: number;
 }
@@ -189,6 +199,18 @@ export interface HotelBookingsParams {
 export interface CheckInPayload {
   roomId?: string;
   voucherCode?: string;
+}
+
+/**
+ * Chốt TRƯỚC một phòng vật lý cho đơn đã xác nhận nhưng chưa tới
+ * (`POST /hotels/:hotelId/bookings/:bookingId/assign-room`).
+ *
+ * Chỉ nhận đơn `confirmed`; BE kiểm phòng đúng loại, còn dùng được, không dính đợt chặn `ooo` và
+ * chưa bị đơn khác giữ trong cùng kỳ ở. Gán lại phòng khác thì gọi lại chính endpoint này — BE thay
+ * bản ghi cũ, không cần gỡ trước.
+ */
+export interface AssignRoomPayload {
+  roomId: string;
 }
 
 export interface CheckOutPayload {
@@ -294,6 +316,24 @@ export interface CreateRoomBlockResult extends RoomBlockPreview {
   block: RoomBlock;
 }
 
+/**
+ * Sửa một đợt chặn ĐANG MỞ (`PATCH /hotels/:hotelId/rooms/:roomId/blocks/:blockId`).
+ *
+ * Cố ý không có `startDate`/`blockType` — BE từ chối cả hai: ngày bắt đầu đã trôi qua thì không viết
+ * lại được, còn đổi loại chặn là đổi luôn ý nghĩa tồn kho (ca đó phải gỡ đợt cũ rồi tạo đợt mới).
+ * Gia hạn (`endDate` xa hơn) sẽ bị kiểm xung đột với đợt `ooo` khác; rút ngắn thì trả tồn kho về
+ * cho những ngày bị cắt, **nhưng chỉ từ hôm nay trở đi**.
+ */
+export interface UpdateRoomBlockPayload {
+  /** `YYYY-MM-DD` — ngày cuối CÒN BỊ CHẶN sau khi sửa. */
+  endDate?: string;
+  reason?: string;
+  estimatedCost?: number;
+}
+
+/** Response của PATCH — cùng hình dạng với lúc tạo, tính trên khoảng ngày MỚI. */
+export type UpdateRoomBlockResult = CreateRoomBlockResult;
+
 export interface StaffRoom {
   id: string;
   hotelId: string;
@@ -333,8 +373,38 @@ export interface StaffRoomsParams {
 }
 
 // ============================================================
-// Inventory calendar (suy ở client từ rooms + bookings)
+// Inventory calendar (GET /hotels/:hotelId/inventory/calendar)
 // ============================================================
+
+/**
+ * Con số này đến từ đâu:
+ * - `availability` — dòng đã CHỐT trong `room_availability` (nguồn khách nhìn thấy lúc đặt phòng).
+ * - `derived` — chưa có dòng nào cho đêm đó nên BE suy từ bảng `rooms` trừ đi đợt chặn `ooo`.
+ *
+ * Hai nguồn lệch nhau khi đối tác chỉnh tay `totalRooms`, nên UI nói ra thay vì trộn làm một.
+ */
+export type InventorySource = 'availability' | 'derived';
+
+/** Một dòng của endpoint: một loại phòng × một đêm. */
+export interface InventoryCalendarEntry {
+  roomTypeId: string;
+  roomTypeName: string;
+  /** ISO datetime của cột `@db.Date` — lấy khoá ngày bằng cách cắt 10 ký tự đầu. */
+  date: string;
+  totalRooms: number;
+  bookedRooms: number;
+  /** `max(0, totalRooms - bookedRooms)` — BE đã kẹp về 0, không bao giờ âm. */
+  availableRooms: number;
+  source: InventorySource;
+}
+
+export interface InventoryCalendarResponse {
+  from: string;
+  to: string;
+  results: InventoryCalendarEntry[];
+}
+
+// ----- Hình dạng dùng cho lưới trên màn hình (gom theo loại phòng) -----
 
 /** Tồn kho của MỘT loại phòng trong MỘT đêm. */
 export interface InventoryDayCell {
@@ -346,6 +416,7 @@ export interface InventoryDayCell {
   booked: number;
   /** `sellable - booked`. Âm = overbooking. */
   available: number;
+  source: InventorySource;
 }
 
 export interface InventoryTypeRow {
@@ -378,6 +449,15 @@ export type RoomDayState =
   | 'maintenance'
   | 'out_of_service';
 
+/**
+ * Vì sao một phòng đang ở trạng thái `held`:
+ * - `assigned` — lễ tân đã **chốt thật** phòng này cho đơn (`POST .../assign-room`). Số phòng nói
+ *   được với khách, và check-in sẽ dùng đúng phòng đó.
+ * - `provisional` — **phỏng đoán của FE**: đơn chưa được gán phòng nào, FE xếp tạm vào một phòng
+ *   trống cùng loại để nó không nằm lẫn trong nhóm "còn trống phát được". Phòng thật có thể khác.
+ */
+export type RoomHoldKind = 'assigned' | 'provisional';
+
 export interface RoomDayEntry {
   room: StaffRoom;
   /** Ngày đang xét (`YYYY-MM-DD`). */
@@ -385,17 +465,12 @@ export interface RoomDayEntry {
   state: RoomDayState;
   /** Đợt chặn phủ đúng ngày này — `null` nếu không có. */
   block: RoomBlockListItem | null;
-  /** Đơn đã được GÁN đúng phòng này và chiếm đêm này — `null` nếu không có. */
+  /** Đơn **đã check-in** đang ở phòng này trong đêm này — `null` nếu không có. */
   booking: HotelBooking | null;
-  /**
-   * Đơn đã đặt nhưng CHƯA check-in, được FE xếp TẠM vào phòng này để nó không nằm trong nhóm
-   * "còn trống phát được".
-   *
-   * ⚠️ **Là phỏng đoán của FE, không phải dữ liệu của BE**: BE chỉ chọn phòng vật lý lúc check-in.
-   * Xếp theo số phòng tăng dần nên ổn định giữa các lần tải, nhưng phòng thật có thể khác —
-   * UI phải nói rõ điều đó trước khi lễ tân đọc số phòng cho khách.
-   */
+  /** Đơn đang giữ phòng này nhưng chưa check-in — xem `holdKind` để biết thật hay dự kiến. */
   heldBy: HotelBooking | null;
+  /** `null` khi `heldBy` là `null`. */
+  holdKind: RoomHoldKind | null;
 }
 
 export interface InventoryCalendar {
@@ -404,9 +479,6 @@ export interface InventoryCalendar {
   /** Ngày cuối, ĐÃ BAO GỒM (YYYY-MM-DD). */
   to: string;
   rows: InventoryTypeRow[];
-  /**
-   * Danh sách booking bị cắt vì chạm trần phân trang (xem `use-inventory-calendar`).
-   * `true` ⇒ số liệu có thể thiếu, UI phải nói ra thay vì im lặng.
-   */
-  truncated: boolean;
+  /** Có ít nhất một ô suy ra từ bảng `rooms` thay vì đọc `room_availability` — xem `InventorySource`. */
+  hasDerivedCells: boolean;
 }

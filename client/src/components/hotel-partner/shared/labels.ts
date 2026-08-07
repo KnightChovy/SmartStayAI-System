@@ -9,10 +9,21 @@ export const ROOM_STATUS_CONFIG: Record<RoomStatus, { label: string; class: stri
   cleaning: { label: 'Cleaning', class: 'bg-violet-100 text-violet-700' },
 };
 
+/** Mọi trạng thái phòng — dùng cho BỘ LỌC danh sách (`GET /rooms?status=` vẫn nhận đủ 4 giá trị). */
 export const ROOM_STATUS_OPTIONS: { value: RoomStatus; label: string }[] = [
   { value: 'available', label: 'Available' },
   { value: 'occupied', label: 'Occupied' },
   { value: 'maintenance', label: 'Maintenance' },
+  { value: 'cleaning', label: 'Cleaning' },
+];
+
+/**
+ * Trạng thái được phép ĐẶT trong form tạo/sửa phòng — chỉ 2 giá trị này, khớp `editableRoomStatus`
+ * của BE. Gửi `maintenance`/`occupied` là **400**: bảo trì phải khai khoảng ngày qua đợt chặn phòng,
+ * còn "có khách" chỉ sinh ra từ check-in.
+ */
+export const EDITABLE_ROOM_STATUS_OPTIONS: { value: RoomStatus; label: string }[] = [
+  { value: 'available', label: 'Available' },
   { value: 'cleaning', label: 'Cleaning' },
 ];
 

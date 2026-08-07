@@ -19,6 +19,7 @@ import {
   ScrollText,
   Receipt,
   MapPinned,
+  CalendarX,
   Settings2,
 } from 'lucide-react';
 import { useManagedHotel } from '@/hooks/hotels';
@@ -28,6 +29,7 @@ import { HotelAmenitiesModal } from '@/components/hotel-partner/hotel-management
 import { HotelContactsModal } from '@/components/hotel-partner/property/HotelContactsModal';
 import { HotelPoliciesModal } from '@/components/hotel-partner/property/HotelPoliciesModal';
 import { HotelChargesModal } from '@/components/hotel-partner/property/HotelChargesModal';
+import { CancellationPolicyModal } from '@/components/hotel-partner/property/CancellationPolicyModal';
 import { HotelNearbyPlacesModal } from '@/components/hotel-partner/property/HotelNearbyPlacesModal';
 import { Button } from '@/components/ui/button';
 import {
@@ -54,6 +56,7 @@ export default function HotelDetailPage() {
   const [policiesOpen, setPoliciesOpen] = useState(false);
   const [chargesOpen, setChargesOpen] = useState(false);
   const [nearbyOpen, setNearbyOpen] = useState(false);
+  const [cancellationOpen, setCancellationOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -285,6 +288,14 @@ export default function HotelDetailPage() {
               description="Attractions, airport, transport"
               onClick={() => setNearbyOpen(true)}
             />
+            {/* Khác hẳn "Policies" bên trên: chỗ đó là chữ cho khách đọc, chỗ này là con số
+                quyết định tiền hoàn khi khách huỷ. */}
+            <PropertyCard
+              icon={CalendarX}
+              label="Cancellation policy"
+              description="How much a guest gets back"
+              onClick={() => setCancellationOpen(true)}
+            />
           </div>
         </Section>
       </div>
@@ -367,6 +378,11 @@ export default function HotelDetailPage() {
         onClose={() => setNearbyOpen(false)}
         hotelId={hotel.id}
         hotelName={hotel.name}
+      />
+      <CancellationPolicyModal
+        open={cancellationOpen}
+        onClose={() => setCancellationOpen(false)}
+        hotel={hotel}
       />
     </Shell>
   );

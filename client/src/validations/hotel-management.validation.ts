@@ -129,15 +129,30 @@ export type RoomTypeFormValues = z.infer<typeof roomTypeFormSchema>;
 
 // ─── Physical room ────────────────────────────────────────────────────────────
 
-const roomStatusEnum = z.enum(['available', 'occupied', 'maintenance', 'cleaning']);
+/**
+ * Trạng thái được phép ĐẶT khi tạo/sửa phòng — mirror `editableRoomStatus` của BE
+ * (`server/src/validations/room.validation.ts`).
+ *
+ * `maintenance` và `occupied` cố ý KHÔNG có mặt và gửi lên là **400**:
+ * - `maintenance` phải khai khoảng ngày ⇒ đi qua `POST /hotels/:id/rooms/:roomId/blocks`. Trước đây
+ *   form này gửi thẳng `maintenance` và BE âm thầm đẻ ra một đợt chặn cứng 7 ngày với lý do bịa sẵn.
+ * - `occupied` chỉ sinh ra từ check-in vì nó phải đi kèm một booking.
+ */
+const editableRoomStatusEnum = z.enum(['available', 'cleaning']);
 
 export const roomFormSchema = z.object({
   roomTypeId: z.string().uuid('Please select a room type'),
   roomNumber: z.string().trim().min(1, 'Room number is required').max(20, 'Max 20 characters'),
   floor: optionalInt(0, 200),
-  status: roomStatusEnum,
+  status: editableRoomStatusEnum,
   notes: z.string().max(1000, 'Max 1000 characters').optional(),
 });
+
+/** Phòng đang ở trạng thái này thì form KHÔNG được gửi `status` — xem `editableRoomStatusEnum`. */
+export const isEditableRoomStatus = (
+  status: string
+): status is z.infer<typeof editableRoomStatusEnum> =>
+  editableRoomStatusEnum.safeParse(status).success;
 
 export type RoomFormValues = z.infer<typeof roomFormSchema>;
 

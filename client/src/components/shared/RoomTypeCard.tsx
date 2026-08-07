@@ -1,7 +1,7 @@
 import { Bed, BedDouble, Check, Eye, Maximize, Star, Users } from 'lucide-react';
 import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import type { RoomType } from '@/types/hotel.types';
+import type { CancellationRule, RoomType } from '@/types/hotel.types';
 import { useMoney } from '@/hooks/currency';
 import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/button';
@@ -19,8 +19,8 @@ interface RoomTypeCardProps {
   bestValue?: boolean;
   /** Link "xem chi tiết phòng" — không truyền thì thẻ không hiện link. */
   detailHref?: string;
-  /** Số giờ hủy miễn phí (từ `hotel.settings.cancellation`) — hiện dòng chính sách hủy (SS-302). */
-  freeUntilHours?: number | null;
+  /** Chính sách huỷ của khách sạn (`hotel.cancellationRule`) — hiện dòng chính sách huỷ (SS-302). */
+  cancellationRule?: CancellationRule | null;
 }
 
 /** Thẻ loại phòng trong trang chi tiết khách sạn. */
@@ -30,7 +30,7 @@ export default function RoomTypeCard({
   selectable = false,
   bestValue = false,
   detailHref,
-  freeUntilHours,
+  cancellationRule,
 }: RoomTypeCardProps) {
   const { t } = useTranslation('hotel');
   const { format } = useMoney();
@@ -141,7 +141,7 @@ export default function RoomTypeCard({
         )}
 
         {/* Chính sách hủy (SS-302) — chỉ hiện khi khách sạn đã khai */}
-        <CancellationLine freeUntilHours={freeUntilHours} className="mt-3" />
+        <CancellationLine rule={cancellationRule} className="mt-3" />
 
         {roomType.description && (
           <p className="mt-2 line-clamp-2 text-sm text-on-surface-variant/80">{roomType.description}</p>

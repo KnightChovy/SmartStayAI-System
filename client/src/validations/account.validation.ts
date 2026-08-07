@@ -52,6 +52,13 @@ export const ACCOUNT_ERROR_KEYS = {
   dobInvalid: 'profile.errors.dobInvalid',
   imageUrlInvalid: 'review.errors.imageUrlInvalid',
   imageLimit: 'review.errors.imageLimit',
+  accountNumberRequired: 'cancel.errors.accountNumberRequired',
+  accountNumberTooLong: 'cancel.errors.accountNumberTooLong',
+  accountNumberDigits: 'cancel.errors.accountNumberDigits',
+  bankNameRequired: 'cancel.errors.bankNameRequired',
+  bankNameTooLong: 'cancel.errors.bankNameTooLong',
+  accountHolderRequired: 'cancel.errors.accountHolderRequired',
+  accountHolderTooLong: 'cancel.errors.accountHolderTooLong',
 } as const;
 
 export type AccountErrorCode = keyof typeof ACCOUNT_ERROR_KEYS;
@@ -116,3 +123,25 @@ export const reviewImageUrlSchema = z
  * đường nào vượt quá để phải bắt bằng schema.
  */
 export const CANCEL_REASON_MAX = 500;
+
+/**
+ * Tài khoản nhận tiền hoàn khi khách chọn `refundMethod: 'bank'`.
+ *
+ * Khớp đúng Joi của BE: `accountNumber` **chỉ chữ số** ≤30, `bankName` ≤100, `accountHolder` ≤100 —
+ * và cả ba đều `required` khi chọn ngân hàng. Chặn ở đây vì đây là thứ Platform Manager dựa vào để
+ * chuyển tiền thật: sai một chữ số là tiền đi nhầm người, không phải chỉ là một lỗi 400.
+ */
+export const refundBankAccountSchema = z.object({
+  accountNumber: z
+    .string()
+    .trim()
+    .min(1, 'accountNumberRequired')
+    .max(30, 'accountNumberTooLong')
+    .regex(/^\d+$/, 'accountNumberDigits'),
+  bankName: z.string().trim().min(1, 'bankNameRequired').max(100, 'bankNameTooLong'),
+  accountHolder: z
+    .string()
+    .trim()
+    .min(1, 'accountHolderRequired')
+    .max(100, 'accountHolderTooLong'),
+});

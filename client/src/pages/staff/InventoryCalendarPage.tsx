@@ -68,8 +68,20 @@ export default function InventoryCalendarPage() {
   const selectedDate = params.get('date') ?? (highlightRoom ? today : null);
   const selectedTypeId = params.get('type');
 
-  const { data, rooms, blocks, bookings, isLoading, isFetching, isError, error } =
-    useInventoryCalendar(hotel?.id, from, to);
+  const {
+    data,
+    rooms,
+    blocks,
+    bookings,
+    bookingsTruncated,
+    detailLoading,
+    isLoading,
+    isFetching,
+    isError,
+    error,
+    // Nguồn thô của bản đồ phòng chỉ tải khi staff thật sự mở một ngày — nó tốn tới 20 request
+    // phân trang booking, trong khi lưới chỉ cần đúng một.
+  } = useInventoryCalendar(hotel?.id, from, to, { withRoomDetail: Boolean(selectedDate) });
 
   const setRange = (nextFrom: string, nextDays: WindowSize) => {
     const nextTo = shiftDateKey(nextFrom, nextDays - 1);
@@ -206,12 +218,15 @@ export default function InventoryCalendarPage() {
         </div>
       )}
 
-      {/* Chạm trần phân trang ⇒ số liệu có thể thiếu. Nói ra thay vì hiện một con số sai trông rất thật. */}
-      {data?.truncated && (
+      {/*
+        Chạm trần phân trang ⇒ BẢN ĐỒ PHÒNG có thể thiếu đơn. Lưới bên trên không dính vì nó đọc
+        thẳng tồn kho từ server, không đếm booking ở client nữa.
+      */}
+      {bookingsTruncated && (
         <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
           <AlertTriangle className="mt-0.5 size-4 shrink-0" />
-          Too many bookings in this range to load them all — the numbers below may be higher than
-          reality. Try a shorter period.
+          Too many bookings in this range to load them all — the room map below may be missing some
+          guests. The numbers in the grid are unaffected. Try a shorter period.
         </div>
       )}
 
@@ -308,8 +323,20 @@ export default function InventoryCalendarPage() {
         </div>
       )}
 
+      {/* Nguồn thô của bản đồ phòng tải sau (chỉ khi mở một ngày) nên phải có trạng thái chờ riêng. */}
+      {selectedDate && detailLoading && (
+        <div className="rounded-xl border border-slate-200 bg-white p-4">
+          <div className="h-4 w-40 animate-pulse rounded bg-slate-100" />
+          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-40 animate-pulse rounded-xl bg-slate-100" />
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Bản đồ phòng của ngày đang chọn — thay cho trang Room map cũ. */}
-      {selectedDate && !isLoading && !isError && rooms && blocks && bookings && (
+      {selectedDate && !isError && rooms && blocks && bookings && (
         <RoomDayBoard
           hotelId={hotel?.id}
           date={selectedDate}
@@ -334,8 +361,10 @@ export default function InventoryCalendarPage() {
       )}
 
       <p className="text-xs text-slate-400">
-        Counts come from the hotel&apos;s rooms, maintenance blocks and bookings. Final availability
-        is confirmed at booking time.
+        Counts come straight from the hotel&apos;s nightly inventory — the same numbers a guest sees
+        when booking.
+        {data?.hasDerivedCells &&
+          ' Nights with no inventory row yet are counted from the room list instead (marked in the tooltip).'}
       </p>
     </div>
   );
@@ -395,6 +424,11 @@ function DayCell({
             <span className="font-semibold">{Math.max(0, cell.available)}</span> left
           </span>
           <span className="opacity-70">{cell.sellable} rooms sellable</span>
+          {/* Nói ra khi đêm đó chưa có dòng tồn kho: số này suy từ danh sách phòng, chưa phải con
+              số đã chốt mà khách nhìn thấy lúc đặt. */}
+          {cell.source === 'derived' && (
+            <span className="opacity-70">Not in the availability table yet — counted from rooms</span>
+          )}
           {overbooked && (
             <span className="font-semibold text-rose-300">
               Overbooked by {Math.abs(cell.available)}
