@@ -49,7 +49,9 @@ export class AdminService {
         SELECT coalesce(sum(b.total_amount), 0)::text AS gmv
         FROM platform_commissions pc JOIN bookings b ON b.id = pc.booking_id`,
       prisma.platformCommission.groupBy({ by: ['status'], _sum: { commissionAmount: true } }),
-      prisma.refund.aggregate({ _sum: { amount: true } }),
+      // CHỈ tính yêu cầu đã 'processed' — tiền chỉ thực sự rời ví/commission ở bước này (xem model
+      // Refund). Cộng cả 'pending'/'rejected' vào sẽ thổi phồng số tiền hoàn.
+      prisma.refund.aggregate({ _sum: { amount: true }, where: { status: 'processed' } }),
     ]);
 
     // groupBy → object {key: số} cho dễ đọc ở client
@@ -102,23 +104,27 @@ export class AdminService {
 
     // GMV + hoa hồng cùng MỐC NGÀY THANH TOÁN: mỗi booking trả đủ tiền tạo đúng 1 PlatformCommission
     // (cổng/ví/tiền mặt), nên commission.createdAt = mốc ghi nhận; GMV = tổng totalAmount của các
-    // booking đã ghi nhận trong kỳ. refunded theo ngày tạo yêu cầu hoàn.
+    // booking đã ghi nhận trong kỳ. refunded theo ngày TẠO yêu cầu hoàn, và chỉ tính yêu cầu đã
+    // 'processed' (tiền đã thực sự rời đi) — 'pending'/'rejected' không phải tiền hoàn.
     const [commissions, refundAgg] = await prisma.$transaction([
       prisma.platformCommission.findMany({
         where: dateWhere,
         select: { status: true, commissionAmount: true, booking: { select: { totalAmount: true } } },
       }),
-      prisma.refund.aggregate({ _sum: { amount: true }, where: dateWhere }),
+      prisma.refund.aggregate({ _sum: { amount: true }, where: { ...dateWhere, status: 'processed' } }),
     ]);
 
     let gmv = new Prisma.Decimal(0);
     let commissionPending = new Prisma.Decimal(0);
     let commissionSettled = new Prisma.Decimal(0);
+    let commissionDisputed = new Prisma.Decimal(0);
     for (const c of commissions) {
       gmv = gmv.add(c.booking.totalAmount);
       if (c.status === 'pending') commissionPending = commissionPending.add(c.commissionAmount);
       else if (c.status === 'settled') commissionSettled = commissionSettled.add(c.commissionAmount);
-      // 'disputed' không tính vào doanh thu thật
+      // 'disputed' KHÔNG tính vào doanh thu thật, nhưng vẫn trả về để người quản lý sàn theo dõi
+      // được khoản đang tranh chấp — không trả thì tiền này biến mất khỏi mọi báo cáo.
+      else commissionDisputed = commissionDisputed.add(c.commissionAmount);
     }
     // Doanh thu thật của sàn = hoa hồng đã ghi nhận (pending + settled); disputed không tính
     const netPlatformRevenue = commissionPending.add(commissionSettled);
@@ -126,14 +132,26 @@ export class AdminService {
     const series = await this.buildPlatformSeries(groupBy, from, toExclusive);
     const comparison = await this.buildPeriodComparison(from, toExclusive, gmv, netPlatformRevenue);
 
+    const refunded = refundAgg._sum.amount ?? new Prisma.Decimal(0);
+    const bookingCount = commissions.length;
+
     return {
+      // Metadata báo cáo: mọi số tiền dưới đây là VND, chốt tại thời điểm asOf
+      currency: 'VND',
+      asOf: new Date().toISOString(),
       summary: {
         gmv: gmv.toString(),
         commissionPending: commissionPending.toString(),
         commissionSettled: commissionSettled.toString(),
-        refunded: (refundAgg._sum.amount ?? new Prisma.Decimal(0)).toString(),
+        commissionDisputed: commissionDisputed.toString(),
+        refunded: refunded.toString(),
         netPlatformRevenue: netPlatformRevenue.toString(),
-        bookingCount: commissions.length,
+        bookingCount,
+        // Hai chỉ số phái sinh tính ở BE: chia bằng Decimal cho khỏi sai số, và để FE không phải
+        // parse lại chuỗi tiền — đúng lý do vì sao tiền được trả dạng chuỗi ngay từ đầu.
+        // null (không phải 0) khi chưa có booking nào: "chưa có dữ liệu" khác "bằng không".
+        takeRatePct: gmv.isZero() ? null : netPlatformRevenue.div(gmv).mul(100).toDecimalPlaces(2).toNumber(),
+        avgBookingValue: bookingCount === 0 ? null : gmv.div(bookingCount).toDecimalPlaces(2).toString(),
       },
       groupBy,
       series,
@@ -255,13 +273,19 @@ export class AdminService {
     const partnerId = query.partnerId ?? null;
 
     // gmv = Σ totalAmount; commission = Σ commission_amount (bỏ 'disputed'); cùng lọc theo pc.created_at.
+    // commissionRatePct = % hoa hồng BÌNH QUÂN GIA QUYỀN theo giá trị booking trong kỳ, lấy từ
+    // pc.commission_rate (mức đóng băng lúc thanh toán) chứ KHÔNG chia commission/gmv: refund tính lại
+    // commission_amount còn total_amount giữ nguyên ⇒ hai số khác mẫu số, chia ra là sai (xem
+    // revenue.service). Lưu ý tỉ lệ này gộp cả bản ghi 'disputed' trong khi cột `commission` đã loại
+    // chúng, nên `gmv × commissionRatePct` không nhất thiết bằng `commission` — đúng theo thiết kế.
     // NULL::... để 3 chiều cùng một tập cột, gán key theo chiều rồi đổi tên ở bước map bên dưới.
     const commissionSql = {
       partner: `SELECT hp.id::text AS key, hp.business_name AS name, NULL::text AS city,
                        NULL::text AS "partnerId", NULL::text AS "partnerName",
                        count(*)::int AS "bookingCount", count(DISTINCT h.id)::int AS "hotelCount",
                        coalesce(sum(b.total_amount),0)::text AS gmv,
-                       coalesce(sum(CASE WHEN pc.status <> 'disputed' THEN pc.commission_amount ELSE 0 END),0)::text AS commission
+                       coalesce(sum(CASE WHEN pc.status <> 'disputed' THEN pc.commission_amount ELSE 0 END),0)::text AS commission,
+                       round(sum(b.total_amount * pc.commission_rate) / nullif(sum(b.total_amount),0), 2)::text AS "commissionRatePct"
                 FROM platform_commissions pc
                 JOIN bookings b ON b.id = pc.booking_id
                 JOIN hotels h ON h.id = b.hotel_id
@@ -274,7 +298,8 @@ export class AdminService {
                      hp.id::text AS "partnerId", hp.business_name AS "partnerName",
                      count(*)::int AS "bookingCount", NULL::int AS "hotelCount",
                      coalesce(sum(b.total_amount),0)::text AS gmv,
-                     coalesce(sum(CASE WHEN pc.status <> 'disputed' THEN pc.commission_amount ELSE 0 END),0)::text AS commission
+                     coalesce(sum(CASE WHEN pc.status <> 'disputed' THEN pc.commission_amount ELSE 0 END),0)::text AS commission,
+                     round(sum(b.total_amount * pc.commission_rate) / nullif(sum(b.total_amount),0), 2)::text AS "commissionRatePct"
               FROM platform_commissions pc
               JOIN bookings b ON b.id = pc.booking_id
               JOIN hotels h ON h.id = b.hotel_id
@@ -287,7 +312,8 @@ export class AdminService {
                     NULL::text AS "partnerId", NULL::text AS "partnerName",
                     count(*)::int AS "bookingCount", count(DISTINCT h.id)::int AS "hotelCount",
                     coalesce(sum(b.total_amount),0)::text AS gmv,
-                    coalesce(sum(CASE WHEN pc.status <> 'disputed' THEN pc.commission_amount ELSE 0 END),0)::text AS commission
+                    coalesce(sum(CASE WHEN pc.status <> 'disputed' THEN pc.commission_amount ELSE 0 END),0)::text AS commission,
+                    round(sum(b.total_amount * pc.commission_rate) / nullif(sum(b.total_amount),0), 2)::text AS "commissionRatePct"
              FROM platform_commissions pc
              JOIN bookings b ON b.id = pc.booking_id
              JOIN hotels h ON h.id = b.hotel_id
@@ -297,14 +323,16 @@ export class AdminService {
              GROUP BY h.city`,
     }[groupBy];
 
-    // refunded theo NGÀY TẠO yêu cầu hoàn (r.created_at); khoá gộp KHỚP với key ở trên
+    // refunded theo NGÀY TẠO yêu cầu hoàn (r.created_at); khoá gộp KHỚP với key ở trên.
+    // CHỈ tính refund đã 'processed' — tiền chỉ thực sự rời ví ở bước này (xem model Refund).
     const refundKey = { partner: 'h.partner_id::text', hotel: 'b.hotel_id::text', city: 'h.city' }[groupBy];
     const refundSql = `SELECT ${refundKey} AS key, coalesce(sum(r.amount),0)::text AS refunded
       FROM refunds r
       JOIN payments p ON p.id = r.payment_id
       JOIN bookings b ON b.id = p.booking_id
       JOIN hotels h ON h.id = b.hotel_id
-      WHERE ($1::timestamptz IS NULL OR r.created_at >= $1)
+      WHERE r.status = 'processed'
+        AND ($1::timestamptz IS NULL OR r.created_at >= $1)
         AND ($2::timestamptz IS NULL OR r.created_at < $2)
         AND ($3::uuid IS NULL OR h.partner_id = $3)
       GROUP BY ${refundKey}`;
@@ -319,6 +347,8 @@ export class AdminService {
       hotelCount: number | null;
       gmv: string;
       commission: string;
+      // null khi nhóm không có doanh thu để chia (nullif ở SQL) — map thành '0' khi trả ra
+      commissionRatePct: string | null;
     };
     const [rows, refundRows] = await Promise.all([
       prisma.$queryRawUnsafe<Row[]>(commissionSql, from, toExclusive, partnerId),
@@ -334,13 +364,54 @@ export class AdminService {
     const totalResults = sorted.length;
     const paged = sorted.slice((page - 1) * limit, page * limit);
 
+    // Tổng của TOÀN BỘ nhóm (không riêng trang hiện tại) để FE vẽ cột "tỉ trọng" và pie chart.
+    // refunded chỉ cộng những nhóm CÓ trong `rows`: nhóm chỉ có hoàn tiền mà không có hoa hồng trong
+    // kỳ (hai mốc ngày khác nhau) không hiện thành dòng nào, cộng vào sẽ khiến tổng > tổng các dòng.
+    const rowKeys = new Set(rows.map((r) => r.key));
+    let totalGmv = new Prisma.Decimal(0);
+    let totalCommission = new Prisma.Decimal(0);
+    let totalBookingCount = 0;
+    for (const r of sorted) {
+      totalGmv = totalGmv.add(r.gmv);
+      totalCommission = totalCommission.add(r.commission);
+      totalBookingCount += r.bookingCount;
+    }
+    const totalRefunded = refundRows
+      .filter((r) => rowKeys.has(r.key))
+      .reduce((sum, r) => sum.add(r.refunded), new Prisma.Decimal(0));
+
     const results = paged.map((r) => {
       const refunded = refundByKey.get(r.key) ?? '0';
+      const commissionRatePct = r.commissionRatePct ?? '0';
+      // Tỉ trọng doanh thu sàn mà nhóm này đóng góp — dùng cho cột "tỉ trọng" và đo mức tập trung
+      const sharePct = totalCommission.isZero()
+        ? 0
+        : new Prisma.Decimal(r.commission).div(totalCommission).mul(100).toDecimalPlaces(2).toNumber();
+
       if (groupBy === 'partner') {
-        return { partnerId: r.key, name: r.name, gmv: r.gmv, commission: r.commission, refunded, bookingCount: r.bookingCount, hotelCount: r.hotelCount };
+        return {
+          partnerId: r.key,
+          name: r.name,
+          gmv: r.gmv,
+          commission: r.commission,
+          commissionRatePct,
+          refunded,
+          bookingCount: r.bookingCount,
+          hotelCount: r.hotelCount,
+          sharePct,
+        };
       }
       if (groupBy === 'city') {
-        return { city: r.key, gmv: r.gmv, commission: r.commission, refunded, bookingCount: r.bookingCount, hotelCount: r.hotelCount };
+        return {
+          city: r.key,
+          gmv: r.gmv,
+          commission: r.commission,
+          commissionRatePct,
+          refunded,
+          bookingCount: r.bookingCount,
+          hotelCount: r.hotelCount,
+          sharePct,
+        };
       }
       return {
         hotelId: r.key,
@@ -350,12 +421,30 @@ export class AdminService {
         partnerName: r.partnerName,
         gmv: r.gmv,
         commission: r.commission,
+        commissionRatePct,
         refunded,
         bookingCount: r.bookingCount,
+        sharePct,
       };
     });
 
-    return { groupBy, results, page, limit, totalPages: Math.ceil(totalResults / limit), totalResults };
+    return {
+      groupBy,
+      // Metadata báo cáo: mọi số tiền dưới đây là VND, chốt tại thời điểm asOf
+      currency: 'VND',
+      asOf: new Date().toISOString(),
+      totals: {
+        gmv: totalGmv.toString(),
+        commission: totalCommission.toString(),
+        refunded: totalRefunded.toString(),
+        bookingCount: totalBookingCount,
+      },
+      results,
+      page,
+      limit,
+      totalPages: Math.ceil(totalResults / limit),
+      totalResults,
+    };
   };
 
   // ===== Pha 3 — Hoa hồng / payout =====

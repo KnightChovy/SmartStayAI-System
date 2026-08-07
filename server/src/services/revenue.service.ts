@@ -16,7 +16,9 @@ export class RevenueService {
    * - gross/commission tính theo NGÀY THANH TOÁN. Mỗi booking trả đủ tiền tạo ĐÚNG một
    *   PlatformCommission (cả cổng, ví lẫn tiền mặt), nên `commission.createdAt` = mốc thanh toán;
    *   gross = tổng `booking.totalAmount` của các booking đã ghi nhận trong kỳ.
-   * - refunded tính theo NGÀY TẠO yêu cầu hoàn (`refund.createdAt`).
+   * - refunded tính theo NGÀY TẠO yêu cầu hoàn (`refund.createdAt`), và CHỈ gồm yêu cầu đã
+   *   `processed` — tiền chỉ thực sự rời ví ở bước đó, nên yêu cầu đang chờ duyệt hoặc bị từ chối
+   *   không được trừ vào doanh thu khách sạn.
    *
    * net = gross − commission (GIỮ NGUYÊN cho FE cũ). netAfterRefund = net − refunded (MỚI, phản ánh
    * doanh thu THỰC sau hoàn tiền — net cũ không trừ refund nên phóng đại). Tiền trả dạng chuỗi.
@@ -44,7 +46,7 @@ export class RevenueService {
       }),
       prisma.refund.aggregate({
         _sum: { amount: true },
-        where: { payment: { booking: { hotelId } }, ...dateWhere },
+        where: { payment: { booking: { hotelId } }, ...dateWhere, status: 'processed' },
       }),
     ]);
 
@@ -106,7 +108,8 @@ export class RevenueService {
       fromParam,
       toParam
     );
-    // refunded theo NGÀY TẠO yêu cầu hoàn (r.created_at)
+    // refunded theo NGÀY TẠO yêu cầu hoàn (r.created_at), CHỈ tính yêu cầu đã 'processed' —
+    // cùng cơ sở với summary ở trên, nếu không chart và KPI sẽ lệch nhau.
     const refundRows = await prisma.$queryRawUnsafe<{ period: string; refunded: string }[]>(
       `SELECT to_char(date_trunc('${trunc}', r.created_at), '${fmt}') AS period,
               coalesce(sum(r.amount), 0)::text AS refunded
@@ -114,6 +117,7 @@ export class RevenueService {
        JOIN payments p ON p.id = r.payment_id
        JOIN bookings b ON b.id = p.booking_id
        WHERE b.hotel_id = $1::uuid
+         AND r.status = 'processed'
          AND ($2::timestamptz IS NULL OR r.created_at >= $2)
          AND ($3::timestamptz IS NULL OR r.created_at < $3)
        GROUP BY 1`,
