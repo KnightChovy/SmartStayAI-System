@@ -71,19 +71,19 @@ export default function SecurityScreen() {
 
   function handleDeleteAccount() {
     Alert.alert(
-      'Delete account',
-      'This permanently removes your account and personal data. This cannot be undone.',
+      t('account:security.deleteTitle'),
+      t('account:security.deleteBody'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common:cancel'), style: 'cancel' },
         {
-          text: 'Delete my account',
+          text: t('account:security.deleteConfirm'),
           style: 'destructive',
           onPress: async () => {
             try {
               await deleteAccount.mutateAsync();
               router.replace('/(auth)/login');
             } catch (err) {
-              Alert.alert('Error', errorMessage(err, t('account:security.deleteFailed')));
+              Alert.alert(t('account:security.error'), errorMessage(err, t('account:security.deleteFailed')));
             }
           },
         },
@@ -144,7 +144,7 @@ export default function SecurityScreen() {
         <View className="bg-surface rounded-card p-4 border border-red-100">
           <Heading size="md" className="font-bevi-bold text-red-600 mb-1">{t('account:security.deleteTitle')}</Heading>
           <Text size="sm" className="font-bevi text-muted mb-3">
-            Permanently remove your account and personal data. This cannot be undone.
+            {t('account:security.deleteBody')}
           </Text>
           <Pressable
             disabled={deleteAccount.isPending}
@@ -153,7 +153,7 @@ export default function SecurityScreen() {
           >
             <Ionicons name="trash-outline" size={16} color="#DC2626" />
             <Text bold className="font-bevi-bold text-red-600">
-              {deleteAccount.isPending ? 'Deleting…' : 'Delete my account'}
+              {deleteAccount.isPending ? t('account:security.deleting') : t('account:security.deleteConfirm')}
             </Text>
           </Pressable>
         </View>

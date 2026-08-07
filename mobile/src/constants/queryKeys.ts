@@ -49,6 +49,11 @@ export const queryKeys = {
     geocode: (query: string) => ['geo', 'geocode', query] as const,
   },
 
+  wallet: {
+    all: () => ['wallet'] as const,
+    mine: () => ['wallet', 'mine'] as const,
+  },
+
   messages: {
     all: () => ['messages'] as const,
     mine: () => ['messages', 'mine'] as const,

@@ -8,24 +8,10 @@ import { Heading } from '@/components/ui/heading';
 import { GUEST_COLORS } from '@/constants/guestTheme';
 
 
-const FAQS = [
-  {
-    q: 'How do I cancel or modify a booking?',
-    a: 'Open the booking from My Bookings, then use Cancel or Modify reservation. Pending and confirmed bookings can be changed.',
-  },
-  {
-    q: 'How do I check in at the hotel?',
-    a: 'Show the QR code on your booking detail screen at the front desk — it encodes your booking code for a quick check-in.',
-  },
-  {
-    q: 'What payment methods are supported?',
-    a: 'Bookings are paid securely through VNPay at checkout. We don’t store your card details.',
-  },
-  {
-    q: 'How do I get a refund?',
-    a: 'Cancellations follow each hotel’s policy. Contact us below if you need help with a refund.',
-  },
-];
+interface Faq {
+  q: string;
+  a: string;
+}
 
 const CONTACTS = [
   { icon: 'mail-outline' as const, label: 'support@stayhub.ai', action: () => Linking.openURL('mailto:support@stayhub.ai') },
@@ -35,6 +21,7 @@ const CONTACTS = [
 export default function HelpSupportScreen() {
   const router = useRouter();
   const { t } = useTranslation(['account', 'common']);
+  const faqs = t('account:help.faqs', { returnObjects: true }) as Faq[];
 
   return (
     <SafeAreaView className="flex-1 bg-on-surface" edges={['top']}>
@@ -48,10 +35,10 @@ export default function HelpSupportScreen() {
       <ScrollView className="flex-1 bg-canvas" contentContainerStyle={{ padding: 16, gap: 12 }} showsVerticalScrollIndicator={false}>
         <Heading size="md" className="font-bevi-bold text-on-surface px-1">{t('account:help.faq')}</Heading>
         <View className="bg-surface rounded-card overflow-hidden">
-          {FAQS.map((faq, index) => (
+          {faqs.map((faq, index) => (
             <View
               key={faq.q}
-              className={`p-4 ${index < FAQS.length - 1 ? 'border-b border-hairline/30' : ''}`}
+              className={`p-4 ${index < faqs.length - 1 ? 'border-b border-hairline/30' : ''}`}
             >
               <Text bold className="font-bevi-bold text-on-surface text-sm">{faq.q}</Text>
               <Text size="sm" className="font-bevi text-on-surface-variant mt-1 leading-5">{faq.a}</Text>

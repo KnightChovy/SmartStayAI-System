@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { View, Pressable, Linking } from 'react-native';
 import maplibregl, { type StyleSpecification } from 'maplibre-gl';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { Text } from '@/components/ui/text';
 import { GUEST_COLORS } from '@/constants/guestTheme';
 
@@ -40,6 +41,7 @@ function buildStyle(): StyleSpecification {
 
 /** Bản đồ vị trí khách sạn — dùng maplibre-gl trực tiếp trên web (react-native-web). */
 export function HotelMap({ latitude, longitude, name, address, height = 160 }: HotelMapProps) {
+  const { t } = useTranslation('hotel');
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   const lat = latitude != null && latitude !== '' ? Number(latitude) : null;
@@ -88,7 +90,7 @@ export function HotelMap({ latitude, longitude, name, address, height = 160 }: H
         </Text>
         <View className="flex-row items-center gap-1">
           <Text className="font-bevi-bold text-bronze" size="xs">
-            Chỉ đường
+            {t('directions')}
           </Text>
           <Ionicons name="open-outline" size={14} color={GUEST_COLORS.bronze} />
         </View>

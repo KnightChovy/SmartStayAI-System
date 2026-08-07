@@ -93,7 +93,7 @@ export default function HomeScreen() {
             className="font-bevi-bold tracking-tight text-on-surface"
             size="lg"
           >
-            StayHub
+            {t('common:appName')}
           </Heading>
           <View className="flex-row items-center gap-4">
             <Pressable

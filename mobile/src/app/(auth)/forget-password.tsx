@@ -20,7 +20,7 @@ export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const validation = emailError(email);
+  const validation = emailError(email, t);
 
   function handleSend() {
     setSubmitted(true);

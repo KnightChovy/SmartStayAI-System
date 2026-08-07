@@ -75,7 +75,7 @@ export default function RoomDetailScreen() {
         room.areaSqm ? { icon: 'expand-outline', label: `${room.areaSqm} m²` } : null,
         room.bedType ? { icon: 'bed-outline', label: room.bedType } : null,
         room.viewType ? { icon: 'eye-outline', label: room.viewType } : null,
-        { icon: 'people-outline', label: `Up to ${room.maxOccupancy} guests` },
+        { icon: 'people-outline', label: t('hotel:room.upToGuests', { count: room.maxOccupancy }) },
       ].filter(Boolean) as RoomMetaIcon[]
     : [];
 
@@ -98,6 +98,8 @@ export default function RoomDetailScreen() {
         guests: String(guests),
         basePrice: room.basePrice,
         totalPrice: room.totalPrice ?? '',
+        taxAmount: room.taxAmount ?? '',
+        feeAmount: room.feeAmount ?? '',
       },
     });
   }
@@ -205,7 +207,7 @@ export default function RoomDetailScreen() {
             <View className="flex-row items-center gap-1.5 mb-3.5 px-1">
               <Ionicons name={soldOut ? 'close-circle' : 'checkmark-circle'} size={15} color={soldOut ? '#DC2626' : '#16A34A'} />
               <Text size="sm" className={`font-bevi ${soldOut ? 'text-red-600' : 'text-green-700'}`}>
-                {soldOut ? 'No rooms left for these dates' : `${room.availableRooms} room${room.availableRooms > 1 ? 's' : ''} available`}
+                {soldOut ? t('hotel:room.noneLeft') : t('hotel:room.roomsLeft', { count: room.availableRooms })}
               </Text>
             </View>
           )}
@@ -270,7 +272,7 @@ export default function RoomDetailScreen() {
       >
         <View>
           <Text bold className="font-bevi-bold text-on-surface text-xl">{formatVnd(grandTotal)}</Text>
-          <Text size="2xs" className="font-bevi text-muted">for {nights} night{nights > 1 ? 's' : ''} (incl. taxes)</Text>
+          <Text size="2xs" className="font-bevi text-muted">{t('hotel:room.forNightsInclTaxes', { count: nights })}</Text>
         </View>
         <Pressable
           disabled={soldOut}
@@ -279,7 +281,7 @@ export default function RoomDetailScreen() {
           style={{ backgroundColor: soldOut ? GUEST_COLORS.hairline : GUEST_COLORS.bronze }}
         >
           <Text bold className={`font-bevi-bold ${soldOut ? 'text-muted text-[15px]' : 'text-on-surface text-[15px]'}`}>
-            {soldOut ? 'Sold out' : 'Book now'}
+            {soldOut ? t('hotel:room.soldOut') : t('hotel:room.bookNow')}
           </Text>
         </Pressable>
       </View>

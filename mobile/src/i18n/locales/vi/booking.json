@@ -1,4 +1,11 @@
 {
+  "validation": {
+    "missingHotelOrRoom": "Thiếu thông tin khách sạn hoặc loại phòng.",
+    "invalidDates": "Ngày nhận và trả phòng chưa hợp lệ.",
+    "checkOutBeforeCheckIn": "Ngày trả phòng phải sau ngày nhận phòng ít nhất một đêm.",
+    "maxNights": "Một lượt đặt tối đa {{count}} đêm.",
+    "guestsRange": "Số khách phải từ 1 đến 20."
+  },
   "list": {
     "title": "Đặt phòng của tôi",
     "error": "Không tải được danh sách đặt phòng.",
@@ -17,6 +24,7 @@
   },
   "checkout": {
     "title": "Hoàn tất đặt phòng",
+    "yourHotel": "Khách sạn của bạn",
     "steps": {
       "details": "Thông tin khách",
       "review": "Xem lại & xác nhận"
@@ -30,6 +38,13 @@
     "specialRequests": "Yêu cầu đặc biệt (không bắt buộc)",
     "specialRequestsPlaceholder": "Nhận phòng muộn, tầng cao, thêm giường…",
     "priceDetails": "Chi tiết giá",
+    "review": {
+      "guest": "Khách",
+      "email": "Email",
+      "phone": "Số điện thoại",
+      "requests": "Yêu cầu"
+    },
+    "holdNote": "Chúng tôi sẽ giữ phòng cho bạn. Bạn có thể thanh toán an toàn sau khi xác nhận.",
     "continue": "Tiếp tục",
     "confirm": "Xác nhận đặt phòng",
     "creating": "Đang tạo…",
@@ -37,26 +52,74 @@
   },
   "success": {
     "title": "Đã xác nhận đặt phòng!",
+    "pendingBody": "Phòng của bạn đang được giữ. Hoàn tất thanh toán để đảm bảo kỳ nghỉ.",
+    "confirmedBody": "Email xác nhận đã được gửi cho bạn. Đưa mã bên dưới khi nhận phòng.",
     "bookingCode": "Mã đặt phòng",
     "scanAtDesk": "Quét mã tại quầy lễ tân",
-    "payNow": "Thanh toán qua VNPay",
+    "payNow": "Thanh toán ngay",
     "viewBooking": "Xem đặt phòng",
     "myBookings": "Đặt phòng của tôi"
+  },
+  "payment": {
+    "title": "Phương thức thanh toán",
+    "payNow": "Thanh toán ngay",
+    "choosePayment": "Chọn cách thanh toán",
+    "payError": "Không thể bắt đầu thanh toán. Vui lòng thử lại.",
+    "dueNow": "Còn phải trả",
+    "holdCountdown": "Giữ chỗ còn {{time}}",
+    "payWithVnpay": "Thanh toán qua VNPay",
+    "payWithSepay": "Chuyển khoản QR",
+    "payWithWallet": "Trả bằng ví ({{balance}})",
+    "payWithWalletPartial": "Trả {{balance}} bằng ví (còn {{remaining}})",
+    "walletMethod": "Ví StayHub",
+    "walletUse": "Dùng {{amount}} trong ví",
+    "walletBalanceLine": "Số dư ví: {{balance}}",
+    "walletCovers": "Ví của bạn đủ trả toàn bộ đơn này — không có khoản nào đi qua cổng thanh toán.",
+    "walletPartialSplit": "Ví trả được {{applied}}, còn {{remaining}} bạn thanh toán bằng cách bên dưới.",
+    "walletPaidPartialTitle": "Đã trừ ví",
+    "walletPaidPartial": "{{amount}} đã bị trừ khỏi ví. Còn {{remaining}} cần thanh toán."
   },
   "detail": {
     "title": "Chi tiết đặt phòng",
     "error": "Không tải được đặt phòng này.",
     "bookingCode": "Mã đặt phòng",
+    "cancellationReason": "Lý do: {{reason}}",
     "showQr": "Đưa mã QR này khi nhận phòng",
     "modify": "Thay đổi đặt phòng",
     "modifySent": "Đã gửi yêu cầu thay đổi",
     "modifySentBody": "Khách sạn sẽ sớm xác nhận tình trạng phòng.",
+    "newDatesPrefix": "Ngày mới:",
     "priceDetails": "Chi tiết giá",
+    "roomLine_one": "Phòng × {{count}} đêm",
+    "roomLine_other": "Phòng × {{count}} đêm",
+    "discount": "Giảm giá",
+    "tax": "Thuế",
+    "fee": "Phí dịch vụ",
+    "amountPaid": "Đã trả",
+    "info": {
+      "checkIn": "Nhận phòng",
+      "checkOut": "Trả phòng",
+      "nights": "Số đêm",
+      "guests": "Số khách",
+      "requests": "Yêu cầu"
+    },
     "cancel": "Huỷ đặt phòng",
+    "cancelling": "Đang huỷ…",
     "cancelTitle": "Huỷ đặt phòng",
     "cancelBody": "Bạn có chắc muốn huỷ đặt phòng này? Thao tác không thể hoàn tác.",
     "cancelConfirm": "Có, huỷ",
     "keep": "Giữ đặt phòng",
     "cancelFailed": "Không thể huỷ"
+  },
+  "sepay": {
+    "title": "Chuyển khoản ngân hàng (SePay)",
+    "subtitle": "Quét QR hoặc chuyển khoản thủ công",
+    "amount": "Số tiền",
+    "bank": "Ngân hàng",
+    "account": "Số tài khoản",
+    "content": "Nội dung chuyển khoản",
+    "keepContent": "Giữ nguyên nội dung chuyển khoản như trên — hệ thống dựa vào đó để tự động đối soát.",
+    "waiting": "Đang chờ chuyển khoản…",
+    "payLater": "Thanh toán sau"
   }
 }

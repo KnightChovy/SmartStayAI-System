@@ -1,50 +1,25 @@
-import { useState } from 'react';
 import { View, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import * as WebBrowser from 'expo-web-browser';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Text } from '@/components/ui/text';
 import { Heading } from '@/components/ui/heading';
 import { BookingStatusBadge } from '@/components/shared/BookingStatusBadge';
+import { PriceSummary } from '@/components/shared/PriceSummary';
 import { QRVoucher } from '@/components/shared/QRVoucher';
+import { PayNowAction } from '@/components/booking';
 import { useGetBooking } from '@/hooks/bookings';
-import { useCreateVnpayPayment } from '@/hooks/payments';
 import { formatVnd } from '@/utils/formatCurrency';
 import { formatDateShort } from '@/utils/formatDate';
 import { GUEST_COLORS } from '@/constants/guestTheme';
-
-
-/** Lấy message lỗi từ axios error mà không dùng `any`. */
-function errorMessage(err: unknown, fallback: string): string {
-  if (err && typeof err === 'object' && 'response' in err) {
-    const resp = (err as { response?: { data?: { message?: string } } }).response;
-    return resp?.data?.message ?? fallback;
-  }
-  return fallback;
-}
 
 export default function BookingSuccessScreen() {
   const router = useRouter();
   const { t } = useTranslation(['booking', 'common']);
   const { bookingId = '' } = useLocalSearchParams<{ bookingId: string }>();
-  const { data: booking, isLoading, refetch, isRefetching } = useGetBooking(bookingId);
-  const createPayment = useCreateVnpayPayment();
-  const [payError, setPayError] = useState('');
-
-  async function handlePay() {
-    setPayError('');
-    try {
-      const { paymentUrl } = await createPayment.mutateAsync(bookingId);
-      await WebBrowser.openBrowserAsync(paymentUrl);
-      // VNPay redirect về web; quay lại app thì refetch để cập nhật trạng thái.
-      await refetch();
-    } catch (err) {
-      setPayError(errorMessage(err, 'Could not start VNPay payment. Please try again later.'));
-    }
-  }
+  const { data: booking, isLoading, refetch } = useGetBooking(bookingId);
 
   if (isLoading) {
     return (
@@ -56,6 +31,12 @@ export default function BookingSuccessScreen() {
   }
 
   const isPending = booking?.status === 'pending';
+  // Ví trả GHÉP thì `totalAmount` không còn là số đang chờ thu — luôn đọc
+  // `amountPaid`/`remainingAmount` do BE tính sẵn thay vì tự suy.
+  const paidSoFar = booking ? Number(booking.amountPaid) : 0;
+  const remainingAmount = booking ? Number(booking.remainingAmount) : 0;
+  const tax = booking ? Number(booking.taxAmount) : 0;
+  const fee = booking ? Number(booking.feeAmount) : 0;
 
   return (
     <SafeAreaView className="flex-1 bg-canvas" edges={['top', 'bottom']}>
@@ -68,9 +49,7 @@ export default function BookingSuccessScreen() {
           </View>
           <Heading size="2xl" className="font-bevi-bold text-on-surface mt-4">{t('booking:success.title')}</Heading>
           <Text size="sm" className="font-bevi text-on-surface-variant text-center mt-1.5 px-6">
-            {isPending
-              ? 'Your room is on hold. Complete payment to secure your stay.'
-              : 'A confirmation has been sent to your email. Show the code below at check-in.'}
+            {isPending ? t('booking:success.pendingBody') : t('booking:success.confirmedBody')}
           </Text>
         </View>
 
@@ -100,37 +79,47 @@ export default function BookingSuccessScreen() {
           )}
           <Row
             icon="calendar-outline"
-            text={`${formatDateShort(booking?.checkInDate)} → ${formatDateShort(booking?.checkOutDate)}${booking ? ` · ${booking.numNights} night${booking.numNights > 1 ? 's' : ''}` : ''}`}
+            text={`${formatDateShort(booking?.checkInDate)} → ${formatDateShort(booking?.checkOutDate)}${booking ? ` · ${t('common:nights', { count: booking.numNights })}` : ''}`}
           />
-          <Row icon="people-outline" text={`${booking?.numGuests ?? 0} guest${(booking?.numGuests ?? 0) > 1 ? 's' : ''}`} />
+          <Row icon="people-outline" text={t('common:guests', { count: booking?.numGuests ?? 0 })} />
 
-          <View className="flex-row items-center justify-between border-t border-hairline/30 pt-4 mt-2">
-            <Text className="font-bevi text-on-surface-variant">{t('common:total')}</Text>
-            <Text bold className="font-bevi-bold text-on-surface text-xl">{formatVnd(booking?.totalAmount)}</Text>
-          </View>
+          {booking && (
+            <View className="border-t border-hairline/30 pt-4 mt-2">
+              <PriceSummary
+                lines={[
+                  { label: t('booking:detail.roomLine', { count: booking.numNights }), value: Number(booking.subtotal) },
+                  ...(Number(booking.discountAmount) > 0
+                    ? [{ label: t('booking:detail.discount'), value: -Number(booking.discountAmount) }]
+                    : []),
+                  ...(tax > 0 ? [{ label: t('booking:detail.tax'), value: tax }] : []),
+                  ...(fee > 0 ? [{ label: t('booking:detail.fee'), value: fee }] : []),
+                ]}
+                total={booking.totalAmount}
+              />
+            </View>
+          )}
+          {paidSoFar > 0 && (
+            <View className="mt-2 gap-1.5">
+              <View className="flex-row items-center justify-between">
+                <Text size="sm" className="font-bevi text-on-surface-variant">{t('booking:detail.amountPaid')}</Text>
+                <Text size="sm" bold className="font-bevi-bold text-green-600">-{formatVnd(paidSoFar)}</Text>
+              </View>
+              <View className="flex-row items-center justify-between">
+                <Text size="sm" bold className="font-bevi-bold text-on-surface">{t('booking:payment.dueNow')}</Text>
+                <Text size="sm" bold className="font-bevi-bold text-on-surface">{formatVnd(remainingAmount)}</Text>
+              </View>
+            </View>
+          )}
         </View>
 
-        {payError ? (
-          <View className="bg-red-50 rounded-field px-3 py-2.5 mt-3 flex-row items-start gap-2">
-            <Ionicons name="alert-circle" size={18} color="#DC2626" />
-            <Text size="sm" className="font-bevi text-red-600 flex-1">{payError}</Text>
-          </View>
-        ) : null}
       </ScrollView>
 
       {/* Actions */}
       <View className="px-4 pt-2 pb-2 gap-3">
-        {isPending && (
-          <Pressable
-            disabled={createPayment.isPending || isRefetching}
-            onPress={handlePay}
-            className="bg-bronze rounded-card py-3.5 flex-row items-center justify-center gap-2"
-          >
-            <Ionicons name="card-outline" size={18} color={GUEST_COLORS.onSurface} />
-            <Text bold className="font-bevi-bold text-on-surface text-base">
-              {createPayment.isPending ? 'Opening VNPay…' : 'Pay now with VNPay'}
-            </Text>
-          </Pressable>
+        {isPending && booking && (
+          <View className="flex-row">
+            <PayNowAction booking={booking} label={t('booking:success.payNow')} onPaid={refetch} />
+          </View>
         )}
         <View className="flex-row gap-3">
           <Pressable

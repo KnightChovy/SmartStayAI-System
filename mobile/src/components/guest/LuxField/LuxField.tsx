@@ -1,6 +1,7 @@
 import { forwardRef } from 'react';
 import { Pressable, TextInput, View, type TextInputProps } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { Text } from '@/components/ui/text';
 import { cn } from '@/lib/cn';
 import { GUEST_COLORS, PLACEHOLDER } from '@/constants/guestTheme';
@@ -29,6 +30,7 @@ export const LuxField = forwardRef<TextInput, LuxFieldProps>(function LuxField(
   { label, error, icon, onToggleSecure, secureVisible, containerClassName, ...inputProps },
   ref
 ) {
+  const { t } = useTranslation('auth');
   return (
     <View className={cn('mb-4', containerClassName)}>
       <Text className="mb-2 font-bevi-bold uppercase tracking-[1.2px] text-on-surface-variant" size="xs">
@@ -55,7 +57,7 @@ export const LuxField = forwardRef<TextInput, LuxFieldProps>(function LuxField(
             onPress={onToggleSecure}
             hitSlop={8}
             accessibilityRole="button"
-            accessibilityLabel={secureVisible ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+            accessibilityLabel={secureVisible ? t('fields.hidePassword') : t('fields.showPassword')}
           >
             <Ionicons
               name={secureVisible ? 'eye-off-outline' : 'eye-outline'}
