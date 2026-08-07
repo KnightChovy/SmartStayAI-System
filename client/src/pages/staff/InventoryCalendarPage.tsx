@@ -415,7 +415,7 @@ function DayCell({
             {cell.available}
           </button>
         </TooltipTrigger>
-        <TooltipContent className="flex-col items-start gap-0.5 py-2">
+        <TooltipContent side="bottom" className="flex-col items-start gap-0.5 py-2">
           <span className="font-medium">
             {weekdayLabel(cell.date)} {dayMonthLabel(cell.date)} · {roomTypeName}
           </span>
