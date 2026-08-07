@@ -120,8 +120,16 @@ export default function BookingCheckoutPage() {
   // khi khách quay lại bước trước rồi tới lại (các bước chỉ là render có điều kiện, không unmount).
   const [agreedTerms, setAgreedTerms] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
-  // Khách chủ động chọn tiêu số dư ví cho đơn này (mặc định KHÔNG).
-  const [useWalletCredit, setUseWalletCredit] = useState(false);
+  /**
+   * Có tiêu số dư ví cho đơn này không — **mặc định CÓ** (tick sẵn), khách bỏ chọn được.
+   *
+   * Lưu `null` = khách chưa động vào, chứ không lưu thẳng `false`: số dư ví về **bất đồng bộ**
+   * (`GET /users/me/wallet`), nên khởi tạo bằng `useState(true)` sẽ tick sẵn cả với khách không
+   * có ví, còn "sửa lại khi ví về" thì phải setState trong effect — thứ repo cấm. Đọc `?? true`
+   * lúc render là xong, không effect nào cả.
+   */
+  const [walletChoice, setWalletChoice] = useState<boolean | null>(null);
+  const useWalletCredit = walletChoice ?? true;
   /**
    * Đã trừ ví cho booking đang tạo hay chưa. BẮT BUỘC phải nhớ: `handleConfirm` chạy lại được
    * (bấm lại sau khi thấy banner đổi giá, hoặc thanh toán cổng lỗi rồi thử lại) mà booking thì
@@ -517,7 +525,7 @@ export default function BookingCheckoutPage() {
                   <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-outline-variant/60 bg-surface-container-low p-4">
                     <Checkbox
                       checked={useWallet}
-                      onCheckedChange={v => setUseWalletCredit(v === true)}
+                      onCheckedChange={v => setWalletChoice(v === true)}
                       className="mt-0.5"
                     />
                     <span className="min-w-0">

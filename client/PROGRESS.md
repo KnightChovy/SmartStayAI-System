@@ -2,6 +2,26 @@
 
 This file tracks the accomplished tasks, resolved user requests, and visual/functional refactoring completed in the client application.
 
+## August 8, 2026 (continued 2)
+
+- [x] **Guest · đưa CHÍNH SÁCH HUỶ lên đầu trang chi tiết khách sạn, gọi tên chính sách bằng `GET /hotels/cancellation-presets`**:
+  - **Vì sao đưa lên đầu**: đây là điều kiện quyết định khách **mất bao nhiêu tiền nếu đổi ý** — đắt hơn mọi tiện nghi bên dưới — nhưng trước đó chỉ là một dòng lẫn trong `HotelPolicies` ở **giữa trang**, và bảng bậc thang thì **không hiển thị ở đâu cả** (chỉ hiện sau khi đã đặt, lúc bấm Huỷ). Nay là khối riêng ngay dưới phần mô tả, trên cả Tiện nghi.
+  - **`components/guest/HotelCancellationPolicy.tsx` (mới)**: tên preset + câu tóm tắt + **bảng bậc thang** đầy đủ + dòng no-show + ghi chú đơn giữ chính sách lúc đặt. Thêm mục **Chính sách huỷ** vào `AnchorNav` (chỉ neo khi KS thật sự khai thang — neo tới section không tồn tại là cuộn vào chỗ trống).
+  - **Endpoint presets dùng để GỌI TÊN chính sách, không phải để lấy dữ liệu**: `hotel.cancellationRule` đã có sẵn thang số, nhưng bắt khách đọc một bảng số trần thì khó nhớ. Đối chiếu thang của KS với 5 preset của BE ⇒ hiện được badge **"Vừa phải"**. Đã đo trên đúng KS user đưa: thang của nó **khớp chính xác** preset `moderate`. Không khớp preset nào (đối tác tự soạn thang) thì bảng vẫn đủ nghĩa, chỉ thiếu cái tên — không bịa.
+  - **So thang bằng TỪNG FIELD, không `JSON.stringify`**: Prisma round-trip JSON đảo thứ tự khoá (`{refundPercent, minHoursBefore}` thay vì ngược lại) nên so chuỗi sẽ báo "khác nhau" trên hai thang y hệt và **preset đang dùng không bao giờ khớp** (đúng cái bẫy đã ghi lại hồi làm `CancellationPolicyModal` bên partner).
+  - **Gộp các bậc liền nhau CÙNG mức hoàn**: thang thật của KS có **hai** mốc 100% (720h và 360h) — mốc nhỏ hơn đã bao trọn mốc lớn hơn, in ra hai dòng "hoàn 100%" chỉ khiến người đọc đi tìm khác biệt không tồn tại. Giữ mốc **nhỏ nhất** của mỗi mức (rộng lượng nhất với khách): `15 ngày → 100%`, `7 ngày → 50%`, `3 ngày → 30%`, muộn hơn → `0%`.
+  - **Mốc giờ quy về NGÀY** khi chia hết cho 24 (khách nghĩ theo ngày, không theo giờ); và khi URL có `checkIn` thì quy hạn huỷ miễn phí ra **một ngày cụ thể** — nhưng **im lặng nếu hạn đó đã trôi qua**, hứa "huỷ miễn phí tới hết <ngày hôm qua>" còn tệ hơn không nói gì.
+  - **Câu tóm tắt dùng CHUNG `CancellationLine`** với thẻ phòng bên dưới ⇒ hai chỗ không thể nói lệch nhau.
+  - **`Date.now()` gọi thẳng trong render bị lint `react-hooks/purity` chặn** (đúng: mỗi lần re-render ra một giá trị khác) ⇒ chốt một mốc lúc mount bằng `useState(() => Date.now())`.
+  - **VERIFY trên trình duyệt thật, đúng URL user đưa (BE deploy) — 16/16**: trang **có gọi** `GET /hotels/cancellation-presets`; badge ra đúng **"Vừa phải"**; bảng ra đúng 3 mốc + no-show; **không lặp mốc 30 ngày** (gộp đúng); khối nằm **trên** Tiện nghi và **trên** danh sách phòng (đo bằng toạ độ y thật); thanh neo có mục mới; **0 lỗi console**, **0 tràn ngang**. `tsc`/`eslint`/`build` sạch, i18n hotel vi/en **cân bằng 149/149**.
+
+- [x] **Ví: TICK SẴN mặc định (theo yêu cầu), khách bỏ chọn được**:
+  - Trước đó cố ý để **không** tick (tiền trong ví là tiền khách từng huỷ đơn nhận lại, coi như khoản để dành). User chốt ngược lại: cứ tự động dùng ví, ai không muốn thì bỏ chọn.
+  - **Lưu `boolean | null` chứ không lưu thẳng `true`**: số dư ví về **bất đồng bộ** (`GET /users/me/wallet`), khởi tạo `useState(true)` sẽ tick sẵn cả với khách **không có ví**, còn "sửa lại khi ví về" thì phải `setState` trong effect — thứ repo cấm. `null` = khách chưa động vào, đọc `?? true` lúc render là xong, **không effect nào**.
+  - Hint của ô chọn thêm vế **"bỏ chọn nếu bạn muốn giữ nguyên số dư"** — tick sẵn mà không nói cách tắt là ép dùng.
+  - **VERIFY — 20/20 (trả ghép) + 18/18 (ví đủ) + 8/8 (nút Thanh toán ngay)**: ô ví **tick sẵn ngay khi vào bước Thanh toán** và **tick sẵn đó không trừ một đồng nào**; bỏ chọn được ⇒ bảng giá hết dòng trừ ví; tick lại được; tiền vẫn chỉ rời ví đúng lúc bấm Xác nhận.
+  - ⚠️ **Tick sẵn làm lỗ hổng BE ở mục dưới dễ chạm hơn**: khách trả ghép mà bấm lướt rồi bỏ ngang ở cổng sẽ mất phần đã trừ khi cron huỷ đơn quá hạn. Cảnh báo amber vẫn hiện, nhưng đây là lý do nên ưu tiên vá `releaseExpiredHolds`.
+
 ## August 8, 2026 (continued)
 
 - [x] **Mở lại trả ghép bằng ví (đảo quyết định ở mục ngay dưới, theo yêu cầu): ví ít hơn tiền phòng vẫn dùng được, bảng giá bên phải bày rõ phép chia, chọn cổng trả phần còn thiếu**:
