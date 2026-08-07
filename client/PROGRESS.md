@@ -2,6 +2,13 @@
 
 This file tracks the accomplished tasks, resolved user requests, and visual/functional refactoring completed in the client application.
 
+## August 7, 2026 (continued 6)
+
+- [x] **Staff · `/staff/inventory` — chip "Available" đếm dư phòng đã nghỉ bán, lệch với "Free to give out" ngay trên cùng một màn** (user báo: lưới ghi "3" nhưng khu phòng ghi "Available 4"):
+  - **Nguyên nhân**: `RoomDayBoard.tsx` có **hai chỗ đếm "còn trống" độc lập, chỉ MỘT chỗ lọc `room.isActive`**. `freeToGiveOut`/`vacantNow` (dòng "10 Vacant now − 6 Held = X Free to give out") cố tình loại phòng đã `isActive=false` ("đã nghỉ bán, không phát cho khách được" — đúng comment sẵn có trong file), nên khớp con số trên lưới (`GET /hotels/:id/inventory/calendar` cũng chỉ đếm phòng active). Nhưng `counts` (nguồn cho chip filter "Available N" + danh sách phòng khi bấm chip đó) đếm thẳng theo `entry.state === 'available'` **không lọc `isActive`** — `buildRoomDayView` vẫn gán state `'available'` cho phòng đã nghỉ bán (nó không dính block, không có khách) nên phòng đó vẫn lọt vào bucket "Available" của chip dù không thể phát cho khách.
+  - **Sửa**: thêm điều kiện dùng chung `isCountableAvailable` (chỉ có tác dụng khi `state==='available'`, các state khác không đổi) — áp cho cả `counts.available` (chip) **lẫn** `visible` (danh sách hiện ra khi bấm chip "Available"), để chip và danh sách luôn khớp nhau, và khớp luôn với "Free to give out"/con số trên lưới. Phòng đã nghỉ bán **vẫn xem được** qua chip "All" — tile của nó vốn đã có nhãn riêng "Retired room — not sold on any date." + làm mờ, không mất thông tin, chỉ không còn bị tính nhầm vào "còn trống".
+  - **Verify**: `tsc -p tsconfig.app.json --noEmit` + `eslint` sạch trên file sửa.
+
 ## August 7, 2026 (continued 5)
 
 - [x] **Sửa merge conflict resolve lộn — dùng lại `ChatMessageText` của đồng đội thay cho `LinkifiedText` tự viết (mất cả nút thanh toán lẫn ảnh QR SePay)**:

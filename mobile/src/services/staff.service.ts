@@ -11,6 +11,7 @@ import type {
   CreateRoomBlockPayload,
   HousekeepingParams,
   HousekeepingTask,
+  InventoryCalendarResponse,
   Message,
   ReplyPayload,
   RoomBlock,
@@ -223,6 +224,20 @@ export const staffService = {
   async resolveRoomBlock(hotelId: string, roomId: string, blockId: string): Promise<RoomBlock> {
     const { data } = await api.delete<RoomBlock>(
       `/hotels/${hotelId}/rooms/${roomId}/blocks/${blockId}`,
+    );
+    return data;
+  },
+
+  /** `GET /hotels/:hotelId/inventory/calendar` — số phòng còn bán được mỗi đêm, theo loại phòng.
+   *  `to` tối đa cách `from` 92 ngày (BE chặn). */
+  async getInventoryCalendar(
+    hotelId: string,
+    from: string,
+    to: string,
+  ): Promise<InventoryCalendarResponse> {
+    const { data } = await api.get<InventoryCalendarResponse>(
+      `/hotels/${hotelId}/inventory/calendar`,
+      { params: { from, to } },
     );
     return data;
   },

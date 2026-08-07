@@ -4,6 +4,7 @@ import type {
   HousekeepingStatus,
   RoomStatus,
 } from '@/types/staff.type';
+import type { RoomDayState } from '@/utils/roomDayView';
 
 /** Raw hex for props that don't accept className (icons, spinner, tab bar, camera). */
 export const STAFF_COLORS = {
@@ -47,6 +48,16 @@ export const ROOM_STATUS_STYLE: Record<RoomStatus, StatusStyle> = {
   cleaning: { label: 'Cleaning', bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-500' },
   maintenance: { label: 'Maintenance', bg: 'bg-rose-50', text: 'text-rose-700', dot: 'bg-rose-500' },
   blocked: { label: 'Blocked', bg: 'bg-gray-100', text: 'text-gray-600', dot: 'bg-gray-400' },
+};
+
+/** Trạng thái phòng THEO MỘT NGÀY CỤ THỂ (bản đồ phòng của lịch tồn kho) — khác `ROOM_STATUS_STYLE`
+ *  vốn chỉ đúng cho HÔM NAY. `held` = booking confirmed đã gán trước, chưa check-in. */
+export const ROOM_DAY_STATE_STYLE: Record<RoomDayState, StatusStyle> = {
+  available: { label: 'Available', bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-500' },
+  held: { label: 'Held', bg: 'bg-sky-50', text: 'text-sky-700', dot: 'bg-sky-500' },
+  occupied: { label: 'Occupied', bg: 'bg-blue-50', text: 'text-blue-700', dot: 'bg-blue-500' },
+  maintenance: { label: 'Maintenance', bg: 'bg-rose-50', text: 'text-rose-700', dot: 'bg-rose-500' },
+  out_of_service: { label: 'Out of service', bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-500' },
 };
 
 /** Housekeeping task status. */
