@@ -18,6 +18,13 @@ export class AdminController {
     res.send(result);
   });
 
+  // [Admin/PM] Doanh thu chi tiết theo từng đối tác / khách sạn / thành phố
+  getRevenueBreakdown = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const options = pick(req.query, ['groupBy', 'from', 'to', 'partnerId', 'sortBy', 'limit', 'page']);
+    const result = await adminService.getRevenueBreakdown(options as Parameters<typeof adminService.getRevenueBreakdown>[0]);
+    res.send(result);
+  });
+
   // ===== Pha 3 — Hoa hồng / payout =====
   listCommissions = catchAsync(async (req: Request, res: Response): Promise<void> => {
     const filter = pick(req.query, ['status', 'partnerId']);
