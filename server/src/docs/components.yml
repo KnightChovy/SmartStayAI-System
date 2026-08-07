@@ -995,10 +995,17 @@ components:
         refundAmount: { type: string, description: 'Refunded if cancelling now = paidAmount × refundPercent' }
         penaltyAmount: { type: string, description: 'paidAmount - refundAmount — the part kept by the hotel' }
         hoursBeforeCheckIn: { type: number, description: 'Hours left until check-in time; negative once it has passed' }
+        isUnpaidPending:
+          type: boolean
+          description: >
+            Booking is still `pending` AND not fully paid. The tiered policy does NOT apply: cancelling
+            refunds 100% of what was paid, and the wallet part is credited back instantly (no hotel
+            approval). When true, `appliedTier` and `nextTier` are null and `refundPercent` is 100 —
+            do not render the tier table or a "refund drops after X" warning.
         appliedTier:
           nullable: true
           allOf: [{ $ref: '#/components/schemas/CancellationTier' }]
-          description: 'The tier applied right now (null once past check-in)'
+          description: 'The tier applied right now (null once past check-in, or when isUnpaidPending)'
         refundPercent: { type: integer, description: 'Percent refunded right now' }
         tiers: { type: array, items: { $ref: '#/components/schemas/CancellationTier' }, description: 'Full ladder for the table' }
         nextTier:
