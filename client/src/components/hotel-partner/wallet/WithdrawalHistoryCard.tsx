@@ -56,12 +56,16 @@ export function WithdrawalHistoryCard({ hotelId }: WithdrawalHistoryCardProps) {
           <TableSkeleton rows={4} columns={5} />
         </div>
       ) : rows.length === 0 ? (
-        <div className="flex flex-col items-center justify-center gap-3 px-6 py-20 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100">
-            <CreditCard className="h-7 w-7 text-slate-300" />
+        // `py-20` cũ đẻ ra một khoảng trống cao gần nửa trang cho một câu 6 chữ. Rút gọn và
+        // nói luôn điều sẽ xảy ra, thay vì chỉ thông báo "chưa có gì".
+        <div className="flex flex-col items-center justify-center gap-2 px-6 py-10 text-center">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100">
+            <CreditCard className="h-5 w-5 text-slate-300" />
           </div>
-          <p className="text-sm text-slate-400">
-            You have not requested a payout yet
+          <p className="text-sm text-slate-500">No payout requests yet</p>
+          <p className="max-w-xs text-xs text-slate-400">
+            When you request a payout it appears here, with its status and the
+            bank reference once the transfer is made.
           </p>
         </div>
       ) : (

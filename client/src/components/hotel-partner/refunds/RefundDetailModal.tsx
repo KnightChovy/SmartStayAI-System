@@ -103,7 +103,7 @@ export function RefundDetailModal({
             tone="text-red-600"
           />
           <Amount
-            label="Hotel keeps"
+            label="Held Balance"
             value={formatCurrency(
               Number(refund.payment.amount) - Number(refund.amount)
             )}
