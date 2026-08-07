@@ -66,6 +66,13 @@ export default function PayNowAction({
   // (kể cả đơn đã xong), gọi vô điều kiện là bắn thừa một request trên mỗi dòng danh sách.
   const { data: wallet } = useMyWallet({ enabled: awaitingPayment });
   const walletBalance = Number(wallet?.balanceAvailable ?? 0);
+  /**
+   * Số còn thiếu lấy thẳng từ BE. Đơn trả GHÉP (ví một phần + cổng phần còn lại) khiến
+   * `totalAmount` không còn là số sắp bị thu, mà tự cộng lại `payments[]` ở đây thì mỗi màn một
+   * công thức — lệch với số cổng thực thu là chuyện sớm muộn.
+   */
+  const remaining = Number(booking.remainingAmount);
+  const walletCoversAll = walletBalance >= remaining;
 
   const handleConfirmed = useCallback(() => {
     setSepayInfo(null);
@@ -80,8 +87,8 @@ export default function PayNowAction({
   const busy = createVnpay.isPending || createSepay.isPending || payWallet.isPending;
 
   /**
-   * Trả bằng số dư ví. KHÔNG phải all-or-nothing: ví thiếu thì BE vẫn trừ hết phần ví lo được và
-   * giữ đơn ở `pending` để trả nốt qua cổng ⇒ phải đọc `remainingToPay` chứ không coi 201 là xong.
+   * Trả bằng số dư ví. Ví thiếu vẫn dùng được: BE trừ hết phần ví lo được và giữ đơn ở `pending`
+   * để trả nốt qua cổng ⇒ phải đọc `remainingToPay` chứ không coi 201 là đã xong.
    */
   const payFromWallet = async () => {
     try {
@@ -138,13 +145,19 @@ export default function PayNowAction({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
-            {/* Ví chỉ hiện khi thật sự có tiền — mời trả bằng ví rỗng là dẫn thẳng vào lỗi 400. */}
+            {/* Ví chỉ hiện khi thật sự có tiền — mời trả bằng ví rỗng là dẫn thẳng vào lỗi 400.
+                Ví thiếu vẫn mời, nhưng nhãn nói rõ nó chỉ gánh được một phần. */}
             {walletBalance > 0 && (
               <DropdownMenuItem onSelect={() => payFromWallet()}>
                 <Wallet className="size-4" />
-                {t('payment.payWithWallet', {
-                  balance: formatCurrency(wallet?.balanceAvailable),
-                })}
+                {walletCoversAll
+                  ? t('payment.payWithWallet', {
+                      balance: formatCurrency(wallet?.balanceAvailable),
+                    })
+                  : t('payment.payWithWalletPartial', {
+                      balance: formatCurrency(walletBalance),
+                      remaining: formatCurrency(remaining - walletBalance),
+                    })}
               </DropdownMenuItem>
             )}
             <DropdownMenuItem onSelect={() => pay('vnpay')}>

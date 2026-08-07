@@ -63,12 +63,18 @@
     "tax": "Taxes",
     "fee": "Service fee",
     "totalPaid": "Total paid",
-    "evoucher": "Your e-voucher"
+    "evoucher": "Your e-voucher",
+    "holdExpiredPill": "Hold expired",
+    "holdExpiredTitle": "This booking has passed its payment hold",
+    "holdExpiredBody": "The room has been released. We will cancel this booking within a few minutes — please book again.",
+    "holdExpiredWallet": "The room has been released. We will cancel this booking within a few minutes and return the {{amount}} you paid from your wallet, with no fee."
   },
   "refund": {
     "title": "Refund",
     "amountLabel": "Refund amount: ",
     "reasonLabel": "Reason: {{reason}}",
+    "walletAutoRefunded": "This booking was cancelled because the hold expired. The {{amount}} you paid from your wallet has already been returned in full, with no fee.",
+    "openWallet": "View my wallet",
     "noneTitle": "Under the property's cancellation policy, this booking has no refund.",
     "rejectedTitle": "The property rejected your refund request",
     "rejectedNoReason": "The property didn't give a reason. Please contact them for details.",
@@ -91,7 +97,8 @@
         "title": "Refunded",
         "desc": "The transfer has been made; it may take a few business days to arrive"
       }
-    }
+    },
+    "walletRefundedOnCancel": "Booking cancelled. The {{amount}} you paid from your wallet has already been returned in full, with no fee."
   },
   "notifications": {
     "title": "Notifications",
@@ -241,6 +248,9 @@
     "ofPaid": "{{percent}}% of the {{paid}} you paid",
     "hotelKeeps": "The property keeps",
     "nextTierWarning": "After {{at}} the refund drops to {{percent}}%. Cancel before then if you've made up your mind.",
+    "unconfirmedFullRefund": "The property hasn't confirmed this booking yet, so cancelling now gets you back everything you've paid, with no fee.",
+    "unconfirmedWalletBack": "The {{amount}} you paid from your wallet goes straight back into your StayHub wallet as soon as you cancel — no waiting for the property to approve it.",
+    "refundMethodRemainingOnly": "This only covers the {{amount}} you paid at the payment gateway — the wallet part goes back to your wallet right away.",
     "policyLadder": "See the cancellation policy",
     "refundPercent": "{{percent}}% refunded",
     "currentTier": "applies now",

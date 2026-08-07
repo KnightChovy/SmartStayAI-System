@@ -24,6 +24,7 @@ import HotelMap from '@/components/shared/HotelMap';
 import EmptyState from '@/components/shared/EmptyState';
 import HotelReviews from '@/components/guest/HotelReviews';
 import HotelAmenities from '@/components/guest/HotelAmenities';
+import HotelCancellationPolicy from '@/components/guest/HotelCancellationPolicy';
 import HotelPolicies from '@/components/guest/HotelPolicies';
 import BackLink from '@/components/shared/BackLink';
 import Breadcrumb, { type Crumb } from '@/components/shared/Breadcrumb';
@@ -191,12 +192,17 @@ export default function HotelDetailPage() {
     (mapLat != null && mapLng != null) || (hotel?.nearbyPlaces?.length ?? 0) > 0;
   const sections = useMemo<AnchorSection[]>(() => {
     const list: AnchorSection[] = [{ id: 'overview', label: t('anchorNav.overview') }];
+    // Chỉ neo khi KS thật sự khai thang huỷ — `HotelCancellationPolicy` tự ẩn khi không có,
+    // neo tới một section không tồn tại là cuộn vào chỗ trống.
+    if (hotel?.cancellationRule?.tiers.length) {
+      list.push({ id: 'cancellation', label: t('anchorNav.cancellation') });
+    }
     if (hotel?.amenities?.length) list.push({ id: 'amenities', label: t('anchorNav.amenities') });
     if (hasLocation) list.push({ id: 'location', label: t('anchorNav.location') });
     list.push({ id: 'rooms', label: t('anchorNav.rooms') });
     list.push({ id: 'reviews', label: t('anchorNav.reviews') });
     return list;
-  }, [hotel?.amenities?.length, hasLocation, t]);
+  }, [hotel?.amenities?.length, hotel?.cancellationRule?.tiers.length, hasLocation, t]);
 
   // Breadcrumb phân cấp: Trang chủ / Thành phố / Khách sạn (SS-702).
   // Const thường (không useMemo) — React Compiler tự memo; chỉ dùng để render, không vào effect nào.
@@ -373,13 +379,26 @@ export default function HotelDetailPage() {
           )}
         </div>
 
-        {/* Hỗ trợ ra quyết định: tiện nghi → chính sách → vị trí, trước khi khách chọn phòng */}
+        {/*
+          Chính sách huỷ đứng NGAY dưới header, trên cả tiện nghi: đây là điều kiện quyết định
+          khách mất bao nhiêu tiền nếu đổi ý, đắt hơn mọi tiện nghi bên dưới. Trước đây nó chỉ là
+          một dòng lẫn trong danh sách chính sách chung ở giữa trang.
+        */}
+        <HotelCancellationPolicy rule={hotel?.cancellationRule} checkIn={checkIn} />
+
+        {/*
+          Các chính sách còn lại (giờ nhận/trả, cọc, trẻ em, thú cưng…) đứng NGAY SAU chính sách
+          huỷ: cùng là điều kiện ràng buộc khách, đọc liền một mạch thì mới so được với nhau.
+          Tách chúng ra xa nhau bằng khối tiện nghi là bắt khách nhớ điều kiện qua cả một màn hình.
+        */}
+        {hotel && <HotelPolicies hotel={hotel} />}
+
+        {/* Sau phần điều kiện mới tới phần "khách sạn có gì": tiện nghi → vị trí → chọn phòng */}
         {hotel?.amenities && (
           <div id="amenities" className="scroll-mt-[var(--app-anchor-offset,7rem)]">
             <HotelAmenities amenities={hotel.amenities.map(a => a.amenity)} />
           </div>
         )}
-        {hotel && <HotelPolicies hotel={hotel} />}
 
         {/* Map — toạ độ từ DB, hoặc geocode từ địa chỉ khi DB chưa có lat/lng */}
         {hasLocation ? (

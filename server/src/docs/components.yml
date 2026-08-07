@@ -995,10 +995,17 @@ components:
         refundAmount: { type: string, description: 'Refunded if cancelling now = paidAmount × refundPercent' }
         penaltyAmount: { type: string, description: 'paidAmount - refundAmount — the part kept by the hotel' }
         hoursBeforeCheckIn: { type: number, description: 'Hours left until check-in time; negative once it has passed' }
+        isUnpaidPending:
+          type: boolean
+          description: >
+            Booking is still `pending` AND not fully paid. The tiered policy does NOT apply: cancelling
+            refunds 100% of what was paid, and the wallet part is credited back instantly (no hotel
+            approval). When true, `appliedTier` and `nextTier` are null and `refundPercent` is 100 —
+            do not render the tier table or a "refund drops after X" warning.
         appliedTier:
           nullable: true
           allOf: [{ $ref: '#/components/schemas/CancellationTier' }]
-          description: 'The tier applied right now (null once past check-in)'
+          description: 'The tier applied right now (null once past check-in, or when isUnpaidPending)'
         refundPercent: { type: integer, description: 'Percent refunded right now' }
         tiers: { type: array, items: { $ref: '#/components/schemas/CancellationTier' }, description: 'Full ladder for the table' }
         nextTier:
@@ -1034,6 +1041,17 @@ components:
         taxAmount: { type: string, description: 'Tax frozen from the hotel tax policies at booking time' }
         feeAmount: { type: string, description: 'Service fees frozen from the hotel fee policies at booking time' }
         totalAmount: { type: string, description: 'subtotal - discountAmount + taxAmount + feeAmount' }
+        amountPaid:
+          type: string
+          description: >
+            Sum of this booking's `completed` payments. A booking can be paid in parts (wallet first,
+            gateway for the rest), so while it is pending this is usually less than totalAmount.
+        remainingAmount:
+          type: string
+          description: >
+            totalAmount - amountPaid, floored at 0. THIS is the amount the payment gateway will charge
+            next, so show it (not totalAmount) anywhere the guest is about to pay. Computed with the
+            same rule the gateway itself uses, so the two can never disagree.
         status: { type: string, enum: [pending, confirmed, checked_in, checked_out, cancelled, no_show] }
         source: { type: string, enum: [website, mobile_app, walk_in, ota] }
         specialRequests: { type: string, nullable: true }

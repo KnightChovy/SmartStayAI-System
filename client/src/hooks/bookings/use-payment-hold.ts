@@ -12,6 +12,13 @@ import type { Booking } from '@/types/booking.types';
 export interface PaymentHold {
   /** Đơn đang chờ tiền VÀ còn hạn giữ chỗ ⇒ được phép gọi endpoint thanh toán. */
   awaitingPayment: boolean;
+  /**
+   * Đơn vẫn `pending` nhưng hạn giữ chỗ ĐÃ trôi qua — cron `release-holds` chạy **5 phút/lần**
+   * nên có một khoảng đơn nằm ở trạng thái này. Không có cờ riêng thì UI im lặng: nút thanh toán
+   * đã ẩn (đúng), banner hạn giữ chỗ cũng ẩn theo, khách chỉ thấy một đơn "chờ xác nhận" không
+   * làm gì được và không ai giải thích.
+   */
+  expired: boolean;
   /** Mili-giây còn lại; `null` khi đơn không có hạn giữ chỗ (đơn tiền mặt confirm ngay). */
   msLeft: number | null;
   /** Đếm ngược dạng `m:ss`; `null` khi không có hạn. */
@@ -47,6 +54,7 @@ export function usePaymentHold(booking: Booking | null | undefined): PaymentHold
 
   return {
     awaitingPayment,
+    expired: !!isPending && msLeft !== null && msLeft <= 0,
     msLeft,
     countdown: msLeft === null ? null : formatCountdown(msLeft),
     deadlineLabel:

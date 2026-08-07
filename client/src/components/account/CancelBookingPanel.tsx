@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/cn';
 import { useCancelBooking, useRefundPreview } from '@/hooks/bookings';
 import type { CancellationTier, RefundBankAccount, RefundMethod } from '@/types/booking.types';
+import type { BookingPayment } from '@/types/payment.types';
 import {
   ACCOUNT_ERROR_KEYS,
   CANCEL_REASON_MAX,
@@ -19,6 +20,13 @@ import { formatCurrency } from '@/utils/formatCurrency';
 
 interface CancelBookingPanelProps {
   bookingId: string;
+  /**
+   * Các lần thanh toán của đơn — nhận qua prop chứ KHÔNG tự gọi lại `GET /bookings/:id`: trang chi
+   * tiết đã có sẵn dữ liệu này, mở thêm một observer nữa chỉ tốn một request lặp. Cần nó vì
+   * `refund-preview` chỉ nói TỔNG tiền hoàn, không nói phần nào trả bằng ví — mà phần ví lại về
+   * thẳng ví ngay, khác hẳn phần trả qua cổng (phải chờ khách sạn duyệt).
+   */
+  payments?: BookingPayment[];
   onClose: () => void;
   /** Đóng khối sau khi huỷ thành công. */
   onCancelled: () => void;
@@ -42,6 +50,7 @@ function formatMoment(iso: string): string {
  */
 export default function CancelBookingPanel({
   bookingId,
+  payments,
   onClose,
   onCancelled,
 }: CancelBookingPanelProps) {
@@ -71,14 +80,35 @@ export default function CancelBookingPanel({
   const data = preview.data;
   const refundAmount = Number(data?.refundAmount ?? 0);
   const penaltyAmount = Number(data?.penaltyAmount ?? 0);
-  // Chỉ hỏi nơi nhận tiền khi thật sự có tiền để hoàn — đơn chưa trả hoặc hoàn 0đ thì hỏi là thừa.
   const willRefund = Boolean(data?.isPaid) && refundAmount > 0;
+
+  /**
+   * Đơn chưa được xác nhận và chưa trả đủ ⇒ BE hoàn nguyên 100%, KHÔNG áp chính sách bậc thang
+   * (`appliedTier`/`nextTier` đều `null`). Bảng bậc thang và cảnh báo "sau mốc X còn 30%" vì thế
+   * phải ẩn: để cạnh con số hoàn đủ thì hai thứ nói ngược nhau ngay trong một khung nhìn.
+   */
+  const isUnpaidPending = data?.isUnpaidPending === true;
+
+  /**
+   * Phần đã trả bằng VÍ. Ở nhánh trên, BE cộng thẳng khoản này lại vào ví trong chính transaction
+   * huỷ và KHÔNG tạo yêu cầu hoàn — nên khách không phải chờ ai duyệt, và cũng không có gì để
+   * chọn "nhận tiền vào đâu". Phần còn lại (trả qua cổng) mới sinh yêu cầu hoàn như huỷ thường.
+   */
+  const walletPaid = (payments ?? [])
+    .filter(p => p.paymentMethod === 'wallet' && p.status === 'completed')
+    .reduce((sum, p) => sum + Number(p.amount), 0);
+  const instantWalletRefund = isUnpaidPending ? Math.min(walletPaid, refundAmount) : 0;
+  const amountNeedingApproval = refundAmount - instantWalletRefund;
+
+  // Chỉ hỏi nơi nhận tiền khi thật sự có khoản phải qua tay khách sạn — đơn chưa trả, hoàn 0đ,
+  // hoặc tiền về thẳng ví ngay thì hỏi là thừa (và gây hiểu nhầm là được chọn).
+  const askRefundMethod = willRefund && amountNeedingApproval > 0;
 
   const handleCancel = async () => {
     setSubmitError(null);
     let bankAccount: RefundBankAccount | undefined;
 
-    if (willRefund && refundMethod === 'bank') {
+    if (askRefundMethod && refundMethod === 'bank') {
       const parsed = refundBankAccountSchema.safeParse(bank);
       if (!parsed.success) {
         // `t()` của dự án bị siết theo union key nên không nhận `string` thô — tra qua bảng mã
@@ -97,7 +127,7 @@ export default function CancelBookingPanel({
         reason: reason.trim() || undefined,
         // Chỉ gửi `refundMethod: 'bank'` khi có tiền để hoàn: BE khai `bankAccount` là
         // `forbidden` với method 'wallet', gửi thừa là 400.
-        ...(willRefund && refundMethod === 'bank'
+        ...(askRefundMethod && refundMethod === 'bank'
           ? { refundMethod: 'bank' as const, bankAccount }
           : {}),
       });
@@ -184,10 +214,37 @@ export default function CancelBookingPanel({
           </div>
 
           {/*
+            Thay cho bảng bậc thang: nói vì sao được hoàn đủ. Không có câu này thì con số 100%
+            đứng trơ một mình, khách dễ tưởng hệ thống tính nhầm rồi ngại bấm huỷ.
+            Đơn chưa trả đồng nào cũng rơi vào nhánh này, nhưng "được hoàn đủ" thì vô nghĩa —
+            khối phía trên đã nói "chưa thanh toán nên không có gì để hoàn".
+          */}
+          {isUnpaidPending && willRefund && (
+            <p className="flex gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3 text-sm text-on-surface">
+              {instantWalletRefund > 0 ? (
+                <Wallet className="mt-0.5 size-4 shrink-0 text-emerald-600" aria-hidden="true" />
+              ) : (
+                <Info className="mt-0.5 size-4 shrink-0 text-emerald-600" aria-hidden="true" />
+              )}
+              <span>
+                {t('account:cancel.unconfirmedFullRefund')}
+                {instantWalletRefund > 0 && (
+                  <>
+                    {' '}
+                    {t('account:cancel.unconfirmedWalletBack', {
+                      amount: formatCurrency(instantWalletRefund),
+                    })}
+                  </>
+                )}
+              </span>
+            </p>
+          )}
+
+          {/*
             Cảnh báo mốc kế: đây là lý do duy nhất khiến "huỷ bây giờ" khác "huỷ chiều nay".
             Chỉ hiện khi mức hoàn sắp TỤT — bậc kế bằng hoặc cao hơn thì không phải chuyện gấp.
           */}
-          {data.nextTier && data.nextTier.refundPercent < data.refundPercent && (
+          {!isUnpaidPending && data.nextTier && data.nextTier.refundPercent < data.refundPercent && (
             <p className="flex gap-2 rounded-xl bg-amber-50 p-3 text-sm text-amber-800">
               <AlertTriangle className="mt-0.5 size-4 shrink-0" />
               {t('account:cancel.nextTierWarning', {
@@ -197,8 +254,10 @@ export default function CancelBookingPanel({
             </p>
           )}
 
-          {/* Bảng bậc thang — để khách tự đối chiếu thay vì phải tin một con số trần trụi. */}
-          {data.tiers.length > 1 && (
+          {/* Bảng bậc thang — để khách tự đối chiếu thay vì phải tin một con số trần trụi.
+              Đơn chưa xác nhận thì không bậc nào được áp, bày ra chỉ khiến khách tưởng mình
+              đang bị trừ theo một mức nào đó trong bảng. */}
+          {!isUnpaidPending && data.tiers.length > 1 && (
             <details className="rounded-xl bg-surface p-3">
               <summary className="cursor-pointer text-sm font-medium text-on-surface">
                 {t('account:cancel.policyLadder')}
@@ -228,11 +287,21 @@ export default function CancelBookingPanel({
 
           {/* ── Nơi nhận tiền hoàn ─────────────────────────────────────────────
               BE mặc định 'wallet'. Không hỏi thì khách bị cộng vào ví mà không hề biết. */}
-          {willRefund && (
+          {askRefundMethod && (
             <div className="rounded-xl bg-surface p-4">
               <p className="text-sm font-medium text-on-surface">
                 {t('account:cancel.refundMethodTitle')}
               </p>
+              {/* Ca trả ghép ví + cổng ở đơn chưa xác nhận: phần ví đã về ví rồi, lựa chọn ở đây
+                  chỉ quyết định phần còn lại. Không nói ra thì khách chọn "ngân hàng" xong lại
+                  thấy một khoản chui vào ví và tưởng hệ thống làm sai. */}
+              {instantWalletRefund > 0 && (
+                <p className="mt-1 text-xs text-on-surface-variant">
+                  {t('account:cancel.refundMethodRemainingOnly', {
+                    amount: formatCurrency(amountNeedingApproval),
+                  })}
+                </p>
+              )}
               <div className="mt-2 grid gap-2 sm:grid-cols-2">
                 {(
                   [

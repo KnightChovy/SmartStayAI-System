@@ -3343,8 +3343,18 @@ paths:
           encrypted and never returned.
 
 
+        EXCEPTION — booking still `pending` and NOT fully paid: the tiered policy does not apply.
+        Everything paid so far is refunded 100% (no cancellation fee), and the wallet part is credited
+        back INSTANTLY, without hotel approval. Rationale: the booking was never confirmed, the hotel
+        has received nothing for it, and the expired-hold job would have refunded it in full anyway —
+        charging a fee here would punish the guest for cancelling early instead of just walking away.
+
+
         The response includes a `refund` summary (`id`, `amount`, `status`, `refundMethod`) when a
-        refund is due, or `null` when the policy leaves nothing to refund (late cancellation penalty).
+        refund REQUEST is due, or `null` when there is none — and `null` alone is ambiguous, so always
+        read `walletRefunded` next to it: `refund: null` + `walletRefunded: "20000000"` means the money
+        is already back in the wallet, while `refund: null` + `walletRefunded: "0"` means the policy
+        left nothing to refund (late cancellation penalty).
       tags: [Bookings]
       security:
         - bearerAuth: []
