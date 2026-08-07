@@ -2,6 +2,29 @@
 
 This file tracks the accomplished tasks, resolved user requests, and visual/functional refactoring completed in the client application.
 
+## August 8, 2026
+
+- [x] **🔴 Ví khách bị TRỪ TIỀN TRƯỚC khi thanh toán xong — bỏ hẳn trả ghép, chỉ trừ ví đúng lúc bấm Xác nhận, và hiện khoản trừ ngay trên bảng giá**:
+  - **Nguyên nhân (FE, không phải BE)**: `BookingCheckoutPage.handleConfirm` cố ý gọi `POST /payments/bookings/:id/wallet` **TRƯỚC** khi ra cổng, vì BE chỉ thu phần còn thiếu ở cổng (`outstandingAmount`). Đúng về số học, nhưng sai về rủi ro: ví thiếu tiền ⇒ BE trừ hết phần ví lo được rồi **giữ đơn ở `pending`** để trả nốt qua VNPay/SePay. Khách bỏ ngang ở cổng (hoặc chỉ đóng tab) là **tiền đã rời ví mà phòng vẫn chưa có** — đúng thứ user báo. `PayNowAction` (nút "Thanh toán ngay" ở `/account/bookings/:id`) có y hệt lỗ hổng đó.
+  - **Quyết định: ví là ALL-OR-NOTHING.** BE vẫn cho trả ghép và **không đụng gì tới BE**; FE tự chặn. Ví đủ trả trọn đơn ⇒ `payWithWallet` chốt `confirmed` **trong cùng một transaction**, không có khoảng hở nào để tiền treo lơ lửng. Ví thiếu ⇒ **không cho tiêu ví**, khách trả trọn qua cổng.
+  - **Checkout (`/booking`)**:
+    - `walletCoversAll = walletBalance > 0 && walletBalance >= displayTotal`; `useWallet = useWalletCredit && walletCoversAll` — **kẹp trong render, không dùng effect**, nên giá server chốt cao hơn ước tính làm ví hết đủ thì ô tick tự tắt.
+    - Ví thiếu: ô tick **disabled** kèm lý do bằng số thật (_"Ví còn 900.000 VNĐ, chưa đủ cho đơn 1.500.000 VNĐ. StayHub chưa hỗ trợ trả một phần bằng ví"_) — **vẫn hiện ô** chứ không ẩn, ẩn đi thì khách có tiền trong ví lại không hiểu vì sao không dùng được.
+    - Ví đủ + đã tick: **ẩn hẳn `PaymentMethodSelect`** (không đồng nào đi qua cổng, bày cổng ra chỉ khiến khách tưởng vẫn bị charge ở đó) và thay bằng ghi chú nói rõ cách bỏ chọn để quay lại VNPay/QR.
+    - `handleConfirm` viết lại: kiểm lại `walletCoversAll` **bằng `totalAmount` THẬT của booking vừa tạo** (không phải ước tính lúc tick) → gọi ví → `remainingToPay = 0` ⇒ điều hướng thẳng trang thành công, **không chạm cổng**. Ví lỗi thì **DỪNG** (BE chạy trong transaction nên chưa trừ đồng nào) thay vì lẳng lặng đẩy sang cổng — trước đây nó `catch` rồi đi tiếp, tức thu tiền theo cách khách không chọn.
+  - **Hiện khoản trừ ngay trên bảng giá** (đúng chỗ user chỉ trong ảnh): `PriceSummary` thêm prop `footer` — khối nằm **SAU** dòng tổng gồm các dòng khấu trừ + "Còn phải trả". **Cố ý tách khỏi `lines`**: mấy khoản này không cấu thành giá đơn, chúng nói tiền lấy từ đâu; nhét lên trên dòng tổng là "Tổng cộng" không còn là giá của đơn nữa. Có footer thì dòng Tổng hạ nhấn mạnh xuống để "Còn phải trả" (số khách thực sự quan tâm) là số to nhất.
+  - **`PayNowAction`**: tính `outstanding` = `totalAmount` − tổng payment đã `completed` (mirror `outstandingAmount` của BE — đơn có thể đã trả một phần từ trước, so ví với `totalAmount` là so nhầm mốc), và **chỉ hiện mục "Trả bằng ví" khi ví lo trọn phần còn thiếu**.
+  - **Copy sửa theo cho khỏi nói dối**: câu "Bạn chưa bị trừ tiền cho tới khi hoàn tất thanh toán **tại cổng**" sai khi trả bằng ví (không có cổng nào) ⇒ có bản riêng; bước Xác nhận hiện `Ví StayHub (900.000 VNĐ)` thay vì tên cổng; nút có trạng thái "Đang trừ ví…". i18n thêm `payment.{walletInsufficient,walletOnlyNote,walletSecureNote,walletNotCharged,walletMethod}` + `summary.{walletApplied,dueNow}` + `confirm.payingWallet`, bỏ `payment.walletPartialHint` (không còn luồng trả ghép nào để mà chú thích). vi/en **cân bằng 113/113**.
+  - **VERIFY TRÊN APP THẬT + BE LOCAL — 24/24 (checkout) + 8/8 (nút Thanh toán ngay)**, số dư ví **đo từ `GET /users/me/wallet`** chứ không đọc trên màn hình:
+    - Ví ĐỦ: tick ô ví → **số dư KHÔNG đổi** (900.000 → 900.000) — đây chính là bug user báo; qua tới bước cuối vẫn chưa trừ; bấm Xác nhận mới trừ **đúng 900.000**, vào thẳng trang thành công, booking `confirmed`, và ledger chỉ có **1 payment `wallet` completed, không có payment cổng**.
+    - Ví THIẾU (900.000 < 1.500.000): ô tick **disabled**, hint nêu đúng 2 con số, cổng thanh toán vẫn còn, bảng giá **không** hiện dòng trừ ví, và số dư **không bị đụng**.
+    - Ví RỖNG: không mời dùng ví, cổng vẫn bình thường. Nút "Thanh toán ngay": đơn 1.500.000 → menu **không có** mục ví; đơn 900.000 → có, bấm mới trừ, đơn `confirmed`.
+    - **0 lỗi console**, **0 tràn ngang**. `tsc` **0 lỗi**, `eslint` **0 vấn đề** trên 3 file đụng tới, `npm run build` **pass**.
+  - ⚠️ **`npm install` bị thiếu trên máy**: `write-excel-file` (đã khai trong `package.json` từ đợt export Excel) **chưa có trong `node_modules`** ⇒ dev server **500 toàn app** (`Failed to resolve import`) và `tsc` báo 2 lỗi. Đã chạy `npm install --no-save` — `package.json`/`package-lock.json` **không đổi**.
+  - ⚠️ **KHÔNG chạy `prettier`**: repo không đặt `printWidth` nên prettier mặc định 80 trong khi code viết ~100 ⇒ format lại 443 dòng không liên quan. Đã hoàn tác và áp lại tay; diff giờ đúng bằng phần sửa.
+  - ⚠️ **`client/.env` đang trỏ BE LOCAL** (`http://localhost:5001/v1`) để kiểm thử — trước đó là deploy Render. Đổi lại 1 dòng khi cần.
+  - ⚠️ **Dev data trên DB LOCAL** (deploy không đụng): tạo tài khoản `thienngan28062004@gmail.com` / `Ngan@123` (chưa có trên local, luồng đăng ký thật cần OTP email), vài booking test đã huỷ + đã trả bằng ví, và ví đang để sẵn **900.000** (nạp bằng đúng luồng thật: đặt phòng → lễ tân thu tiền → huỷ chọn hoàn về ví → `partner@gmail.com` duyệt).
+
 ## August 7, 2026 (continued 7)
 
 - [x] **Chặn ngay từ FE việc chọn kỳ ở quá 30 đêm — trước giờ chỉ BE chặn, sau khi khách điền hết form mới nhận 400** (`server/src/services/booking.service.ts` đã có sẵn `MAX_NIGHTS = 30` trong `createBooking`, nhưng chỉ ở **tầng service**, không có ở Joi lẫn bất kỳ đâu phía FE):

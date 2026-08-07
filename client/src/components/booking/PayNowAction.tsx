@@ -66,6 +66,18 @@ export default function PayNowAction({
   // (kể cả đơn đã xong), gọi vô điều kiện là bắn thừa một request trên mỗi dòng danh sách.
   const { data: wallet } = useMyWallet({ enabled: awaitingPayment });
   const walletBalance = Number(wallet?.balanceAvailable ?? 0);
+  /**
+   * Số còn thiếu — mirror `outstandingAmount` của BE (tổng đơn trừ các payment đã `completed`).
+   * Đơn có thể đã trả một phần từ trước, nên so ví với `totalAmount` là so nhầm mốc.
+   */
+  const outstanding =
+    Number(booking.totalAmount) -
+    (booking.payments ?? [])
+      .filter(p => p.status === 'completed')
+      .reduce((sum, p) => sum + Number(p.amount), 0);
+  // Ví chỉ mời khi lo trọn phần còn thiếu: trả một phần bằng ví là tiền rời ví ngay trong khi
+  // đơn vẫn `pending` — khách bỏ ngang ở cổng là mất tiền mà chưa có phòng.
+  const walletCoversAll = walletBalance > 0 && walletBalance >= outstanding;
 
   const handleConfirmed = useCallback(() => {
     setSepayInfo(null);
@@ -80,8 +92,9 @@ export default function PayNowAction({
   const busy = createVnpay.isPending || createSepay.isPending || payWallet.isPending;
 
   /**
-   * Trả bằng số dư ví. KHÔNG phải all-or-nothing: ví thiếu thì BE vẫn trừ hết phần ví lo được và
-   * giữ đơn ở `pending` để trả nốt qua cổng ⇒ phải đọc `remainingToPay` chứ không coi 201 là xong.
+   * Trả bằng số dư ví — chỉ gọi khi ví lo được TOÀN BỘ phần còn thiếu (xem `walletCoversAll`),
+   * nên đây luôn là một lần trả trọn và booking `confirmed` ngay. Vẫn đọc `remainingToPay` phòng
+   * khi số dư vừa đổi ở tab khác và BE chỉ trừ được một phần.
    */
   const payFromWallet = async () => {
     try {
@@ -138,8 +151,9 @@ export default function PayNowAction({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
-            {/* Ví chỉ hiện khi thật sự có tiền — mời trả bằng ví rỗng là dẫn thẳng vào lỗi 400. */}
-            {walletBalance > 0 && (
+            {/* Ví chỉ hiện khi đủ trả trọn phần còn thiếu — ví rỗng thì 400, ví thiếu thì trừ
+                một phần rồi bỏ khách lại với đơn chưa xong. */}
+            {walletCoversAll && (
               <DropdownMenuItem onSelect={() => payFromWallet()}>
                 <Wallet className="size-4" />
                 {t('payment.payWithWallet', {
