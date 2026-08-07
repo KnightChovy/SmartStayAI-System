@@ -997,7 +997,6 @@ const main = async (): Promise<void> => {
     { code: 'BKSEED003', customerId: customer2.id, hotel: danang, roomTypeIdx: 2, fromDay: -5, nights: 2, guests: 2, status: 'checked_out', paid: true },
     { code: 'BKSEED004', customerId: customer3.id, hotel: danang, roomTypeIdx: 1, fromDay: -12, nights: 3, guests: 4, status: 'checked_out', paid: true, review: { by: customer3.id, rating: 5, title: 'Wonderful resort', content: 'Spacious room with a balcony looking straight out to the sea. Friendly staff and a breakfast with plenty of choice. We will come back.' } },
     { code: 'BKSEED005', customerId: customer2.id, hotel: danang, roomTypeIdx: 0, fromDay: -20, nights: 2, guests: 2, status: 'checked_out', paid: true, review: { by: customer2.id, rating: 4, title: 'Worth the money', content: 'The beachfront location is very convenient. The pool gets a bit crowded in the afternoon, but overall a great stay.' } },
-    { code: 'BKSEED006', customerId: customer1.id, hotel: danang, roomTypeIdx: 2, fromDay: 20, nights: 1, guests: 2, status: 'cancelled', paid: false },
     // Sài Gòn
     { code: 'BKSEED007', customerId: customer1.id, hotel: saigon, roomTypeIdx: 1, fromDay: -8, nights: 2, guests: 2, status: 'checked_out', paid: true, review: { by: customer1.id, rating: 5, title: 'Right in the centre', content: 'A 5-minute walk to Ben Thanh Market. Clean room with good sound insulation even facing the street.' } },
     { code: 'BKSEED008', customerId: customer2.id, hotel: saigon, roomTypeIdx: 0, fromDay: 5, nights: 3, guests: 1, status: 'confirmed', paid: true },
