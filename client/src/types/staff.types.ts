@@ -174,12 +174,22 @@ export interface CheckOutResponse extends HotelBooking {
 
 export type HotelBookingsResponse = Paginated<HotelBooking>;
 
-/** Filters for the hotel booking list. */
+/**
+ * Bộ lọc danh sách booking của một khách sạn (`GET /hotels/:hotelId/bookings`).
+ *
+ * Ba điểm dựng riêng cho MÀN LỊCH, khác các màn giám sát khác:
+ * - `status` nhận **cả mảng** — lịch cần `confirmed + checked_in + pending` trong một lượt.
+ * - `fromDate`/`toDate` lọc theo **KHOẢNG LƯU TRÚ** (`checkInDate <= toDate AND checkOutDate >
+ *   fromDate`), không phải theo ngày nhận phòng. Trước đây lọc theo ngày nhận phòng nên đơn nhận
+ *   30/07 trả 09/08 **không** hiện khi xem từ 06/08 dù vẫn chiếm phòng — FE phải lùi mốc 30 ngày.
+ * - `limit` tới **500** (các endpoint giám sát khác vẫn trần 100).
+ */
 export interface HotelBookingsParams {
-  status?: BookingStatus;
+  status?: BookingStatus | BookingStatus[];
   fromDate?: string;
   toDate?: string;
   sortBy?: string;
+  /** Trần 500 cho endpoint này. */
   limit?: number;
   page?: number;
 }

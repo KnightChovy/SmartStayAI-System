@@ -123,6 +123,75 @@ export interface CancelBookingResponse extends Booking {
 }
 
 /**
+ * Nơi khách muốn nhận tiền hoàn.
+ * - `wallet` (mặc định của BE): cộng thẳng vào ví, khách nhận ngay khi được duyệt.
+ * - `bank`: chuyển khoản — **bắt buộc** gửi kèm `bankAccount`, nếu không Platform Manager không
+ *   biết chuyển đi đâu (Joi chặn ngay từ BE).
+ */
+export type RefundMethod = 'wallet' | 'bank';
+
+export interface RefundBankAccount {
+  /** Chỉ chữ số, tối đa 30 ký tự (Joi của BE). */
+  accountNumber: string;
+  bankName: string;
+  accountHolder: string;
+}
+
+export interface CancelBookingPayload {
+  reason?: string;
+  refundMethod?: RefundMethod;
+  bankAccount?: RefundBankAccount;
+}
+
+/**
+ * Một bậc của chính sách huỷ: huỷ trước **ít nhất** `minHoursBefore` giờ (tính tới giờ nhận phòng)
+ * ⇒ được hoàn `refundPercent`%. Danh sách bậc luôn **giảm dần** và phủ kín tới sát check-in
+ * (luôn có bậc `minHoursBefore: 0`).
+ */
+export interface CancellationTier {
+  minHoursBefore: number;
+  refundPercent: number;
+}
+
+/**
+ * Xem trước tiền hoàn (`GET /bookings/:bookingId/refund-preview`) — **chỉ đọc, không ghi gì**.
+ *
+ * Vì sao bắt buộc phải dùng: trước đây khách bấm Huỷ mà **không biết mất bao nhiêu tiền**, chỉ biết
+ * sau khi đã huỷ (không hoàn tác được). BE tính bằng đúng hàm dùng cho `cancelBooking`, nên con số
+ * xem trước **chính là** con số sẽ được hoàn.
+ */
+export interface RefundPreview {
+  bookingId: string;
+  bookingCode: string;
+  status: BookingStatus;
+  /** Huỷ được không — FE không tự suy luật. */
+  canCancel: boolean;
+  /** Lý do không huỷ được (tiếng Việt, của BE); `null` khi huỷ được. */
+  cannotCancelReason: string | null;
+  /** `false` = chưa trả đồng nào ⇒ không có gì để hoàn. */
+  isPaid: boolean;
+  paidAmount: string;
+  /** Số tiền hoàn NẾU huỷ ngay bây giờ. */
+  refundAmount: string;
+  /** Phần khách sạn giữ lại = `paidAmount - refundAmount`. */
+  penaltyAmount: string;
+  /** Số giờ còn lại tới giờ nhận phòng; âm khi đã qua. */
+  hoursBeforeCheckIn: number;
+  /** Bậc đang áp — `null` khi đã qua giờ nhận phòng. */
+  appliedTier: CancellationTier | null;
+  refundPercent: number;
+  /** Toàn bộ bậc thang, để vẽ bảng cho khách đối chiếu. */
+  tiers: CancellationTier[];
+  /** Sau `changesAt` thì mức hoàn tụt xuống `refundPercent`; `null` khi đã ở bậc thấp nhất. */
+  nextTier: { changesAt: string; refundPercent: number } | null;
+  freeUntilHours: number | null;
+  isFreeCancellation: boolean;
+  freeUntilMoment: string | null;
+  /** Ngày nhận phòng đã ghép với giờ nhận phòng của khách sạn. */
+  checkInMoment: string;
+}
+
+/**
  * Payload viết đánh giá sau khi trả phòng (`POST /reviews`).
  * BE chỉ cần `bookingId` (tự suy ra hotel + kiểm quyền/điều kiện), không cần hotelName/bookingCode.
  */

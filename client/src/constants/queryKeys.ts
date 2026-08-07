@@ -11,6 +11,8 @@ export const queryKeys = {
     managed: (hotelId: string) => ['hotels', 'managed', hotelId] as const,
     /** Tiện nghi đã gán cho khách sạn (`GET /hotels/:id/amenities`). */
     amenities: (hotelId: string) => ['hotels', 'amenities', hotelId] as const,
+    /** Preset chính sách huỷ của BE — dữ liệu tham chiếu tĩnh, không gắn khách sạn nào. */
+    cancellationPresets: ['hotels', 'cancellation-presets'] as const,
     search: (params: object) => ['hotels', 'search', params] as const,
     detail: (hotelId: string) => ['hotels', 'detail', hotelId] as const,
     roomTypes: (hotelId: string, params: object) =>
@@ -23,6 +25,8 @@ export const queryKeys = {
     all: ['bookings'] as const,
     mine: (params: object) => ['bookings', 'mine', params] as const,
     detail: (bookingId: string) => ['bookings', 'detail', bookingId] as const,
+    /** Xem trước tiền hoàn — phụ thuộc thời điểm nên không cache lâu (xem `useRefundPreview`). */
+    refundPreview: (bookingId: string) => ['bookings', 'refund-preview', bookingId] as const,
   },
   profile: {
     me: ['profile', 'me'] as const,

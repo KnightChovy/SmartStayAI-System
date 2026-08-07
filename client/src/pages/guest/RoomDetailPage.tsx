@@ -13,7 +13,6 @@ import Breadcrumb, { type Crumb } from '@/components/shared/Breadcrumb';
 import EmptyState from '@/components/shared/EmptyState';
 import RoomGallery from '@/components/guest/RoomGallery';
 import CancellationLine from '@/components/shared/CancellationLine';
-import { getFreeCancellationHours } from '@/utils/cancellationPolicy';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { formatAddress } from '@/utils/formatAddress';
@@ -329,10 +328,7 @@ export default function RoomDetailPage() {
 
             {/* Chính sách hủy (SS-302) */}
             <CancellationLine
-              freeUntilHours={
-                hotelDetail?.cancellationRule?.freeUntilHours ??
-                getFreeCancellationHours(hotelDetail?.settings)
-              }
+              rule={hotelDetail?.cancellationRule}
               className="mt-3 justify-center"
             />
           </div>

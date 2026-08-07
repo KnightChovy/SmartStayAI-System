@@ -10,6 +10,7 @@ import type {
   HotelPolicy,
   RoomBed,
 } from './hotel-property.types';
+import type { CancellationTier } from './booking.types';
 
 /** Chính sách thú cưng của khách sạn (khớp enum BE). */
 export type PetsPolicy = 'not_allowed' | 'allowed' | 'on_request';
@@ -76,6 +77,23 @@ export interface HotelSearchResponse {
  * BE trả đầy đủ hơn `HotelSearchResult` rất nhiều: tiện nghi, chính sách, địa điểm lân cận,
  * loại phòng và toàn bộ field chính sách dạng scalar. Dùng cho trang chi tiết guest.
  */
+/**
+ * Chính sách huỷ **BẬC THANG** của một khách sạn (`hotel.cancellationRule`, BE đã parse sẵn).
+ *
+ * ⚠️ Đổi từ dạng cũ `{ freeUntilHours, latePenalty }`: giờ là một thang nhiều mức %, huỷ càng sớm
+ * hoàn càng nhiều. `freeUntilHours` vẫn được BE trả để không vỡ code cũ, nhưng nó **dẫn xuất** —
+ * và **`null` KHÔNG có nghĩa là "chưa biết"**: nó nghĩa là chính sách **không có bậc nào hoàn
+ * 100%** (vẫn có thể hoàn 50%). Đọc `tiers` mới ra được câu đúng.
+ */
+export interface CancellationRule {
+  /** Giảm dần theo `minHoursBefore`, luôn phủ kín tới sát check-in (có bậc `minHoursBefore: 0`). */
+  tiers: CancellationTier[];
+  /** % hoàn khi khách không tới (thường 0). */
+  noShowRefundPercent: number;
+  /** Dẫn xuất: mốc sớm nhất còn hoàn 100%; `null` khi không có bậc 100% nào. */
+  freeUntilHours: number | null;
+}
+
 export interface HotelDetail extends HotelSearchResult {
   amenities: { amenity: Amenity }[];
   policies: HotelPolicy[];
@@ -98,15 +116,12 @@ export interface HotelDetail extends HotelSearchResult {
   /** Số đêm tối đa cho một lượt đặt (`Hotel.maxLengthOfStay`). */
   maxLengthOfStay?: number | null;
   /**
-   * Cấu hình khách sạn dạng JSON tự do. Chứa `cancellation.freeUntilHours`. Ưu tiên đọc
+   * Cấu hình khách sạn dạng JSON tự do. Chứa `cancellation.tiers`. Ưu tiên đọc
    * `cancellationRule` (đã parse) thay vì tự bóc `settings`.
    */
   settings?: Record<string, unknown> | null;
-  /**
-   * Chính sách hủy đã parse sẵn (BE trả top-level ở `GET /hotels/:id`) — dùng cho dòng
-   * chính sách hủy ở booking card (SS-302). `freeUntilHours > 0` = hủy miễn phí trước N giờ.
-   */
-  cancellationRule?: { freeUntilHours: number; latePenalty: string } | null;
+  /** Chính sách huỷ đã parse sẵn (BE trả top-level ở `GET /hotels/:id`). */
+  cancellationRule?: CancellationRule | null;
   /** Tiền cọc thu khi nhận phòng — Decimal ⇒ string qua JSON. */
   securityDepositAmount?: string | null;
   phone?: string | null;
@@ -246,6 +261,30 @@ export interface UpdateHotelDto {
   /** Gửi [] để xoá hết. */
   languagesSpoken?: string[];
   maxLengthOfStay?: number | null;
+  /**
+   * Chính sách huỷ THẬT — con số quyết định tiền hoàn cho khách. Khác hẳn `cancellationPolicy`
+   * ngay trên (chỉ là đoạn văn cho khách đọc, không ảnh hưởng tiền).
+   *
+   * ⚠️ BE **không bật `.unknown()`** cho khối này: gõ sai khoá là **400** chứ không im lặng rơi về
+   * mặc định. `tiers` phải giảm dần theo `minHoursBefore` và **có bậc `minHoursBefore: 0`** (phủ
+   * kín tới sát check-in), `refundPercent` ∈ [0, 100].
+   */
+  settings?: {
+    cancellation: {
+      tiers: CancellationTier[];
+      noShowRefundPercent?: number;
+    };
+  };
+}
+
+/** Một preset chính sách huỷ do BE cung cấp (`GET /hotels/cancellation-presets`). */
+export interface CancellationPreset {
+  /** `flexible` · `moderate` · `firm` · `strict` · `non_refundable`. */
+  key: string;
+  /** Tên tiếng Việt do BE đặt. */
+  name: string;
+  tiers: CancellationTier[];
+  noShowRefundPercent: number;
 }
 
 /** Một ảnh khách sạn cần thêm (URL phải upload qua `POST /uploads` trước). */

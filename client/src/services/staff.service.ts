@@ -53,7 +53,13 @@ export const staffService = {
 
   // ----- Booking / front desk -----
 
-  /** Hotel booking list (`GET /hotels/:hotelId/bookings`). */
+  /**
+   * Hotel booking list (`GET /hotels/:hotelId/bookings`).
+   *
+   * `status` nhận cả mảng ⇒ phải serialize thành **khoá lặp lại không ngoặc**
+   * (`status=confirmed&status=checked_in`). Mặc định axios sinh `status[]=…`; Express parse được cả
+   * hai, nhưng dạng lặp là dạng được chấp nhận rộng nhất — không phụ thuộc query parser của server.
+   */
   async listBookings(
     hotelId: string,
     params: HotelBookingsParams = {}
@@ -62,6 +68,7 @@ export const staffService = {
       `/hotels/${hotelId}/bookings`,
       {
         params: cleanParams(params),
+        paramsSerializer: { indexes: null },
       }
     );
     return data;
