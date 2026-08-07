@@ -222,12 +222,29 @@ router.patch(
   roomController.updateHousekeeping
 );
 
+// Lịch tồn kho theo từng đêm — nguồn DUY NHẤT cho màn "Rooms & inventory" của staff, thay cho việc
+// FE tự ghép rooms + room-blocks + bookings rồi tính lại công thức của BE.
+router.get(
+  '/:hotelId/inventory/calendar',
+  auth(),
+  validate(roomValidation.getInventoryCalendar),
+  roomController.getInventoryCalendar
+);
+
 // ----- Đợt chặn phòng (bảo trì theo khoảng ngày) -----
 // Danh sách phải đứng TRƯỚC '/:roomId/blocks' để param không nuốt mất route này
 router.get('/:hotelId/room-blocks', auth(), validate(roomValidation.listBlocks), roomController.listBlocks);
 
 // POST ...?dryRun=true chỉ kiểm tra xung đột, không ghi gì
 router.post('/:hotelId/rooms/:roomId/blocks', auth(), validate(roomValidation.createBlock), roomController.createBlock);
+
+// Sửa đợt chặn đang mở (gia hạn / rút ngắn ngày kết thúc, sửa lý do, chi phí dự kiến)
+router.patch(
+  '/:hotelId/rooms/:roomId/blocks/:blockId',
+  auth(),
+  validate(roomValidation.updateBlock),
+  roomController.updateBlock
+);
 
 // Đánh dấu đã sửa xong (không xoá bản ghi — còn dùng để thống kê chi phí sự cố)
 router.delete(
@@ -285,6 +302,13 @@ router.get(
   validate(bookingValidation.getHotelBooking),
   bookingController.getHotelBooking
 );
+
+// Chốt phòng vật lý TRƯỚC khi khách tới (đơn confirmed). Không đổi rooms.status — phòng chỉ thật sự
+// chuyển sang 'occupied' lúc check-in.
+router
+  .route('/:hotelId/bookings/:bookingId/assign-room')
+  .post(auth(), validate(bookingValidation.assignRoom), bookingController.assignRoom)
+  .delete(auth(), validate(bookingValidation.releaseAssignedRoom), bookingController.releaseAssignedRoom);
 
 router.post(
   '/:hotelId/bookings/:bookingId/check-in',

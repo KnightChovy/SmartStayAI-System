@@ -914,6 +914,48 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /internal/jobs/sync-room-status:
+    post:
+      summary: Re-derive rooms.status for the current day (cron)
+      description: >
+        Runs daily at 00:05; this endpoint only forces it to run now. Recomputes the display label
+        of every room that either has a block in force today or is currently labelled `maintenance`.
+
+
+        Why it must exist: `syncDisplayStatus` only fires when somebody touches a room (housekeeping
+        change, block created, block resolved), but blocks have date ranges. Schedule a block for
+        tomorrow and tomorrow the column still says `available` until someone happens to touch that
+        room — every screen reading `rooms.status`, including the room picker at check-in, is then
+        wrong and nothing says so.
+
+
+        Protected by x-cron-secret. Scans by data condition rather than "did it run today", so a
+        missed or doubled run is harmless.
+      tags: [Internal]
+      parameters:
+        - in: header
+          name: x-cron-secret
+          required: true
+          schema:
+            type: string
+          description: Must equal the server's CRON_SECRET
+      responses:
+        "200":
+          description: Number of rooms whose label actually changed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  synced:
+                    type: integer
+        "401":
+          description: Missing or wrong cron secret
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /auth/send-otp:
     post:
       summary: Send OTP verification code
@@ -3910,8 +3952,22 @@ paths:
     get:
       summary: List a hotel's bookings (staff/owner)
       description: >
-        Owner, platform manager, or assigned staff lists bookings of the hotel, filtered by status
-        and check-in date range. Each item includes customer, assigned rooms and voucher info.
+        Owner, platform manager, or assigned staff lists bookings of the hotel. Each item includes
+        customer, assigned rooms and voucher info.
+
+
+        Built for the inventory calendar, so it filters differently from the platform/partner
+        oversight lists:
+
+
+        - `fromDate`/`toDate` match the **stay range**, not the check-in date: a booking arriving
+        30/07 and leaving 09/08 shows up when you look at the week of 06/08, because it still holds
+        a room all week (`checkInDate <= toDate AND checkOutDate > fromDate`).
+
+        - `status` accepts a **list** — repeat the parameter to get confirmed + checked_in +
+        pending in one call.
+
+        - `limit` goes up to 500, so a week of a large hotel does not need page-walking.
       tags: [Bookings]
       security:
         - bearerAuth: []
@@ -3924,16 +3980,23 @@ paths:
             format: uuid
         - in: query
           name: status
+          description: One value, or repeat the parameter for several
           schema:
-            type: string
-            enum: [pending, confirmed, checked_in, checked_out, cancelled, no_show]
+            type: array
+            items:
+              type: string
+              enum: [pending, confirmed, checked_in, checked_out, cancelled, no_show]
+          style: form
+          explode: true
         - in: query
           name: fromDate
+          description: Start of the window; keeps bookings whose checkOutDate is after it
           schema:
             type: string
             format: date
         - in: query
           name: toDate
+          description: End of the window; keeps bookings whose checkInDate is on or before it
           schema:
             type: string
             format: date
@@ -3941,6 +4004,8 @@ paths:
           name: limit
           schema:
             type: integer
+            minimum: 1
+            maximum: 500
         - in: query
           name: page
           schema:
@@ -3994,14 +4059,110 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  /hotels/{hotelId}/bookings/{bookingId}/assign-room:
+    post:
+      summary: Pre-assign a physical room to a confirmed booking (front desk)
+      description: >
+        Pins a physical room to a booking that is confirmed but has not arrived yet. Without this,
+        `booking_rooms` only came into existence at check-in, so a confirmed booking for tonight
+        held a slot in inventory while being attached to **no room at all** — the room map showed
+        10 rooms free when only 9 could actually be handed out.
+
+
+        Does **not** touch `rooms.status`: that column describes *today*, while the booking may be
+        for next week. The room only becomes `occupied` at check-in; until then the assignment lives
+        in `bookingRooms` alone.
+
+
+        Checks the room belongs to the hotel, matches the booking's room type, is active, carries no
+        `ooo` block overlapping the stay, and is not already assigned to another live booking on
+        overlapping dates. Calling it again with a different roomId moves the booking — no need to
+        DELETE first.
+      tags: [Bookings]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: path
+          name: bookingId
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [roomId]
+              properties:
+                roomId:
+                  type: string
+                  format: uuid
+                  description: Physical room to pin; must be of the booking's room type
+      responses:
+        '200':
+          description: Booking with its assigned room
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/StaffBooking' }
+        '400':
+          description: Booking is not confirmed, wrong room type, room inactive, or blocked for the stay
+        '409':
+          description: Room is already assigned to another booking on overlapping dates
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      summary: Release a pre-assigned room (front desk)
+      description: >
+        Detaches the room pinned by POST .../assign-room. Only while the booking is still
+        `confirmed`: once the guest has checked in, `booking_rooms` is the record of which room they
+        are in — that goes through check-out, not through here.
+      tags: [Bookings]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: path
+          name: bookingId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Booking with no assigned room
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/StaffBooking' }
+        '400': { description: Booking is not in confirmed status }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /hotels/{hotelId}/bookings/{bookingId}/check-in:
     post:
       summary: Check in a confirmed booking (staff)
       description: >
-        Moves a confirmed (paid) booking to checked_in, assigns one available physical room of the
-        booking's room type (or the room given by roomId), marks the e-voucher used. Optionally
-        verifies the scanned voucherCode. Only allowed within the stay window
+        Moves a confirmed (paid) booking to checked_in, assigns a physical room, marks the e-voucher
+        used. Optionally verifies the scanned voucherCode. Only allowed within the stay window
         (checkInDate <= today < checkOutDate) — too early or past the stay is rejected.
+
+
+        Room choice, in order: the `roomId` in the body (the desk changed its mind), then the room
+        already pinned by POST .../assign-room, then any free room of the right type. A pinned room
+        is never silently swapped — otherwise pre-assigning would be pointless and the guest would
+        be promised one room and given another.
       tags: [Bookings]
       security:
         - bearerAuth: []
@@ -4224,26 +4385,34 @@ paths:
 
   /hotels/{hotelId}/rooms/{roomId}/status:
     patch:
-      summary: Update a room's status (LEGACY room map entry point)
+      summary: Update a room's status (DEPRECATED — legacy room map entry point)
       description: >
-        Kept so the existing room map keeps working, but each value is now translated into the
-        dimension it really belongs to. Prefer PATCH .../housekeeping and POST .../blocks.
+        **Deprecated.** `rooms.status` has no time dimension, so anything involving dates must go
+        through `room_blocks`. This endpoint is now only an alias for PATCH .../housekeeping and is
+        kept so older clients do not break.
 
 
-        - `available` — marks the room inspected AND resolves every open block on it.
+        - `available` — housekeeping reports the room cleaned (`hkStatus = clean`).
 
         - `cleaning` — housekeeping picks up the job; the cleaning SLA starts.
 
-        - `maintenance` — creates a 7-day OOO block (no dates were supplied). Use
-        POST .../blocks instead so staff can enter the real end date and reason.
+        - `maintenance` — **rejected with 400**. It used to create a 7-day OOO block with an
+        invented reason, i.e. quietly pull a room out of sale for a week that nobody asked for. Use
+        POST .../blocks with a real end date and reason.
 
         - `occupied` — **rejected with 400**. That status must carry a booking, so only check-in
         can produce it. Setting it by hand leaves the front desk unable to hand over the room:
         check-in only claims rooms that are still `available`.
 
 
+        It no longer resolves blocks either: one click meant for *today* used to wipe out blocks
+        scheduled for next week by someone else. To put a room back on sale, resolve that specific
+        block (DELETE .../blocks/{blockId}).
+
+
         Rejected with 400 as well when the room currently has a guest in it (fo_status =
         occupied) — check the guest out from the Front desk first.
+      deprecated: true
       tags: [HotelManagement]
       security:
         - bearerAuth: []
@@ -4272,6 +4441,7 @@ paths:
                 status:
                   type: string
                   enum: [available, occupied, maintenance, cleaning]
+                  description: Only `available` and `cleaning` are accepted; the other two return 400
       responses:
         '200':
           description: Room status updated
@@ -4280,7 +4450,8 @@ paths:
               schema: { $ref: '#/components/schemas/Room' }
         '409': { description: Someone else changed the room status first — retry }
         '400':
-          description: Invalid status, or `occupied` requested, or the room still has a guest in it
+          description: >
+            `occupied` or `maintenance` requested, or the room still has a guest in it
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -4411,6 +4582,69 @@ paths:
           $ref: '#/components/responses/NotFound'
 
   /hotels/{hotelId}/rooms/{roomId}/blocks/{blockId}:
+    patch:
+      summary: Amend an open block (extend / shorten / fix the reason)
+      description: >
+        Without this, "keep it two more days" meant resolving the block and creating a new one —
+        which loses the incident-cost history of the one being worked on, and `createBlock` refuses
+        overlapping `ooo` blocks anyway, so the workaround was awkward on top of lossy.
+
+
+        Only `endDate`, `reason` and `estimatedCost` can change. `startDate` cannot (a day that has
+        passed cannot be rewritten) and neither can `blockType` (it decides whether inventory is
+        touched at all — resolve and re-create instead, so incident figures stay separate).
+
+
+        Inventory moves for the **difference only**: days added are removed from sale, days cut are
+        given back — and only from today onward, since days already gone cannot be sold again.
+        Returns the same conflict report as creating a block, recomputed on the new range.
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: path
+          name: roomId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: path
+          name: blockId
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              minProperties: 1
+              properties:
+                endDate:
+                  type: string
+                  format: date
+                  description: New last day still blocked (inclusive); must not precede startDate
+                reason: { type: string }
+                estimatedCost: { type: number }
+      responses:
+        '200':
+          description: Block amended (returns the block plus the recomputed conflict report)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RoomBlockResult' }
+        '400':
+          description: >
+            Block already resolved, endDate precedes startDate, or extending would overlap another
+            open `ooo` block on the same room
+        '409': { description: Someone else amended or resolved it first — reload }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
     delete:
       summary: Mark a block as resolved ("repair finished")
       description: >
@@ -4441,6 +4675,78 @@ paths:
               schema: { $ref: '#/components/schemas/RoomBlock' }
         '400': { description: Block was already resolved }
         '409': { description: Someone else resolved it first — reload }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /hotels/{hotelId}/inventory/calendar:
+    get:
+      summary: Per-night inventory calendar (staff)
+      description: >
+        How many rooms of each type are sellable on each date. `getStayQuotes` only ever returned
+        the minimum across a whole stay, so the staff inventory calendar had no source to read and
+        the client ended up **re-implementing the server's formula** on top of three unrelated
+        endpoints — which silently drifts every time that formula changes.
+
+
+        Uses the same rule as availability pricing, so this screen and what a guest sees while
+        booking cannot disagree:
+
+
+        - night that already has a `room_availability` row → `totalRooms - bookedRooms` (that row
+        already accounts for `ooo` blocks), reported as `source: availability`
+
+        - night with no row → nobody has booked it yet, so rooms are counted from the `rooms` table
+        minus rooms blocked that day, reported as `source: derived`
+
+
+        Range is inclusive on both ends and capped at 92 days per call.
+      tags: [HotelManagement]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: query
+          name: from
+          required: true
+          schema: { type: string, format: date }
+        - in: query
+          name: to
+          required: true
+          description: Inclusive; at most 92 days after `from`
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: One row per room type per date
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  from: { type: string, format: date }
+                  to: { type: string, format: date }
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        roomTypeId: { type: string, format: uuid }
+                        roomTypeName: { type: string }
+                        date: { type: string, format: date }
+                        totalRooms: { type: integer, example: 10 }
+                        bookedRooms: { type: integer, example: 7 }
+                        availableRooms: { type: integer, example: 3 }
+                        source:
+                          type: string
+                          enum: [availability, derived]
+                          description: Which of the two sources the numbers came from
+        '400': { description: Range invalid or longer than 92 days }
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -5780,8 +6086,13 @@ paths:
       summary: Create a physical room
       description: >
         Room number must be unique within the hotel. Future room_availability rows of the
-        room type get totalRooms incremented so already-priced nights sell the new room too —
-        unless the room is created with status=maintenance, which is not sellable yet.
+        room type get totalRooms incremented so already-priced nights sell the new room too.
+
+
+        `status` only accepts `available` or `cleaning`. `maintenance` used to be accepted here and
+        quietly created a 7-day OOO block with an invented reason — a partner filling in a room form
+        pulled a room out of sale for a week without ever entering a date. Block the room through
+        POST .../rooms/{roomId}/blocks instead. `occupied` must come from a check-in.
       tags: [HotelManagement]
       security:
         - bearerAuth: []
@@ -5801,7 +6112,7 @@ paths:
                 roomTypeId: { type: string, format: uuid }
                 roomNumber: { type: string }
                 floor: { type: integer }
-                status: { type: string, enum: [available, occupied, maintenance, cleaning], default: available }
+                status: { type: string, enum: [available, cleaning], default: available }
                 notes: { type: string }
       responses:
         '201':
@@ -5852,8 +6163,13 @@ paths:
     put:
       summary: Update a room (status, number, floor, notes)
       description: >
-        Hotel owner or manageHotels. Changing status into/out of maintenance also syncs future
-        sellable inventory (room_availability.totalRooms), same as the staff status endpoint.
+        Hotel owner or manageHotels. Toggling `isActive` syncs future sellable inventory
+        (room_availability.totalRooms).
+
+
+        `status` only accepts `available` or `cleaning` — it is forwarded to the housekeeping
+        dimension. Maintenance has dates, so it belongs to POST .../rooms/{roomId}/blocks; this form
+        used to accept `maintenance` and silently create a 7-day block instead.
       tags: [HotelManagement]
       security:
         - bearerAuth: []
@@ -5875,10 +6191,10 @@ paths:
               properties:
                 roomNumber: { type: string }
                 floor: { type: integer }
-                status: { type: string, enum: [available, occupied, maintenance, cleaning] }
+                status: { type: string, enum: [available, cleaning] }
                 notes: { type: string }
               example:
-                status: maintenance
+                status: cleaning
                 notes: Hỏng điều hoà, chờ linh kiện
       responses:
         '200':

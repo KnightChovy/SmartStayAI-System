@@ -32,6 +32,12 @@ export interface RoomFilter {
   isActive?: boolean;
 }
 
+/** Khoảng ngày của lịch tồn kho — bao gồm CẢ hai đầu (from và to đều là ngày có dữ liệu). */
+export interface InventoryCalendarRange {
+  from: Date;
+  to: Date;
+}
+
 /** Tuỳ chọn phân trang / sắp xếp khi liệt kê phòng. */
 export interface RoomQueryOptions {
   limit?: number;
