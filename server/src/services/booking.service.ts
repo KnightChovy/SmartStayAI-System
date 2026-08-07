@@ -1070,6 +1070,21 @@ export class BookingService {
         throw new ApiError(httpStatus.BAD_REQUEST, 'Booking không còn đang lưu trú');
       }
 
+      // Nhả tồn kho các đêm CHƯA NGỦ (từ hôm nay trở đi) — khách trả phòng sớm thì những đêm còn
+      // lại phải bán lại được. Thiếu bước này thì mỗi lần trả sớm là mất vĩnh viễn một suất bán:
+      // phòng vật lý đã trống nhưng room_availability vẫn đếm đơn này, nên lịch tồn kho báo ít hơn
+      // thực tế và khách không đặt được. Cùng luật với markNoShow — đêm đã qua thì bỏ (không còn
+      // bán được nữa, trừ đi chỉ làm sai occupancy lịch sử).
+      const unusedNights = eachNightOfStay(booking.checkInDate, booking.checkOutDate).filter(
+        (night) => night >= todayInVietnamDate()
+      );
+      if (unusedNights.length > 0) {
+        await tx.roomAvailability.updateMany({
+          where: { roomTypeId: booking.roomTypeId, date: { in: unusedNights }, bookedRooms: { gt: 0 } },
+          data: { bookedRooms: { decrement: 1 } },
+        });
+      }
+
       // Trả phòng về trạng thái dọn dẹp + auto-sinh task housekeeping cho từng phòng (S22).
       // Staff hoàn thành task sẽ chuyển phòng về 'available'.
       // Khách đi ⇒ chiều lễ tân về 'vacant', chiều buồng phòng thành 'dirty' (chưa ai dọn — khác
