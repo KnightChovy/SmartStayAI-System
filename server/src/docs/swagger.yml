@@ -2574,11 +2574,21 @@ paths:
                         items:
                           type: object
                           properties:
-                            id: { type: string, format: uuid }
-                            type: { type: string, example: earning }
-                            amount: { type: string, example: '850000' }
+                            id: { type: string, format: uuid, description: 'Mã giao dịch' }
+                            type:
+                              type: string
+                              enum: [earning, commission, payout, settlement, refund, adjustment, spend]
+                              description: 'Loại bút toán (dùng để hiển thị ghi nhận/tất toán/rút/hoàn/điều chỉnh)'
+                            status: { type: string, example: completed, description: 'Trạng thái bút toán — đã ghi sổ nên luôn completed' }
+                            amount: { type: string, example: '850000', description: 'Có dấu: + earning, − payout/refund' }
                             balanceAfter: { type: string, example: '850000' }
                             bookingId: { type: string, format: uuid, nullable: true }
+                            bookingCode: { type: string, nullable: true, example: 'BKSEED005', description: '"Từ đâu" — mã booking (kể cả GD settlement, tra qua commission). null nếu payout/adjustment' }
+                            paymentMethods:
+                              type: array
+                              items: { type: string, enum: [vnpay, sepay, stripe, cash, wallet] }
+                              description: 'Phương thức khách đã trả cho booking đó (đơn trả kết hợp có nhiều). Rỗng nếu GD không gắn booking'
+                              example: [vnpay]
                             commissionId: { type: string, format: uuid, nullable: true }
                             description: { type: string, nullable: true }
                             createdAt: { type: string, format: date-time }
