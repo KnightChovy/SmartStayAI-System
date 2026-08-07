@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { formatAddress } from '@/utils/formatAddress';
 import type { RoomType } from '@/types/hotel.types';
 import { cn } from '@/lib/cn';
+import { isValidStayRange, maxCheckOut } from '@/utils/stayDates';
 
 const FALLBACK =
   'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?q=80&w=1600&auto=format&fit=crop';
@@ -71,13 +72,19 @@ export default function RoomDetailPage() {
 
   const handleBook = () => {
     if (!roomType) return;
+    // `checkIn`/`checkOut` đọc thẳng từ URL (không phải đi qua `DateRangePicker`) — link tự sửa
+    // tay/link cũ có thể mang khoảng ngày sai luật. Kẹp lại trước khi sang checkout thay vì để
+    // tới tận lúc bấm Xác nhận mới bị BE từ chối.
+    const safeCheckOut = isValidStayRange(checkIn, checkOut)
+      ? checkOut
+      : (maxCheckOut(checkIn) ?? checkOut);
     // Truyền NGUYÊN VẸN: endpoint chi tiết giờ trả cùng shape giá với endpoint danh sách
     // (`subtotal`/`taxAmount`/`feeAmount`/`totalPrice`) nên checkout đọc thẳng số thật của BE.
     const bookingState = {
       hotel: hotelDetail,
       roomType: roomType as RoomType,
       checkIn,
-      checkOut,
+      checkOut: safeCheckOut,
       adults,
       children,
     };

@@ -8,6 +8,14 @@ This file tracks the accomplished tasks, resolved user requests, and structural/
 
 ## Completed Tasks Checklist
 
+### August 7, 2026 (continued 7)
+
+- [x] **Chặn chọn kỳ ở quá 30 đêm — đồng bộ với fix vừa làm bên client** (BE đã có sẵn `MAX_NIGHTS = 30` ở tầng service, `createBooking`, nhưng chỉ trả 400 SAU khi khách bấm Xác nhận; mobile trước đó không chặn ở đâu cả — `StayPickerSheet` chỉ đòi `nights > 0`, `bookingInputError` chỉ đòi `checkOut > checkIn`):
+  - **`utils/stayDates.ts` (mới)**: `MAX_BOOKING_NIGHTS = 30` (khớp hằng số BE) + `isValidStayRange(checkIn, checkOut)`.
+  - **Chặn ở CHỖ CHỌN**: `StayPickerSheet.tsx` — `dayState()` thêm nhánh `tooFarForCheckOut` (đã có ngày nhận, CHƯA chốt ngày trả, ngày đang xét cách ngày nhận quá 30 đêm) → `disabled` luôn, ngày đó mờ đi trên lịch không bấm được, đúng cơ chế đang chặn ngày quá khứ. Chỉ áp khi đang chọn ngày TRẢ — chọn lại ngày NHẬN vẫn tự do trên cả 6 tháng như cũ (luật là độ dài kỳ ở, không phải "đặt trước bao xa").
+  - **Chặn ở CHỖ ĐỌC** (`validations/bookings.validation.ts`, `bookingInputError` — chốt chặn cuối trước `POST /bookings` ở `booking/checkout.tsx`): thêm kiểm `nights > MAX_BOOKING_NIGHTS` → trả lỗi `"Một lượt đặt tối đa 30 đêm."`. Đây là màn DUY NHẤT tạo booking trên mobile (mọi lối vào — `hotel/[id]`, `room/[id]`, `(tabs)/search`, `booking/[id]` sửa lịch — đều đi qua `StayPickerSheet` rồi tới đây), nên chỉ cần sửa 1 hook + 1 màn là chặn được hết, không phải sửa từng nơi gọi `StayPickerSheet`.
+  - **Verify**: `tsc --noEmit` giữ nguyên baseline 63 lỗi pre-existing (không phát sinh lỗi mới ở 3 file mới/sửa), `eslint` sạch. ⚠️ Chưa chạy được app ⇒ nhờ bạn thử: chọn ngày nhận hôm nay, mở lịch chọn ngày trả — ngày thứ 31 trở đi phải mờ, không bấm được.
+
 ### August 7, 2026 (continued 6)
 
 - [x] **Rooms — bấm vào loại phòng thấy "Held/Occupied" hết chỗ này qua chỗ khác đều ra "Available"** (user báo: web đúng, mobile toàn Available):

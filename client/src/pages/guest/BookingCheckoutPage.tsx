@@ -49,6 +49,7 @@ import { estimateTaxAndFees } from '@/utils/estimateTaxAndFees';
 import { formatAddress } from '@/utils/formatAddress';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { formatDateShort, nightsBetween } from '@/utils/formatDate';
+import { isValidStayRange } from '@/utils/stayDates';
 import type { HotelDetail, RoomType } from '@/types/hotel.types';
 import type { SepayPaymentInfo } from '@/types/payment.types';
 
@@ -227,6 +228,28 @@ export default function BookingCheckoutPage() {
           icon={BedDouble}
           title={t('emptyTitle')}
           description={t('emptyDesc')}
+          action={
+            <Button className="bg-on-surface text-white hover:bg-primary" onClick={() => navigate(ROUTES.search)}>
+              {t('findStay')}
+            </Button>
+          }
+        />
+      </div>
+    );
+  }
+
+  // Chốt chặn cuối trước khi tạo booking thật: `checkIn`/`checkOut` tới đây qua router state,
+  // các trang trước (chi tiết KS, chi tiết phòng) đã kẹp lại nhưng vẫn có thể bị bỏ qua nếu ai
+  // đó tự dựng navigation state (đúng lý do BE cũng có `MAX_NIGHTS = 30` ở tầng service, không
+  // chỉ tin FE) — chặn ở đây để khách thấy lỗi rõ ràng thay vì một câu 400 khó hiểu sau khi bấm
+  // Xác nhận & Thanh toán.
+  if (!isValidStayRange(checkIn, checkOut)) {
+    return (
+      <div className="mx-auto max-w-2xl px-margin-mobile py-16 md:px-8">
+        <EmptyState
+          icon={BedDouble}
+          title={t('invalidDatesTitle')}
+          description={t('invalidDatesDesc')}
           action={
             <Button className="bg-on-surface text-white hover:bg-primary" onClick={() => navigate(ROUTES.search)}>
               {t('findStay')}
