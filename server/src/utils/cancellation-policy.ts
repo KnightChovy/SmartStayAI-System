@@ -17,16 +17,22 @@ export interface CancellationPolicy {
 
 const T = (minHoursBefore: number, refundPercent: number): CancellationTier => ({ minHoursBefore, refundPercent });
 
-/** 5 preset để đối tác chọn nhanh (và làm nguồn cho GET /hotels/cancellation-presets). */
+/**
+ * 5 preset để đối tác chọn nhanh (và làm nguồn cho GET /hotels/cancellation-presets).
+ *
+ * `name` viết bằng TIẾNG ANH vì nó đi thẳng ra API rồi hiển thị nguyên văn — tiếng Việt cứng ở đây
+ * thì giao diện đa ngữ không dịch được. Client muốn hiện tiếng Việt thì tra i18n theo `key`.
+ * Bộ nhãn theo thông lệ OTA (Booking.com/Airbnb dùng đúng các mức này) nên đối tác đọc là hiểu ngay.
+ */
 export const CANCELLATION_PRESETS = {
-  flexible: { name: 'Linh hoạt', policy: { tiers: [T(24, 100), T(0, 0)], noShowRefundPercent: 0 } },
+  flexible: { name: 'Flexible', policy: { tiers: [T(24, 100), T(0, 0)], noShowRefundPercent: 0 } },
   moderate: {
-    name: 'Vừa phải',
+    name: 'Moderate',
     policy: { tiers: [T(720, 100), T(360, 100), T(168, 50), T(72, 30), T(0, 0)], noShowRefundPercent: 0 },
   },
-  firm: { name: 'Chặt', policy: { tiers: [T(720, 100), T(168, 50), T(0, 0)], noShowRefundPercent: 0 } },
-  strict: { name: 'Rất chặt', policy: { tiers: [T(720, 100), T(336, 50), T(0, 0)], noShowRefundPercent: 0 } },
-  non_refundable: { name: 'Không hoàn', policy: { tiers: [T(0, 0)], noShowRefundPercent: 0 } },
+  firm: { name: 'Firm', policy: { tiers: [T(720, 100), T(168, 50), T(0, 0)], noShowRefundPercent: 0 } },
+  strict: { name: 'Strict', policy: { tiers: [T(720, 100), T(336, 50), T(0, 0)], noShowRefundPercent: 0 } },
+  non_refundable: { name: 'Non-refundable', policy: { tiers: [T(0, 0)], noShowRefundPercent: 0 } },
 } as const satisfies Record<string, { name: string; policy: CancellationPolicy }>;
 
 // KS chưa cấu hình ⇒ áp Moderate (bộ số khuyến nghị cho thị trường VN)
