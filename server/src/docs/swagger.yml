@@ -2822,7 +2822,10 @@ paths:
                       type: object
                       properties:
                         key: { type: string, example: moderate }
-                        name: { type: string, example: 'Vừa phải' }
+                        name:
+                          type: string
+                          example: 'Moderate'
+                          description: 'English label (Flexible / Moderate / Firm / Strict / Non-refundable) — localise via `key`'
                         tiers:
                           type: array
                           items:
