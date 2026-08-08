@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { FormProvider, useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Clock, Loader2, Lock, Send } from 'lucide-react';
@@ -17,7 +18,7 @@ import {
   HARD_FLOOR_RATE,
   REASON_MAX,
   REASON_MIN,
-  commissionRequestFormSchema,
+  createCommissionRequestFormSchema,
   type CommissionRequestFormValues,
 } from '@/validations/commission-rate.validation';
 import type { HotelCommissionSummary } from '@/types/commission-rate.types';
@@ -48,9 +49,23 @@ export function CommissionRequestForm({
    */
   const benchmarkRate =
     canRequest.isRenewal && agreement ? agreement.rateAfterExpiry : currentRate;
+  const benchmark = Number(benchmarkRate);
+
+  /** Mức gợi ý: số nguyên gần nhất còn nằm dưới mức đối chiếu và không phá sàn cứng. */
+  const suggestedRate = Math.max(
+    HARD_FLOOR_RATE,
+    Math.floor(benchmark - 1) || HARD_FLOOR_RATE
+  );
+
+  // Schema phụ thuộc mức đối chiếu ⇒ dựng lại khi con số đó đổi (PM lên lịch mức nền mới,
+  // hoặc đổi giữa đơn thường và đơn gia hạn), không cache theo lần mount đầu.
+  const schema = useMemo(
+    () => createCommissionRequestFormSchema(benchmark),
+    [benchmark]
+  );
 
   const methods = useForm<CommissionRequestFormValues>({
-    resolver: zodResolver(commissionRequestFormSchema),
+    resolver: zodResolver(schema),
     defaultValues: { requestedRate: '', reason: '' },
     mode: 'onBlur',
   });
@@ -132,6 +147,31 @@ export function CommissionRequestForm({
     );
   }
 
+  // ─── Đã chạm sàn cứng ─────────────────────────────────────────────────────
+  // Mức đối chiếu bằng (hoặc dưới) sàn cứng thì KHÔNG có con số nào vừa thấp hơn nó vừa hợp lệ.
+  // Bày form ra là mời đối tác gõ vào một ô không bao giờ gửi được, nên nói thẳng lý do.
+  if (Number.isFinite(benchmark) && benchmark <= HARD_FLOOR_RATE) {
+    return (
+      <div className="rounded-xl border border-slate-200 bg-white p-6">
+        <div className="flex items-start gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100">
+            <Lock className="h-4 w-4 text-slate-500" />
+          </div>
+          <div>
+            <h2 className="font-semibold text-slate-900">
+              Already at the lowest rate we can offer
+            </h2>
+            <p className="mt-1 text-sm text-slate-600">
+              This hotel is on {formatRate(benchmarkRate)}, which is the
+              platform floor of {HARD_FLOOR_RATE}%. No rate below it can be
+              approved, so there is nothing to request.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // ─── Form nộp đơn ─────────────────────────────────────────────────────────
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-6">
@@ -159,7 +199,10 @@ export function CommissionRequestForm({
             min={HARD_FLOOR_RATE}
             max={100}
             required
-            placeholder="10-15"
+            // Placeholder là MỘT con số, không phải khoảng "10-15": input number bỏ qua chuỗi
+            // không parse được, nên gõ theo mẫu khoảng sẽ ra ô rỗng trong khi màn hình vẫn hiện
+            // chữ vừa gõ — trông như form tự xoá dữ liệu.
+            placeholder={`e.g. ${suggestedRate}`}
             hint={`Must be below ${formatRate(benchmarkRate)} and not under ${HARD_FLOOR_RATE}%`}
             className="max-w-xs"
           />
