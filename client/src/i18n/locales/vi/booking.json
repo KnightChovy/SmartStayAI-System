@@ -116,7 +116,7 @@
   },
   "result": {
     "successTitle": "Thanh toán thành công!",
-    "successBody": "Đặt phòng của bạn đã được xác nhận và email xác nhận đang được gửi đi. Bạn có thể xem voucher trong Đặt phòng của tôi.",
+    "successBody": "Đặt phòng của bạn đã được xác nhận và email xác nhận đang được gửi đi. Bạn có thể xem mã QR check-in trong Đặt phòng của tôi.",
     "failedTitle": "Thanh toán thất bại",
     "failedBody": "Chúng tôi không thể hoàn tất thanh toán. Phòng của bạn được giữ trong thời gian ngắn — bạn có thể thử thanh toán lại từ Đặt phòng của tôi trước khi hết hạn giữ chỗ.",
     "bookingCode": "Mã đặt phòng",
@@ -128,7 +128,7 @@
     "body": "Email xác nhận đã được gửi cho bạn. Xuất trình mã QR bên dưới khi nhận phòng.",
     "bookingCode": "Mã đặt phòng",
     "totalPaid": "Tổng đã thanh toán: ",
-    "saveVoucher": "Lưu voucher",
+    "saveVoucher": "Lưu mã QR check-in",
     "viewBookings": "Xem đặt phòng của tôi"
   },
   "sepay": {

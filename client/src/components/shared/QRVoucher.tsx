@@ -56,7 +56,7 @@ export default function QRVoucher({
       <div className="rounded-2xl border border-outline-variant/30 bg-white p-3">
         <img
           src={src}
-          alt={`QR voucher ${label ?? ''}`}
+          alt={`QR check-in ${label ?? ''}`}
           width={size}
           height={size}
         />

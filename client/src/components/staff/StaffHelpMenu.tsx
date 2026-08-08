@@ -11,7 +11,7 @@ const GUIDE = [
   {
     icon: QrCode,
     title: 'Scan check-in',
-    detail: "Front desk → Scan check-in. Scan the guest's e-voucher QR, or type its code.",
+    detail: "Front desk → Scan check-in. Scan the guest's QR check-in, or type its code.",
     to: ROUTES.staffFrontDesk,
   },
   {

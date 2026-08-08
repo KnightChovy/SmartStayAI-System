@@ -63,7 +63,7 @@
     "tax": "Taxes",
     "fee": "Service fee",
     "totalPaid": "Total paid",
-    "evoucher": "Your e-voucher",
+    "evoucher": "Your QR check-in",
     "holdExpiredPill": "Hold expired",
     "holdExpiredTitle": "This booking has passed its payment hold",
     "holdExpiredBody": "The room has been released. We will cancel this booking within a few minutes — please book again.",

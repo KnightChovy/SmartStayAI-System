@@ -40,7 +40,7 @@
   "adultsCount_other": "{{count}} người lớn",
   "childrenCount_one": "{{count}} trẻ em",
   "childrenCount_other": "{{count}} trẻ em",
-  "qrEmptyHint": "Mã QR e-voucher sẽ hiển thị sau khi đơn được xác nhận / thanh toán.",
+  "qrEmptyHint": "Mã QR check-in sẽ hiển thị sau khi đơn được xác nhận / thanh toán.",
   "clearDate": "Xoá ngày",
   "search": "Tìm kiếm",
   "trust": {

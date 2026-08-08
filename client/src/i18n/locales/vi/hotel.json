@@ -34,7 +34,7 @@
   "trust": {
     "verified": "Khách sạn đã xác minh",
     "securePayment": "Thanh toán an toàn",
-    "instantVoucher": "Nhận e-voucher ngay"
+    "instantVoucher": "Nhận mã QR check-in ngay"
   },
   "amenities": {
     "title": "Tiện nghi",

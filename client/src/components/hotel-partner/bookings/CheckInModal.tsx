@@ -97,9 +97,9 @@ export function CheckInModal({ open, onClose, hotelId, booking, availableRooms }
           />
           <TextField<CheckInFormValues>
             name="voucherCode"
-            label="Voucher code (optional)"
+            label="QR check-in code (optional)"
             placeholder="VC…"
-            hint="Enter the guest's voucher to validate it on check-in."
+            hint="Enter the guest's QR check-in code to validate it on check-in."
           />
         </form>
       </FormProvider>

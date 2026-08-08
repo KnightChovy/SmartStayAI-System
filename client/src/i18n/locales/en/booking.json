@@ -116,7 +116,7 @@
   },
   "result": {
     "successTitle": "Payment successful!",
-    "successBody": "Your booking has been confirmed and a confirmation email is on its way. You can view your voucher in My Bookings.",
+    "successBody": "Your booking has been confirmed and a confirmation email is on its way. You can view your QR check-in in My Bookings.",
     "failedTitle": "Payment failed",
     "failedBody": "We could not complete your payment. Your room is held briefly — you can try paying again from My Bookings before the hold expires.",
     "bookingCode": "Booking code",
@@ -128,7 +128,7 @@
     "body": "A confirmation has been sent to your email. Show the QR below at check-in.",
     "bookingCode": "Booking code",
     "totalPaid": "Total paid: ",
-    "saveVoucher": "Save voucher",
+    "saveVoucher": "Save QR check-in",
     "viewBookings": "View my bookings"
   },
   "sepay": {
