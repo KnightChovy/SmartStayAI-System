@@ -146,7 +146,7 @@ export function BookingDetailModal({ open, onClose, hotelId, bookingId }: Bookin
             </Card>
 
             {booking.voucher && (
-              <Card title="Voucher">
+              <Card title="QR check-in">
                 <div className="flex items-center justify-between py-1 text-sm">
                   <span className="inline-flex items-center gap-1.5 font-mono text-slate-700">
                     <Ticket className="size-4 text-slate-400" />

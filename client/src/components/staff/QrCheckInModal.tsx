@@ -92,7 +92,7 @@ export function QrCheckInModal({
     // Trần 50 khớp Joi `lookupBookingByVoucher` của BE. `maxLength` trên ô nhập chỉ chặn được
     // đường gõ tay — mã đến từ QR quét được cũng đi qua đây nên phải kiểm ở cả hai đường.
     if (voucherCode.length > VOUCHER_CODE_MAX) {
-      setCodeError(`Mã e-voucher tối đa ${VOUCHER_CODE_MAX} ký tự.`);
+      setCodeError(`Mã QR check-in tối đa ${VOUCHER_CODE_MAX} ký tự.`);
       return;
     }
     setCodeError(null);
@@ -227,7 +227,7 @@ export function QrCheckInModal({
             <p className="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-600">
               {errorMessage(
                 lookup.error,
-                'Không tìm thấy booking khớp mã voucher này.'
+                'Không tìm thấy booking khớp mã QR check-in này.'
               )}
             </p>
           )}
@@ -253,7 +253,7 @@ export function QrCheckInModal({
           ) : (
           <div className="mt-4">
             <label className="mb-1.5 block text-xs font-medium text-slate-600">
-              Hoặc nhập mã e-voucher
+              Hoặc nhập mã QR check-in
             </label>
             <div className="relative">
               <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />

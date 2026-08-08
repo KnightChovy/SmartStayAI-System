@@ -83,7 +83,7 @@ export function CheckInConfirmModal({
               label="Stay"
               value={`${formatDate(checkInDate)} → ${formatDate(checkOutDate)} (${numNights} night${numNights === 1 ? '' : 's'})`}
             />
-            {voucherCode && <Row label="Voucher" value={voucherCode} mono />}
+            {voucherCode && <Row label="QR check-in" value={voucherCode} mono />}
             {roomNumber && <Row label="Room" value={roomNumber} />}
           </dl>
 

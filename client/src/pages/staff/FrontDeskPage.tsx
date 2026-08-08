@@ -210,7 +210,7 @@ export default function FrontDeskPage() {
         <button
           type="button"
           onClick={() => setScanOpen(true)}
-          title="Scan the QR code on the guest's e-voucher to open their booking"
+          title="Scan the guest's QR check-in code to open their booking"
           className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-2 text-xs font-medium text-white hover:bg-slate-800"
         >
           <QrCode className="size-3.5" /> Scan check-in

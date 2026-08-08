@@ -34,7 +34,7 @@
   "trust": {
     "verified": "Verified property",
     "securePayment": "Secure payment",
-    "instantVoucher": "Instant e-voucher"
+    "instantVoucher": "Instant QR check-in"
   },
   "amenities": {
     "title": "Amenities",
