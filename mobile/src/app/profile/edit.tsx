@@ -58,12 +58,12 @@ export default function EditProfileScreen() {
     setForm((prev) => (prev ? { ...prev, [key]: value } : prev));
   };
 
-  const nameError = form ? fullNameError(form.fullName) ?? '' : '';
-  const phoneValidation = form ? phoneError(form.phone ?? '') ?? '' : '';
+  const nameError = form ? fullNameError(form.fullName, t) ?? '' : '';
+  const phoneValidation = form ? phoneError(form.phone ?? '', t) ?? '' : '';
   const dobError = form && !isValidDob(form.dateOfBirth ?? '') ? t('account:edit.dobInvalid') : '';
-  const nationalityError = form && (form.nationality?.trim().length ?? 0) > 100 ? 'Quốc tịch không quá 100 ký tự.' : '';
-  const idCardError = form && (form.idCardNumber?.trim().length ?? 0) > 50 ? 'CCCD/CMND không quá 50 ký tự.' : '';
-  const passportError = form && (form.passportNumber?.trim().length ?? 0) > 50 ? 'Hộ chiếu không quá 50 ký tự.' : '';
+  const nationalityError = form && (form.nationality?.trim().length ?? 0) > 100 ? t('account:edit.nationalityTooLong') : '';
+  const idCardError = form && (form.idCardNumber?.trim().length ?? 0) > 50 ? t('account:edit.idCardTooLong') : '';
+  const passportError = form && (form.passportNumber?.trim().length ?? 0) > 50 ? t('account:edit.passportTooLong') : '';
   const valid = !nameError && !phoneValidation && !dobError && !nationalityError && !idCardError && !passportError;
 
   async function pickAvatar() {

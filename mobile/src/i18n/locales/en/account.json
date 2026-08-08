@@ -23,8 +23,8 @@
     "myOffersSub": "3 offers available",
     "rewards": "Reward points",
     "rewardsSub": "1,240 points",
-    "paymentMethods": "Payment methods",
-    "paymentMethodsSub": "Add card/wallet",
+    "wallet": "My wallet",
+    "walletSub": "Balance & transactions",
     "transactions": "Transaction history",
     "transactionsSub": "View all",
     "notifications": "Notifications",
@@ -85,10 +85,13 @@
     "dobInvalid": "Enter a valid date (YYYY-MM-DD).",
     "nationality": "Nationality",
     "nationalityPlaceholder": "e.g. Vietnamese",
+    "nationalityTooLong": "Nationality must be 100 characters or fewer.",
     "idCard": "ID card number",
     "idCardPlaceholder": "Citizen ID / national ID",
+    "idCardTooLong": "ID card number must be 50 characters or fewer.",
     "passport": "Passport number",
     "passportPlaceholder": "Passport number",
+    "passportTooLong": "Passport number must be 50 characters or fewer.",
     "emailNote": "Email is verified and cannot be changed here.",
     "saved": "Profile updated.",
     "failed": "Could not save your profile. Please try again."
@@ -114,18 +117,50 @@
     "deleteTitle": "Delete account",
     "deleteBody": "This permanently removes your account and personal data. This cannot be undone.",
     "deleteConfirm": "Delete my account",
+    "deleting": "Deleting…",
     "deleteFailed": "Could not delete your account. Please try again.",
     "error": "Error"
   },
   "rewards": {
     "title": "StayHub Plus",
     "history": "Points history",
-    "points": "points"
+    "points": "points",
+    "memberOfTier": "{{tier}} member",
+    "pointsAvailable": "points available",
+    "ptsToNextTier_one": "{{count}} pt to {{tier}}",
+    "ptsToNextTier_other": "{{count}} pts to {{tier}}",
+    "memberName": "Member: {{name}}",
+    "tiers": {
+      "silver": "Silver",
+      "gold": "Gold"
+    },
+    "historyItems": {
+      "stayHanoi": "Stay at StayHub Hanoi Old Quarter",
+      "stayPearlBay": "Stay at Pearl Bay Resort",
+      "welcomeBonus": "Welcome bonus",
+      "lateCheckoutRedeem": "Redeemed for late checkout"
+    }
   },
   "offers": {
     "title": "My offers",
+    "hint": "Apply a code at checkout to redeem your discount.",
+    "validUntil": "Valid until {{date}}",
     "enterAtCheckout": "Enter at checkout",
-    "empty": "No offers right now"
+    "empty": "No offers right now",
+    "items": {
+      "summer": {
+        "title": "Summer getaway",
+        "description": "25% off stays of 3 nights or more."
+      },
+      "weekend": {
+        "title": "Weekend flash deal",
+        "description": "10% off any weekend stay."
+      },
+      "plusBonus": {
+        "title": "StayHub Plus bonus",
+        "description": "50,000đ off your next booking as a Plus member."
+      }
+    }
   },
   "transactions": {
     "title": "Transaction history",
@@ -133,22 +168,85 @@
     "empty": "No transactions yet",
     "emptyBody": "Your booking payments will appear here."
   },
-  "paymentMethods": {
-    "title": "Payment methods",
-    "empty": "No saved payment methods",
-    "emptyBody": "StayHub doesn't store your cards. You pay securely through VNPay each time you book."
+  "wallet": {
+    "title": "My wallet",
+    "balanceLabel": "Available balance",
+    "balanceHint": "Refunds from cancelled bookings land here. Use it to pay for a future stay — it can't be withdrawn to a bank account.",
+    "useOnBooking": "Use on a booking",
+    "historyTitle": "Transaction history",
+    "loadError": "Couldn't load your wallet.",
+    "emptyTitle": "No transactions yet",
+    "emptyDesc": "Refunds and wallet payments will show up here.",
+    "historyLimit": "Showing your 50 most recent transactions.",
+    "viewBooking": "View booking",
+    "balanceAfter": "Balance: {{amount}}",
+    "txn": {
+      "refund": "Refund",
+      "spend": "Spent on booking",
+      "adjustment": "Adjustment"
+    }
+  },
+  "refund": {
+    "title": "Refund",
+    "amountLabel": "Refund amount: ",
+    "reasonLabel": "Reason: {{reason}}",
+    "walletAutoRefunded": "This booking was cancelled because the hold expired. The {{amount}} you paid from your wallet has already been returned in full, with no fee.",
+    "walletRefundedOnCancel": "Booking cancelled. The {{amount}} you paid from your wallet has already been returned in full, with no fee.",
+    "openWallet": "View my wallet",
+    "noneTitle": "Under the property's cancellation policy, this booking has no refund.",
+    "rejectedTitle": "The property rejected your refund request",
+    "rejectedNoReason": "The property didn't give a reason. Please contact them for details.",
+    "status": {
+      "pending": "Awaiting property review",
+      "approved": "Approved",
+      "processed": "Refunded",
+      "rejected": "Rejected"
+    },
+    "steps": {
+      "pending": {
+        "title": "Awaiting property review",
+        "desc": "The property is reviewing your request. If they don't respond within 3 days, it's approved automatically"
+      },
+      "approved": {
+        "title": "Approved by the property",
+        "desc": "Waiting for StayHub to transfer the money to you"
+      },
+      "processed": {
+        "title": "Refunded",
+        "desc": "The transfer has been made; it may take a few business days to arrive"
+      }
+    }
   },
   "help": {
     "title": "Help & support",
     "faq": "Frequently asked questions",
-    "contact": "Contact us"
+    "contact": "Contact us",
+    "faqs": [
+      {
+        "q": "How do I cancel or modify a booking?",
+        "a": "Open the booking from My Bookings, then use Cancel or Modify reservation. Pending and confirmed bookings can be changed."
+      },
+      {
+        "q": "How do I check in at the hotel?",
+        "a": "Show the QR code on your booking detail screen at the front desk — it encodes your booking code for a quick check-in."
+      },
+      {
+        "q": "What payment methods are supported?",
+        "a": "Bookings are paid securely through VNPay at checkout. We don't store your card details."
+      },
+      {
+        "q": "How do I get a refund?",
+        "a": "Cancellations follow each hotel's policy. Contact us below if you need help with a refund."
+      }
+    ]
   },
   "about": {
     "title": "About",
     "website": "Visit our website",
     "terms": "Terms of service",
     "privacy": "Privacy policy",
-    "version": "Version"
+    "version": "Version {{version}}",
+    "tagline": "AI-powered hotel booking and customer engagement — find your stay, book in seconds, and check in with a tap."
   },
   "notifications": {
     "title": "Notifications",
@@ -196,6 +294,9 @@
     "contentPlaceholder": "What did you love? What could be better?",
     "photos": "Photos (optional)",
     "photoPlaceholder": "Paste an image URL…",
+    "photoUrlInvalid": "Image URL must start with http:// or https://.",
+    "photoMax": "You can add up to 10 photos.",
+    "photoDuplicate": "This photo has already been added.",
     "add": "Add",
     "publish": "Publish review",
     "saveChanges": "Save changes",

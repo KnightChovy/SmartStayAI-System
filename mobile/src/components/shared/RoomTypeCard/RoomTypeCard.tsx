@@ -58,7 +58,9 @@ export function RoomTypeCard({ room, selected = false, onPress }: RoomTypeCardPr
         )}
         {lowStock && (
           <View className="absolute top-2.5 left-2.5 bg-red-500 rounded-md px-2 py-0.5">
-            <Text size="2xs" bold className="font-bevi-bold text-white">ONLY {room.availableRooms} LEFT!</Text>
+            <Text size="2xs" bold className="font-bevi-bold text-white uppercase">
+              {t('hotel:room.onlyLeft', { count: room.availableRooms })}
+            </Text>
           </View>
         )}
         {soldOut && (
@@ -70,7 +72,9 @@ export function RoomTypeCard({ room, selected = false, onPress }: RoomTypeCardPr
 
       <View className="p-3.5">
         <Text bold className="font-bevi-bold text-on-surface text-[15px] mb-1">{room.name}</Text>
-        <Text size="xs" className="font-bevi text-on-surface-variant mb-2.5">{meta || `Up to ${room.maxOccupancy} guests`}</Text>
+        <Text size="xs" className="font-bevi text-on-surface-variant mb-2.5">
+          {meta || t('hotel:room.upToGuests', { count: room.maxOccupancy })}
+        </Text>
         <View className="flex-row items-center justify-between">
           <View className="flex-1 pr-2">
             {hasQuote ? (

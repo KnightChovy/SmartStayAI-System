@@ -8,6 +8,8 @@ import { LanguageSwitcher } from '@/components/guest';
 import { useTranslation } from 'react-i18next';
 import { MenuList } from '@/components/shared/MenuList';
 import { useAuthStore } from '@/stores/authStore';
+import { useMyWallet } from '@/hooks/wallet';
+import { formatVnd } from '@/utils/formatCurrency';
 import { GUEST_COLORS } from '@/constants/guestTheme';
 
 
@@ -15,6 +17,7 @@ export default function ProfileScreen() {
   const { t } = useTranslation(['account', 'common']);
   const router = useRouter();
   const { user, clearAuth } = useAuthStore();
+  const { data: wallet } = useMyWallet();
 
   const benefitItems = [
     { icon: 'gift-outline' as const, label: t('account:menu.myOffers'), sub: t('account:menu.myOffersSub'), onPress: () => router.push('/profile/offers') },
@@ -23,7 +26,12 @@ export default function ProfileScreen() {
   ];
 
   const financeItems = [
-    { icon: 'card-outline' as const, label: t('account:menu.paymentMethods'), sub: t('account:menu.paymentMethodsSub'), onPress: () => router.push('/profile/payment-methods') },
+    {
+      icon: 'wallet-outline' as const,
+      label: t('account:menu.wallet'),
+      sub: wallet ? formatVnd(wallet.balanceAvailable) : t('account:menu.walletSub'),
+      onPress: () => router.push('/profile/wallet'),
+    },
     { icon: 'receipt-outline' as const, label: t('account:menu.transactions'), sub: t('account:menu.transactionsSub'), onPress: () => router.push('/profile/transactions') },
   ];
 

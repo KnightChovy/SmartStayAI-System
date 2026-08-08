@@ -10,11 +10,6 @@ import { toDateKey, nightsBetween, formatDateShort } from '@/utils/formatDate';
 import { MAX_BOOKING_NIGHTS } from '@/utils/stayDates';
 import { GUEST_COLORS } from '@/constants/guestTheme';
 
-const WEEKDAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-const MONTHS = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
-];
 const MONTHS_AHEAD = 6;
 
 /** Số ngày trong tháng + thứ của ngày 1 → lưới ngày (null cho ô đệm đầu tháng). */
@@ -70,6 +65,8 @@ export function StayPickerSheet({
 }: StayPickerSheetProps) {
   const { t } = useTranslation(['hotel', 'common']);
   const insets = useSafeAreaInsets();
+  const WEEKDAYS = t('hotel:picker.weekdays', { returnObjects: true }) as string[];
+  const MONTHS = t('hotel:picker.months', { returnObjects: true }) as string[];
   const [checkIn, setCheckIn] = useState<Date | null>(initialCheckIn ? new Date(initialCheckIn) : null);
   const [checkOut, setCheckOut] = useState<Date | null>(initialCheckOut ? new Date(initialCheckOut) : null);
   const [guests, setGuests] = useState(initialGuests);
@@ -205,7 +202,7 @@ export function StayPickerSheet({
               style={{ backgroundColor: canApply ? GUEST_COLORS.bronze : GUEST_COLORS.hairline }}
             >
               <Text bold className={`font-bevi-bold ${canApply ? 'text-on-surface text-base' : 'text-muted text-base'}`}>
-                Apply dates
+                {t('hotel:picker.apply')}
               </Text>
             </Pressable>
           </View>

@@ -108,16 +108,16 @@ export function ReviewSheet({
       const parsed = new URL(url);
       if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') throw new Error('unsupported protocol');
     } catch {
-      setError('URL ảnh phải bắt đầu bằng http:// hoặc https://.');
+      setError(t('account:review.photoUrlInvalid'));
       return;
     }
     // BE chặn tối đa 10 ảnh — chặn sẵn ở đây thay vì để 400 dội về.
     if (form.images.length >= 10) {
-      setError('Bạn chỉ có thể thêm tối đa 10 ảnh.');
+      setError(t('account:review.photoMax'));
       return;
     }
     if (form.images.includes(url)) {
-      setError('Ảnh này đã được thêm.');
+      setError(t('account:review.photoDuplicate'));
       return;
     }
     setError(null);

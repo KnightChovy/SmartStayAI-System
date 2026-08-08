@@ -171,7 +171,9 @@ export default function HotelDetailScreen() {
             {hotel.starRating ? (
               <View className="flex-row items-center gap-1.5">
                 <StarRating count={hotel.starRating} size={13} />
-                <Text size="xs" className="font-bevi text-on-surface-variant">{hotel.starRating}-star Hotel</Text>
+                <Text size="xs" className="font-bevi text-on-surface-variant">
+                  {t('common:stars', { count: hotel.starRating })} {t('common:hotel')}
+                </Text>
               </View>
             ) : null}
             <Heading size="xl" className="font-bevi-bold text-on-surface mt-1.5 mb-2">{hotel.name}</Heading>
@@ -188,7 +190,7 @@ export default function HotelDetailScreen() {
               )}
             </View>
 
-            <Text size="xs" className="font-bevi text-muted mt-1">{reviewCount} reviews</Text>
+            <Text size="xs" className="font-bevi text-muted mt-1">{t('hotel:reviews.count', { count: reviewCount })}</Text>
 
             {/* Amenities */}
             {amenities.length > 0 && (

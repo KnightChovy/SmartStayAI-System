@@ -23,8 +23,8 @@
     "myOffersSub": "3 ưu đãi khả dụng",
     "rewards": "Điểm thưởng",
     "rewardsSub": "1.240 điểm",
-    "paymentMethods": "Phương thức thanh toán",
-    "paymentMethodsSub": "Thêm thẻ/ví",
+    "wallet": "Ví của tôi",
+    "walletSub": "Số dư & giao dịch",
     "transactions": "Lịch sử giao dịch",
     "transactionsSub": "Xem tất cả",
     "notifications": "Thông báo",
@@ -85,10 +85,13 @@
     "dobInvalid": "Nhập ngày hợp lệ (YYYY-MM-DD).",
     "nationality": "Quốc tịch",
     "nationalityPlaceholder": "vd: Vietnamese",
+    "nationalityTooLong": "Quốc tịch không quá 100 ký tự.",
     "idCard": "Số CCCD/CMND",
     "idCardPlaceholder": "Số căn cước công dân",
+    "idCardTooLong": "CCCD/CMND không quá 50 ký tự.",
     "passport": "Số hộ chiếu",
     "passportPlaceholder": "Số hộ chiếu",
+    "passportTooLong": "Hộ chiếu không quá 50 ký tự.",
     "emailNote": "Email đã xác minh, không đổi được tại đây.",
     "saved": "Đã cập nhật hồ sơ.",
     "failed": "Không lưu được hồ sơ. Vui lòng thử lại."
@@ -114,18 +117,50 @@
     "deleteTitle": "Xoá tài khoản",
     "deleteBody": "Thao tác này xoá vĩnh viễn tài khoản và dữ liệu cá nhân của bạn. Không thể hoàn tác.",
     "deleteConfirm": "Xoá tài khoản của tôi",
+    "deleting": "Đang xoá…",
     "deleteFailed": "Không xoá được tài khoản. Vui lòng thử lại.",
     "error": "Lỗi"
   },
   "rewards": {
     "title": "StayHub Plus",
     "history": "Lịch sử điểm",
-    "points": "điểm"
+    "points": "điểm",
+    "memberOfTier": "Hội viên {{tier}}",
+    "pointsAvailable": "điểm khả dụng",
+    "ptsToNextTier_one": "còn {{count}} điểm để lên hạng {{tier}}",
+    "ptsToNextTier_other": "còn {{count}} điểm để lên hạng {{tier}}",
+    "memberName": "Hội viên: {{name}}",
+    "tiers": {
+      "silver": "Bạc",
+      "gold": "Vàng"
+    },
+    "historyItems": {
+      "stayHanoi": "Lưu trú tại StayHub Hà Nội Phố Cổ",
+      "stayPearlBay": "Lưu trú tại Pearl Bay Resort",
+      "welcomeBonus": "Thưởng chào mừng",
+      "lateCheckoutRedeem": "Đổi điểm trả phòng muộn"
+    }
   },
   "offers": {
     "title": "Ưu đãi của tôi",
+    "hint": "Nhập mã lúc thanh toán để áp dụng giảm giá.",
+    "validUntil": "Có hiệu lực đến {{date}}",
     "enterAtCheckout": "Nhập khi thanh toán",
-    "empty": "Hiện chưa có ưu đãi nào"
+    "empty": "Hiện chưa có ưu đãi nào",
+    "items": {
+      "summer": {
+        "title": "Kỳ nghỉ hè",
+        "description": "Giảm 25% cho kỳ ở từ 3 đêm trở lên."
+      },
+      "weekend": {
+        "title": "Ưu đãi cuối tuần",
+        "description": "Giảm 10% cho kỳ ở cuối tuần bất kỳ."
+      },
+      "plusBonus": {
+        "title": "Thưởng StayHub Plus",
+        "description": "Giảm 50.000đ cho lượt đặt phòng tiếp theo dành cho hội viên Plus."
+      }
+    }
   },
   "transactions": {
     "title": "Lịch sử giao dịch",
@@ -133,22 +168,85 @@
     "empty": "Chưa có giao dịch nào",
     "emptyBody": "Các khoản thanh toán đặt phòng sẽ hiện ở đây."
   },
-  "paymentMethods": {
-    "title": "Phương thức thanh toán",
-    "empty": "Chưa lưu phương thức nào",
-    "emptyBody": "StayHub không lưu thẻ của bạn. Mỗi lần đặt phòng bạn thanh toán an toàn qua VNPay."
+  "wallet": {
+    "title": "Ví của tôi",
+    "balanceLabel": "Số dư khả dụng",
+    "balanceHint": "Tiền hoàn từ các đơn đã huỷ sẽ về đây. Dùng để trả cho lượt đặt phòng sau — không rút được ra ngân hàng.",
+    "useOnBooking": "Dùng cho đặt phòng",
+    "historyTitle": "Lịch sử giao dịch",
+    "loadError": "Không tải được ví của bạn.",
+    "emptyTitle": "Chưa có giao dịch nào",
+    "emptyDesc": "Tiền hoàn và các lần trả bằng ví sẽ hiện ở đây.",
+    "historyLimit": "Đang hiện 50 giao dịch gần nhất.",
+    "viewBooking": "Xem đặt phòng",
+    "balanceAfter": "Số dư: {{amount}}",
+    "txn": {
+      "refund": "Hoàn tiền",
+      "spend": "Trả cho đặt phòng",
+      "adjustment": "Điều chỉnh"
+    }
+  },
+  "refund": {
+    "title": "Hoàn tiền",
+    "amountLabel": "Số tiền hoàn: ",
+    "reasonLabel": "Lý do: {{reason}}",
+    "walletAutoRefunded": "Đơn hết hạn giữ chỗ nên đã tự huỷ. {{amount}} bạn trả bằng ví đã được hoàn lại ngay, không mất phí.",
+    "walletRefundedOnCancel": "Đã huỷ đơn. {{amount}} bạn trả bằng ví đã được hoàn lại ngay, không mất phí.",
+    "openWallet": "Xem ví của tôi",
+    "noneTitle": "Theo chính sách huỷ của khách sạn, đơn này không có khoản hoàn tiền.",
+    "rejectedTitle": "Khách sạn đã từ chối yêu cầu hoàn tiền",
+    "rejectedNoReason": "Khách sạn không nêu lý do. Vui lòng liên hệ chỗ nghỉ để biết thêm chi tiết.",
+    "status": {
+      "pending": "Chờ khách sạn duyệt",
+      "approved": "Đã duyệt",
+      "processed": "Đã hoàn tiền",
+      "rejected": "Bị từ chối"
+    },
+    "steps": {
+      "pending": {
+        "title": "Chờ khách sạn duyệt",
+        "desc": "Khách sạn đang xem xét yêu cầu của bạn. Quá 3 ngày mà khách sạn chưa phản hồi thì yêu cầu tự động được duyệt"
+      },
+      "approved": {
+        "title": "Khách sạn đã duyệt",
+        "desc": "Chờ StayHub chuyển khoản về tài khoản của bạn"
+      },
+      "processed": {
+        "title": "Đã hoàn tiền",
+        "desc": "Tiền đã được chuyển, có thể mất vài ngày làm việc để về tài khoản"
+      }
+    }
   },
   "help": {
     "title": "Trợ giúp & hỗ trợ",
     "faq": "Câu hỏi thường gặp",
-    "contact": "Liên hệ chúng tôi"
+    "contact": "Liên hệ chúng tôi",
+    "faqs": [
+      {
+        "q": "Làm sao để huỷ hoặc thay đổi đặt phòng?",
+        "a": "Mở đơn từ mục Đặt phòng của tôi rồi chọn Huỷ hoặc Thay đổi đặt phòng. Đơn đang chờ xử lý hoặc đã xác nhận đều đổi được."
+      },
+      {
+        "q": "Nhận phòng tại khách sạn như thế nào?",
+        "a": "Đưa mã QR ở màn chi tiết đặt phòng cho lễ tân — mã này chứa mã đặt phòng để nhận phòng nhanh chóng."
+      },
+      {
+        "q": "Hỗ trợ những phương thức thanh toán nào?",
+        "a": "Đặt phòng được thanh toán an toàn qua VNPay lúc xác nhận. Chúng tôi không lưu thông tin thẻ của bạn."
+      },
+      {
+        "q": "Làm sao để được hoàn tiền?",
+        "a": "Việc huỷ đơn tuân theo chính sách của từng khách sạn. Liên hệ chúng tôi bên dưới nếu bạn cần hỗ trợ hoàn tiền."
+      }
+    ]
   },
   "about": {
     "title": "Giới thiệu",
     "website": "Truy cập website",
     "terms": "Điều khoản dịch vụ",
     "privacy": "Chính sách bảo mật",
-    "version": "Phiên bản"
+    "version": "Phiên bản {{version}}",
+    "tagline": "Đặt phòng khách sạn ứng dụng AI — tìm chỗ nghỉ, đặt phòng trong vài giây, và nhận phòng chỉ bằng một chạm."
   },
   "notifications": {
     "title": "Thông báo",
@@ -196,6 +294,9 @@
     "contentPlaceholder": "Bạn thích điều gì? Điều gì có thể tốt hơn?",
     "photos": "Ảnh (không bắt buộc)",
     "photoPlaceholder": "Dán URL ảnh…",
+    "photoUrlInvalid": "URL ảnh phải bắt đầu bằng http:// hoặc https://.",
+    "photoMax": "Bạn chỉ có thể thêm tối đa 10 ảnh.",
+    "photoDuplicate": "Ảnh này đã được thêm.",
     "add": "Thêm",
     "publish": "Đăng đánh giá",
     "saveChanges": "Lưu thay đổi",

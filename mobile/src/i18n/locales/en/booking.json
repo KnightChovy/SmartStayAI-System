@@ -1,4 +1,11 @@
 {
+  "validation": {
+    "missingHotelOrRoom": "Missing hotel or room type information.",
+    "invalidDates": "Check-in and check-out dates are not valid.",
+    "checkOutBeforeCheckIn": "Check-out must be at least one night after check-in.",
+    "maxNights": "A booking can span at most {{count}} nights.",
+    "guestsRange": "Guests must be between 1 and 20."
+  },
   "list": {
     "title": "My bookings",
     "error": "Couldn't load your bookings.",
@@ -17,6 +24,7 @@
   },
   "checkout": {
     "title": "Complete booking",
+    "yourHotel": "Your hotel",
     "steps": {
       "details": "Guest details",
       "review": "Review & confirm"
@@ -30,6 +38,13 @@
     "specialRequests": "Special requests (optional)",
     "specialRequestsPlaceholder": "Late check-in, high floor, extra bed…",
     "priceDetails": "Price details",
+    "review": {
+      "guest": "Guest",
+      "email": "Email",
+      "phone": "Phone",
+      "requests": "Requests"
+    },
+    "holdNote": "We'll hold your room. You can pay securely after confirming.",
     "continue": "Continue",
     "confirm": "Confirm booking",
     "creating": "Creating…",
@@ -37,26 +52,77 @@
   },
   "success": {
     "title": "Booking confirmed!",
+    "pendingBody": "Your room is on hold. Complete payment to secure your stay.",
+    "confirmedBody": "A confirmation has been sent to your email. Show the code below at check-in.",
     "bookingCode": "Booking code",
     "scanAtDesk": "Scan at the front desk",
-    "payNow": "Pay now with VNPay",
+    "payNow": "Pay now",
     "viewBooking": "View booking",
     "myBookings": "My bookings"
+  },
+  "payment": {
+    "title": "Payment method",
+    "payNow": "Pay now",
+    "choosePayment": "Choose how to pay",
+    "payError": "Could not start the payment. Please try again.",
+    "dueNow": "Due now",
+    "holdCountdown": "Held for {{time}} more",
+    "payWithVnpay": "Pay with VNPay",
+    "payWithSepay": "Bank transfer QR",
+    "payWithWallet": "Pay from wallet ({{balance}})",
+    "payWithWalletPartial": "Pay {{balance}} from wallet ({{remaining}} left)",
+    "walletMethod": "StayHub wallet",
+    "walletUse": "Use {{amount}} from your wallet",
+    "walletBalanceLine": "Wallet balance: {{balance}}",
+    "walletCovers": "Your wallet covers this booking in full — nothing goes through a payment gateway.",
+    "walletPartialSplit": "Your wallet covers {{applied}}; the remaining {{remaining}} is paid with the method below.",
+    "walletPaidPartialTitle": "Wallet applied",
+    "walletPaidPartial": "{{amount}} was taken from your wallet. {{remaining}} still to pay."
   },
   "detail": {
     "title": "Booking details",
     "error": "Couldn't load this booking.",
     "bookingCode": "Booking code",
+    "cancellationReason": "Reason: {{reason}}",
     "showQr": "Show this QR code at check-in",
     "modify": "Modify reservation",
     "modifySent": "Modification request sent",
     "modifySentBody": "The property will confirm availability shortly.",
+    "newDatesPrefix": "New dates:",
     "priceDetails": "Price details",
+    "roomLine_one": "Room × {{count}} night",
+    "roomLine_other": "Room × {{count}} nights",
+    "discount": "Discount",
+    "tax": "Taxes",
+    "fee": "Service fee",
+    "amountPaid": "Paid so far",
+    "info": {
+      "checkIn": "Check-in",
+      "checkOut": "Check-out",
+      "nights": "Nights",
+      "guests": "Guests",
+      "requests": "Requests"
+    },
     "cancel": "Cancel booking",
+    "cancelling": "Cancelling…",
     "cancelTitle": "Cancel booking",
     "cancelBody": "Are you sure you want to cancel this booking? This cannot be undone.",
     "cancelConfirm": "Yes, cancel",
     "keep": "Keep booking",
-    "cancelFailed": "Could not cancel"
+    "cancelFailed": "Could not cancel",
+    "holdExpiredTitle": "This booking has passed its payment hold",
+    "holdExpiredBody": "The room has been released. We will cancel this booking within a few minutes — please book again.",
+    "holdExpiredWallet": "The room has been released. We will cancel this booking within a few minutes and return the {{amount}} you paid from your wallet, with no fee."
+  },
+  "sepay": {
+    "title": "Bank transfer (SePay)",
+    "subtitle": "Scan the QR or transfer manually",
+    "amount": "Amount",
+    "bank": "Bank",
+    "account": "Account number",
+    "content": "Transfer content",
+    "keepContent": "Keep the transfer content exactly as shown — it is how we match your payment automatically.",
+    "waiting": "Waiting for your transfer…",
+    "payLater": "Pay later"
   }
 }

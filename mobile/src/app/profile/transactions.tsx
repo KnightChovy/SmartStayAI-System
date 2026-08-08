@@ -66,7 +66,7 @@ export default function TransactionsScreen() {
               >
                 <View className="flex-1 pr-3">
                   <Text bold className="font-bevi-bold text-on-surface text-sm" numberOfLines={1}>
-                    {item.hotel?.name ?? 'Hotel'}
+                    {item.hotel?.name ?? t('common:hotel')}
                   </Text>
                   <Text size="xs" className="font-bevi text-muted mt-0.5">
                     #{item.bookingCode} · {formatDateShort(item.createdAt)}

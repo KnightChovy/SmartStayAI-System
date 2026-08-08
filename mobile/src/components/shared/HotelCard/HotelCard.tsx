@@ -1,6 +1,7 @@
 import { View, Pressable, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { Text } from '@/components/ui/text';
 import type { HotelSearchResult } from '@/types/hotels.type';
 import { getPrimaryImageUrl, getHotelLocation } from '@/utils/hotel';
@@ -17,6 +18,7 @@ interface HotelCardProps {
  * `outline-variant/30` + nền `surface`, dựng khối bằng viền chứ không đổ bóng đậm.
  */
 export function HotelCard({ hotel, onPress }: HotelCardProps) {
+  const { t } = useTranslation(['common', 'hotel']);
   const imageUrl = getPrimaryImageUrl(hotel.images);
 
   return (
@@ -58,18 +60,18 @@ export function HotelCard({ hotel, onPress }: HotelCardProps) {
           {hotel.minPrice ? (
             <View className="flex-row items-baseline gap-1">
               <Text className="font-bevi text-muted" size="2xs">
-                từ
+                {t('from')}
               </Text>
               <Text className="font-bevi-bold text-on-surface" size="md">
                 {formatVnd(hotel.minPrice)}
               </Text>
               <Text className="font-bevi text-on-surface-variant" size="2xs">
-                /đêm
+                {t('hotel:room.perNight')}
               </Text>
             </View>
           ) : (
             <Text className="font-bevi text-muted" size="xs">
-              Liên hệ để biết giá
+              {t('contactForPrice')}
             </Text>
           )}
         </View>
