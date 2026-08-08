@@ -321,7 +321,7 @@ export default function BookingDetailPage() {
           </Card>
 
           {booking.voucher && (
-            <Card title="Voucher">
+            <Card title="QR check-in">
               <div className="flex items-center justify-between py-1 text-sm">
                 <span className="inline-flex items-center gap-1.5 font-mono text-slate-700">
                   <Ticket className="size-4 text-slate-400" />
@@ -431,7 +431,7 @@ export default function BookingDetailPage() {
 
                 <div className="space-y-1.5">
                   <Label htmlFor="voucher" className="text-xs text-slate-500">
-                    Voucher code (optional)
+                    QR check-in code (optional)
                   </Label>
                   {/* Trần 50 khớp Joi `checkInBooking` của BE — chặn ngay tại ô nhập thay vì để
                       lễ tân bấm Check-in trước mặt khách rồi mới nhận 400. */}

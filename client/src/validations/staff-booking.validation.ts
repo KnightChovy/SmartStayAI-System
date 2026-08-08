@@ -14,14 +14,20 @@ export const VOUCHER_CODE_MAX = 50;
 export const voucherCodeSchema = z
   .string()
   .trim()
-  .min(1, 'Enter a voucher code.')
-  .max(VOUCHER_CODE_MAX, `Voucher code is limited to ${VOUCHER_CODE_MAX} characters.`);
+  .min(1, 'Enter a QR check-in code.')
+  .max(
+    VOUCHER_CODE_MAX,
+    `QR check-in code is limited to ${VOUCHER_CODE_MAX} characters.`
+  );
 
 /** Mã voucher lúc check-in là TUỲ CHỌN (bỏ trống = không đối chiếu voucher). */
 export const optionalVoucherCodeSchema = z
   .string()
   .trim()
-  .max(VOUCHER_CODE_MAX, `Voucher code is limited to ${VOUCHER_CODE_MAX} characters.`);
+  .max(
+    VOUCHER_CODE_MAX,
+    `QR check-in code is limited to ${VOUCHER_CODE_MAX} characters.`
+  );
 
 /**
  * Lý do trả phòng muộn — CHỈ dùng ở phía client (đưa vào hộp xác nhận để lễ tân đọc lại trước

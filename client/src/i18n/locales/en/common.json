@@ -40,7 +40,7 @@
   "adultsCount_other": "{{count}} adults",
   "childrenCount_one": "{{count}} child",
   "childrenCount_other": "{{count}} children",
-  "qrEmptyHint": "The e-voucher QR will appear once your booking is confirmed / paid.",
+  "qrEmptyHint": "Your QR check-in will appear once your booking is confirmed / paid.",
   "clearDate": "Clear date",
   "search": "Search",
   "trust": {
